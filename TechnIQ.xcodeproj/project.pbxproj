@@ -14,6 +14,27 @@
 		DF16360D2E133003001E8CF9 /* TechnIQTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16360C2E133003001E8CF9 /* TechnIQTests.swift */; };
 		DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636162E133003001E8CF9 /* TechnIQUITests.swift */; };
 		DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */; };
+		DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636242E133100001E8CF9 /* CoreDataManager.swift */; };
+		DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636262E133100001E8CF9 /* DashboardView.swift */; };
+		DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636282E133100001E8CF9 /* EditProfileView.swift */; };
+		DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */; };
+		DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362C2E133100001E8CF9 /* NewSessionView.swift */; };
+		DF16362F2E133100001E8CF9 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362E2E133100001E8CF9 /* OnboardingView.swift */; };
+		DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636302E133100001E8CF9 /* PlayerProfileView.swift */; };
+		DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636322E133100001E8CF9 /* SessionDetailView.swift */; };
+		DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636342E133100001E8CF9 /* SessionHistoryView.swift */; };
+		DF1636372E133100001E8CF9 /* DataModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */; };
+		DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */; };
+		DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */; };
+		DF16363D2E133200001E8CF9 /* Exercise+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16363C2E133200001E8CF9 /* Exercise+CoreDataClass.swift */; };
+		DF16363F2E133200001E8CF9 /* Exercise+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */; };
+		DF1636412E133200001E8CF9 /* TrainingSession+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */; };
+		DF1636432E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */; };
+		DF1636452E133200001E8CF9 /* SessionExercise+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */; };
+		DF1636472E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */; };
+		DF1636492E133200001E8CF9 /* PlayerStats+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */; };
+		DF16364B2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */; };
+		DF16364D2E133300001E8CF9 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16364C2E133300001E8CF9 /* AuthenticationView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +65,27 @@
 		DF1636122E133003001E8CF9 /* TechnIQUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TechnIQUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1636162E133003001E8CF9 /* TechnIQUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQUITests.swift; sourceTree = "<group>"; };
 		DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		DF1636242E133100001E8CF9 /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
+		DF1636262E133100001E8CF9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		DF1636282E133100001E8CF9 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
+		DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryView.swift; sourceTree = "<group>"; };
+		DF16362C2E133100001E8CF9 /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
+		DF16362E2E133100001E8CF9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		DF1636302E133100001E8CF9 /* PlayerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfileView.swift; sourceTree = "<group>"; };
+		DF1636322E133100001E8CF9 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		DF1636342E133100001E8CF9 /* SessionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryView.swift; sourceTree = "<group>"; };
+		DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodeld; sourceTree = "<group>"; versioning = {xcCurrentVersion = "DataModel.xcdatamodel"; xcVersionGroupType = "wrapper.xcdatamodel";}; };
+		DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF16363C2E133200001E8CF9 /* Exercise+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exercise+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exercise+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingSession+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingSession+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionExercise+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionExercise+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerStats+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerStats+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF16364C2E133300001E8CF9 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +138,27 @@
 			children = (
 				DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */,
 				DF1635FD2E133001001E8CF9 /* ContentView.swift */,
+				DF1636242E133100001E8CF9 /* CoreDataManager.swift */,
+				DF1636262E133100001E8CF9 /* DashboardView.swift */,
+				DF1636282E133100001E8CF9 /* EditProfileView.swift */,
+				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
+				DF16362C2E133100001E8CF9 /* NewSessionView.swift */,
+				DF16362E2E133100001E8CF9 /* OnboardingView.swift */,
+				DF1636302E133100001E8CF9 /* PlayerProfileView.swift */,
+				DF1636322E133100001E8CF9 /* SessionDetailView.swift */,
+				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
+				DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */,
+				DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */,
+				DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */,
+				DF16363C2E133200001E8CF9 /* Exercise+CoreDataClass.swift */,
+				DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */,
+				DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */,
+				DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */,
+				DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */,
+				DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */,
+				DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */,
+				DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */,
+				DF16364C2E133300001E8CF9 /* AuthenticationView.swift */,
 				DF1635FF2E133003001E8CF9 /* Assets.xcassets */,
 				DF1636012E133003001E8CF9 /* Preview Content */,
 			);
@@ -233,6 +296,7 @@
 			files = (
 				DF1636032E133003001E8CF9 /* Preview Assets.xcassets in Resources */,
 				DF1636002E133003001E8CF9 /* Assets.xcassets in Resources */,
+				DF1636372E133100001E8CF9 /* DataModel.xcdatamodeld in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,6 +323,26 @@
 			files = (
 				DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */,
 				DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */,
+				DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */,
+				DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */,
+				DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */,
+				DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */,
+				DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */,
+				DF16362F2E133100001E8CF9 /* OnboardingView.swift in Sources */,
+				DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */,
+				DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */,
+				DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */,
+				DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */,
+				DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */,
+				DF16363D2E133200001E8CF9 /* Exercise+CoreDataClass.swift in Sources */,
+				DF16363F2E133200001E8CF9 /* Exercise+CoreDataProperties.swift in Sources */,
+				DF1636412E133200001E8CF9 /* TrainingSession+CoreDataClass.swift in Sources */,
+				DF1636432E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift in Sources */,
+				DF1636452E133200001E8CF9 /* SessionExercise+CoreDataClass.swift in Sources */,
+				DF1636472E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift in Sources */,
+				DF1636492E133200001E8CF9 /* PlayerStats+CoreDataClass.swift in Sources */,
+				DF16364B2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift in Sources */,
+				DF16364D2E133300001E8CF9 /* AuthenticationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
