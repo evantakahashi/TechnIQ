@@ -1,0 +1,593 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
+		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
+		DF1636002E133003001E8CF9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF1635FF2E133003001E8CF9 /* Assets.xcassets */; };
+		DF1636032E133003001E8CF9 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF1636022E133003001E8CF9 /* Preview Assets.xcassets */; };
+		DF16360D2E133003001E8CF9 /* TechnIQTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16360C2E133003001E8CF9 /* TechnIQTests.swift */; };
+		DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636162E133003001E8CF9 /* TechnIQUITests.swift */; };
+		DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DF1636092E133003001E8CF9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DF1635F02E133001001E8CF9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DF1635F72E133001001E8CF9;
+			remoteInfo = TechnIQ;
+		};
+		DF1636132E133003001E8CF9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DF1635F02E133001001E8CF9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DF1635F72E133001001E8CF9;
+			remoteInfo = TechnIQ;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
+		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		DF1635FF2E133003001E8CF9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DF1636022E133003001E8CF9 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		DF1636082E133003001E8CF9 /* TechnIQTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TechnIQTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF16360C2E133003001E8CF9 /* TechnIQTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQTests.swift; sourceTree = "<group>"; };
+		DF1636122E133003001E8CF9 /* TechnIQUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TechnIQUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF1636162E133003001E8CF9 /* TechnIQUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQUITests.swift; sourceTree = "<group>"; };
+		DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DF1635F52E133001001E8CF9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF1636052E133003001E8CF9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF16360F2E133003001E8CF9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		DF1635EF2E133001001E8CF9 = {
+			isa = PBXGroup;
+			children = (
+				DF1635FA2E133001001E8CF9 /* TechnIQ */,
+				DF16360B2E133003001E8CF9 /* TechnIQTests */,
+				DF1636152E133003001E8CF9 /* TechnIQUITests */,
+				DF1635F92E133001001E8CF9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DF1635F92E133001001E8CF9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DF1635F82E133001001E8CF9 /* TechnIQ.app */,
+				DF1636082E133003001E8CF9 /* TechnIQTests.xctest */,
+				DF1636122E133003001E8CF9 /* TechnIQUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DF1635FA2E133001001E8CF9 /* TechnIQ */ = {
+			isa = PBXGroup;
+			children = (
+				DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */,
+				DF1635FD2E133001001E8CF9 /* ContentView.swift */,
+				DF1635FF2E133003001E8CF9 /* Assets.xcassets */,
+				DF1636012E133003001E8CF9 /* Preview Content */,
+			);
+			path = TechnIQ;
+			sourceTree = "<group>";
+		};
+		DF1636012E133003001E8CF9 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				DF1636022E133003001E8CF9 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		DF16360B2E133003001E8CF9 /* TechnIQTests */ = {
+			isa = PBXGroup;
+			children = (
+				DF16360C2E133003001E8CF9 /* TechnIQTests.swift */,
+			);
+			path = TechnIQTests;
+			sourceTree = "<group>";
+		};
+		DF1636152E133003001E8CF9 /* TechnIQUITests */ = {
+			isa = PBXGroup;
+			children = (
+				DF1636162E133003001E8CF9 /* TechnIQUITests.swift */,
+				DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */,
+			);
+			path = TechnIQUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DF1635F72E133001001E8CF9 /* TechnIQ */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF16361C2E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQ" */;
+			buildPhases = (
+				DF1635F42E133001001E8CF9 /* Sources */,
+				DF1635F52E133001001E8CF9 /* Frameworks */,
+				DF1635F62E133001001E8CF9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TechnIQ;
+			productName = TechnIQ;
+			productReference = DF1635F82E133001001E8CF9 /* TechnIQ.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DF1636072E133003001E8CF9 /* TechnIQTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF16361F2E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQTests" */;
+			buildPhases = (
+				DF1636042E133003001E8CF9 /* Sources */,
+				DF1636052E133003001E8CF9 /* Frameworks */,
+				DF1636062E133003001E8CF9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DF16360A2E133003001E8CF9 /* PBXTargetDependency */,
+			);
+			name = TechnIQTests;
+			productName = TechnIQTests;
+			productReference = DF1636082E133003001E8CF9 /* TechnIQTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		DF1636112E133003001E8CF9 /* TechnIQUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF1636222E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQUITests" */;
+			buildPhases = (
+				DF16360E2E133003001E8CF9 /* Sources */,
+				DF16360F2E133003001E8CF9 /* Frameworks */,
+				DF1636102E133003001E8CF9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DF1636142E133003001E8CF9 /* PBXTargetDependency */,
+			);
+			name = TechnIQUITests;
+			productName = TechnIQUITests;
+			productReference = DF1636122E133003001E8CF9 /* TechnIQUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DF1635F02E133001001E8CF9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					DF1635F72E133001001E8CF9 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					DF1636072E133003001E8CF9 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = DF1635F72E133001001E8CF9;
+					};
+					DF1636112E133003001E8CF9 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = DF1635F72E133001001E8CF9;
+					};
+				};
+			};
+			buildConfigurationList = DF1635F32E133001001E8CF9 /* Build configuration list for PBXProject "TechnIQ" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = DF1635EF2E133001001E8CF9;
+			productRefGroup = DF1635F92E133001001E8CF9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DF1635F72E133001001E8CF9 /* TechnIQ */,
+				DF1636072E133003001E8CF9 /* TechnIQTests */,
+				DF1636112E133003001E8CF9 /* TechnIQUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DF1635F62E133001001E8CF9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF1636032E133003001E8CF9 /* Preview Assets.xcassets in Resources */,
+				DF1636002E133003001E8CF9 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF1636062E133003001E8CF9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF1636102E133003001E8CF9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DF1635F42E133001001E8CF9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */,
+				DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF1636042E133003001E8CF9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF16360D2E133003001E8CF9 /* TechnIQTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF16360E2E133003001E8CF9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */,
+				DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DF16360A2E133003001E8CF9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DF1635F72E133001001E8CF9 /* TechnIQ */;
+			targetProxy = DF1636092E133003001E8CF9 /* PBXContainerItemProxy */;
+		};
+		DF1636142E133003001E8CF9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DF1635F72E133001001E8CF9 /* TechnIQ */;
+			targetProxy = DF1636132E133003001E8CF9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		DF16361A2E133003001E8CF9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		DF16361B2E133003001E8CF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		DF16361D2E133003001E8CF9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TechnIQ/Preview Content\"";
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQ;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DF16361E2E133003001E8CF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TechnIQ/Preview Content\"";
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQ;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DF1636202E133003001E8CF9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TechnIQ.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TechnIQ";
+			};
+			name = Debug;
+		};
+		DF1636212E133003001E8CF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TechnIQ.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TechnIQ";
+			};
+			name = Release;
+		};
+		DF1636232E133003001E8CF9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TechnIQ;
+			};
+			name = Debug;
+		};
+		DF1636242E133003001E8CF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 93TJQT28RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = evan.TechnIQUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TechnIQ;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DF1635F32E133001001E8CF9 /* Build configuration list for PBXProject "TechnIQ" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF16361A2E133003001E8CF9 /* Debug */,
+				DF16361B2E133003001E8CF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DF16361C2E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQ" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF16361D2E133003001E8CF9 /* Debug */,
+				DF16361E2E133003001E8CF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DF16361F2E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF1636202E133003001E8CF9 /* Debug */,
+				DF1636212E133003001E8CF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DF1636222E133003001E8CF9 /* Build configuration list for PBXNativeTarget "TechnIQUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF1636232E133003001E8CF9 /* Debug */,
+				DF1636242E133003001E8CF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DF1635F02E133001001E8CF9 /* Project object */;
+}
