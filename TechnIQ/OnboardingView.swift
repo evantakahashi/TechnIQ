@@ -4,6 +4,7 @@ import CoreData
 struct OnboardingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coreDataManager: CoreDataManager
+    @EnvironmentObject private var authManager: AuthenticationManager
     @Binding var isOnboardingComplete: Bool
     
     @State private var currentStep = 0
@@ -187,7 +188,7 @@ struct OnboardingView: View {
                         .foregroundColor(.secondary)
                     
                     TextField("Enter your name", text: $playerName)
-                        .textFieldStyle(CustomTextFieldStyle())
+                        .modernTextFieldStyle()
                 }
                 
                 // Age Slider
@@ -344,7 +345,8 @@ struct OnboardingView: View {
     private func createPlayer() {
         let newPlayer = Player(context: viewContext)
         newPlayer.id = UUID()
-        newPlayer.name = playerName
+        newPlayer.firebaseUID = authManager.userUID
+        newPlayer.name = playerName.isEmpty ? authManager.userDisplayName : playerName
         newPlayer.age = Int16(playerAge)
         newPlayer.height = playerHeight
         newPlayer.weight = playerWeight
@@ -406,4 +408,5 @@ struct FeatureRow: View {
     OnboardingView(isOnboardingComplete: .constant(false))
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
         .environmentObject(CoreDataManager.shared)
+        .environmentObject(AuthenticationManager.shared)
 }
