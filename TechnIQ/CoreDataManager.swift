@@ -90,7 +90,13 @@ extension CoreDataManager {
     }
     
     func loadYouTubeDrillsFromAPI(category: String? = nil, maxResults: Int = 10) async {
-        let apiKey = YouTubeConfig.apiKey
+        guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let apiKey = plist["YOUTUBE_API_KEY"] as? String,
+              apiKey != "YOUR_YOUTUBE_API_KEY_HERE" else {
+            print("⚠️ YouTube API key not configured. Please add your API key to Info.plist")
+            return
+        }
         
         Task {
             do {
