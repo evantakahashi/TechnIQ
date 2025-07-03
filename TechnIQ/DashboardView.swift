@@ -441,7 +441,7 @@ struct DashboardView: View {
                 guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
                       let plist = NSDictionary(contentsOfFile: path),
                       let apiKey = plist["YOUTUBE_API_KEY"] as? String,
-                      apiKey != "YOUR_YOUTUBE_API_KEY_HERE" else {
+                      !apiKey.isEmpty && apiKey != "YOUR_YOUTUBE_API_KEY_HERE" else {
                     await MainActor.run {
                         youtubeTestError = "YouTube API key not configured. Please add your API key to Info.plist"
                         isTestingYouTube = false
