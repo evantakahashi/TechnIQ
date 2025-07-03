@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import Foundation
 
 struct ExerciseLibraryView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -13,6 +14,7 @@ struct ExerciseLibraryView: View {
     @State private var selectedCategory = "All"
     @State private var selectedExercise: Exercise?
     @State private var showingExerciseDetail = false
+    @State private var isLoadingYouTubeContent = false
     
     var categories: [String] {
         let allCategories = Set(exercises.compactMap { $0.category })
@@ -66,10 +68,43 @@ struct ExerciseLibraryView: View {
                 .listStyle(PlainListStyle())
             }
             .navigationTitle("Exercise Library")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: loadYouTubeContent) {
+                        HStack {
+                            if isLoadingYouTubeContent {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "play.rectangle")
+                            }
+                            Text("YouTube")
+                                .font(.caption)
+                        }
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    }
+                    .disabled(isLoadingYouTubeContent)
+                }
+            }
             .sheet(isPresented: $showingExerciseDetail) {
                 if let exercise = selectedExercise {
                     ExerciseDetailView(exercise: exercise)
                 }
+            }
+        }
+    }
+    
+    private func loadYouTubeContent() {
+        isLoadingYouTubeContent = true
+        
+        Task {
+            await CoreDataManager.shared.loadYouTubeDrillsFromAPI(
+                category: selectedCategory == "All" ? nil : selectedCategory,
+                maxResults: 10
+            )
+            
+            await MainActor.run {
+                isLoadingYouTubeContent = false
             }
         }
     }
@@ -98,37 +133,81 @@ struct ExerciseLibraryRow: View {
     let exercise: Exercise
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(exercise.name ?? "Exercise")
-                        .font(.headline)
-                        .fontWeight(.medium)
-                    
-                    Text(exercise.exerciseDescription ?? "")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
+        HStack(spacing: 12) {
+            if let description = exercise.exerciseDescription, description.contains("🎥 YouTube Video") {
+                if let videoIdRange = description.range(of: "Video ID: "),
+                   let endRange = description[videoIdRange.upperBound...].range(of: "\n") ?? description[videoIdRange.upperBound...].range(of: "$") {
+                    let videoId = String(description[videoIdRange.upperBound..<endRange.lowerBound])
+                    let thumbnailURL = "https://img.youtube.com/vi/\(videoId)/medium.jpg"
+                    AsyncImage(url: URL(string: thumbnailURL)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 60, height: 45)
+                            .clipped()
+                            .cornerRadius(8)
+                    } placeholder: {
+                        ProgressView()
+                            .frame(width: 60, height: 45)
+                    }
+                } else {
+                    Image(systemName: "play.rectangle.fill")
+                        .font(.title2)
+                        .foregroundColor(.red)
+                        .frame(width: 60, height: 45)
+                        .background(DesignSystem.Colors.neutral200)
+                        .cornerRadius(8)
                 }
-                
-                Spacer()
-                
-                DifficultyIndicator(level: Int(exercise.difficulty))
+            } else {
+                Image(systemName: "figure.run")
+                    .font(.title2)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    .frame(width: 60, height: 45)
+                    .background(DesignSystem.Colors.neutral200)
+                    .cornerRadius(8)
             }
             
-            HStack {
-                CategoryBadge(category: exercise.category ?? "General")
-                
-                Spacer()
-                
-                if let skills = exercise.targetSkills as? [String], !skills.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "target")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        Text(skills.prefix(2).joined(separator: ", "))
-                            .font(.caption)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(exercise.name ?? "Exercise")
+                                .font(.headline)
+                                .fontWeight(.medium)
+                                .lineLimit(2)
+                            
+                            if let description = exercise.exerciseDescription, description.contains("🎥 YouTube Video") {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        
+                        Text(exercise.exerciseDescription ?? "")
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                    
+                    Spacer()
+                    
+                    DifficultyIndicator(level: Int(exercise.difficulty))
+                }
+                
+                HStack {
+                    CategoryBadge(category: exercise.category ?? "General")
+                    
+                    Spacer()
+                    
+                    if let skills = exercise.targetSkills, !skills.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "target")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            Text(skills.prefix(2).joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
             }
@@ -136,6 +215,7 @@ struct ExerciseLibraryRow: View {
         .padding(.vertical, 4)
     }
 }
+
 
 struct CategoryBadge: View {
     let category: String
@@ -197,7 +277,7 @@ struct ExerciseDetailView: View {
                         instructionsCard(instructions: instructions)
                     }
                     
-                    if let skills = exercise.targetSkills as? [String], !skills.isEmpty {
+                    if let skills = exercise.targetSkills, !skills.isEmpty {
                         skillsCard(skills: skills)
                     }
                 }
