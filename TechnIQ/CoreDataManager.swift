@@ -90,7 +90,7 @@ extension CoreDataManager {
     }
     
     func loadYouTubeDrillsFromAPI(category: String? = nil, maxResults: Int = 10) async {
-        let apiKey = "AIzaSyBLHa1n5fVpgCV4hTB4Wrq74dLET_nbXls" // Temporary hardcoded
+        let apiKey = YouTubeConfig.apiKey
         
         Task {
             do {
