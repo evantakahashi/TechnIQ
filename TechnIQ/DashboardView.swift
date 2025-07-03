@@ -438,9 +438,8 @@ struct DashboardView: View {
         
         Task {
             do {
-                // Temporary hardcoded API key for testing (will fix Info.plist later)
-                let apiKey = "AIzaSyBLHa1n5fVpgCV4hTB4Wrq74dLET_nbXls"
-                print("✅ Using hardcoded API key for testing: \(String(apiKey.prefix(10)))...")
+                let apiKey = YouTubeConfig.apiKey
+                print("✅ Using YouTube API key for testing: \(String(apiKey.prefix(10)))...")
                 
                 // Make a simple search request
                 let searchResponse = try await performSimpleYouTubeSearch(apiKey: apiKey)
