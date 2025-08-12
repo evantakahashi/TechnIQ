@@ -12,9 +12,15 @@ extension Exercise {
     @NSManaged public var exerciseDescription: String?
     @NSManaged public var id: UUID?
     @NSManaged public var instructions: String?
+    @NSManaged public var isYouTubeContent: Bool
     @NSManaged public var name: String?
     @NSManaged public var targetSkills: [String]?
+    @NSManaged public var videoDescription: String?
+    @NSManaged public var videoDuration: Int32
+    @NSManaged public var videoThumbnailURL: String?
+    @NSManaged public var youtubeVideoID: String?
     @NSManaged public var sessionExercises: NSSet?
+    @NSManaged public var player: Player?
 
 }
 

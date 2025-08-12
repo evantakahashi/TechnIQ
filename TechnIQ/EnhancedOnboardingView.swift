@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreData
 
-struct OnboardingView: View {
+struct EnhancedOnboardingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coreDataManager: CoreDataManager
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -9,16 +9,19 @@ struct OnboardingView: View {
     
     @State private var currentStep = 0
     @State private var playerName = ""
-    @State private var playerAge = 12
-    @State private var playerHeight = 150.0
-    @State private var playerWeight = 45.0
+    @State private var playerAge = 16
     @State private var selectedPosition = "Midfielder"
     @State private var selectedPlayingStyle = "Balanced"
     @State private var selectedDominantFoot = "Right"
+    @State private var selectedExperienceLevel = "Beginner"
+    @State private var yearsPlaying: Int = 2
     
     let positions = ["Goalkeeper", "Defender", "Midfielder", "Forward"]
     let playingStyles = ["Aggressive", "Defensive", "Balanced", "Creative", "Fast"]
     let dominantFeet = ["Left", "Right", "Both"]
+    let experienceLevels = ["Beginner", "Intermediate", "Advanced", "Professional"]
+    
+    private let totalSteps = 3
     
     var body: some View {
         VStack(spacing: 0) {
@@ -47,28 +50,28 @@ struct OnboardingView: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
-                        .foregroundColor(.primary)
+                Button("Skip") {
+                    createPlayer()
                 }
+                .font(.subheadline)
+                .foregroundColor(.secondary)
             }
             .padding(.horizontal, 24)
             .padding(.top, 16)
             
             // Progress Indicator
             VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { index in
+                HStack(spacing: 4) {
+                    ForEach(0..<totalSteps, id: \.self) { index in
                         Rectangle()
-                            .fill(index <= currentStep ? Color.black : Color(.systemGray4))
+                            .fill(index <= currentStep ? DesignSystem.Colors.primaryGreen : Color(.systemGray4))
                             .frame(height: 3)
                             .animation(.easeInOut, value: currentStep)
                     }
                 }
                 .padding(.horizontal, 24)
                 
-                Text("Step \(currentStep + 1) of 3")
+                Text("Step \(currentStep + 1) of \(totalSteps)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -76,36 +79,43 @@ struct OnboardingView: View {
             
             Spacer()
             
-            switch currentStep {
-            case 0:
-                welcomeStep
-            case 1:
-                basicInfoStep
-            case 2:
-                positionStyleStep
-            default:
-                EmptyView()
+            // Step Content
+            Group {
+                switch currentStep {
+                case 0:
+                    welcomeStep
+                case 1:
+                    basicInfoStep
+                case 2:
+                    positionStyleStep
+                default:
+                    EmptyView()
+                }
             }
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .move(edge: .leading)
+            ))
             
             Spacer()
             
             // Continue Button
             Button(action: {
                 withAnimation {
-                    if currentStep < 2 {
+                    if currentStep < totalSteps - 1 {
                         currentStep += 1
                     } else {
                         createPlayer()
                     }
                 }
             }) {
-                Text(currentStep == 2 ? "GET STARTED" : "CONTINUE")
+                Text(currentStep == totalSteps - 1 ? "CREATE PROFILE" : "CONTINUE")
                     .font(.headline)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(canContinue ? Color.black : Color.gray)
+                    .background(canContinue ? DesignSystem.Colors.primaryGreen : Color.gray)
                     .cornerRadius(28)
             }
             .disabled(!canContinue)
@@ -124,19 +134,21 @@ struct OnboardingView: View {
         }
     }
     
+    // MARK: - Step Views
+    
     private var welcomeStep: some View {
         VStack(spacing: 40) {
             VStack(spacing: 24) {
-                Image(systemName: "soccerball")
+                Image(systemName: "brain.head.profile")
                     .font(.system(size: 80))
-                    .foregroundColor(.black)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
                 
                 VStack(spacing: 8) {
-                    Text("Welcome to TechnIQ")
+                    Text("AI-Powered Training")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
-                    Text("Your personal soccer training companion")
+                    Text("Get personalized recommendations based on your goals and playing style")
                         .font(.title3)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -146,21 +158,21 @@ struct OnboardingView: View {
             
             VStack(spacing: 24) {
                 FeatureRow(
-                    icon: "person.fill",
-                    title: "Track Sessions",
-                    description: "Log your training sessions and exercises"
+                    icon: "target",
+                    title: "Smart Goals",
+                    description: "Set specific skill goals and track progress"
+                )
+                
+                FeatureRow(
+                    icon: "person.3.fill",
+                    title: "Player Matching",
+                    description: "Learn from players with similar profiles"
                 )
                 
                 FeatureRow(
                     icon: "chart.line.uptrend.xyaxis",
-                    title: "Monitor Progress",
-                    description: "See your improvement over time"
-                )
-                
-                FeatureRow(
-                    icon: "lightbulb.fill",
-                    title: "Get Recommendations",
-                    description: "Personalized training suggestions"
+                    title: "ML Recommendations",
+                    description: "AI-powered exercise suggestions just for you"
                 )
             }
         }
@@ -170,25 +182,28 @@ struct OnboardingView: View {
     private var basicInfoStep: some View {
         VStack(spacing: 32) {
             VStack(spacing: 8) {
-                Text("Tell us about yourself")
+                Text("Basic Information")
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("We'll use this information to personalize your training")
+                Text("Tell us about yourself")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
             
             VStack(spacing: 24) {
-                // Name Field
+                // Player Name
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Name")
+                    Text("Your Name")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
                     TextField("Enter your name", text: $playerName)
-                        .modernTextFieldStyle()
+                        .font(.body)
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
                 }
                 
                 // Age Slider
@@ -206,40 +221,48 @@ struct OnboardingView: View {
                     Slider(value: Binding(
                         get: { Double(playerAge) },
                         set: { playerAge = Int($0) }
-                    ), in: 10...18, step: 1)
-                    .tint(.black)
+                    ), in: 10...75, step: 1)
+                    .tint(DesignSystem.Colors.primaryGreen)
                 }
                 
-                // Height Slider
+                // Experience Level
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Experience Level")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 8) {
+                        ForEach(experienceLevels, id: \.self) { level in
+                            Button(level) {
+                                selectedExperienceLevel = level
+                            }
+                            .foregroundColor(selectedExperienceLevel == level ? .white : .primary)
+                            .font(.caption)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+                
+                // Years Playing
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Height")
+                        Text("Years Playing")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Text("\(Int(playerHeight)) cm")
+                        Text("\(yearsPlaying) years")
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
                     
-                    Slider(value: $playerHeight, in: 120...200, step: 1)
-                        .tint(.black)
-                }
-                
-                // Weight Slider
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Weight")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(Int(playerWeight)) kg")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                    
-                    Slider(value: $playerWeight, in: 30...100, step: 1)
-                        .tint(.black)
+                    Slider(value: Binding(
+                        get: { Double(yearsPlaying) },
+                        set: { yearsPlaying = Int($0) }
+                    ), in: 0...20, step: 1)
+                    .tint(DesignSystem.Colors.primaryGreen)
                 }
             }
         }
@@ -249,11 +272,11 @@ struct OnboardingView: View {
     private var positionStyleStep: some View {
         VStack(spacing: 32) {
             VStack(spacing: 8) {
-                Text("Your Playing Profile")
+                Text("Playing Profile")
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("This helps us recommend the right exercises for you")
+                Text("Tell us about your position and style")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -262,7 +285,7 @@ struct OnboardingView: View {
             VStack(spacing: 24) {
                 // Position Selection
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Position")
+                    Text("Primary Position")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
@@ -318,23 +341,17 @@ struct OnboardingView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    Menu {
+                    HStack(spacing: 12) {
                         ForEach(dominantFeet, id: \.self) { foot in
                             Button(foot) {
                                 selectedDominantFoot = foot
                             }
+                            .foregroundColor(selectedDominantFoot == foot ? .white : .primary)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(selectedDominantFoot == foot ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                            .cornerRadius(12)
                         }
-                    } label: {
-                        HStack {
-                            Text(selectedDominantFoot)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
                     }
                 }
             }
@@ -342,73 +359,78 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
     }
     
+    // MARK: - Helper Functions
+    
     private func createPlayer() {
+        print("🏗️ Starting player creation...")
+        
+        let userUID = authManager.userUID
+        if userUID.isEmpty {
+            print("❌ No Firebase UID available - cannot create player")
+            return
+        }
+        
+        print("📝 Creating player for UID: \(userUID)")
+        let displayName = playerName.isEmpty ? authManager.userDisplayName : playerName
+        let finalName = displayName.isEmpty ? "Player" : displayName
+        print("👤 Player name: \(finalName)")
+        
         let newPlayer = Player(context: viewContext)
         newPlayer.id = UUID()
-        newPlayer.firebaseUID = authManager.userUID
-        newPlayer.name = playerName.isEmpty ? authManager.userDisplayName : playerName
+        newPlayer.firebaseUID = userUID
+        newPlayer.name = finalName
         newPlayer.age = Int16(playerAge)
-        newPlayer.height = playerHeight
-        newPlayer.weight = playerWeight
         newPlayer.position = selectedPosition
         newPlayer.playingStyle = selectedPlayingStyle
         newPlayer.dominantFoot = selectedDominantFoot
+        newPlayer.experienceLevel = selectedExperienceLevel
         newPlayer.createdAt = Date()
         
-        let initialStats = PlayerStats(context: viewContext)
-        initialStats.id = UUID()
-        initialStats.player = newPlayer
-        initialStats.date = Date()
-        initialStats.totalSessions = 0
-        initialStats.totalTrainingHours = 0.0
-        initialStats.skillRatings = [
-            "Ball Control": 5.0,
-            "Passing": 5.0,
-            "Shooting": 5.0,
-            "Dribbling": 5.0,
-            "Speed": 5.0,
-            "Endurance": 5.0,
-            "Defending": 5.0,
-            "Heading": 5.0
-        ]
+        print("✅ Player object created with ID: \(newPlayer.id?.uuidString ?? "nil")")
         
-        // Create default exercises for the new player
         coreDataManager.createDefaultExercises(for: newPlayer)
+        print("✅ Created default exercises")
         
-        coreDataManager.save()
-        isOnboardingComplete = true
-    }
-}
-
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.black)
-                .frame(width: 32, height: 32)
+        do {
+            coreDataManager.save()
+            print("✅ Successfully saved player profile to Core Data")
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            // Verify the save worked
+            let request = Player.fetchRequest()
+            request.predicate = NSPredicate(format: "firebaseUID == %@", userUID)
+            let savedPlayers = try viewContext.fetch(request)
+            print("🔍 Verification: Found \(savedPlayers.count) players for UID \(userUID)")
+            
+            if let savedPlayer = savedPlayers.first {
+                print("✅ Saved player: \(savedPlayer.name ?? "Unknown") with ID: \(savedPlayer.id?.uuidString ?? "nil")")
             }
-            
-            Spacer()
+        } catch {
+            print("❌ Failed to save player profile: \(error)")
+            return
         }
+        
+        // Sync to Firebase/Cloud
+        Task {
+            do {
+                await CloudSyncManager.shared.performFullSync()
+                await CloudSyncManager.shared.trackUserEvent(.sessionStart, contextData: [
+                    "onboarding_completed": true,
+                    "player_name": playerName
+                ])
+                print("✅ Successfully synced to cloud")
+            } catch {
+                print("⚠️ Failed to sync new player profile: \(error)")
+            }
+        }
+        
+        print("🎯 Setting isOnboardingComplete = true")
+        isOnboardingComplete = true
+        print("✅ Onboarding marked as complete")
     }
 }
 
 #Preview {
-    OnboardingView(isOnboardingComplete: .constant(false))
+    EnhancedOnboardingView(isOnboardingComplete: .constant(false))
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
         .environmentObject(CoreDataManager.shared)
         .environmentObject(AuthenticationManager.shared)

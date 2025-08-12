@@ -3,7 +3,14 @@
     "allow": [
       "mcp__XcodeBuildMCP__get_app_bundle_id",
       "mcp__XcodeBuildMCP__get_sim_app_path_id_proj",
-      "mcp__XcodeBuildMCP__build_sim_name_proj"
+      "mcp__XcodeBuildMCP__build_sim_name_proj",
+      "Bash(xcodebuild:*)",
+      "Bash(grep:*)",
+      "mcp__XcodeBuildMCP__build_mac_ws",
+      "mcp__XcodeBuildMCP__build_mac_proj",
+      "mcp__XcodeBuildMCP__clean_proj",
+      "mcp__XcodeBuildMCP__list_schems_proj",
+      "Bash(swiftc:*)"
     ],
     "deny": []
   }

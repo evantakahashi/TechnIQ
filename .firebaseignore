@@ -1,0 +1,16 @@
+**/__pycache__/**
+**/node_modules/**
+.venv/**
+.env/**
+.git/**
+*.csv
+*.mp4
+*.log
+*.pyc
+functions/venv/**
+functions/__pycache__/**
+*.DS_Store
+.pytest_cache/**
+build/**
+dist/**
+*.egg-info/**

@@ -2,37 +2,46 @@
 
 ## YouTube API Configuration
 
-To use the YouTube integration features, you need to set up a YouTube Data API v3 key:
+The YouTube integration uses your existing Google API key from Firebase/Google Services configuration.
 
-### 1. Get YouTube API Key
+### 1. API Key Source
+
+The app automatically uses the `API_KEY` from your `GoogleService-Info.plist` file for YouTube Data API v3 access. This is the same key used for Firebase and other Google services.
+
+### 2. Enable YouTube Data API v3
+
+To enable YouTube functionality:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the YouTube Data API v3
-4. Create credentials (API Key)
-5. Restrict the API key to YouTube Data API v3 for security
+2. Select your existing project (the one from GoogleService-Info.plist)
+3. Navigate to "APIs & Services" > "Library"
+4. Search for "YouTube Data API v3"
+5. Click "Enable"
 
-### 2. Configure the App
+### 3. API Key Restrictions (Recommended)
 
-Replace `YOUR_YOUTUBE_API_KEY_HERE` in `TechnIQ/Info.plist` with your actual API key:
+For security, restrict your API key:
 
-```xml
-<key>YOUTUBE_API_KEY</key>
-<string>YOUR_ACTUAL_API_KEY_HERE</string>
-```
+1. Go to "APIs & Services" > "Credentials"
+2. Click on your API key
+3. Under "API restrictions", select "Restrict key"
+4. Enable these APIs:
+   - YouTube Data API v3
+   - Firebase services you're using
+   - Any other Google services your app needs
 
-### 3. Security Notes
+### 4. No Additional Configuration Required
 
-- **NEVER** commit your actual API key to git
-- The `Info.plist` file contains a placeholder that should be replaced locally
-- Consider using environment variables for production deployments
-- Monitor your API usage in Google Cloud Console
+Since the app uses your existing Google Services configuration:
+- ✅ No need to add API keys to Info.plist
+- ✅ No need to manage separate YouTube API keys
+- ✅ Uses the same security model as your Firebase setup
 
-### 4. API Usage
+### 5. API Usage
 
 The app uses YouTube Data API v3 for:
 - Searching soccer training videos
 - Retrieving video metadata and thumbnails
 - Automatic content categorization
 
-Rate limits and quotas apply as per Google's YouTube API terms.
+Rate limits and quotas apply as per Google's YouTube API terms. Monitor usage in Google Cloud Console.

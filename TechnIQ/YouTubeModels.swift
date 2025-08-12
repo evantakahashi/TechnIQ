@@ -1,5 +1,12 @@
 import Foundation
 
+// MARK: - Simple API Error (for internal use)
+enum SimpleAPIError: Error {
+    case invalidSearchQuery
+    case networkError
+    case parsingError
+}
+
 // MARK: - YouTube API Error Handling
 enum YouTubeAPIError: LocalizedError {
     case apiKeyNotConfigured
@@ -129,6 +136,20 @@ struct RegionRestriction: Codable {
 }
 
 // MARK: - Local Models for App Use
+struct YouTubeVideo {
+    let videoId: String
+    let title: String
+    let channel: String
+    let duration: String
+}
+
+struct YouTubeTestVideo {
+    let videoId: String
+    let title: String
+    let channel: String
+    let duration: String
+}
+
 struct DrillVideo {
     let youtubeVideoId: String
     let title: String
@@ -144,27 +165,37 @@ struct DrillVideo {
     // Convert YouTube duration (ISO 8601) to seconds
     static func parseYouTubeDuration(_ duration: String) -> Int {
         // YouTube duration format: PT4M13S (4 minutes, 13 seconds)
-        let pattern = #"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: duration, range: NSRange(duration.startIndex..., in: duration)) else {
+        let pattern = "PT(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return 0
+        }
+        
+        let range = NSRange(location: 0, length: duration.utf16.count)
+        guard let match = regex.firstMatch(in: duration, range: range) else {
             return 0
         }
         
         var totalSeconds = 0
         
         // Hours
-        if let hoursRange = Range(match.range(at: 1), in: duration) {
-            totalSeconds += Int(duration[hoursRange]) ?? 0 * 3600
+        if match.range(at: 1).location != NSNotFound {
+            let hoursRange = match.range(at: 1)
+            let hoursString = (duration as NSString).substring(with: hoursRange)
+            totalSeconds += (Int(hoursString) ?? 0) * 3600
         }
         
         // Minutes
-        if let minutesRange = Range(match.range(at: 2), in: duration) {
-            totalSeconds += (Int(duration[minutesRange]) ?? 0) * 60
+        if match.range(at: 2).location != NSNotFound {
+            let minutesRange = match.range(at: 2)
+            let minutesString = (duration as NSString).substring(with: minutesRange)
+            totalSeconds += (Int(minutesString) ?? 0) * 60
         }
         
         // Seconds
-        if let secondsRange = Range(match.range(at: 3), in: duration) {
-            totalSeconds += Int(duration[secondsRange]) ?? 0
+        if match.range(at: 3).location != NSNotFound {
+            let secondsRange = match.range(at: 3)
+            let secondsString = (duration as NSString).substring(with: secondsRange)
+            totalSeconds += Int(secondsString) ?? 0
         }
         
         return totalSeconds
@@ -215,3 +246,4 @@ struct DrillVideo {
         return (difficulty, skills, category)
     }
 }
+

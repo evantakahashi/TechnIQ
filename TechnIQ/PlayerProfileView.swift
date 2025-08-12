@@ -3,12 +3,20 @@ import CoreData
 
 struct PlayerProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-        animation: .default)
-    private var players: FetchedResults<Player>
+    @EnvironmentObject private var authManager: AuthenticationManager
+    @FetchRequest var players: FetchedResults<Player>
+    
+    init() {
+        // Initialize with empty predicate - will be updated in onAppear
+        self._players = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
+            predicate: NSPredicate(value: false), // Temporary predicate
+            animation: .default
+        )
+    }
     
     @State private var showingEditProfile = false
+    @State private var showingSignOutAlert = false
     
     var currentPlayer: Player? {
         players.first
@@ -38,8 +46,15 @@ struct PlayerProfileView: View {
             .toolbar {
                 if currentPlayer != nil {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Edit") {
-                            showingEditProfile = true
+                        Menu {
+                            Button("Edit Profile") {
+                                showingEditProfile = true
+                            }
+                            Button("Sign Out", role: .destructive) {
+                                showingSignOutAlert = true
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
                     }
                 }
@@ -49,7 +64,28 @@ struct PlayerProfileView: View {
                     EditProfileView(player: player)
                 }
             }
+            .alert("Sign Out", isPresented: $showingSignOutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    authManager.signOut()
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
+            }
+            .onAppear {
+                updatePlayersFilter()
+            }
+            .onChange(of: authManager.userUID) {
+                updatePlayersFilter()
+            }
         }
+    }
+    
+    private func updatePlayersFilter() {
+        guard !authManager.userUID.isEmpty else { return }
+        
+        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
+        print("🔍 Updated PlayerProfileView filter for user: \(authManager.userUID)")
     }
     
     private func profileHeaderCard(player: Player) -> some View {
@@ -141,7 +177,7 @@ struct PlayerProfileView: View {
                 .fontWeight(.semibold)
             
             if let latestStats = getLatestStats(for: player),
-               let skillRatings = latestStats.skillRatings as? [String: Double] {
+               let skillRatings = latestStats.skillRatings {
                 VStack(spacing: 10) {
                     ForEach(Array(skillRatings.keys.sorted()), id: \.self) { skill in
                         SkillProgressBar(
@@ -365,4 +401,5 @@ extension Color {
 #Preview {
     PlayerProfileView()
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
+        .environmentObject(AuthenticationManager.shared)
 }

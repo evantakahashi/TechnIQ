@@ -42,3 +42,18 @@ DerivedData/
 
 # Firebase
 GoogleService-Info.plist
+functions/venv/
+functions/__pycache__/
+functions/*.pyc
+functions/firebase-debug.log
+functions/firebase-debug.*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/

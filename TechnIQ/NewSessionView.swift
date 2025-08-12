@@ -17,81 +17,40 @@ struct NewSessionView: View {
     @State private var showingExercisePicker = false
     @State private var overallRating = 3
     
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Exercise.name, ascending: true)],
-        animation: .default)
-    private var availableExercises: FetchedResults<Exercise>
+    @State private var availableExercises: [Exercise] = []
     
     let sessionTypes = ["Training", "Match", "Fitness", "Technical", "Tactical"]
     
     var body: some View {
         NavigationView {
-            Form {
-                Section("Session Details") {
-                    Picker("Type", selection: $sessionType) {
-                        ForEach(sessionTypes, id: \.self) { type in
-                            Text(type).tag(type)
-                        }
-                    }
-                    
-                    TextField("Location (optional)", text: $location)
-                    
-                    VStack(alignment: .leading) {
-                        Text("Intensity: \(intensity)/5")
-                        Slider(value: Binding(
-                            get: { Double(intensity) },
-                            set: { intensity = Int($0) }
-                        ), in: 1...5, step: 1)
-                    }
-                }
+            ZStack {
+                // Modern gradient background
+                DesignSystem.Colors.backgroundGradient
+                    .ignoresSafeArea()
                 
-                Section("Exercises") {
-                    if selectedExercises.isEmpty {
-                        Button("Add Exercises") {
-                            showingExercisePicker = true
-                        }
-                        .foregroundColor(.blue)
-                    } else {
-                        ForEach(selectedExercises, id: \.objectID) { exercise in
-                            ExerciseRowView(
-                                exercise: exercise,
-                                detail: Binding(
-                                    get: { exerciseDetails[exercise.id!] ?? ExerciseDetail() },
-                                    set: { exerciseDetails[exercise.id!] = $0 }
-                                ),
-                                onRemove: {
-                                    removeExercise(exercise)
-                                }
-                            )
-                        }
+                ScrollView {
+                    LazyVStack(spacing: DesignSystem.Spacing.lg) {
+                        // Session Type Section
+                        modernSessionTypeCard
                         
-                        Button("Add More Exercises") {
-                            showingExercisePicker = true
-                        }
-                        .foregroundColor(.blue)
+                        // Location Section
+                        modernLocationCard
+                        
+                        // Intensity Section
+                        modernIntensityCard
+                        
+                        // Exercises Section
+                        modernExercisesCard
+                        
+                        // Rating Section
+                        modernRatingCard
+                        
+                        // Notes Section
+                        modernNotesCard
                     }
-                }
-                
-                Section("Session Rating") {
-                    VStack(alignment: .leading) {
-                        Text("Overall Rating")
-                        HStack {
-                            ForEach(1...5, id: \.self) { rating in
-                                Button {
-                                    overallRating = rating
-                                } label: {
-                                    Image(systemName: rating <= overallRating ? "star.fill" : "star")
-                                        .foregroundColor(.yellow)
-                                        .font(.title2)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Section("Notes") {
-                    TextField("Session notes (optional)", text: $sessionNotes, axis: .vertical)
-                        .lineLimit(3...6)
+                    .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                    .padding(.top, DesignSystem.Spacing.md)
+                    .padding(.bottom, DesignSystem.Spacing.xl)
                 }
             }
             .navigationTitle("New Session")
@@ -101,12 +60,17 @@ struct NewSessionView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         saveSession()
                     }
+                    .font(DesignSystem.Typography.labelLarge)
+                    .fontWeight(.semibold)
+                    .foregroundColor(selectedExercises.isEmpty ? DesignSystem.Colors.textSecondary : DesignSystem.Colors.primaryGreen)
                     .disabled(selectedExercises.isEmpty)
                 }
             }
@@ -116,7 +80,321 @@ struct NewSessionView: View {
                     availableExercises: Array(availableExercises)
                 )
             }
+            .onAppear {
+                loadAvailableExercises()
+            }
         }
+    }
+    
+    // MARK: - Modern Card Components
+    
+    private var modernSessionTypeCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                Text("Session Type")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: DesignSystem.Spacing.sm) {
+                    ForEach(sessionTypes, id: \.self) { type in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                sessionType = type
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: iconForSessionType(type))
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(sessionType == type ? .white : DesignSystem.Colors.primaryGreen)
+                                
+                                Text(type)
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(sessionType == type ? .white : DesignSystem.Colors.textPrimary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DesignSystem.Spacing.sm)
+                            .padding(.horizontal, DesignSystem.Spacing.md)
+                            .background(
+                                sessionType == type 
+                                    ? DesignSystem.Colors.primaryGreen
+                                    : Color.clear
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                                    .stroke(
+                                        sessionType == type 
+                                            ? Color.clear 
+                                            : DesignSystem.Colors.neutral300,
+                                        lineWidth: 1
+                                    )
+                            )
+                            .cornerRadius(DesignSystem.CornerRadius.md)
+                        }
+                        .pressAnimation()
+                    }
+                }
+            }
+        }
+    }
+    
+    private var modernLocationCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                Text("Location")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                
+                ModernTextField(
+                    "Training Location",
+                    text: $location,
+                    placeholder: "Home, Park, Gym, Field...",
+                    icon: "location"
+                )
+            }
+        }
+    }
+    
+    private var modernIntensityCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                HStack {
+                    Text("Intensity Level")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Text("\(intensity)/5")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
+                }
+                
+                // Visual intensity indicators
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    ForEach(1...5, id: \.self) { level in
+                        VStack(spacing: DesignSystem.Spacing.xs) {
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xs)
+                                .fill(
+                                    level <= intensity 
+                                        ? DesignSystem.Colors.primaryGreen
+                                        : DesignSystem.Colors.neutral300
+                                )
+                                .frame(height: CGFloat(level * 6 + 10))
+                                .animation(.easeInOut(duration: 0.3), value: intensity)
+                            
+                            Text(intensityLabel(for: level))
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(
+                                    level <= intensity 
+                                        ? DesignSystem.Colors.primaryGreen
+                                        : DesignSystem.Colors.textSecondary
+                                )
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                intensity = level
+                            }
+                        }
+                    }
+                }
+                .frame(height: 60)
+            }
+        }
+    }
+    
+    private var modernExercisesCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Text("Exercises")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Text("\(selectedExercises.count)")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .frame(width: 24, height: 24)
+                        .background(DesignSystem.Colors.primaryGreen)
+                        .cornerRadius(12)
+                }
+                
+                if selectedExercises.isEmpty {
+                    VStack(spacing: DesignSystem.Spacing.lg) {
+                        Image(systemName: "figure.run")
+                            .font(.system(size: 40))
+                            .foregroundColor(DesignSystem.Colors.neutral400)
+                        
+                        Text("No exercises selected")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                        
+                        ModernButton("Add Exercises", icon: "plus.circle.fill") {
+                            showingExercisePicker = true
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.lg)
+                } else {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                        ForEach(selectedExercises, id: \.objectID) { exercise in
+                            ModernExerciseRowView(
+                                exercise: exercise,
+                                detail: Binding(
+                                    get: { exerciseDetails[exercise.id!] ?? ExerciseDetail() },
+                                    set: { exerciseDetails[exercise.id!] = $0 }
+                                ),
+                                onRemove: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        removeExercise(exercise)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    
+                    ModernButton("Add More Exercises", icon: "plus.circle", style: .secondary) {
+                        showingExercisePicker = true
+                    }
+                }
+            }
+        }
+    }
+    
+    private var modernRatingCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                HStack {
+                    Text("Session Rating")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Text(ratingDescription(for: overallRating))
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .fontWeight(.medium)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+                
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    ForEach(1...5, id: \.self) { rating in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                overallRating = rating
+                            }
+                        }) {
+                            Image(systemName: rating <= overallRating ? "star.fill" : "star")
+                                .font(.system(size: 28))
+                                .foregroundColor(
+                                    rating <= overallRating 
+                                        ? DesignSystem.Colors.warning
+                                        : DesignSystem.Colors.neutral300
+                                )
+                                .scaleEffect(rating <= overallRating ? 1.1 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: overallRating)
+                        }
+                        .pressAnimation()
+                    }
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+    
+    private var modernNotesCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                Text("Session Notes")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        .fill(DesignSystem.Colors.background)
+                        .stroke(DesignSystem.Colors.neutral300, lineWidth: 1)
+                        .frame(height: 120)
+                    
+                    TextEditor(text: $sessionNotes)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .padding(DesignSystem.Spacing.sm)
+                        .background(Color.clear)
+                        .scrollContentBackground(.hidden)
+                    
+                    if sessionNotes.isEmpty {
+                        Text("How did your session go? Any highlights or areas for improvement?")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .padding(DesignSystem.Spacing.sm)
+                            .padding(.top, DesignSystem.Spacing.xs)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func iconForSessionType(_ type: String) -> String {
+        switch type {
+        case "Training": return "figure.run"
+        case "Match": return "soccerball"
+        case "Fitness": return "heart.fill"
+        case "Technical": return "target"
+        case "Tactical": return "brain.head.profile"
+        default: return "figure.soccer"
+        }
+    }
+    
+    private func intensityLabel(for level: Int) -> String {
+        switch level {
+        case 1: return "Light"
+        case 2: return "Easy"
+        case 3: return "Moderate"
+        case 4: return "Hard"
+        case 5: return "Max"
+        default: return ""
+        }
+    }
+    
+    private func ratingDescription(for rating: Int) -> String {
+        switch rating {
+        case 1: return "Poor"
+        case 2: return "Fair"
+        case 3: return "Good"
+        case 4: return "Great"
+        case 5: return "Excellent"
+        default: return "Good"
+        }
+    }
+    
+    private func loadAvailableExercises() {
+        availableExercises = CoreDataManager.shared.fetchExercises(for: player)
     }
     
     private func removeExercise(_ exercise: Exercise) {
@@ -156,7 +434,9 @@ struct NewSessionView: View {
         
         newSession.duration = totalDuration
         
+        print("💾 Saving new session for player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
         coreDataManager.save()
+        print("✅ Session saved successfully")
         dismiss()
     }
 }
@@ -169,7 +449,7 @@ struct ExerciseDetail {
     var notes: String = ""
 }
 
-struct ExerciseRowView: View {
+struct ModernExerciseRowView: View {
     let exercise: Exercise
     @Binding var detail: ExerciseDetail
     let onRemove: () -> Void
@@ -177,83 +457,244 @@ struct ExerciseRowView: View {
     @State private var isExpanded = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(exercise.name ?? "Exercise")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+        VStack(spacing: 0) {
+            // Exercise Header
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // Exercise Icon and Info
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                            .frame(width: 44, height: 44)
+                        
+                        Image(systemName: exerciseIcon)
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    }
                     
-                    Text(exercise.category ?? "General")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text(exercise.name ?? "Exercise")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .lineLimit(1)
+                        
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Text(exercise.category ?? "General")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, DesignSystem.Spacing.xs)
+                                .padding(.vertical, 2)
+                                .background(DesignSystem.Colors.primaryGreen.opacity(0.8))
+                                .cornerRadius(DesignSystem.CornerRadius.xs)
+                            
+                            Text("Level \(exercise.difficulty)")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, DesignSystem.Spacing.xs)
+                                .padding(.vertical, 2)
+                                .background(DesignSystem.Colors.warning.opacity(0.8))
+                                .cornerRadius(DesignSystem.CornerRadius.xs)
+                        }
+                    }
                 }
                 
                 Spacer()
                 
-                Button("Remove") {
-                    onRemove()
-                }
-                .font(.caption)
-                .foregroundColor(.red)
-                
-                Button {
-                    withAnimation {
-                        isExpanded.toggle()
+                // Action Buttons
+                HStack(spacing: DesignSystem.Spacing.xs) {
+                    Button(action: onRemove) {
+                        Image(systemName: "trash.circle.fill")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(DesignSystem.Colors.error.opacity(0.7))
                     }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.blue)
+                    .pressAnimation()
+                    
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isExpanded.toggle()
+                        }
+                    }) {
+                        Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen.opacity(0.7))
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                    }
+                    .pressAnimation()
                 }
             }
+            .padding(DesignSystem.Spacing.md)
+            .background(DesignSystem.Colors.background)
+            .cornerRadius(DesignSystem.CornerRadius.md)
+            .customShadow(DesignSystem.Shadow.small)
             
+            // Expanded Details Section
             if isExpanded {
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("Duration:")
-                        Spacer()
-                        Text("\(Int(detail.duration)) min")
-                    }
-                    Slider(value: $detail.duration, in: 5...60, step: 5)
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Duration Control
+                    modernControlSection(
+                        title: "Duration",
+                        value: "\(Int(detail.duration)) min",
+                        content: {
+                            Slider(value: $detail.duration, in: 5...60, step: 5)
+                                .tint(DesignSystem.Colors.primaryGreen)
+                        }
+                    )
                     
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Sets: \(detail.sets)")
+                    // Sets and Reps Controls
+                    HStack(spacing: DesignSystem.Spacing.lg) {
+                        // Sets Control
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            HStack {
+                                Text("Sets")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                                
+                                Spacer()
+                                
+                                Text("\(detail.sets)")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            }
+                            
                             Slider(value: Binding(
                                 get: { Double(detail.sets) },
                                 set: { detail.sets = Int($0) }
                             ), in: 1...10, step: 1)
+                            .tint(DesignSystem.Colors.primaryGreen)
                         }
                         
-                        VStack(alignment: .leading) {
-                            Text("Reps: \(detail.reps)")
+                        // Reps Control
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            HStack {
+                                Text("Reps")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                                
+                                Spacer()
+                                
+                                Text("\(detail.reps)")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            }
+                            
                             Slider(value: Binding(
                                 get: { Double(detail.reps) },
                                 set: { detail.reps = Int($0) }
                             ), in: 1...50, step: 1)
+                            .tint(DesignSystem.Colors.primaryGreen)
                         }
                     }
                     
-                    VStack(alignment: .leading) {
-                        Text("Performance Rating")
+                    // Performance Rating
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                         HStack {
+                            Text("Performance")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                            
+                            Spacer()
+                            
+                            Text(performanceDescription(for: detail.rating))
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        }
+                        
+                        HStack(spacing: DesignSystem.Spacing.sm) {
                             ForEach(1...5, id: \.self) { rating in
-                                Button {
-                                    detail.rating = rating
-                                } label: {
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        detail.rating = rating
+                                    }
+                                }) {
                                     Image(systemName: rating <= detail.rating ? "star.fill" : "star")
-                                        .foregroundColor(.yellow)
+                                        .font(DesignSystem.Typography.titleMedium)
+                                        .foregroundColor(
+                                            rating <= detail.rating 
+                                                ? DesignSystem.Colors.warning
+                                                : DesignSystem.Colors.neutral300
+                                        )
+                                        .scaleEffect(rating <= detail.rating ? 1.1 : 1.0)
+                                        .animation(.easeInOut(duration: 0.2), value: detail.rating)
                                 }
+                                .pressAnimation()
                             }
+                            Spacer()
                         }
                     }
                     
-                    TextField("Exercise notes", text: $detail.notes)
-                        .textFieldStyle(.roundedBorder)
+                    // Notes Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Exercise Notes")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        
+                        ModernTextField(
+                            "Notes",
+                            text: $detail.notes,
+                            placeholder: "Add notes about this exercise...",
+                            icon: "note.text"
+                        )
+                    }
                 }
-                .padding(.leading)
+                .padding(DesignSystem.Spacing.lg)
+                .background(DesignSystem.Colors.primaryGreen.opacity(0.05))
+                .cornerRadius(DesignSystem.CornerRadius.md)
+                .padding(.top, DesignSystem.Spacing.xs)
             }
+        }
+    }
+    
+    private var exerciseIcon: String {
+        let category = exercise.category?.lowercased() ?? ""
+        switch category {
+        case "technical": return "target"
+        case "physical": return "figure.run"
+        case "tactical": return "brain.head.profile"
+        default: return "soccerball"
+        }
+    }
+    
+    private func performanceDescription(for rating: Int) -> String {
+        switch rating {
+        case 1: return "Poor"
+        case 2: return "Fair"
+        case 3: return "Good"
+        case 4: return "Great"
+        case 5: return "Excellent"
+        default: return "Good"
+        }
+    }
+    
+    @ViewBuilder
+    private func modernControlSection<Content: View>(
+        title: String,
+        value: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Text(title)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                
+                Spacer()
+                
+                Text(value)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .fontWeight(.medium)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+            }
+            
+            content()
         }
     }
 }
@@ -289,28 +730,93 @@ struct ExercisePickerView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                Picker("Category", selection: $selectedCategory) {
-                    ForEach(categories, id: \.self) { category in
-                        Text(category).tag(category)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+            ZStack {
+                DesignSystem.Colors.backgroundGradient
+                    .ignoresSafeArea()
                 
-                List(filteredExercises, id: \.objectID) { exercise in
-                    ExercisePickerRow(
-                        exercise: exercise,
-                        isSelected: selectedExercises.contains { $0.objectID == exercise.objectID }
-                    ) {
-                        if selectedExercises.contains(where: { $0.objectID == exercise.objectID }) {
-                            selectedExercises.removeAll { $0.objectID == exercise.objectID }
-                        } else {
-                            selectedExercises.append(exercise)
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // Modern Category Filter
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            ForEach(categories, id: \.self) { category in
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        selectedCategory = category
+                                    }
+                                }) {
+                                    Text(category)
+                                        .font(DesignSystem.Typography.bodyMedium)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(selectedCategory == category ? .white : DesignSystem.Colors.textPrimary)
+                                        .padding(.horizontal, DesignSystem.Spacing.md)
+                                        .padding(.vertical, DesignSystem.Spacing.sm)
+                                        .background(
+                                            selectedCategory == category 
+                                                ? DesignSystem.Colors.primaryGreen
+                                                : DesignSystem.Colors.background
+                                        )
+                                        .cornerRadius(DesignSystem.CornerRadius.lg)
+                                        .customShadow(selectedCategory == category ? DesignSystem.Shadow.medium : DesignSystem.Shadow.small)
+                                }
+                                .pressAnimation()
+                            }
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                    }
+                    
+                    // Search Bar
+                    HStack {
+                        ModernTextField(
+                            "Search",
+                            text: $searchText,
+                            placeholder: "Search exercises...",
+                            icon: "magnifyingglass"
+                        )
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                    
+                    // Exercise List
+                    if filteredExercises.isEmpty {
+                        Spacer()
+                        VStack(spacing: DesignSystem.Spacing.lg) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 50))
+                                .foregroundColor(DesignSystem.Colors.neutral400)
+                            
+                            Text("No exercises found")
+                                .font(DesignSystem.Typography.titleMedium)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                            
+                            if !searchText.isEmpty {
+                                Text("Try adjusting your search")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                            }
+                        }
+                        Spacer()
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                                ForEach(filteredExercises, id: \.objectID) { exercise in
+                                    ModernExercisePickerRow(
+                                        exercise: exercise,
+                                        isSelected: selectedExercises.contains { $0.objectID == exercise.objectID }
+                                    ) {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            if selectedExercises.contains(where: { $0.objectID == exercise.objectID }) {
+                                                selectedExercises.removeAll { $0.objectID == exercise.objectID }
+                                            } else {
+                                                selectedExercises.append(exercise)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                            .padding(.bottom, DesignSystem.Spacing.xl)
                         }
                     }
                 }
-                .searchable(text: $searchText, prompt: "Search exercises")
             }
             .navigationTitle("Choose Exercises")
             .navigationBarTitleDisplayMode(.inline)
@@ -319,59 +825,159 @@ struct ExercisePickerView: View {
                     Button("Done") {
                         dismiss()
                     }
+                    .font(DesignSystem.Typography.labelLarge)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
             }
         }
     }
 }
 
-struct ExercisePickerRow: View {
+struct ModernExercisePickerRow: View {
     let exercise: Exercise
     let isSelected: Bool
     let onToggle: () -> Void
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name ?? "Exercise")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+        HStack(spacing: DesignSystem.Spacing.md) {
+            // Exercise Icon
+            ZStack {
+                Circle()
+                    .fill(exerciseColor.opacity(0.1))
+                    .frame(width: 50, height: 50)
                 
-                Text(exercise.exerciseDescription ?? "")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: exerciseIcon)
+                    .font(DesignSystem.Typography.titleMedium)
+                    .foregroundColor(exerciseColor)
+            }
+            
+            // Exercise Details
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                Text(exercise.name ?? "Exercise")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
                     .lineLimit(2)
                 
-                HStack {
+                if let description = exercise.exerciseDescription, !description.isEmpty {
+                    Text(description)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .lineLimit(2)
+                }
+                
+                // Tags
+                HStack(spacing: DesignSystem.Spacing.xs) {
                     Text(exercise.category ?? "General")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.xs)
                         .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(4)
+                        .background(exerciseColor.opacity(0.8))
+                        .cornerRadius(DesignSystem.CornerRadius.xs)
                     
                     Text("Level \(exercise.difficulty)")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.xs)
                         .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(4)
+                        .background(difficultyColor.opacity(0.8))
+                        .cornerRadius(DesignSystem.CornerRadius.xs)
+                    
+                    if let skills = exercise.targetSkills, !skills.isEmpty {
+                        Text("\(skills.count) skills")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .padding(.horizontal, DesignSystem.Spacing.xs)
+                            .padding(.vertical, 2)
+                            .background(DesignSystem.Colors.neutral200)
+                            .cornerRadius(DesignSystem.CornerRadius.xs)
+                    }
                 }
             }
             
             Spacer()
             
-            Button {
-                onToggle()
-            } label: {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? .green : .gray)
-                    .font(.title2)
+            // Selection Button
+            Button(action: onToggle) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            isSelected 
+                                ? DesignSystem.Colors.primaryGreen
+                                : DesignSystem.Colors.background
+                        )
+                        .frame(width: 28, height: 28)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    isSelected 
+                                        ? DesignSystem.Colors.primaryGreen
+                                        : DesignSystem.Colors.neutral300,
+                                    lineWidth: 2
+                                )
+                        )
+                    
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(DesignSystem.Typography.labelMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }
+                .scaleEffect(isSelected ? 1.1 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSelected)
             }
+            .pressAnimation()
         }
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.background)
+        .cornerRadius(DesignSystem.CornerRadius.lg)
+        .customShadow(isSelected ? DesignSystem.Shadow.medium : DesignSystem.Shadow.small)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                .stroke(
+                    isSelected 
+                        ? DesignSystem.Colors.primaryGreen.opacity(0.3)
+                        : Color.clear,
+                    lineWidth: 2
+                )
+        )
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
         .contentShape(Rectangle())
         .onTapGesture {
             onToggle()
+        }
+    }
+    
+    private var exerciseIcon: String {
+        let category = exercise.category?.lowercased() ?? ""
+        switch category {
+        case "technical": return "target"
+        case "physical": return "figure.run"
+        case "tactical": return "brain.head.profile"
+        default: return "soccerball"
+        }
+    }
+    
+    private var exerciseColor: Color {
+        let category = exercise.category?.lowercased() ?? ""
+        switch category {
+        case "technical": return DesignSystem.Colors.primaryGreen
+        case "physical": return DesignSystem.Colors.error
+        case "tactical": return DesignSystem.Colors.secondaryBlue
+        default: return DesignSystem.Colors.primaryGreen
+        }
+    }
+    
+    private var difficultyColor: Color {
+        switch exercise.difficulty {
+        case 1...2: return DesignSystem.Colors.success
+        case 3...4: return DesignSystem.Colors.warning
+        case 5: return DesignSystem.Colors.error
+        default: return DesignSystem.Colors.neutral400
         }
     }
 }

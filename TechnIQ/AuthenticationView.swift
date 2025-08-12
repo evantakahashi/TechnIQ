@@ -1,157 +1,193 @@
 import SwiftUI
 
 struct AuthenticationView: View {
+    @EnvironmentObject private var authManager: AuthenticationManager
     @State private var isSignUp = false
-    @Binding var isAuthenticated: Bool
-    
-    init(isAuthenticated: Binding<Bool> = .constant(false)) {
-        self._isAuthenticated = isAuthenticated
-    }
     
     var body: some View {
         ZStack {
-            Color(.systemBackground)
+            // Modern gradient background
+            DesignSystem.Colors.backgroundGradient
                 .ignoresSafeArea()
             
             if isSignUp {
-                SignUpView(isSignUp: $isSignUp, isAuthenticated: $isAuthenticated)
+                ModernSignUpView(isSignUp: $isSignUp)
             } else {
-                SignInView(isSignUp: $isSignUp, isAuthenticated: $isAuthenticated)
+                ModernSignInView(isSignUp: $isSignUp)
             }
         }
     }
 }
 
-struct SignInView: View {
+struct ModernSignInView: View {
+    @EnvironmentObject private var authManager: AuthenticationManager
     @Binding var isSignUp: Bool
-    @Binding var isAuthenticated: Bool
-    @State private var username = ""
+    @State private var email = ""
     @State private var password = ""
-    @State private var showPassword = false
+    
+    private var isLoginEnabled: Bool {
+        !email.isEmpty && !password.isEmpty && password.count >= 6
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Sign In")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
-                        .foregroundColor(.primary)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            
-            Spacer()
-            
-            // Logo and Title
-            VStack(spacing: 40) {
-                VStack(spacing: 16) {
-                    Text("TechnIQ")
-                        .font(.system(size: 48, weight: .bold, design: .default))
-                        .foregroundStyle(.primary)
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Header
+                HStack {
+                    Text("Sign In")
+                        .font(DesignSystem.Typography.headlineSmall)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
                     
-                    Text("Master Your Soccer Skills")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Spacer()
+                    
+                    Button(action: {}) {
+                        Image(systemName: DesignSystem.Icons.settings)
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
                 }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.top, DesignSystem.Spacing.md)
                 
-                // Login Form
-                VStack(spacing: 20) {
-                    // Username Field
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Username")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                Spacer(minLength: DesignSystem.Spacing.xl)
+                
+                // Logo and Title Section
+                VStack(spacing: DesignSystem.Spacing.xl) {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        // Modern logo with soccer ball
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "soccerball")
+                                .font(.largeTitle)
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            
+                            Text("TechnIQ")
+                                .font(DesignSystem.Typography.displaySmall)
+                                .fontWeight(.bold)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                        }
+                        .pulseAnimation()
                         
-                        TextField("Enter your username", text: $username)
-                            .textFieldStyle(CustomTextFieldStyle())
+                        Text("Master Your Soccer Skills")
+                            .font(DesignSystem.Typography.bodyLarge)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
                     }
                     
-                    // Password Field
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Password")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            if showPassword {
-                                TextField("Enter your password", text: $password)
-                            } else {
-                                SecureField("Enter your password", text: $password)
+                    // Modern Login Form
+                    ModernCard(padding: DesignSystem.Spacing.lg) {
+                        VStack(spacing: DesignSystem.Spacing.lg) {
+                            ModernTextField(
+                                "Email",
+                                text: $email,
+                                placeholder: "Enter your email",
+                                icon: DesignSystem.Icons.email
+                            )
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            
+                            ModernTextField(
+                                "Password",
+                                text: $password,
+                                placeholder: "Enter your password",
+                                icon: DesignSystem.Icons.password,
+                                isSecure: true
+                            )
+                            
+                            // Error Message
+                            if !authManager.errorMessage.isEmpty {
+                                HStack {
+                                    Image(systemName: DesignSystem.Icons.xmark)
+                                        .foregroundColor(DesignSystem.Colors.error)
+                                    Text(authManager.errorMessage)
+                                        .font(DesignSystem.Typography.bodySmall)
+                                        .foregroundColor(DesignSystem.Colors.error)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, DesignSystem.Spacing.sm)
                             }
                             
-                            Button(action: { showPassword.toggle() }) {
-                                Image(systemName: showPassword ? "eye.slash" : "eye")
-                                    .foregroundColor(.secondary)
+                            // Login Button
+                            Button(action: {
+                                Task {
+                                    await authManager.signIn(email: email, password: password)
+                                }
+                            }) {
+                                HStack {
+                                    if authManager.isLoading {
+                                        SoccerBallSpinner()
+                                    }
+                                    Text("LOGIN")
+                                        .font(DesignSystem.Typography.labelLarge)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(DesignSystem.Spacing.buttonPadding)
+                                .background(
+                                    isLoginEnabled 
+                                        ? DesignSystem.Colors.primaryGradient 
+                                        : LinearGradient(colors: [DesignSystem.Colors.neutral400], startPoint: .top, endPoint: .bottom)
+                                )
+                                .cornerRadius(DesignSystem.CornerRadius.button)
+                                .customShadow(DesignSystem.Shadow.medium)
                             }
+                            .disabled(!isLoginEnabled || authManager.isLoading)
+                            .pressAnimation()
+                            
+                            // Divider
+                            HStack {
+                                Rectangle()
+                                    .fill(DesignSystem.Colors.neutral300)
+                                    .frame(height: 1)
+                                Text("or")
+                                    .font(DesignSystem.Typography.bodySmall)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                Rectangle()
+                                    .fill(DesignSystem.Colors.neutral300)
+                                    .frame(height: 1)
+                            }
+                            
+                            // Google Sign-In Button
+                            ModernButton("CONTINUE WITH GOOGLE", icon: "globe", style: .secondary) {
+                                Task {
+                                    await authManager.signInWithGoogle()
+                                }
+                            }
+                            .disabled(authManager.isLoading)
+                            
+                            // Forgot Password
+                            Button("Forgot password?") {
+                                if !email.isEmpty {
+                                    Task {
+                                        await authManager.resetPassword(email: email)
+                                    }
+                                }
+                            }
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
                         }
-                        .textFieldStyle(CustomTextFieldStyle())
                     }
-                    
-                    // Login Button
-                    Button(action: {
-                        // For demo purposes, any credentials work
-                        isAuthenticated = true
-                    }) {
-                        Text("LOGIN")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.black)
-                            .cornerRadius(28)
-                    }
-                    .padding(.top, 10)
-                    
-                    // Forgot Password
-                    Button("Forgot password?") {
-                        // Handle forgot password
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 8)
                 }
-                .padding(.horizontal, 24)
-            }
-            
-            Spacer()
-            
-            // Create Account
-            VStack(spacing: 16) {
-                Button(action: { isSignUp = true }) {
-                    HStack {
-                        Text("CREATE AN ACCOUNT")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                        
-                        Image(systemName: "person.crop.circle.badge.plus")
-                            .font(.title3)
-                            .foregroundColor(.green)
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                
+                Spacer(minLength: DesignSystem.Spacing.xl)
+                
+                // Create Account Section
+                ModernButton("CREATE AN ACCOUNT", icon: "person.crop.circle.badge.plus", style: .ghost) {
+                    withAnimation(DesignSystem.Animation.smooth) {
+                        isSignUp = true
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(28)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
-            .padding(.bottom, 34)
         }
     }
 }
 
-struct SignUpView: View {
+struct ModernSignUpView: View {
+    @EnvironmentObject private var authManager: AuthenticationManager
     @Binding var isSignUp: Bool
-    @Binding var isAuthenticated: Bool
     @State private var username = ""
     @State private var firstName = ""
     @State private var lastName = ""
@@ -159,290 +195,317 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var currentStep = 0
+    @State private var selectedPositions: Set<String> = []
+    @State private var selectedStyle = "Balanced"
+    @State private var selectedFoot = "Right"
+    
+    private let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"]
+    private let styles = ["Aggressive", "Defensive", "Balanced", "Creative", "Fast", "Playmaker", "Box-to-Box", "Target Man", "Poacher", "Sweeper"]
+    private let feet = ["Left", "Right", "Both"]
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Modern Header
             HStack {
                 Button(action: { 
-                    if currentStep > 0 {
-                        currentStep -= 1
-                    } else {
-                        isSignUp = false
+                    withAnimation(DesignSystem.Animation.smooth) {
+                        if currentStep > 0 {
+                            currentStep -= 1
+                        } else {
+                            isSignUp = false
+                        }
                     }
                 }) {
                     Image(systemName: "chevron.left")
-                        .font(.title3)
-                        .foregroundColor(.primary)
+                        .font(DesignSystem.Typography.titleMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .frame(width: 40, height: 40)
+                        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
                 }
                 
                 Spacer()
                 
                 Text("Sign Up")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: {}) {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
-                        .foregroundColor(.primary)
+                    Image(systemName: DesignSystem.Icons.settings)
+                        .font(DesignSystem.Typography.titleMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, DesignSystem.Spacing.md)
             
-            // Progress Steps
-            HStack(spacing: 8) {
-                Text("Your data")
-                    .font(.subheadline)
-                    .fontWeight(currentStep == 0 ? .semibold : .regular)
-                    .foregroundColor(currentStep == 0 ? .primary : .secondary)
+            // Modern Progress Indicator
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                StepIndicator(title: "Your data", isActive: currentStep == 0, isCompleted: currentStep > 0)
                 
-                Rectangle()
-                    .fill(currentStep == 0 ? Color.primary : Color.secondary)
-                    .frame(height: 2)
+                ProgressLine(isCompleted: currentStep > 0)
                 
-                Text("Configuration")
-                    .font(.subheadline)
-                    .fontWeight(currentStep == 1 ? .semibold : .regular)
-                    .foregroundColor(currentStep == 1 ? .primary : .secondary)
+                StepIndicator(title: "Configuration", isActive: currentStep == 1, isCompleted: false)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 32)
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, DesignSystem.Spacing.xl)
             
-            Spacer()
-            
-            if currentStep == 0 {
-                dataStep
-            } else {
-                configurationStep
+            ScrollView {
+                VStack(spacing: DesignSystem.Spacing.xl) {
+                    if currentStep == 0 {
+                        modernDataStep
+                    } else {
+                        modernConfigurationStep
+                    }
+                }
+                .padding(.top, DesignSystem.Spacing.xl)
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
-            
-            Spacer()
         }
     }
     
-    private var dataStep: some View {
-        VStack(spacing: 32) {
-            // Profile Image
-            VStack(spacing: 16) {
+    private var modernDataStep: some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            // Profile Avatar Section
+            VStack(spacing: DesignSystem.Spacing.md) {
                 ZStack {
                     Circle()
-                        .fill(Color(.systemGray5))
+                        .fill(DesignSystem.Colors.primaryGreen.opacity(0.1))
                         .frame(width: 100, height: 100)
                     
                     Image(systemName: "person")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
+                .pulseAnimation()
                 
-                // Username
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Username")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    HStack {
-                        TextField("Choose username", text: $username)
-                        
-                        if !username.isEmpty {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                                .onTapGesture { username = "" }
-                        }
-                    }
-                    .textFieldStyle(CustomTextFieldStyle())
-                }
+                Text("Profile Setup")
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
             }
             
-            // Form Fields
-            VStack(spacing: 20) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Name")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        TextField("First name", text: $firstName)
-                            .textFieldStyle(CustomTextFieldStyle())
+            // Form Fields in Card
+            ModernCard(padding: DesignSystem.Spacing.lg) {
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    ModernTextField(
+                        "Username",
+                        text: $username,
+                        placeholder: "Choose username",
+                        icon: "person"
+                    )
+                    
+                    HStack(spacing: DesignSystem.Spacing.md) {
+                        ModernTextField(
+                            "First Name",
+                            text: $firstName,
+                            placeholder: "First name"
+                        )
+                        
+                        ModernTextField(
+                            "Last Name",
+                            text: $lastName,
+                            placeholder: "Last name"
+                        )
                     }
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Surname")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        TextField("Last name", text: $lastName)
-                            .textFieldStyle(CustomTextFieldStyle())
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("E-mail")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    TextField("your.email@example.com", text: $email)
-                        .textFieldStyle(CustomTextFieldStyle())
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Password")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    SecureField("Create password", text: $password)
-                        .textFieldStyle(CustomTextFieldStyle())
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Repeat password")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    SecureField("Confirm password", text: $confirmPassword)
-                        .textFieldStyle(CustomTextFieldStyle())
+                    ModernTextField(
+                        "Email",
+                        text: $email,
+                        placeholder: "your.email@example.com",
+                        icon: DesignSystem.Icons.email
+                    )
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    
+                    ModernTextField(
+                        "Password",
+                        text: $password,
+                        placeholder: "Create password",
+                        icon: DesignSystem.Icons.password,
+                        isSecure: true
+                    )
+                    
+                    ModernTextField(
+                        "Confirm Password",
+                        text: $confirmPassword,
+                        placeholder: "Confirm password",
+                        icon: DesignSystem.Icons.password,
+                        isSecure: true
+                    )
                 }
             }
             
             // Continue Button
-            Button(action: { currentStep = 1 }) {
-                Text("CONTINUE")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(fieldsAreValid ? Color.black : Color.gray)
-                    .cornerRadius(28)
+            ModernButton("CONTINUE", icon: "arrow.right") {
+                withAnimation(DesignSystem.Animation.smooth) {
+                    currentStep = 1
+                }
             }
             .disabled(!fieldsAreValid)
             
+            // Terms Link
             Button("Terms and Conditions of Use") {
                 // Handle terms
             }
-            .font(.caption)
-            .foregroundColor(.secondary)
+            .font(DesignSystem.Typography.bodySmall)
+            .foregroundColor(DesignSystem.Colors.textSecondary)
         }
-        .padding(.horizontal, 24)
     }
     
-    private var configurationStep: some View {
-        VStack(spacing: 32) {
-            Text("Soccer Profile Setup")
-                .font(.title2)
-                .fontWeight(.bold)
+    private var modernConfigurationStep: some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            // Header
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Image(systemName: "soccerball")
+                    .font(.largeTitle)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    .pulseAnimation()
+                
+                Text("Soccer Profile Setup")
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .multilineTextAlignment(.center)
+            }
             
-            VStack(spacing: 20) {
-                // Position
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Position")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Menu {
-                        Button("Goalkeeper") { }
-                        Button("Defender") { }
-                        Button("Midfielder") { }
-                        Button("Forward") { }
-                    } label: {
-                        HStack {
-                            Text("Select position")
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+            // Configuration Form
+            ModernCard(padding: DesignSystem.Spacing.lg) {
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Position Selector (Multi-select)
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("Positions (Select all that apply)")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        MultiSelectPillSelector(options: positions, selectedOptions: $selectedPositions, columns: 5)
                     }
-                }
-                
-                // Playing Style
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Playing Style")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                     
-                    Menu {
-                        Button("Aggressive") { }
-                        Button("Defensive") { }
-                        Button("Balanced") { }
-                        Button("Creative") { }
-                        Button("Fast") { }
-                    } label: {
-                        HStack {
-                            Text("Select style")
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.secondary)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                    // Playing Style Selector
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("Playing Style")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        PillSelector(options: styles, selectedIndex: Binding(
+                            get: { styles.firstIndex(of: selectedStyle) ?? 0 },
+                            set: { selectedStyle = styles[$0] }
+                        ), columns: 3)
                     }
-                }
-                
-                // Dominant Foot
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Dominant Foot")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                     
-                    Menu {
-                        Button("Left") { }
-                        Button("Right") { }
-                        Button("Both") { }
-                    } label: {
+                    // Dominant Foot Selector
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("Dominant Foot")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        PillSelector(options: feet, selectedIndex: Binding(
+                            get: { feet.firstIndex(of: selectedFoot) ?? 0 },
+                            set: { selectedFoot = feet[$0] }
+                        ), columns: 3)
+                    }
+                    
+                    // Error Message
+                    if !authManager.errorMessage.isEmpty {
                         HStack {
-                            Text("Select foot")
-                                .foregroundColor(.primary)
+                            Image(systemName: DesignSystem.Icons.xmark)
+                                .foregroundColor(DesignSystem.Colors.error)
+                            Text(authManager.errorMessage)
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(DesignSystem.Colors.error)
                             Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.secondary)
                         }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
                     }
                 }
             }
             
             // Create Account Button
-            Button(action: {
-                // For demo purposes, complete signup
-                isAuthenticated = true
-            }) {
-                Text("CREATE ACCOUNT")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.black)
-                    .cornerRadius(28)
+            ModernButton("CREATE ACCOUNT", icon: "checkmark") {
+                Task {
+                    await authManager.signUp(email: email, password: password)
+                }
             }
+            .disabled(authManager.isLoading)
         }
-        .padding(.horizontal, 24)
     }
     
     private var fieldsAreValid: Bool {
         !username.isEmpty && !firstName.isEmpty && !lastName.isEmpty && 
-        !email.isEmpty && !password.isEmpty && password == confirmPassword
+        !email.isEmpty && !password.isEmpty && password == confirmPassword && password.count >= 6
     }
 }
 
-struct CustomTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .font(.body)
+// MARK: - Step Indicator Components
+struct StepIndicator: View {
+    let title: String
+    let isActive: Bool
+    let isCompleted: Bool
+    
+    var body: some View {
+        VStack(spacing: DesignSystem.Spacing.xs) {
+            Circle()
+                .fill(circleColor)
+                .frame(width: 12, height: 12)
+                .overlay(
+                    Circle()
+                        .stroke(borderColor, lineWidth: 2)
+                )
+            
+            Text(title)
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(textColor)
+                .fontWeight(isActive ? .semibold : .regular)
+        }
+        .animation(DesignSystem.Animation.quick, value: isActive)
+        .animation(DesignSystem.Animation.quick, value: isCompleted)
+    }
+    
+    private var circleColor: Color {
+        if isCompleted {
+            return DesignSystem.Colors.primaryGreen
+        } else if isActive {
+            return DesignSystem.Colors.primaryGreen
+        } else {
+            return DesignSystem.Colors.background
+        }
+    }
+    
+    private var borderColor: Color {
+        if isCompleted || isActive {
+            return DesignSystem.Colors.primaryGreen
+        } else {
+            return DesignSystem.Colors.neutral300
+        }
+    }
+    
+    private var textColor: Color {
+        if isActive {
+            return DesignSystem.Colors.primaryGreen
+        } else {
+            return DesignSystem.Colors.textSecondary
+        }
+    }
+}
+
+struct ProgressLine: View {
+    let isCompleted: Bool
+    
+    var body: some View {
+        Rectangle()
+            .fill(isCompleted ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300)
+            .frame(height: 2)
+            .animation(DesignSystem.Animation.smooth, value: isCompleted)
     }
 }
 
 #Preview {
     AuthenticationView()
+        .environmentObject(AuthenticationManager.shared)
 }
