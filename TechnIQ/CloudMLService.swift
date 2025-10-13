@@ -32,8 +32,8 @@ class CloudMLService: ObservableObject {
     
     // MARK: - Main Recommendation Functions
     
-    func getYouTubeRecommendations(for player: Player, limit: Int = 3) async throws -> [YouTubeVideoRecommendation] {
-        print("🎥 CloudMLService: Fetching YouTube video recommendations for \(player.name ?? "Unknown")")
+    func getYouTubeRecommendations(for player: Player, limit: Int = 1) async throws -> [YouTubeVideoRecommendation] {
+        print("🎥 CloudMLService: Fetching single YouTube recommendation for \(player.name ?? "Unknown")")
         print("🔍 CloudMLService: Checking prerequisites...")
         
         recommendationStatus = .loading
@@ -42,20 +42,79 @@ class CloudMLService: ObservableObject {
         let useFirebaseFunction = true
         
         if useFirebaseFunction {
-            do {
-                print("📞 CloudMLService: About to call fetchYouTubeRecommendations...")
-                // Try cloud-based YouTube ML recommendations
-                let youtubeRecommendations = try await fetchYouTubeRecommendations(player: player, limit: limit)
+            // Retry up to 3 times to get non-duplicate recommendations
+            var attempts = 0
+            let maxAttempts = 3
+            var seenVideoIds = Set<String>()
+            
+            // Get existing video IDs to avoid duplicates
+            let existingVideoIds = getExistingYouTubeVideoIds(for: player)
+            seenVideoIds.formUnion(existingVideoIds)
+            print("🚫 CloudMLService: Will avoid \(existingVideoIds.count) existing video IDs")
+            
+            while attempts < maxAttempts {
+                attempts += 1
+                print("📞 CloudMLService: Attempt \(attempts)/\(maxAttempts) - calling fetchYouTubeRecommendations...")
                 
-                recommendationStatus = .success
-                print("✅ CloudMLService: Successfully fetched \(youtubeRecommendations.count) YouTube recommendations")
-                return youtubeRecommendations
-                
-            } catch {
-                print("⚠️ CloudMLService: YouTube recommendations failed (\(error.localizedDescription))")
-                recommendationStatus = .error("YouTube recommendations unavailable")
-                throw error // Re-throw the error instead of returning empty array
+                do {
+                    // Try cloud-based YouTube ML recommendations
+                    let youtubeRecommendations = try await fetchYouTubeRecommendations(player: player, limit: limit)
+                    
+                    // Filter out duplicates that we've already seen
+                    let newRecommendations = youtubeRecommendations.filter { recommendation in
+                        let videoId = recommendation.videoId
+                        let title = recommendation.title
+                        
+                        if seenVideoIds.contains(videoId) {
+                            print("🚫 CloudMLService: Skipping duplicate video ID: \(videoId) - '\(title)'")
+                            return false
+                        }
+                        
+                        // Also check if this exercise already exists by checking Core Data directly
+                        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+                        request.predicate = NSPredicate(format: "youtubeVideoID == %@", videoId)
+                        do {
+                            let existingCount = try CoreDataManager.shared.context.count(for: request)
+                            if existingCount > 0 {
+                                print("🚫 CloudMLService: Exercise with video ID '\(videoId)' already exists in Core Data - '\(title)'")
+                                return false
+                            }
+                        } catch {
+                            print("⚠️ CloudMLService: Error checking for existing exercise: \(error)")
+                        }
+                        
+                        seenVideoIds.insert(videoId)
+                        return true
+                    }
+                    
+                    if !newRecommendations.isEmpty {
+                        recommendationStatus = .success
+                        print("✅ CloudMLService: Successfully fetched \(newRecommendations.count) unique YouTube recommendation(s) on attempt \(attempts)")
+                        return newRecommendations
+                    } else {
+                        print("⚠️ CloudMLService: All recommendations were duplicates on attempt \(attempts)")
+                        if attempts < maxAttempts {
+                            // Wait a bit before retrying to get different results
+                            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                            continue
+                        }
+                    }
+                    
+                } catch {
+                    print("⚠️ CloudMLService: YouTube recommendations failed on attempt \(attempts): \(error.localizedDescription)")
+                    if attempts >= maxAttempts {
+                        recommendationStatus = .error("YouTube recommendations unavailable")
+                        throw error
+                    }
+                    // Wait before retrying
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
             }
+            
+            // If all attempts failed or returned duplicates
+            recommendationStatus = .error("No unique recommendations found")
+            throw MLError.insufficientData
+            
         } else {
             print("📝 CloudMLService: Firebase Function temporarily disabled, throwing error to trigger fallback")
             recommendationStatus = .error("Firebase Function deployment pending")
@@ -197,6 +256,8 @@ class CloudMLService: ObservableObject {
                 description: String((recData["description"] as? String ?? "").prefix(200)), // Truncate description
                 thumbnailUrl: recData["thumbnail_url"] as? String ?? "",
                 duration: recData["duration"] as? String ?? "Unknown",
+                durationSeconds: recData["duration_seconds"] as? Int ?? 0,
+                isShort: recData["is_short"] as? Bool ?? false,
                 viewCount: recData["view_count"] as? Int ?? 0,
                 confidenceScore: recData["final_score"] as? Double ?? 0.5,
                 reasoning: recData["reasoning"] ?? "Personalized for your training goals",
@@ -207,7 +268,7 @@ class CloudMLService: ObservableObject {
             youtubeRecommendations.append(youtubeRec)
         }
         
-        print("✅ Received \(youtubeRecommendations.count) YouTube recommendations from Firebase Functions")
+        print("✅ Received \(youtubeRecommendations.count) YouTube recommendation(s) from Firebase Functions")
         return youtubeRecommendations
     }
     
@@ -414,11 +475,33 @@ class CloudMLService: ObservableObject {
     
     // MARK: - Helper Functions
     
+    private func getExistingYouTubeVideoIds(for player: Player) -> Set<String> {
+        var videoIds = Set<String>()
+        
+        // Get all exercises for this player that have YouTube video IDs
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "isYouTubeContent == true AND youtubeVideoID != nil AND youtubeVideoID != ''")
+        
+        do {
+            let exercises = try CoreDataManager.shared.context.fetch(request)
+            for exercise in exercises {
+                if let videoId = exercise.youtubeVideoID {
+                    videoIds.insert(videoId)
+                }
+            }
+            print("📚 CloudMLService: Found \(videoIds.count) existing YouTube video IDs")
+        } catch {
+            print("❌ CloudMLService: Error fetching existing YouTube exercises: \(error)")
+        }
+        
+        return videoIds
+    }
+    
     private func getCachedRecommendations(limit: Int) -> [MLDrillRecommendation]? {
         guard let lastFetch = lastRecommendationFetch,
               Date().timeIntervalSince(lastFetch) < cacheExpirationTime,
               !cachedRecommendations.isEmpty else {
-            return nil
+            return nil as [MLDrillRecommendation]?
         }
         
         return Array(cachedRecommendations.prefix(limit))
@@ -659,6 +742,8 @@ struct YouTubeVideoRecommendation: Identifiable {
     let description: String
     let thumbnailUrl: String
     let duration: String
+    let durationSeconds: Int
+    let isShort: Bool
     let viewCount: Int
     let confidenceScore: Double
     let reasoning: Any
@@ -678,6 +763,14 @@ struct YouTubeVideoRecommendation: Identifiable {
         } else {
             return "\(viewCount) views"
         }
+    }
+    
+    var contentTypeDescription: String {
+        return isShort ? "Short" : "Video"
+    }
+    
+    var durationDisplay: String {
+        return duration != "Unknown" ? duration : (isShort ? "Short" : "Video")
     }
 }
 

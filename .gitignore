@@ -3,6 +3,9 @@ TechnIQ/Config.plist
 TechnIQ/APIKeys.plist
 .env
 .env.local
+.env.yaml
+*.env.yaml
+functions/.env.yaml
 
 # Xcode
 build/

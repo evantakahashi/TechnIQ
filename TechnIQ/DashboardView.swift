@@ -400,7 +400,8 @@ struct DashboardView: View {
     
     private func totalTrainingHours(for player: Player) -> Double {
         guard let sessions = player.sessions as? Set<TrainingSession> else { return 0.0 }
-        return sessions.reduce(0) { $0 + $1.duration }
+        let totalMinutes = sessions.reduce(0) { $0 + $1.duration }
+        return totalMinutes / 60.0 // Convert minutes to hours
     }
     
     private func sessionsThisWeek(for player: Player) -> Int {
@@ -859,7 +860,8 @@ struct SmartRecommendationRow: View {
                     Text(recommendation.reason)
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     // Physical Indicators Row
                     HStack(spacing: DesignSystem.Spacing.sm) {

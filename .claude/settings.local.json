@@ -10,7 +10,16 @@
       "mcp__XcodeBuildMCP__build_mac_proj",
       "mcp__XcodeBuildMCP__clean_proj",
       "mcp__XcodeBuildMCP__list_schems_proj",
-      "Bash(swiftc:*)"
+      "Bash(swiftc:*)",
+      "Bash(ls:*)",
+      "Bash(source:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(python3.12:*)",
+      "Bash(rm:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(-H \"Content-Type: application/json\")",
+      "Read(//Users/evantakahashi/Desktop/**)"
     ],
     "deny": []
   }

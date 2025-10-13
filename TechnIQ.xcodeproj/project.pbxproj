@@ -23,6 +23,7 @@
 		DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636302E133100001E8CF9 /* PlayerProfileView.swift */; };
 		DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636322E133100001E8CF9 /* SessionDetailView.swift */; };
 		DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636342E133100001E8CF9 /* SessionHistoryView.swift */; };
+		DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */; };
 		DF1636372E133100001E8CF9 /* DataModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */; };
 		DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */; };
 		DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */; };
@@ -72,6 +73,7 @@
 		DF5CB3102E3058800085F3ED /* CloudMLService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB30F2E3058800085F3ED /* CloudMLService.swift */; };
 		DF5CB3132E41C58E0085F3ED /* ExerciseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */; };
 		DF5CB3152E4825F60085F3ED /* CustomDrillGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */; };
+		DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF517F48A578644280B45163 /* DrillInstructionsView.swift */; };
 		DF5CB3172E4825FC0085F3ED /* CustomDrillModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */; };
 		DF5CB3192E4826020085F3ED /* CustomDrillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3182E4826020085F3ED /* CustomDrillService.swift */; };
 		DF6618E42E1356C800C6899B /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E32E1356C800C6899B /* FirebaseAuth */; };
@@ -116,6 +118,7 @@
 		DF1636302E133100001E8CF9 /* PlayerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfileView.swift; sourceTree = "<group>"; };
 		DF1636322E133100001E8CF9 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		DF1636342E133100001E8CF9 /* SessionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryView.swift; sourceTree = "<group>"; };
+		DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SessionCalendarView.swift; sourceTree = "<group>"; };
 		DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodeld; sourceTree = "<group>"; };
 		DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataClass.swift"; sourceTree = "<group>"; };
 		DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -151,6 +154,7 @@
 		DF5CB30F2E3058800085F3ED /* CloudMLService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CloudMLService.swift; sourceTree = "<group>"; };
 		DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseDetailView.swift; sourceTree = "<group>"; };
 		DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillGeneratorView.swift; sourceTree = "<group>"; };
+		DF517F48A578644280B45163 /* DrillInstructionsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DrillInstructionsView.swift; sourceTree = "<group>"; };
 		DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillModels.swift; sourceTree = "<group>"; };
 		DF5CB3182E4826020085F3ED /* CustomDrillService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -229,6 +233,7 @@
 				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
 				DF16362C2E133100001E8CF9 /* NewSessionView.swift */,
 				DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */,
+				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
 				DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */,
 				DF5CB3182E4826020085F3ED /* CustomDrillService.swift */,
 				DF5CB2F72E3054FB0085F3ED /* CloudSyncManager.swift */,
@@ -250,6 +255,7 @@
 				DF5CB3052E3058480085F3ED /* RecommendationFeedback+CoreDataProperties.swift */,
 				DF5CB3012E30582B0085F3ED /* PlayerGoal+CoreDataProperties.swift */,
 				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
+				DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */,
 				DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */,
 				DF5CB2FB2E3058090085F3ED /* PlayerProfile+CoreDataClass.swift */,
 				DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */,
@@ -475,8 +481,10 @@
 				DF5CB3042E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift in Sources */,
 				DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */,
 				DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */,
+				DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */,
 				DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */,
 				DF5CB3152E4825F60085F3ED /* CustomDrillGeneratorView.swift in Sources */,
+				DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */,
 				DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */,
 				DF16363D2E133200001E8CF9 /* Exercise+CoreDataClass.swift in Sources */,
 				DF16363F2E133200001E8CF9 /* Exercise+CoreDataProperties.swift in Sources */,

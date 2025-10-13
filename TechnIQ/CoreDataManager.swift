@@ -1649,12 +1649,19 @@ extension CoreDataManager {
     
     private struct TrainingHistory {
         let totalSessions: Int
-        let recentSessions: [TrainingSession] // Last 10 sessions
+        let recentSessions: [TrainingSession] // Last 30 sessions for analysis
+        let allSessions: [TrainingSession] // All sessions for accurate date calculations
         let skillFrequency: [String: Int]
         let categoryFrequency: [String: Int]
         let averagePerformance: Double
         let skillPerformance: [String: Double]
         let lastTrainingDate: Date?
+
+        // NEW: Recent performance tracking
+        let recentSkillPerformance: [String: Double] // Last 14 days
+        let veryRecentSkillPerformance: [String: Double] // Last 7 days
+        let recentExercises: Set<String> // Exercises done in last 3 days
+        let poorPerformanceSkills: [String] // Skills with <3.0 avg in last 14 days
     }
     
     private struct DifficultyPattern {
@@ -1670,65 +1677,115 @@ extension CoreDataManager {
             return TrainingHistory(
                 totalSessions: 0,
                 recentSessions: [],
+                allSessions: [],
                 skillFrequency: [:],
                 categoryFrequency: [:],
                 averagePerformance: 0,
                 skillPerformance: [:],
-                lastTrainingDate: nil
+                lastTrainingDate: nil,
+                recentSkillPerformance: [:],
+                veryRecentSkillPerformance: [:],
+                recentExercises: [],
+                poorPerformanceSkills: []
             )
         }
         
         print("📊 Analyzing training history for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown")) - found \(sessionsSet.count) sessions")
         
-        let sessions = Array(sessionsSet).sorted { 
-            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) 
+        let sessions = Array(sessionsSet).sorted {
+            ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast)
         }
-        let recentSessions = Array(sessions.prefix(10))
-        
+        let recentSessions = Array(sessions.prefix(30))
+
+        // Calculate time boundaries
+        let now = Date()
+        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+        let fourteenDaysAgo = Calendar.current.date(byAdding: .day, value: -14, to: now) ?? now
+
         var skillFrequency: [String: Int] = [:]
         var categoryFrequency: [String: Int] = [:]
         var skillPerformanceData: [String: [Double]] = [:]
         var totalPerformance: [Double] = []
-        
+
+        // NEW: Recent performance tracking
+        var recentSkillPerformanceData: [String: [Double]] = [:] // Last 14 days
+        var veryRecentSkillPerformanceData: [String: [Double]] = [:] // Last 7 days
+        var recentExerciseNames: Set<String> = [] // Last 3 days
+
         for session in recentSessions {
             totalPerformance.append(Double(session.overallRating))
-            
+            let sessionDate = session.date ?? Date.distantPast
+
             if let exercisesSet = session.exercises as? Set<SessionExercise> {
                 for sessionExercise in exercisesSet {
                     if let exercise = sessionExercise.exercise {
                         // Count category frequency
                         let category = exercise.category ?? "Unknown"
                         categoryFrequency[category, default: 0] += 1
-                        
+
+                        // Track exercises done in last 3 days
+                        if sessionDate >= threeDaysAgo {
+                            recentExerciseNames.insert(exercise.name ?? "")
+                        }
+
                         // Count skill frequency and track performance
                         if let skills = exercise.targetSkills {
                             for skill in skills {
                                 skillFrequency[skill, default: 0] += 1
                                 let performance = Double(sessionExercise.performanceRating)
                                 skillPerformanceData[skill, default: []].append(performance)
+
+                                // Track recent performance (14 days)
+                                if sessionDate >= fourteenDaysAgo {
+                                    recentSkillPerformanceData[skill, default: []].append(performance)
+                                }
+
+                                // Track very recent performance (7 days)
+                                if sessionDate >= sevenDaysAgo {
+                                    veryRecentSkillPerformanceData[skill, default: []].append(performance)
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        
+
         // Calculate average skill performance
         let skillPerformance = skillPerformanceData.mapValues { performances in
             performances.reduce(0, +) / Double(performances.count)
         }
-        
-        let averagePerformance = totalPerformance.isEmpty ? 0 : 
+
+        // Calculate recent skill performance (14 days)
+        let recentSkillPerformance = recentSkillPerformanceData.mapValues { performances in
+            performances.reduce(0, +) / Double(performances.count)
+        }
+
+        // Calculate very recent skill performance (7 days)
+        let veryRecentSkillPerformance = veryRecentSkillPerformanceData.mapValues { performances in
+            performances.reduce(0, +) / Double(performances.count)
+        }
+
+        // Identify skills with poor recent performance (<3.0 in last 14 days)
+        let poorPerformanceSkills = recentSkillPerformance.filter { $0.value < 3.0 }.map { $0.key }
+
+        let averagePerformance = totalPerformance.isEmpty ? 0 :
             totalPerformance.reduce(0, +) / Double(totalPerformance.count)
-        
+
         return TrainingHistory(
             totalSessions: sessions.count,
             recentSessions: recentSessions,
+            allSessions: sessions,
             skillFrequency: skillFrequency,
             categoryFrequency: categoryFrequency,
             averagePerformance: averagePerformance,
             skillPerformance: skillPerformance,
-            lastTrainingDate: sessions.first?.date
+            lastTrainingDate: sessions.first?.date,
+            recentSkillPerformance: recentSkillPerformance,
+            veryRecentSkillPerformance: veryRecentSkillPerformance,
+            recentExercises: recentExerciseNames,
+            poorPerformanceSkills: poorPerformanceSkills
         )
     }
     
@@ -1793,6 +1850,250 @@ extension CoreDataManager {
         )
     }
     
+    // MARK: - Dynamic Description Generation
+    
+    private func generateSkillGapDescription(
+        for player: Player,
+        skill: String,
+        trainingHistory: TrainingHistory
+    ) -> String {
+        let gapFrequency = trainingHistory.skillFrequency[skill] ?? 0
+        let totalSessions = trainingHistory.totalSessions
+        let skillPerformance = trainingHistory.skillPerformance[skill] ?? 3.0
+        let position = player.position?.lowercased() ?? ""
+        let _ = player.name ?? "Player"
+
+        // NEW: Check recent performance (last 14 days)
+        let recentPerformance = trainingHistory.recentSkillPerformance[skill]
+        let veryRecentPerformance = trainingHistory.veryRecentSkillPerformance[skill]
+
+        // Calculate days since last practice
+        let daysSinceLastPractice = calculateDaysSinceSkillPractice(skill: skill, sessions: trainingHistory.allSessions)
+
+        // Position-specific importance
+        let positionContext = getPositionContext(for: skill, position: position)
+
+        // PRIORITY 1: Recent poor performance (last 14 days)
+        if let recentPerf = recentPerformance, recentPerf < 3.0 {
+            let perfPercent = Int(recentPerf * 20)
+            return "Your recent \(skill.lowercased()) sessions averaged \(String(format: "%.1f", recentPerf))/5 stars (\(perfPercent)%) - let's improve that together!"
+        }
+
+        // PRIORITY 2: Very recent struggle (last 7 days)
+        if let veryRecentPerf = veryRecentPerformance, veryRecentPerf < 3.5 {
+            return "This past week, your \(skill.lowercased()) work showed room to grow (avg: \(String(format: "%.1f", veryRecentPerf))/5). Perfect time to focus on it!"
+        }
+
+        // PRIORITY 3: Never practiced this skill
+        if gapFrequency == 0 && totalSessions > 3 {
+            let templates = [
+                "Time to explore \(skill.lowercased()) - it's a gap in your training that could unlock new potential!",
+                "\(skill) hasn't appeared in your training yet. \(positionContext)",
+                "Let's add \(skill.lowercased()) to your skillset - every complete player needs this foundation."
+            ]
+            let experienceLevel = player.experienceLevel?.lowercased() ?? "intermediate"
+            let templateIndex = experienceLevel == "beginner" ? 2 : (totalSessions > 10 ? 0 : 1)
+            return templates[templateIndex]
+        }
+
+        // PRIORITY 4: Not practiced in 2+ weeks
+        if daysSinceLastPractice > 14 {
+            if daysSinceLastPractice <= 30 {
+                return "It's been \(daysSinceLastPractice) days since your last \(skill.lowercased()) session - let's keep those skills sharp!"
+            } else {
+                return "Your \(skill.lowercased()) skills need attention - you haven't practiced in over \(daysSinceLastPractice / 7) weeks."
+            }
+        }
+
+        // PRIORITY 5: Overall poor performance
+        if skillPerformance < 3.0 {
+            let templates = [
+                "Your \(skill.lowercased()) showed room for improvement (overall avg: \(String(format: "%.1f", skillPerformance))/5). Let's work on it!",
+                "\(skill) could use some focus - your sessions averaged \(String(format: "%.0f", skillPerformance * 20))% performance.",
+                "Time to boost your \(skill.lowercased()) - it's currently your biggest opportunity area."
+            ]
+            let templateIndex = skillPerformance < 2.0 ? 2 : (skillPerformance < 2.5 ? 1 : 0)
+            return templates[templateIndex]
+        }
+
+        // PRIORITY 6: General skill gap
+        let templates = [
+            "Balance your training with some \(skill.lowercased()) work - you've been focusing elsewhere lately.",
+            "\(skill) deserves more attention in your routine. \(positionContext)",
+            "Round out your skillset with focused \(skill.lowercased()) practice."
+        ]
+        let templateIndex = gapFrequency == 0 ? 2 : (position.isEmpty ? 0 : 1)
+        return templates[templateIndex]
+    }
+    
+    private func generateFoundationDescription(
+        for player: Player,
+        currentLevel: Double,
+        easierLevel: Int,
+        trainingHistory: TrainingHistory
+    ) -> String {
+        let currentPerformance = trainingHistory.averagePerformance
+        let experienceLevel = player.experienceLevel?.lowercased() ?? "intermediate"
+        
+        let templates = [
+            "Your recent level \(Int(currentLevel)) sessions averaged \(String(format: "%.0f", currentPerformance * 20))% - let's master level \(easierLevel) fundamentals first.",
+            "Building solid level \(easierLevel) foundations will make those advanced techniques much easier to master.",
+            "Every pro started with perfect fundamentals. Let's nail level \(easierLevel) before advancing!",
+            "Strong basics lead to breakthrough moments - level \(easierLevel) drills will set you up for success."
+        ]
+        
+        if experienceLevel == "beginner" {
+            return "Perfect! Level \(easierLevel) drills are ideal for building your soccer foundation step by step."
+        }
+        
+        // Select template based on performance level
+        let templateIndex = currentPerformance < 0.6 ? 0 : (currentPerformance < 0.7 ? 3 : 1)
+        return templates[templateIndex]
+    }
+    
+    private func generateProgressionDescription(
+        for player: Player,
+        currentLevel: Double,
+        performance: Double,
+        trainingHistory: TrainingHistory
+    ) -> String {
+        let recentSessions = trainingHistory.recentSessions.count
+        let roleModel = player.playerRoleModel ?? ""
+        
+        let templates = [
+            "Impressive! Your level \(Int(currentLevel)) sessions are averaging \(String(format: "%.0f", performance * 20))% - ready for the next challenge?",
+            "\(recentSessions) strong sessions in a row at level \(Int(currentLevel)) - time to test your limits!",
+            "Your consistency at this level is paying off. Let's see what you can do with tougher challenges!",
+            "Level \(Int(currentLevel)) is becoming your comfort zone - that's when real growth begins!"
+        ]
+        
+        if !roleModel.isEmpty {
+            return "Like \(roleModel), push your boundaries! Your level \(Int(currentLevel)) mastery shows you're ready for advanced techniques."
+        }
+        
+        // Select template based on performance and recent activity
+        let templateIndex = performance > 0.85 ? 0 : (recentSessions >= 5 ? 1 : (performance > 0.75 ? 2 : 3))
+        return templates[templateIndex]
+    }
+    
+    private func generateVarietyDescription(
+        for player: Player,
+        category: String,
+        trainingHistory: TrainingHistory
+    ) -> String {
+        let categoryFreq = trainingHistory.categoryFrequency[category] ?? 0
+        let totalSessions = trainingHistory.totalSessions
+        let position = player.position?.lowercased() ?? ""
+        let playingStyle = player.playingStyle?.lowercased() ?? ""
+        
+        // Calculate how underrepresented this category is
+        let idealFrequency = totalSessions / 4 // Should be roughly 25% of training
+        let deficit = max(0, idealFrequency - categoryFreq)
+        
+        if deficit >= idealFrequency / 2 { // Severely lacking
+            let templates = [
+                "Your training is heavy on other areas - let's balance it out with \(category.lowercased()) work.",
+                "Time to mix things up! \(category) training will round out your skillset perfectly.",
+                "You've been avoiding \(category.lowercased()) - let's change that and become more complete."
+            ]
+            // Select template based on deficit severity
+            let templateIndex = deficit >= Int(Double(idealFrequency) * 0.75) ? 2 : (totalSessions > 15 ? 1 : 0)
+            return templates[templateIndex]
+        } else { // General variety
+            let templates = [
+                "Add some spice to your routine with \(category.lowercased()) training!",
+                "Variety keeps training fresh - \(category.lowercased()) work will complement your recent sessions.",
+                "Well-rounded players excel in all areas. Time for some \(category.lowercased()) focus!"
+            ]
+            
+            // Position-specific variety suggestions
+            if position == "midfielder" && category.lowercased().contains("defensive") {
+                return "As a midfielder, defensive awareness is crucial - this drill develops that sixth sense!"
+            } else if position == "striker" && category.lowercased().contains("shooting") {
+                return "Goal scorers never stop practicing! Perfect your finishing with this \(category.lowercased()) drill."
+            }
+            
+            // Select template based on training frequency
+            let templateIndex = totalSessions < 5 ? 0 : (categoryFreq == 0 ? 2 : 1)
+            return templates[templateIndex]
+        }
+    }
+    
+    private func generateSuccessDescription(
+        for player: Player,
+        strongSkill: String,
+        skillPerformance: Double,
+        trainingHistory: TrainingHistory
+    ) -> String {
+        let roleModel = player.playerRoleModel ?? ""
+        let performancePercent = Int(skillPerformance * 20)
+        
+        let templates = [
+            "\(strongSkill) is clearly your strength (\(performancePercent)% avg.) - let's make it legendary!",
+            "You're naturally gifted at \(strongSkill.lowercased()) - here's an advanced drill to push it further.",
+            "Double down on what's working! Your \(strongSkill.lowercased()) skills are already impressive.",
+            "Your \(strongSkill.lowercased()) technique stands out - time to perfect it with advanced challenges."
+        ]
+        
+        if !roleModel.isEmpty && (strongSkill.lowercased().contains("dribbling") || strongSkill.lowercased().contains("ball control")) {
+            return "Like \(roleModel), your \(strongSkill.lowercased()) is exceptional - let's make it your signature move!"
+        }
+        
+        // Select template based on performance level
+        let templateIndex = performancePercent >= 90 ? 0 : (performancePercent >= 80 ? 3 : (performancePercent >= 70 ? 1 : 2))
+        return templates[templateIndex]
+    }
+    
+    // Helper functions
+    private func getPositionContext(for skill: String, position: String) -> String {
+        switch (skill.lowercased(), position) {
+        case (let s, "midfielder") where s.contains("passing"):
+            return "As a midfielder, precise passing is the foundation of your game."
+        case (let s, "striker") where s.contains("shooting"):
+            return "Goal scoring is what strikers live for - this skill is essential."
+        case (let s, "defender") where s.contains("defending"):
+            return "Defensive skills are your specialty - perfect them!"
+        case (let s, "goalkeeper") where s.contains("handling"):
+            return "Shot stopping ability separates good keepers from great ones."
+        default:
+            return "Every complete player needs strong fundamentals in all areas."
+        }
+    }
+
+    private func mapExperienceToLevel(_ experience: String) -> Int {
+        switch experience.lowercased() {
+        case "beginner", "novice":
+            return 1
+        case "intermediate":
+            return 3
+        case "advanced":
+            return 4
+        case "expert", "professional":
+            return 5
+        default:
+            return 3 // Default to intermediate
+        }
+    }
+
+    private func calculateDaysSinceSkillPractice(skill: String, sessions: [TrainingSession]) -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Find most recent session with this skill
+        for session in sessions.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }) {
+            if let exercises = session.exercises as? Set<Exercise> {
+                for exercise in exercises {
+                    if exercise.targetSkills?.contains(skill) == true {
+                        if let sessionDate = session.date {
+                            return calendar.dateComponents([.day], from: sessionDate, to: now).day ?? 0
+                        }
+                    }
+                }
+            }
+        }
+        return 30 // Default to 30 days if not found
+    }
+    
     private func generateSkillGapRecommendations(
         for player: Player,
         skillGaps: [String],
@@ -1800,23 +2101,79 @@ extension CoreDataManager {
         usedExercises: inout Set<String>
     ) -> [DrillRecommendation] {
         var recommendations: [DrillRecommendation] = []
-        
+
         let exercises = fetchExercises(for: player)
-        
+
         for gap in skillGaps.prefix(3) { // Focus on top 3 gaps
             // Find exercises for this skill that haven't been used yet
+            // NEW: Also exclude exercises done in last 3 days
             let availableExercises = exercises.filter { exercise in
                 let exerciseName = exercise.name ?? ""
-                return exercise.targetSkills?.contains(gap) == true && 
-                       !usedExercises.contains(exerciseName)
+                let notUsedYet = !usedExercises.contains(exerciseName)
+                let notRecentlyCompleted = !trainingHistory.recentExercises.contains(exerciseName)
+                return exercise.targetSkills?.contains(gap) == true &&
+                       notUsedYet &&
+                       notRecentlyCompleted
             }
             
             if let bestExercise = availableExercises.first {
                 let exerciseName = bestExercise.name ?? ""
                 usedExercises.insert(exerciseName)
                 
-                let reason = "You haven't practiced \(gap) recently. This drill will help improve this skill."
-                let confidence = trainingHistory.skillFrequency[gap] == 0 ? 0.9 : 0.7
+                let reason = generateSkillGapDescription(for: player, skill: gap, trainingHistory: trainingHistory)
+                let gapFrequency = trainingHistory.skillFrequency[gap] ?? 0
+                let totalSessions = trainingHistory.totalSessions
+                
+                // Calculate more dynamic confidence based on actual data
+                var confidence: Double = 0.5 // Base confidence
+
+                // NEW: PRIORITY BOOST for recent poor performance (last 14 days)
+                let recentPerformance = trainingHistory.recentSkillPerformance[gap]
+                let veryRecentPerformance = trainingHistory.veryRecentSkillPerformance[gap]
+
+                if let recentPerf = recentPerformance, recentPerf < 3.0 {
+                    // Strong boost for recent poor performance
+                    confidence = 0.82 + ((3.0 - recentPerf) * 0.04) // 82-90% for recent struggles
+                    print("🔥 PRIORITY: \(gap) performed poorly recently (\(String(format: "%.1f", recentPerf))/5) - boosting confidence to \(String(format: "%.0f%%", confidence * 100))")
+                } else if let veryRecentPerf = veryRecentPerformance, veryRecentPerf < 3.5 {
+                    // Moderate boost for very recent struggles
+                    confidence = 0.75 + ((3.5 - veryRecentPerf) * 0.06) // 75-84% for last week struggles
+                    print("⚡ RECENT: \(gap) showed room to grow last week (\(String(format: "%.1f", veryRecentPerf))/5) - confidence: \(String(format: "%.0f%%", confidence * 100))")
+                } else if gapFrequency == 0 && totalSessions > 5 {
+                    // High confidence for completely neglected skills
+                    confidence = 0.85
+                } else if totalSessions == 0 {
+                    // New players: base confidence on position and experience
+                    confidence = 0.70
+                } else if gapFrequency < totalSessions / 4 {
+                    // Calculate variation based on how neglected the skill is
+                    let neglectSeverity = Double(totalSessions / 4 - gapFrequency) / Double(totalSessions / 4)
+                    confidence = 0.65 + (neglectSeverity * 0.10) // 65-75% based on neglect
+                } else {
+                    // Base confidence on actual skill performance if available
+                    let skillPerf = trainingHistory.skillPerformance[gap] ?? 3.0
+                    let performanceBonus = (3.0 - skillPerf) * 0.05 // More confidence for worse performance
+                    confidence = 0.55 + performanceBonus // 55-65% range
+                }
+
+                // Boost confidence if player generally performs well in similar exercises
+                if let skillPerf = trainingHistory.skillPerformance[gap], skillPerf > 3.5 {
+                    confidence += 0.05
+                }
+
+                // Adjust for exercise difficulty vs player level
+                let playerLevel = mapExperienceToLevel(player.experienceLevel ?? "Intermediate")
+                let exerciseLevel = Int(bestExercise.difficulty)
+                let levelDiff = abs(playerLevel - exerciseLevel)
+                if levelDiff == 0 {
+                    confidence += 0.08 // Perfect match
+                } else if levelDiff == 1 {
+                    confidence += 0.03 // Good match
+                } else if levelDiff > 2 {
+                    confidence -= 0.10 // Too far from player level
+                }
+
+                confidence = min(0.90, max(0.40, confidence)) // Clamp between 40-90%
                 
                 let physicalIndicators = analyzePhysicalIndicators(for: bestExercise)
                 recommendations.append(DrillRecommendation(
@@ -1858,12 +2215,25 @@ extension CoreDataManager {
                 usedExercises.insert(exerciseName)
                 
                 let physicalIndicators = analyzePhysicalIndicators(for: progressionExercise)
+                // Calculate confidence based on performance consistency
+                var confidence = 0.65 + (currentPerformance - 4.0) * 0.15 // Base from performance
+                
+                // Add variation based on recent session count
+                let recentSessionBonus = min(0.10, Double(trainingHistory.recentSessions.count) * 0.02)
+                confidence += recentSessionBonus
+                
+                // Add deterministic variation based on training consistency
+                let sessionConsistency = min(1.0, Double(trainingHistory.recentSessions.count) / 10.0)
+                let consistencyBonus = sessionConsistency * 0.05 // Up to 5% bonus for consistent training
+                confidence += consistencyBonus
+                confidence = min(0.89, max(0.58, confidence)) // 58-89% range
+                
                 recommendations.append(DrillRecommendation(
                     exercise: progressionExercise,
-                    reason: "You're excelling at level \(Int(currentLevel)) drills. Time to challenge yourself!",
+                    reason: generateProgressionDescription(for: player, currentLevel: currentLevel, performance: currentPerformance, trainingHistory: trainingHistory),
                     priority: 2,
                     category: .difficultyProgression,
-                    confidenceScore: 0.8,
+                    confidenceScore: confidence,
                     physicalIndicators: physicalIndicators
                 ))
             }
@@ -1883,12 +2253,27 @@ extension CoreDataManager {
                 usedExercises.insert(exerciseName)
                 
                 let physicalIndicators = analyzePhysicalIndicators(for: foundationExercise)
+                // Higher confidence for foundation building when struggling
+                let strugglingIntensity = 5.0 - currentPerformance // How much they're struggling
+                var confidence = 0.75 + (strugglingIntensity * 0.08) // Higher confidence when more struggling
+                
+                // Boost if they've been consistent in training
+                if trainingHistory.totalSessions > 8 {
+                    confidence += 0.06
+                }
+                
+                // Add deterministic bonus based on experience level
+                let experienceLevel = player.experienceLevel?.lowercased() ?? "intermediate"
+                let experienceBonus = experienceLevel == "beginner" ? 0.04 : 0.02
+                confidence += experienceBonus
+                confidence = min(0.94, max(0.72, confidence)) // 72-94% range
+                
                 recommendations.append(DrillRecommendation(
                     exercise: foundationExercise,
-                    reason: "Let's build your foundation with some level \(easierLevel) drills first.",
+                    reason: generateFoundationDescription(for: player, currentLevel: currentLevel, easierLevel: easierLevel, trainingHistory: trainingHistory),
                     priority: 1,
                     category: .difficultyProgression,
-                    confidenceScore: 0.85,
+                    confidenceScore: confidence,
                     physicalIndicators: physicalIndicators
                 ))
             }
@@ -1921,12 +2306,27 @@ extension CoreDataManager {
                 usedExercises.insert(exerciseName)
                 
                 let physicalIndicators = analyzePhysicalIndicators(for: varietyExercise)
+                // Calculate confidence based on how much variety is needed
+                let categoryFreq = trainingHistory.categoryFrequency[category] ?? 0
+                let totalSessions = trainingHistory.totalSessions
+                let varietyNeed = max(0.0, 1.0 - Double(categoryFreq) / max(1.0, Double(totalSessions) / 3.0))
+                
+                var confidence = 0.45 + (varietyNeed * 0.25) // Base confidence increases with variety need
+                
+                // Lower confidence for variety recommendations (they're less critical)
+                // Adjust based on how imbalanced the training is
+                let totalCategorySessions = trainingHistory.categoryFrequency.values.reduce(0, +)
+                let imbalanceLevel = totalCategorySessions > 0 ? 1.0 - (Double(categoryFreq) / Double(totalCategorySessions) * 3.0) : 0.5
+                let imbalanceBonus = max(0.0, min(0.08, imbalanceLevel * 0.08))
+                confidence += imbalanceBonus
+                confidence = min(0.72, max(0.38, confidence)) // 38-72% range
+                
                 recommendations.append(DrillRecommendation(
                     exercise: varietyExercise,
-                    reason: "Add some variety with \(category.lowercased()) training.",
+                    reason: generateVarietyDescription(for: player, category: category, trainingHistory: trainingHistory),
                     priority: 3,
                     category: .varietyBalance,
-                    confidenceScore: 0.6,
+                    confidenceScore: confidence,
                     physicalIndicators: physicalIndicators
                 ))
             }
@@ -1963,12 +2363,27 @@ extension CoreDataManager {
                 usedExercises.insert(exerciseName)
                 
                 let physicalIndicators = analyzePhysicalIndicators(for: similarExercise)
+                // Calculate confidence based on how strong the skill performance is
+                let performanceStrength = trainingHistory.skillPerformance[strongSkill] ?? 3.0
+                var confidence = 0.45 + ((performanceStrength - 3.0) * 0.15) // Higher confidence for stronger skills
+                
+                // Boost confidence if they've done this skill recently
+                let skillFreq = trainingHistory.skillFrequency[strongSkill] ?? 0
+                if skillFreq > trainingHistory.totalSessions / 6 { // If practiced recently
+                    confidence += 0.08
+                }
+                
+                // Add deterministic bonus based on skill improvement trend
+                let frequencyBonus = min(0.05, Double(skillFreq) / Double(max(1, trainingHistory.totalSessions)) * 0.2)
+                confidence += frequencyBonus
+                confidence = min(0.81, max(0.42, confidence)) // 42-81% range
+                
                 recommendations.append(DrillRecommendation(
                     exercise: similarExercise,
-                    reason: "You excel at \(strongSkill). Here's another drill to keep building on your strength.",
+                    reason: generateSuccessDescription(for: player, strongSkill: strongSkill, skillPerformance: performanceStrength, trainingHistory: trainingHistory),
                     priority: 4,
                     category: .repeatSuccess,
-                    confidenceScore: 0.7,
+                    confidenceScore: confidence,
                     physicalIndicators: physicalIndicators
                 ))
             }

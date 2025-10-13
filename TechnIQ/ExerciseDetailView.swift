@@ -97,10 +97,15 @@ struct ExerciseDetailView: View {
                             Text("Instructions")
                                 .font(.headline)
                                 .foregroundColor(DesignSystem.Colors.primaryDark)
-                            
-                            Text(instructions)
-                                .font(.body)
-                                .foregroundColor(.secondary)
+
+                            // Use rich markdown display for AI-generated drills
+                            if exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true {
+                                DrillInstructionsView(instructions: instructions)
+                            } else {
+                                Text(instructions)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                     

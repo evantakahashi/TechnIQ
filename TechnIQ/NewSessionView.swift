@@ -16,6 +16,8 @@ struct NewSessionView: View {
     @State private var exerciseDetails: [UUID: ExerciseDetail] = [:]
     @State private var showingExercisePicker = false
     @State private var overallRating = 3
+    @State private var manualDuration: Double = 60 // Default 60 minutes
+    @State private var useManualDuration = false
     
     @State private var availableExercises: [Exercise] = []
     
@@ -38,6 +40,9 @@ struct NewSessionView: View {
                         
                         // Intensity Section
                         modernIntensityCard
+                        
+                        // Duration Section
+                        modernDurationCard
                         
                         // Exercises Section
                         modernExercisesCard
@@ -213,6 +218,86 @@ struct NewSessionView: View {
                     }
                 }
                 .frame(height: 60)
+            }
+        }
+    }
+    
+    private var modernDurationCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                HStack {
+                    Text("Session Duration")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Text(useManualDuration ? "\(Int(manualDuration)) min" : "Auto")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
+                }
+                
+                // Toggle for manual vs automatic duration
+                HStack {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text("Duration Mode")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        
+                        Text(useManualDuration ? "Set total session time manually" : "Calculate from exercises automatically")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $useManualDuration)
+                        .tint(DesignSystem.Colors.primaryGreen)
+                        .scaleEffect(0.9)
+                }
+                
+                // Manual duration slider (only shown when manual mode is enabled)
+                if useManualDuration {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        HStack {
+                            Text("Total Time")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                            
+                            Spacer()
+                            
+                            Text("\(Int(manualDuration)) minutes")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        }
+                        
+                        Slider(value: $manualDuration, in: 10...180, step: 5)
+                            .tint(DesignSystem.Colors.primaryGreen)
+                        
+                        HStack {
+                            Text("10 min")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                            
+                            Spacer()
+                            
+                            Text("3 hours")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                    .transition(.opacity.combined(with: .scale))
+                    .animation(.easeInOut(duration: 0.3), value: useManualDuration)
+                }
             }
         }
     }
@@ -432,7 +517,8 @@ struct NewSessionView: View {
             }
         }
         
-        newSession.duration = totalDuration
+        // Use manual duration if enabled, otherwise use calculated duration from exercises
+        newSession.duration = useManualDuration ? manualDuration : totalDuration
         
         print("💾 Saving new session for player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
         coreDataManager.save()

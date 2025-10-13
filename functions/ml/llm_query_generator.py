@@ -26,7 +26,7 @@ class LLMQueryGenerator:
         else:
             logger.info("🔄 LLM Query Generator running without OpenAI (fallback mode)")
     
-    def generate_search_queries(self, player_profile: Dict, limit: int = 6) -> List[str]:
+    def generate_search_queries(self, player_profile: Dict, limit: int = 5) -> List[str]:
         """Generate personalized YouTube search queries using LLM"""
         try:
             if not self.client:
@@ -92,14 +92,20 @@ Requirements:
 3. Include training/tutorial/drill keywords when appropriate
 4. Consider the experience level (beginner/intermediate/advanced)
 5. Make queries specific enough to find quality training content
-6. Avoid overly generic terms
+6. Mix of queries for different content types:
+   - Quick tip queries (for YouTube Shorts): include words like "quick", "tip", "tricks", "seconds"
+   - Detailed tutorial queries (for longer videos): include "tutorial", "drill", "training", "complete"
+7. Avoid overly generic terms
 
 Return ONLY the search queries, one per line, no numbering or extra text.
 
 Examples for reference:
-- "midfielder passing accuracy drills"
-- "Kevin De Bruyne ball control techniques"
-- "youth soccer finishing drills"
+- "midfielder passing accuracy drills" (longer video)
+- "Kevin De Bruyne ball control techniques" (detailed tutorial)
+- "quick first touch tips" (YouTube Short)
+- "{position} skills in 60 seconds" (YouTube Short)
+- "youth soccer finishing drills" (longer video)
+- "fast footwork tricks" (YouTube Short)
 """
         
         return prompt
@@ -125,20 +131,25 @@ Examples for reference:
         
         return queries[:limit]
     
-    def _generate_fallback_queries(self, player_profile: Dict, limit: int = 6) -> List[str]:
+    def _generate_fallback_queries(self, player_profile: Dict, limit: int = 5) -> List[str]:
         """Generate fallback queries when LLM is not available"""
         position = player_profile.get('position', 'player')
         experience = player_profile.get('experienceLevel', 'intermediate')
         
+        # Mix of queries targeting both Shorts and longer videos
         base_queries = [
-            f"{position} training drills",
-            f"soccer {experience} skills",
-            f"{position} positioning tips",
-            "ball control exercises",
-            "passing accuracy drills", 
-            "first touch training",
-            "soccer fitness workout",
-            "youth soccer techniques"
+            f"{position} training drills",  # Longer videos
+            f"soccer {experience} skills",  # Mixed
+            f"quick {position} tips",  # Shorts
+            "ball control exercises",  # Longer videos
+            "fast footwork tricks",  # Shorts
+            "passing accuracy drills",  # Longer videos
+            "first touch tips seconds",  # Shorts
+            "soccer fitness workout",  # Longer videos
+            f"{position} skills in 60 seconds",  # Shorts
+            "youth soccer techniques",  # Mixed
+            "quick soccer tips",  # Shorts
+            "soccer tricks tutorial"  # Mixed
         ]
         
         return base_queries[:limit]

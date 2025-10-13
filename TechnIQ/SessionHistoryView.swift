@@ -186,42 +186,12 @@ struct SessionHistoryView: View {
     // MARK: - Calendar View
     
     private var calendarView: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            Text("📅 Calendar View")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            Text("Calendar view coming soon!")
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-            
-            // For now, show sessions in a simple grid
-            if !sessions.isEmpty {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: DesignSystem.Spacing.sm) {
-                    ForEach(sessions.prefix(9), id: \.objectID) { session in
-                        VStack(spacing: DesignSystem.Spacing.xs) {
-                            Text(session.sessionType ?? "Training")
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                                .lineLimit(1)
-                            
-                            Text(formatDate(session.date ?? Date()))
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                        .padding(DesignSystem.Spacing.sm)
-                        .background(DesignSystem.Colors.cardBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.sm)
-                        .onTapGesture {
-                            selectedSession = session
-                            showingSessionDetail = true
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SessionCalendarView(onSessionSelected: { session in
+            // Handle session selection from calendar
+            self.selectedSession = session
+            self.showingSessionDetail = true
+        })
+        .frame(maxWidth: CGFloat.infinity, maxHeight: CGFloat.infinity)
     }
     
     private func formatDate(_ date: Date) -> String {
