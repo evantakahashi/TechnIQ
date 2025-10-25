@@ -41,13 +41,6 @@ struct DifficultyAnalysis {
     let reasoning: [String]
 }
 
-struct YouTubeVideo {
-    let videoId: String
-    let title: String
-    let channel: String
-    let duration: String
-}
-
 class CoreDataManager: ObservableObject {
     static let shared = CoreDataManager()
     
@@ -62,11 +55,38 @@ class CoreDataManager: ObservableObject {
     
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "DataModel")
-        container.loadPersistentStores { _, error in
-            if let error = error {
-                fatalError("Core Data error: \(error.localizedDescription)")
+
+        // Enable lightweight migration
+        let description = container.persistentStoreDescriptions.first
+        description?.shouldMigrateStoreAutomatically = true
+        description?.shouldInferMappingModelAutomatically = true
+
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error as NSError? {
+                // If there's a migration error, delete the store and recreate
+                print("⚠️ Core Data error: \(error.localizedDescription)")
+                print("🔄 Attempting to reset Core Data store...")
+
+                if let storeURL = storeDescription.url {
+                    do {
+                        try FileManager.default.removeItem(at: storeURL)
+                        print("✅ Deleted corrupted store, will recreate")
+
+                        // Try loading again
+                        container.loadPersistentStores { _, retryError in
+                            if let retryError = retryError {
+                                fatalError("Failed to recreate store: \(retryError.localizedDescription)")
+                            } else {
+                                print("✅ Successfully recreated Core Data store")
+                            }
+                        }
+                    } catch {
+                        fatalError("Failed to delete corrupted store: \(error.localizedDescription)")
+                    }
+                }
             }
         }
+
         container.viewContext.automaticallyMergesChangesFromParent = true
         return container
     }()

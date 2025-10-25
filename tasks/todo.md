@@ -1,317 +1,199 @@
-# Recommendation System Analysis and Improvement
+# TechnIQ App Improvements - COMPLETED ✅
 
-## Problem Analysis
+## Summary
 
-Based on the screenshot, the recommendations show:
-1. **Endurance Run** - Level 1, 94% match - "Perfect! Level 1 drills are ideal for building your soccer foundation step b..."
-2. **Shooting Practice** - Level 3, 83% match - "Let's add shooting to your skillset - every complete player needs this foun..."
-3. **Ball Control** - Level 1, 75% match - "Your ball control skills need attention - you haven't practiced in over 2 weeks."
-
-### Issues Observed:
-1. **Inconsistent difficulty levels** - Mix of Level 1 and Level 3 suggests unclear player profile
-2. **Generic reasoning** - Text appears cut off and generic
-3. **Questionable match percentages** - 94% match for Level 1 seems arbitrary
-4. **Time-based assumptions** - "haven't practiced in over 2 weeks" may not be accurate
-5. **Lack of personalization** - Recommendations don't seem tailored to specific player goals
-
-## Investigation Plan
-
-### [ ] 1. Analyze Current Player Data
-- Check what player profile data exists
-- Verify training history is being captured
-- Review player goals and skill levels
-- Check if there are any training sessions logged
-
-### [ ] 2. Trace Recommendation Generation Flow
-- Add logging to `loadSmartRecommendations`
-- Check `getSmartRecommendations` logic in CoreDataManager
-- Verify skill gap identification
-- Review confidence score calculation
-- Check priority assignment logic
-
-### [ ] 3. Review Recommendation Categories
-- Analyze `generateSkillGapRecommendations`
-- Check `generateDifficultyProgressionRecommendations`
-- Review `generateVarietyRecommendations`
-- Examine `generateSuccessPatternRecommendations`
-
-### [ ] 4. Identify Root Causes
-- Verify exercise data exists and is diverse
-- Check if recommendations are pulling from limited exercise pool
-- Validate training history analysis
-- Review confidence score algorithm
-
-### [ ] 5. Implement Improvements
-Based on findings, likely improvements:
-- Fix confidence score calculation to be more meaningful
-- Improve difficulty matching algorithm
-- Enhance reasoning text generation
-- Better handle empty/sparse training history
-- Add more sophisticated skill gap detection
-- Implement better exercise variety
-
-### [ ] 6. Test Improvements
-- Generate recommendations with test data
-- Verify match percentages make sense
-- Check reasoning text is complete and helpful
-- Ensure difficulty levels match player experience
+Successfully implemented **Option 1** (Polish & Debug Cleanup) and **Option 3** (Enhanced Analytics & Insights).
 
 ---
 
-## Analysis Notes
+## Option 1: Debug Code & UX Polish ✅
 
-### Current Recommendation Flow:
-1. DashboardView calls `loadSmartRecommendations(for: player)`
-2. Tries cloud ML first (`cloudMLService.getCloudRecommendations`)
-3. Falls back to `CoreDataManager.shared.getSmartRecommendations`
-4. Returns `[CoreDataManager.DrillRecommendation]`
+### Completed Tasks:
+- ✅ Removed debug authentication UI from ContentView.swift
+- ✅ Removed YouTube API test section from DashboardView.swift
+- ✅ Removed "Force Continue" debug button
+- ✅ Cleaned up excessive console logging and print statements
+- ✅ Polished loading states with better UI
 
-### Key Methods to Review:
-- `CoreDataManager.getSmartRecommendations` (line 1570)
-- `analyzeTrainingHistory` (line 1668)
-- `identifySkillGaps`
-- `analyzeDifficultyProgression`
-- Confidence score calculation
-- Priority assignment
-
-### Potential Issues:
-1. **Empty Training History**: New users have no sessions, so recommendations are based on defaults
-2. **Exercise Pool Quality**: Need to verify exercises have good metadata
-3. **Confidence Algorithm**: May not be properly weighted
-4. **Difficulty Matching**: Mismatch between player level and recommended drills
-5. **Cut-off Text**: UI may be truncating descriptions
-
-## Root Causes Identified
-
-### 1. **UI Text Truncation** (DashboardView.swift:863)
-- **Issue**: `.lineLimit(2)` was cutting off recommendation descriptions
-- **Impact**: Users saw "Perfect! Level 1 drills are ideal for building your soccer foundation step b..."
-- **Fix**: Changed to `.lineLimit(3)` and added `.fixedSize(horizontal: false, vertical: true)`
-
-### 2. **Inflated Confidence Scores** (CoreDataManager.swift:2042-2079)
-- **Issue**: Scores ranged from 75-95%, making all recommendations seem equally strong
-- **Impact**: 94%, 83%, 75% matches didn't provide meaningful differentiation
-- **Fix**: Reduced ranges to 40-90% with more nuanced calculation:
-  - Completely neglected skills: 85% (down from 92%)
-  - New players: 70% base confidence
-  - Moderate neglect: 65-75% (down from 75-83%)
-  - Performance-based: 55-65% (down from 60-70%)
-
-### 3. **Missing Difficulty Level Matching** (CoreDataManager.swift:2067-2077)
-- **Issue**: No consideration of player experience level vs exercise difficulty
-- **Impact**: Level 1 and Level 3 exercises recommended without logic
-- **Fix**: Added difficulty matching algorithm:
-  - Perfect match (same level): +8% confidence
-  - Good match (1 level diff): +3% confidence
-  - Poor match (2+ levels diff): -10% confidence
-
-### 4. **No Player Experience Mapping**
-- **Issue**: Player experience level (Beginner/Intermediate/Advanced) not mapped to exercise difficulty (1-5)
-- **Fix**: Added `mapExperienceToLevel()` function:
-  - Beginner/Novice → Level 1
-  - Intermediate → Level 3
-  - Advanced → Level 4
-  - Expert/Professional → Level 5
-
-## Improvements Made
-
-### File: DashboardView.swift
-```swift
-// Line 860-864: Allow 3 lines for reasoning text
-Text(recommendation.reason)
-    .font(DesignSystem.Typography.bodySmall)
-    .foregroundColor(DesignSystem.Colors.textSecondary)
-    .lineLimit(3)  // Increased from 2
-    .fixedSize(horizontal: false, vertical: true)  // Prevent truncation
-```
-
-### File: CoreDataManager.swift
-
-#### 1. Enhanced Confidence Calculation (Lines 2042-2079)
-- Added special case for new players (0 sessions)
-- Reduced baseline confidence scores for better differentiation
-- Added difficulty level matching bonus/penalty
-- Wider confidence range (40-90% vs 45-95%)
-
-#### 2. Added Helper Function (Lines 1997-2010)
-```swift
-private func mapExperienceToLevel(_ experience: String) -> Int {
-    // Maps player experience to exercise difficulty level (1-5)
-}
-```
-
-## Expected Results
-
-After these improvements, recommendations should:
-
-1. **Show complete text** - No more cut-off descriptions
-2. **Have meaningful confidence scores** - Better spread (40-90% range)
-3. **Match player level** - Exercises aligned with player experience
-4. **Provide better differentiation** - Clear priority/confidence differences
-
-Example:
-- HIGH priority skill gaps: 78-85% confidence
-- Medium priority progressions: 60-72% confidence
-- Low priority variety: 45-58% confidence
-
-## Next Steps for Further Improvement
-
-1. **Add exercise filtering by difficulty**
-   - Prioritize exercises within ±1 level of player experience
-   - Only show harder exercises if player is performing well
-
-2. **Improve skill gap identification**
-   - Consider player's stated goals from onboarding
-   - Weight gaps based on position-specific requirements
-
-3. **Add temporal relevance**
-   - Boost confidence for skills practiced recently but performed poorly
-   - Reduce confidence for skills that haven't been practiced in months
-
-4. **Exercise pool expansion**
-   - Verify sufficient exercises exist at each difficulty level
-   - Add more exercises for underrepresented skills/categories
-
-## Review Section
-
-### Phase 1: UI and Confidence Score Improvements (Completed Earlier)
-
-**Problem**: Recommendations showed inflated confidence scores (75-94%), cut-off text, and inconsistent difficulty levels.
-
-**Root Causes**:
-1. UI limiting text to 2 lines
-2. Confidence scores too high and narrow (75-95% range)
-3. No difficulty level matching logic
-4. Missing player experience → exercise level mapping
-
-**Solutions Implemented**:
-1. Increased text line limit to 3 with proper sizing
-2. Reduced and widened confidence range (40-90%)
-3. Added ±8% bonus/penalty for difficulty matching
-4. Created experience-to-level mapping function
-
-**Impact**: Recommendations show complete descriptions, have more meaningful confidence scores, and properly match player skill level to exercise difficulty.
+### Changes Made:
+1. **ContentView.swift** - Removed debug UI, improved loading message
+2. **DashboardView.swift** - Removed YouTube test section, cleaned up logging
 
 ---
 
-### Phase 2: Recent Training History and Smart Prioritization (Just Completed)
+## Option 3: Enhanced Analytics & Insights ✅
 
-**Problems Identified**:
-1. **Generic reasoning text** - Used templates without specific recent performance data
-2. **No recency awareness** - Treated drills from 1 month ago same as 1 day ago
-3. **Could recommend just-completed drills** - No filter to avoid suggesting drills done very recently
-4. **Poor recent performance not prioritized** - Didn't boost recommendations for skills that performed poorly in last 1-2 weeks
+### New Components Created:
 
-**Solutions Implemented** (CoreDataManager.swift):
+#### 1. **CalendarHeatMapView.swift** (GitHub-style)
+- Shows 6 months of training activity
+- Color-coded by training intensity/frequency
+- Month labels and legend
+- Interactive cells showing session details
 
-#### 1. Enhanced TrainingHistory Struct (lines 1650-1665)
-Added four new fields to track recent performance:
-```swift
-let recentSkillPerformance: [String: Double] // Last 14 days
-let veryRecentSkillPerformance: [String: Double] // Last 7 days
-let recentExercises: Set<String> // Exercises done in last 3 days
-let poorPerformanceSkills: [String] // Skills with <3.0 avg in last 14 days
-```
+#### 2. **SkillTrendChartView.swift** (Swift Charts)
+- Line charts showing skill performance over time
+- Trend lines with linear regression
+- Category filtering (Technical/Physical/Tactical)
+- Skill selector with performance change indicators
+- Week-by-week aggregation
 
-#### 2. Updated analyzeTrainingHistory Function (lines 1695-1789)
-- Calculate time boundaries (3, 7, 14 days ago)
-- Track exercises done in last 3 days to avoid re-recommending them
-- Calculate 14-day and 7-day skill performance separately
-- Identify skills with recent poor performance (<3.0 stars)
+#### 3. **InsightsEngine.swift** (Smart Analysis)
+Generates personalized insights across 6 categories:
+- **Training Patterns**: Day of week preferences, session duration analysis
+- **Performance Trends**: Improvement/decline detection
+- **Consistency Analysis**: Streak tracking, motivation prompts
+- **Progress Velocity**: Sessions per week, milestone predictions
+- **Category Balance**: Technical/Physical/Tactical distribution
+- **Predictions**: Next milestones with estimated dates
 
-**Code Example**:
-```swift
-// Track exercises done in last 3 days
-if sessionDate >= threeDaysAgo {
-    recentExerciseNames.insert(exercise.name ?? "")
-}
+#### 4. **PlayerProgressView.swift** (Enhanced)
+Integrated all new features:
+- Smart Insights section (top 3 priority insights)
+- Training Calendar Heat Map
+- Performance Trend Charts
+- Existing sections preserved
 
-// Track recent performance (14 days)
-if sessionDate >= fourteenDaysAgo {
-    recentSkillPerformanceData[skill, default: []].append(performance)
-}
+#### 5. **InsightCard Component**
+- Color-coded by insight type
+- Priority badges for urgent items
+- Actionable suggestions with lightbulb icon
+- Clean card-based design
 
-// Track very recent performance (7 days)
-if sessionDate >= sevenDaysAgo {
-    veryRecentSkillPerformanceData[skill, default: []].append(performance)
-}
-```
+---
 
-#### 3. Improved Reasoning Text Generation (lines 1855-1927)
-Completely rewrote `generateSkillGapDescription` with priority-based logic:
+## Build Status
 
-**Priority 1** (Highest): Recent poor performance (last 14 days)
-- "Your recent shooting sessions averaged 2.3/5 stars (46%) - let's improve that together!"
+✅ **Fixed**: Removed duplicate TimeRange enum from InsightsEngine.swift
+✅ **Fixed**: Removed duplicate YouTubeVideo struct from CoreDataManager.swift
+✅ **Fixed**: Updated SkillTrendChartView to use .foregroundStyle() instead of .foregroundColor() for chart axis labels
+✅ **Fixed**: Added division-by-zero protection in SkillTrendChartView trend line calculation
+✅ **Fixed**: **CRASH FIX** - Added bounds checking in CalendarHeatMapView to prevent "Index out of range" crash when accessing monthWidths array
+✅ **Fixed**: Resolved CalendarViewMode enum ambiguity by removing duplicate definition from CalendarComponents.swift
+✅ **Fixed**: Added all required Swift files to Xcode project:
+   - CalendarHeatMapView.swift
+   - SkillTrendChartView.swift
+   - InsightsEngine.swift
+   - YouTubeModels.swift
+   - YouTubeAPIService.swift
+   - YouTubeConfig.swift
+   - NetworkManager.swift
+   - CalendarComponents.swift
+   - ManualDrillCreatorView.swift
 
-**Priority 2**: Very recent struggle (last 7 days)
-- "This past week, your dribbling work showed room to grow (avg: 3.2/5). Perfect time to focus on it!"
+✅ **BUILD SUCCEEDED** - All build errors resolved! The app is ready to build and run.
 
-**Priority 3**: Never practiced skill
-- "Time to explore passing - it's a gap in your training that could unlock new potential!"
+**Latest Update**: Improved calendar heat map visual design to match GitHub contribution graph style:
+- Better spacing between cells (3px instead of 2-4px)
+- **Fixed month labels**: All months now display on a single horizontal line with proper spacing between each month
+- Clearer month labels with improved font sizing (11pt)
+- Consistent 12x12px cell size throughout
+- Removed tooltip overlay for cleaner appearance
+- Added 8px padding between month labels for better visual separation
 
-**Priority 4**: Not practiced in 2+ weeks
-- "It's been 18 days since your last ball control session - let's keep those skills sharp!"
+Try building and running the app in Xcode (Cmd+R).
 
-**Priority 5**: Overall poor performance
-- "Your shooting showed room for improvement (overall avg: 2.7/5). Let's work on it!"
+---
 
-**Priority 6**: General skill gap
-- "Balance your training with some passing work - you've been focusing elsewhere lately."
+## Latest Addition: Manual Drill Creation ✅
 
-#### 4. Filter Recently Completed Drills (lines 2110-2117)
-Added filter in `generateSkillGapRecommendations` to exclude exercises done in last 3 days:
-```swift
-let availableExercises = exercises.filter { exercise in
-    let exerciseName = exercise.name ?? ""
-    let notUsedYet = !usedExercises.contains(exerciseName)
-    let notRecentlyCompleted = !trainingHistory.recentExercises.contains(exerciseName) // NEW
-    return exercise.targetSkills?.contains(gap) == true &&
-           notUsedYet &&
-           notRecentlyCompleted
-}
-```
+### New Feature:
+Added manual drill creation option alongside existing AI-powered drill generator in the Exercise Library.
 
-#### 5. Boost Confidence for Recent Poor Performance (lines 2130-2142)
-Added priority boosting in confidence calculation:
-```swift
-// PRIORITY BOOST for recent poor performance (last 14 days)
-if let recentPerf = recentPerformance, recentPerf < 3.0 {
-    confidence = 0.82 + ((3.0 - recentPerf) * 0.04) // 82-90% for recent struggles
-    print("🔥 PRIORITY: \(gap) performed poorly recently...")
-} else if let veryRecentPerf = veryRecentPerformance, veryRecentPerf < 3.5 {
-    confidence = 0.75 + ((3.5 - veryRecentPerf) * 0.06) // 75-84% for last week struggles
-    print("⚡ RECENT: \(gap) showed room to grow last week...")
-}
-```
+### Changes Made:
 
-**Impact of Phase 2**:
+#### 1. **ExerciseLibraryView.swift** - Updated Action Buttons
+- Redesigned button layout to show two options for drill creation:
+  - **"AI Drill"** button (existing AI-powered generator)
+  - **"Manual Drill"** button (new manual creation option)
+- YouTube button moved to separate row below
+- Maintains consistent UI design with DesignSystem
 
-✅ **Personalized reasoning text** - Shows actual recent performance data
-- Example: "Your recent shooting sessions averaged 2.3/5 stars (46%)" instead of "You need to work on shooting"
+#### 2. **ManualDrillCreatorView.swift** (New File - 340 lines)
+- Clean form-based interface for manual drill creation
+- Fields included:
+  - Drill name (3-50 characters required)
+  - Description (10-500 characters required)
+  - Category selection (Technical/Physical/Tactical)
+  - Difficulty level (Beginner/Intermediate/Advanced)
+  - Duration slider (10-120 minutes)
+  - Target skills multi-select (15 available skills)
+- Real-time validation with character counts
+- Saves directly to Core Data
+- Follows same design patterns as CustomDrillGeneratorView
+- Uses DesignSystem for consistent styling
 
-✅ **Smart recency filtering** - Won't recommend drills completed in last 3 days
-- Prevents "just did this yesterday" recommendations
+#### 3. **Xcode Project Updated**
+- Added ManualDrillCreatorView.swift to project.pbxproj
+- File properly linked to build phases
 
-✅ **Recent performance prioritization** - Skills performed poorly in last 1-2 weeks get highest confidence (82-90%)
-- Ensures recommendations address immediate weak areas
-
-✅ **Better differentiation** - Confidence scores now have clear meaning:
-  - 82-90%: Recent poor performance (last 14 days) 🔥 PRIORITY
-  - 75-84%: Very recent struggle (last 7 days) ⚡ RECENT
-  - 70-85%: Neglected skills or new players
-  - 65-75%: Moderately neglected
-  - 55-65%: Performance-based general recommendations
-  - 45-58%: Variety and balance
-
-### Expected User Experience
-
-**Before**:
-- "Ball Control - Level 1, 94% match - Perfect! Level 1 drills are ideal for building your soccer foundation step b..."
-- Generic, cut-off, inflated score
+### UI Changes:
+**Before**: Single "Create Drill" button (AI only)
 
 **After**:
-- "Ball Control - Level 1, 86% match - Your recent ball control sessions averaged 2.4/5 stars (48%) - let's improve that together!"
-- Specific, complete, prioritized, actionable
+- Row 1: "AI Drill" + "Manual Drill" buttons (side by side)
+- Row 2: "YouTube" button (full width)
 
-### Build Status
-✅ Build succeeded with no errors (only deprecation warnings from dependencies)
+### Technical Implementation:
+- Reuses existing selection cards (CategorySelectionCard, DifficultySelectionCard)
+- New SkillSelectionCard component for skill selection
+- Sheet presentation pattern matches existing drill generator
+- Refreshes exercise list on dismiss
+- Form validation ensures data quality
+
+---
+
+## Features Added
+
+### 📊 Training Calendar Heat Map
+- Visual representation of training frequency
+- 6-month view with color intensity
+- Perfect for spotting consistency patterns
+
+### 📈 Performance Trend Charts
+- Track skill improvement over time
+- Filter by category or individual skills
+- See actual vs. trend line for predictions
+
+### 💡 Smart Insights
+Examples of insights generated:
+- "You train most often on Wednesdays (45% of sessions)"
+- "Your performance has improved by 23% - you're leveling up!"
+- "It's been 4 days since your last session - get back on track today!"
+- "At your current pace, you'll hit 50 sessions in 6 weeks!"
+- "Balance your training - add more physical work (only 15% currently)"
+
+---
+
+## Technical Details
+
+**New Dependencies**: None (uses existing Swift Charts framework)
+
+**Files Modified**:
+- ContentView.swift (debug cleanup)
+- DashboardView.swift (debug cleanup)
+- PlayerProgressView.swift (integrated new sections)
+
+**Files Created**:
+- CalendarHeatMapView.swift (360 lines)
+- SkillTrendChartView.swift (410 lines)
+- InsightsEngine.swift (385 lines)
+
+**Total Lines Added**: ~1,155 lines of production code
+
+---
+
+## User Experience Improvements
+
+**Before**:
+- Debug UI cluttering the interface
+- Generic progress tracking
+- No visual training patterns
+- Basic skill lists only
+
+**After**:
+- Clean, professional interface
+- GitHub-style activity calendar
+- Interactive trend charts
+- AI-powered personalized insights
+- Actionable recommendations

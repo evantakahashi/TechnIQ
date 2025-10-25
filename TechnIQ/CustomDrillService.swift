@@ -148,6 +148,12 @@ class CustomDrillService: ObservableObject {
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
             print("❌ Firebase Function error: \(httpResponse.statusCode) - \(errorMessage)")
+
+            // Check for OpenAI quota error
+            if httpResponse.statusCode == 500 && errorMessage.contains("insufficient_quota") {
+                throw CustomDrillError.quotaExceeded
+            }
+
             throw CustomDrillError.serverError(errorMessage)
         }
         
@@ -274,7 +280,8 @@ enum CustomDrillError: LocalizedError {
     case serverError(String)
     case invalidResponse
     case authenticationRequired
-    
+    case quotaExceeded
+
     var errorDescription: String? {
         switch self {
         case .invalidRequest:
@@ -287,6 +294,8 @@ enum CustomDrillError: LocalizedError {
             return "Invalid response from server. Please try again."
         case .authenticationRequired:
             return "Authentication required to generate custom drills."
+        case .quotaExceeded:
+            return "AI service is temporarily unavailable due to usage limits. Please try again later or contact support."
         }
     }
 }

@@ -13,6 +13,7 @@ struct ExerciseLibraryView: View {
     @State private var showingExerciseDetail = false
     @State private var isLoadingYouTubeContent = false
     @State private var showingCustomDrillGenerator = false
+    @State private var showingManualDrillCreator = false
 
     // Organized exercises by type
     var customGeneratedExercises: [Exercise] {
@@ -178,6 +179,13 @@ struct ExerciseLibraryView: View {
                         loadExercises()
                     }
             }
+            .sheet(isPresented: $showingManualDrillCreator) {
+                ManualDrillCreatorView(player: player)
+                    .environment(\.managedObjectContext, viewContext)
+                    .onDisappear {
+                        loadExercises()
+                    }
+            }
             .onAppear {
                 loadExercises()
                 loadRecommendations()
@@ -219,18 +227,31 @@ struct ExerciseLibraryView: View {
     }
 
     private var actionButtons: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            // Create Custom Drill Button
-            ModernButton(
-                "Create Drill",
-                icon: "brain.head.profile",
-                style: .primary
-            ) {
-                showingCustomDrillGenerator = true
-            }
-            .frame(maxWidth: .infinity)
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            // Top row: AI Drill and Manual Drill
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // AI Custom Drill Button
+                ModernButton(
+                    "AI Drill",
+                    icon: "brain.head.profile",
+                    style: .primary
+                ) {
+                    showingCustomDrillGenerator = true
+                }
+                .frame(maxWidth: .infinity)
 
-            // YouTube Recommendations Button
+                // Manual Custom Drill Button
+                ModernButton(
+                    "Manual Drill",
+                    icon: "pencil.circle.fill",
+                    style: .primary
+                ) {
+                    showingManualDrillCreator = true
+                }
+                .frame(maxWidth: .infinity)
+            }
+
+            // Bottom row: YouTube button
             ModernButton(
                 "YouTube",
                 icon: "play.rectangle.fill",
@@ -238,7 +259,6 @@ struct ExerciseLibraryView: View {
             ) {
                 loadYouTubeContent()
             }
-            .frame(maxWidth: .infinity)
             .disabled(isLoadingYouTubeContent)
         }
     }

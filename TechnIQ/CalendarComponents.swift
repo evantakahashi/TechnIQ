@@ -409,42 +409,9 @@ struct WeekSessionRow: View {
     }
 }
 
-// MARK: - Calendar View Mode Picker
-
-struct CalendarViewModePicker: View {
-    @Binding var viewMode: CalendarViewMode
-    
-    var body: some View {
-        Picker("View Mode", selection: $viewMode) {
-            ForEach(CalendarViewMode.allCases, id: \.self) { mode in
-                Text(mode.displayName)
-                    .tag(mode)
-            }
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        .padding(.horizontal, DesignSystem.Spacing.md)
-    }
-}
-
-enum CalendarViewMode: String, CaseIterable {
-    case month = "month"
-    case week = "week"
-    
-    var displayName: String {
-        switch self {
-        case .month:
-            return "Month"
-        case .week:
-            return "Week"
-        }
-    }
-}
-
 #Preview {
     VStack {
         CalendarMiniSummary(sessions: [])
-        
-        CalendarViewModePicker(viewMode: .constant(.month))
     }
     .padding()
 }

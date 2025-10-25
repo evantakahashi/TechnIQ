@@ -8,30 +8,30 @@
 import SwiftUI
 import CoreData
 import FirebaseCore
+import FirebaseAuth
 import GoogleSignIn
 import FirebaseFirestore
 
 @main
-    struct TechnIQApp: App {
+struct TechnIQApp: App {
     let coreDataManager = CoreDataManager.shared
     @StateObject private var authManager = AuthenticationManager.shared
-    @StateObject private var cloudSyncManager = CloudSyncManager.shared
-    
+
     init() {
-        // Configure Firebase
+        // Configure Firebase FIRST before accessing any Firebase services
         FirebaseApp.configure()
-        
+
         // Configure Firestore with simulator-friendly settings
         let db = Firestore.firestore()
         let settings = FirestoreSettings()
-        
+
         #if targetEnvironment(simulator)
         // For simulator testing - disable problematic features
         print("🔧 Configuring Firestore for simulator")
         #endif
-        
+
         db.settings = settings
-        
+
         // Configure Google Sign-In
         if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
            let plist = NSDictionary(contentsOfFile: path),
@@ -43,14 +43,13 @@ import FirebaseFirestore
             print("❌ Warning: Could not configure Google Sign-In - GoogleService-Info.plist not found or invalid")
         }
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
                 .environmentObject(authManager)
-                .environmentObject(cloudSyncManager)
         }
     }
 }

@@ -3,7 +3,6 @@ import FirebaseAuth
 import GoogleSignIn
 import SwiftUI
 
-@MainActor
 class AuthenticationManager: ObservableObject {
     @Published var isAuthenticated = false
     @Published var currentUser: User? = nil
@@ -28,7 +27,7 @@ class AuthenticationManager: ObservableObject {
     
     private func setupAuthStateListener() {
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.currentUser = user
                 self?.isAuthenticated = user != nil
                 self?.clearError()
@@ -37,115 +36,143 @@ class AuthenticationManager: ObservableObject {
     }
     
     // MARK: - Email/Password Authentication
-    
+
     func signIn(email: String, password: String) async {
-        isLoading = true
-        clearError()
-        
+        await MainActor.run {
+            isLoading = true
+            clearError()
+        }
+
         do {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
             print("User signed in: \(result.user.uid)")
         } catch {
-            handleAuthError(error)
+            await MainActor.run {
+                handleAuthError(error)
+            }
         }
-        
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
-    
+
     func signUp(email: String, password: String) async {
-        isLoading = true
-        clearError()
-        
+        await MainActor.run {
+            isLoading = true
+            clearError()
+        }
+
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             print("User created: \(result.user.uid)")
         } catch {
-            handleAuthError(error)
+            await MainActor.run {
+                handleAuthError(error)
+            }
         }
-        
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
-    
+
     // MARK: - Anonymous Authentication
-    
+
     func signInAnonymously() async {
-        isLoading = true
-        clearError()
-        
+        await MainActor.run {
+            isLoading = true
+            clearError()
+        }
+
         do {
             let result = try await Auth.auth().signInAnonymously()
             print("Anonymous user signed in: \(result.user.uid)")
         } catch {
-            handleAuthError(error)
+            await MainActor.run {
+                handleAuthError(error)
+            }
         }
-        
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
     
     // MARK: - Google Sign-In
-    
+
     func signInWithGoogle() async {
-        isLoading = true
-        clearError()
-        
+        await MainActor.run {
+            isLoading = true
+            clearError()
+        }
+
         do {
             // Get the presenting view controller
             guard let presentingViewController = await UIApplication.shared.windows.first?.rootViewController else {
-                errorMessage = "Unable to find root view controller"
-                isLoading = false
+                await MainActor.run {
+                    errorMessage = "Unable to find root view controller"
+                    isLoading = false
+                }
                 return
             }
-            
+
             print("🔄 Starting Google Sign-In...")
-            
+
             // Perform Google Sign-In
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
-            
+
             print("✅ Google Sign-In UI completed")
-            
+
             // Get the ID token
             guard let idToken = result.user.idToken?.tokenString else {
-                errorMessage = "Failed to get Google ID token"
-                isLoading = false
+                await MainActor.run {
+                    errorMessage = "Failed to get Google ID token"
+                    isLoading = false
+                }
                 return
             }
-            
+
             // Get the access token
             let accessToken = result.user.accessToken.tokenString
-            
+
             print("🔄 Creating Firebase credential...")
-            
+
             // Create Firebase credential
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
-            
+
             // Sign in to Firebase
             let authResult = try await Auth.auth().signIn(with: credential)
             print("✅ Google Sign-In successful: \(authResult.user.uid)")
             print("📧 User email: \(authResult.user.email ?? "No email")")
-            
+
         } catch let error as NSError {
             print("❌ Google Sign-In error: \(error.localizedDescription)")
             print("❌ Error code: \(error.code)")
             print("❌ Error domain: \(error.domain)")
-            
+
             // Handle specific Google Sign-In errors
-            if error.domain == "com.google.GIDSignIn" {
-                switch error.code {
-                case -2: // User cancelled
-                    errorMessage = "Sign-in was cancelled"
-                case -4: // No current user
-                    errorMessage = "No current user found"
-                case -5: // Keychain error
-                    errorMessage = "Keychain error occurred"
-                default:
-                    errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
+            await MainActor.run {
+                if error.domain == "com.google.GIDSignIn" {
+                    switch error.code {
+                    case -2: // User cancelled
+                        errorMessage = "Sign-in was cancelled"
+                    case -4: // No current user
+                        errorMessage = "No current user found"
+                    case -5: // Keychain error
+                        errorMessage = "Keychain error occurred"
+                    default:
+                        errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
+                    }
+                } else {
+                    handleAuthError(error)
                 }
-            } else {
-                handleAuthError(error)
             }
         }
-        
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
     
     // MARK: - Sign Out
@@ -161,19 +188,25 @@ class AuthenticationManager: ObservableObject {
     }
     
     // MARK: - Password Reset
-    
+
     func resetPassword(email: String) async {
-        isLoading = true
-        clearError()
-        
+        await MainActor.run {
+            isLoading = true
+            clearError()
+        }
+
         do {
             try await Auth.auth().sendPasswordReset(withEmail: email)
             print("Password reset email sent")
         } catch {
-            handleAuthError(error)
+            await MainActor.run {
+                handleAuthError(error)
+            }
         }
-        
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
     
     // MARK: - Helper Methods

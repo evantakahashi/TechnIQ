@@ -35,46 +35,13 @@ struct AuthenticatedContentView: View {
                 PlayerContentView(isOnboardingComplete: $isOnboardingComplete)
             } else {
                 VStack(spacing: 16) {
-                    ProgressView("Loading...")
-                    
-                    Text("🚨 AUTH DEBUG: hasValidUser = FALSE")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .onAppear {
-                            print("⚠️ AuthenticatedContentView: hasValidUser = false - showing loading screen")
-                            print("   🔍 isAuthenticated: \(authManager.isAuthenticated ? "YES" : "NO")")
-                            print("   🔍 userUID: '\(authManager.userUID)'")
-                            print("   🔍 userUID.isEmpty: \(authManager.userUID.isEmpty ? "YES" : "NO")")
-                        }
-                    
-                    // DEBUG: Show authentication status
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("DEBUG INFO:")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("isAuthenticated: \(authManager.isAuthenticated ? "YES" : "NO")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("hasValidUser: \(authManager.hasValidUser ? "YES" : "NO")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("userUID: \(authManager.userUID.isEmpty ? "EMPTY" : "HAS_UID")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    
-                    // Force refresh button  
-                    Button("Force Continue") {
-                        // Temporarily force past this screen for debugging
-                        print("🔧 DEBUG: Force continuing past auth check")
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    ProgressView("Loading your profile...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
+                        .scaleEffect(1.5)
+
+                    Text("Setting up your account")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
                 .padding()
             }
@@ -127,9 +94,10 @@ struct PlayerContentView: View {
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
-    
+
     @FetchRequest var players: FetchedResults<Player>
-    
+    @State private var selectedTab = 0
+
     init() {
         // Initialize with predicate that allows results initially
         self._players = FetchRequest(
@@ -138,7 +106,7 @@ struct MainTabView: View {
             animation: .default
         )
     }
-    
+
     var currentPlayer: Player? {
         let player = players.first
         if player == nil && !authManager.userUID.isEmpty {
@@ -146,17 +114,18 @@ struct MainTabView: View {
         }
         return player
     }
-    
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationView {
-                DashboardView()
+                DashboardView(selectedTab: $selectedTab)
             }
             .tabItem {
                 Image(systemName: DesignSystem.Icons.home)
                 Text("Home")
             }
-            
+            .tag(0)
+
             NavigationView {
                 SessionHistoryView()
             }
@@ -164,19 +133,34 @@ struct MainTabView: View {
                 Image(systemName: DesignSystem.Icons.sessions)
                 Text("Sessions")
             }
-            
+            .tag(1)
+
             NavigationView {
                 if let player = currentPlayer {
                     ExerciseLibraryView(player: player)
                 } else {
-                    ProgressView("Loading...")
+                    SwiftUI.ProgressView("Loading...")
                 }
             }
             .tabItem {
                 Image(systemName: DesignSystem.Icons.exercises)
                 Text("Exercises")
             }
-            
+            .tag(2)
+
+            NavigationView {
+                if let player = currentPlayer {
+                    PlayerProgressView(player: player)
+                } else {
+                    SwiftUI.ProgressView("Loading...")
+                }
+            }
+            .tabItem {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                Text("Progress")
+            }
+            .tag(3)
+
             NavigationView {
                 PlayerProfileView()
             }
@@ -184,6 +168,7 @@ struct MainTabView: View {
                 Image(systemName: DesignSystem.Icons.profile)
                 Text("Profile")
             }
+            .tag(4)
         }
         .accentColor(DesignSystem.Colors.primaryGreen)
         .onAppear {

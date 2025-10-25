@@ -93,7 +93,7 @@ enum Equipment: String, CaseIterable {
         case .partner: return "person.2"
         case .bibs: return "tshirt"
         case .hurdles: return "square.stack"
-        case .ladder: return "ladder"
+        case .ladder: return "chart.bar.fill"  // Represents ladder/agility training
         case .poles: return "location"
         case .rebounder: return "circle.hexagonpath"
         case .none: return "xmark.circle"

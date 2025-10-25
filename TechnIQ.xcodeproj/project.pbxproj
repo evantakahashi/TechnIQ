@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
+		51CD5A8CCC9492D71F1EF23B /* CalendarHeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */; };
+		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
 		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
 		DF1636002E133003001E8CF9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF1635FF2E133003001E8CF9 /* Assets.xcassets */; };
@@ -23,7 +26,6 @@
 		DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636302E133100001E8CF9 /* PlayerProfileView.swift */; };
 		DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636322E133100001E8CF9 /* SessionDetailView.swift */; };
 		DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636342E133100001E8CF9 /* SessionHistoryView.swift */; };
-		DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */; };
 		DF1636372E133100001E8CF9 /* DataModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */; };
 		DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */; };
 		DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */; };
@@ -40,6 +42,7 @@
 		DF1636512E133400001E8CF9 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DF1636502E133400001E8CF9 /* GoogleService-Info.plist */; };
 		DF1636532E133500001E8CF9 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636522E133500001E8CF9 /* DesignSystem.swift */; };
 		DF1636552E133500001E8CF9 /* ModernComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636542E133500001E8CF9 /* ModernComponents.swift */; };
+		DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF517F48A578644280B45163 /* DrillInstructionsView.swift */; };
 		DF5CB2D22E2D6E040085F3ED /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D12E2D6E040085F3ED /* FirebaseFirestore */; };
 		DF5CB2D42E2D6E2A0085F3ED /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D32E2D6E2A0085F3ED /* FirebaseFirestoreCombine-Community */; };
 		DF5CB2D62E2D6E2A0085F3ED /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D52E2D6E2A0085F3ED /* FirebaseFirestoreSwift */; };
@@ -73,12 +76,33 @@
 		DF5CB3102E3058800085F3ED /* CloudMLService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB30F2E3058800085F3ED /* CloudMLService.swift */; };
 		DF5CB3132E41C58E0085F3ED /* ExerciseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */; };
 		DF5CB3152E4825F60085F3ED /* CustomDrillGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */; };
-		DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF517F48A578644280B45163 /* DrillInstructionsView.swift */; };
 		DF5CB3172E4825FC0085F3ED /* CustomDrillModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */; };
 		DF5CB3192E4826020085F3ED /* CustomDrillService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CB3182E4826020085F3ED /* CustomDrillService.swift */; };
 		DF6618E42E1356C800C6899B /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E32E1356C800C6899B /* FirebaseAuth */; };
 		DF6618E72E1357A400C6899B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E62E1357A400C6899B /* GoogleSignIn */; };
 		DF6618E92E1357A400C6899B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E82E1357A400C6899B /* GoogleSignInSwift */; };
+		DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */; };
+		DFD74E6C2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */; };
+		DFD74E6D2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */; };
+		DFD74E6E2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */; };
+		DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */; };
+		DFE9F2F32EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */; };
+		DFE9F2F42EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */; };
+		DFE9F2F82EAD9083007BBFFA /* YouTubeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */; };
+		DFE9F2F92EAD9083007BBFFA /* YouTubeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */; };
+		DFE9F2FA2EAD9083007BBFFA /* YouTubeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */; };
+		DFE9F2FB2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */; };
+		DFE9F2FC2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */; };
+		DFE9F2FD2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */; };
+		DFE9F2FE2EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */; };
+		DFE9F2FF2EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */; };
+		DFE9F3002EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */; };
+		DFE9F3022EAD9092007BBFFA /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */; };
+		DFE9F3032EAD9092007BBFFA /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */; };
+		DFE9F3042EAD9092007BBFFA /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */; };
+		DFE9F3062EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
+		DFE9F3072EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
+		DFE9F3082EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +123,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarHeatMapView.swift; sourceTree = "<group>"; };
+		75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
 		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
 		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -118,7 +144,6 @@
 		DF1636302E133100001E8CF9 /* PlayerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfileView.swift; sourceTree = "<group>"; };
 		DF1636322E133100001E8CF9 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		DF1636342E133100001E8CF9 /* SessionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryView.swift; sourceTree = "<group>"; };
-		DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SessionCalendarView.swift; sourceTree = "<group>"; };
 		DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodeld; sourceTree = "<group>"; };
 		DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataClass.swift"; sourceTree = "<group>"; };
 		DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -136,6 +161,7 @@
 		DF1636522E133500001E8CF9 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		DF1636542E133500001E8CF9 /* ModernComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernComponents.swift; sourceTree = "<group>"; };
 		DF16365A2E133400001E8CF9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DF517F48A578644280B45163 /* DrillInstructionsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DrillInstructionsView.swift; sourceTree = "<group>"; };
 		DF5CB2F12E3054D60085F3ED /* EnhancedOnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnhancedOnboardingView.swift; sourceTree = "<group>"; };
 		DF5CB2F32E3054E20085F3ED /* MLProfileModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MLProfileModels.swift; sourceTree = "<group>"; };
 		DF5CB2F52E3054F00085F3ED /* CloudDataService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CloudDataService.swift; sourceTree = "<group>"; };
@@ -154,9 +180,17 @@
 		DF5CB30F2E3058800085F3ED /* CloudMLService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CloudMLService.swift; sourceTree = "<group>"; };
 		DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseDetailView.swift; sourceTree = "<group>"; };
 		DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillGeneratorView.swift; sourceTree = "<group>"; };
-		DF517F48A578644280B45163 /* DrillInstructionsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DrillInstructionsView.swift; sourceTree = "<group>"; };
 		DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillModels.swift; sourceTree = "<group>"; };
 		DF5CB3182E4826020085F3ED /* CustomDrillService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillService.swift; sourceTree = "<group>"; };
+		DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SessionCalendarView.swift; sourceTree = "<group>"; };
+		DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerProgressView.swift; sourceTree = "<group>"; };
+		DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDrillCreatorView.swift; sourceTree = "<group>"; };
+		DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeModels.swift; sourceTree = "<group>"; };
+		DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeConfig.swift; sourceTree = "<group>"; };
+		DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeAPIService.swift; sourceTree = "<group>"; };
+		DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
+		DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CalendarComponents.swift; sourceTree = "<group>"; };
+		FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTrendChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -244,16 +278,23 @@
 				DF5CB2F12E3054D60085F3ED /* EnhancedOnboardingView.swift */,
 				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
 				DF1636302E133100001E8CF9 /* PlayerProfileView.swift */,
+				DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */,
 				DF1636322E133100001E8CF9 /* SessionDetailView.swift */,
 				DF5CB30B2E30586D0085F3ED /* CloudSyncStatus+CoreDataClass.swift */,
+				DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */,
 				DF5CB3092E30585E0085F3ED /* MLRecommendation+CoreDataProperties.swift */,
+				DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */,
 				DF5CB30D2E3058730085F3ED /* CloudSyncStatus+CoreDataProperties.swift */,
+				DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */,
+				DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */,
+				DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */,
 				DF5CB30F2E3058800085F3ED /* CloudMLService.swift */,
 				DF5CB3072E3058590085F3ED /* MLRecommendation+CoreDataClass.swift */,
 				DF5CB2FF2E3058210085F3ED /* PlayerGoal+CoreDataClass.swift */,
 				DF5CB3032E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift */,
 				DF5CB3052E3058480085F3ED /* RecommendationFeedback+CoreDataProperties.swift */,
 				DF5CB3012E30582B0085F3ED /* PlayerGoal+CoreDataProperties.swift */,
+				DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */,
 				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
 				DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */,
 				DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */,
@@ -277,6 +318,9 @@
 				DF16365A2E133400001E8CF9 /* Info.plist */,
 				DF1635FF2E133003001E8CF9 /* Assets.xcassets */,
 				DF1636012E133003001E8CF9 /* Preview Content */,
+				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
+				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
+				75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -469,15 +513,19 @@
 				DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */,
 				DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */,
 				DF5CB2F22E3054D60085F3ED /* EnhancedOnboardingView.swift in Sources */,
+				DFE9F2FB2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
 				DF5CB3132E41C58E0085F3ED /* ExerciseDetailView.swift in Sources */,
 				DF5CB30A2E30585E0085F3ED /* MLRecommendation+CoreDataProperties.swift in Sources */,
+				DFE9F2FE2EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */,
 				DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */,
 				DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */,
+				DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
 				DF16362F2E133100001E8CF9 /* OnboardingView.swift in Sources */,
 				DF5CB3172E4825FC0085F3ED /* CustomDrillModels.swift in Sources */,
 				DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */,
 				DF5CB2FA2E30550C0085F3ED /* FirestoreDataModels.swift in Sources */,
 				DF5CB3192E4826020085F3ED /* CustomDrillService.swift in Sources */,
+				DFD74E6C2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */,
 				DF5CB3042E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift in Sources */,
 				DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */,
 				DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */,
@@ -498,6 +546,7 @@
 				DF5CB2F42E3054E20085F3ED /* MLProfileModels.swift in Sources */,
 				DF5CB2F62E3054F00085F3ED /* CloudDataService.swift in Sources */,
 				DF5CB3082E3058590085F3ED /* MLRecommendation+CoreDataClass.swift in Sources */,
+				DFE9F2F82EAD9083007BBFFA /* YouTubeModels.swift in Sources */,
 				DF5CB2FE2E3058110085F3ED /* PlayerProfile+CoreDataProperties.swift in Sources */,
 				DF16364D2E133300001E8CF9 /* AuthenticationView.swift in Sources */,
 				DF5CB2FC2E3058090085F3ED /* PlayerProfile+CoreDataClass.swift in Sources */,
@@ -509,6 +558,11 @@
 				DF5CB30E2E3058730085F3ED /* CloudSyncStatus+CoreDataProperties.swift in Sources */,
 				DF5CB3102E3058800085F3ED /* CloudMLService.swift in Sources */,
 				DF5CB3062E3058480085F3ED /* RecommendationFeedback+CoreDataProperties.swift in Sources */,
+				DFE9F3022EAD9092007BBFFA /* NetworkManager.swift in Sources */,
+				51CD5A8CCC9492D71F1EF23B /* CalendarHeatMapView.swift in Sources */,
+				DFE9F3062EAD90A5007BBFFA /* CalendarComponents.swift in Sources */,
+				1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */,
+				D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -516,7 +570,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DFE9F2FF2EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */,
+				DFD74E6D2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */,
+				DFE9F2F32EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
+				DFE9F3072EAD90A5007BBFFA /* CalendarComponents.swift in Sources */,
+				DFE9F3032EAD9092007BBFFA /* NetworkManager.swift in Sources */,
+				DFE9F2FC2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
 				DF16360D2E133003001E8CF9 /* TechnIQTests.swift in Sources */,
+				DFE9F2F92EAD9083007BBFFA /* YouTubeModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -525,7 +586,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */,
+				DFE9F2FD2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
+				DFE9F2FA2EAD9083007BBFFA /* YouTubeModels.swift in Sources */,
+				DFD74E6E2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */,
+				DFE9F3042EAD9092007BBFFA /* NetworkManager.swift in Sources */,
+				DFE9F3002EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */,
+				DFE9F3082EAD90A5007BBFFA /* CalendarComponents.swift in Sources */,
 				DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */,
+				DFE9F2F42EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

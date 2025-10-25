@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read and write their own data
+    match /playerProfiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /players/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read and write training sessions they own
+    match /trainingSessions/{sessionId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.firebaseUID == request.auth.uid || 
+         request.auth.uid in resource.data.allowedUsers);
+    }
+    
+    // Allow authenticated users to read and write exercises they own
+    match /exercises/{exerciseId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.firebaseUID == request.auth.uid || 
+         request.auth.uid in resource.data.allowedUsers);
+    }
+    
+    // Allow Firebase Functions to read/write all documents (using admin SDK)
+    // This rule is for client access only - admin SDK bypasses these rules
+    
+    // Allow authenticated users to read their own ML recommendations
+    match /mlRecommendations/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read their own player goals
+    match /playerGoals/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read their own feedback
+    match /recommendationFeedback/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read their own sync status
+    match /cloudSyncStatus/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default deny rule for any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

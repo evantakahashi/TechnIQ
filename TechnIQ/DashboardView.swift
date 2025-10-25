@@ -8,8 +8,10 @@ struct DashboardView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @FetchRequest var players: FetchedResults<Player>
     @FetchRequest var recentSessions: FetchedResults<TrainingSession>
-    
-    init() {
+    @Binding var selectedTab: Int
+
+    init(selectedTab: Binding<Int>) {
+        self._selectedTab = selectedTab
         // Initialize with predicates that will be updated in onAppear
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
@@ -27,9 +29,6 @@ struct DashboardView: View {
     @State private var showingNewSession = false
     @State private var showingProfileCreation = false
     @State private var isOnboardingComplete = false
-    @State private var youtubeTestResults: [YouTubeTestVideo] = []
-    @State private var isTestingYouTube = false
-    @State private var youtubeTestError: String?
     @State private var smartRecommendations: [CoreDataManager.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
     @StateObject private var cloudMLService = CloudMLService.shared
@@ -52,7 +51,6 @@ struct DashboardView: View {
                         modernQuickActions
                         modernRecentActivity
                         modernRecommendations(player: player)
-                        youtubeTestSection
                     } else {
                         emptyStateView
                     }
@@ -71,14 +69,10 @@ struct DashboardView: View {
             EnhancedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
         }
         .onChange(of: isOnboardingComplete) { completed in
-            print("📊 Onboarding completion changed: \(completed)")
             if completed {
-                print("✅ Profile creation completed! Dismissing sheet and refreshing data...")
                 showingProfileCreation = false
-                isOnboardingComplete = false // Reset for next time
-                // Refresh data after profile creation
+                isOnboardingComplete = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    print("🔄 Calling updateDataFilters after profile creation...")
                     updateDataFilters()
                 }
             }
@@ -90,19 +84,15 @@ struct DashboardView: View {
             updateDataFilters()
         }
         .onChange(of: players.count) { count in
-            print("👥 Players count changed to: \(count)")
             if count == 0 && !authManager.userUID.isEmpty {
-                print("⚠️ Player count dropped to 0 but user is authenticated. Refreshing filters in 0.5s...")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     updateDataFilters()
                 }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
-            print("🔄 Core Data context saved, checking player state...")
             DispatchQueue.main.async {
                 if currentPlayer == nil && !authManager.userUID.isEmpty {
-                    print("🔄 Player not found after save, refreshing filters...")
                     updateDataFilters()
                 }
             }
@@ -110,42 +100,10 @@ struct DashboardView: View {
     }
     
     private func updateDataFilters() {
-        guard !authManager.userUID.isEmpty else {
-            print("⚠️ DashboardView: No userUID available, skipping filter update")
-            return
-        }
-        
-        // Filter players and sessions by Firebase UID
+        guard !authManager.userUID.isEmpty else { return }
+
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-        print("🔍 Updated DashboardView filters for user: \(authManager.userUID)")
-        print("👥 Current players count: \(players.count)")
-        
-        // Debug: Print current player info
-        if let currentPlayer = players.first {
-            print("✅ Current player found: \(currentPlayer.name ?? "Unknown") - UID: \(currentPlayer.firebaseUID ?? "No UID")")
-        } else {
-            print("❌ No current player found after filter update")
-            
-            // Debug: Check all players in database
-            let allPlayersRequest = Player.fetchRequest()
-            do {
-                let allPlayers = try viewContext.fetch(allPlayersRequest)
-                print("🔍 Total players in database: \(allPlayers.count)")
-                for player in allPlayers {
-                    print("  - Player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
-                }
-                if authManager.isAuthenticated {
-                    print("🔓 User IS authenticated with UID: \(authManager.userUID)")
-                    print("📧 User email: \(authManager.userEmail)")
-                    print("👤 User display name: \(authManager.userDisplayName)")
-                } else {
-                    print("🔒 User is NOT authenticated")
-                }
-            } catch {
-                print("❌ Error fetching all players: \(error)")
-            }
-        }
     }
     
     private func modernHeaderSection(player: Player) -> some View {
@@ -288,7 +246,9 @@ struct DashboardView: View {
                     icon: DesignSystem.Icons.stats,
                     color: DesignSystem.Colors.secondaryBlue
                 ) {
-                    // Handle action
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        selectedTab = 3 // Navigate to Progress tab
+                    }
                 }
                 
                 ModernActionCard(
@@ -416,17 +376,13 @@ struct DashboardView: View {
             CoreDataManager.shared.removeDuplicateExercises(for: player)
             
             do {
-                // Try cloud ML recommendations first
                 let mlRecs = try await cloudMLService.getCloudRecommendations(for: player, limit: 3)
                 await MainActor.run {
                     mlRecommendations = mlRecs
-                    // For now, use the fallback since the UI expects the original DrillRecommendation format
                     let recommendations = CoreDataManager.shared.getSmartRecommendations(for: player, limit: 3)
                     smartRecommendations = recommendations
                 }
             } catch {
-                print("⚠️ Cloud ML failed, using fallback: \(error.localizedDescription)")
-                // Fallback to original recommendations if cloud ML fails
                 let recommendations = CoreDataManager.shared.getSmartRecommendations(for: player, limit: 3)
                 await MainActor.run {
                     smartRecommendations = recommendations
@@ -483,200 +439,6 @@ struct DashboardView: View {
         .padding(DesignSystem.Spacing.screenPadding)
     }
     
-    private var youtubeTestSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            Text("YouTube API Test")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.bold)
-            
-            ModernCard {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    if isTestingYouTube {
-                        HStack {
-                            SoccerBallSpinner()
-                            Text("Testing YouTube API...")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                    } else {
-                        VStack(spacing: DesignSystem.Spacing.sm) {
-                            ModernButton("TEST YOUTUBE API", icon: "play.circle", style: .secondary) {
-                                testYouTubeAPI()
-                            }
-                            
-                            ModernButton("CLEAN DUPLICATES", icon: "trash.circle", style: .secondary) {
-                                cleanDuplicateExercises()
-                            }
-                        }
-                    }
-                    
-                    if let error = youtubeTestError {
-                        HStack {
-                            Image(systemName: DesignSystem.Icons.xmark)
-                                .foregroundColor(DesignSystem.Colors.error)
-                            Text(error)
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(DesignSystem.Colors.error)
-                            Spacer()
-                        }
-                    }
-                    
-                    if !youtubeTestResults.isEmpty {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Image(systemName: DesignSystem.Icons.checkmark)
-                                    .foregroundColor(DesignSystem.Colors.success)
-                                Text("Found \(youtubeTestResults.count) drill videos!")
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                    .foregroundColor(DesignSystem.Colors.success)
-                                Spacer()
-                            }
-                            
-                            ForEach(youtubeTestResults.prefix(3), id: \.videoId) { drill in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(drill.title)
-                                        .font(DesignSystem.Typography.labelMedium)
-                                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                                        .lineLimit(2)
-                                    
-                                    HStack {
-                                        Text(drill.channel)
-                                            .font(DesignSystem.Typography.bodySmall)
-                                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                                        
-                                        Spacer()
-                                        
-                                        Text(drill.duration)
-                                            .font(DesignSystem.Typography.bodySmall)
-                                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private func testYouTubeAPI() {
-        isTestingYouTube = true
-        youtubeTestError = nil
-        youtubeTestResults = []
-        
-        Task {
-            do {
-                guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
-                      let plist = NSDictionary(contentsOfFile: path),
-                      let apiKey = plist["API_KEY"] as? String,
-                      !apiKey.isEmpty else {
-                    await MainActor.run {
-                        youtubeTestError = "Google API key not found in GoogleService-Info.plist"
-                        isTestingYouTube = false
-                    }
-                    return
-                }
-                print("✅ Using YouTube API key for testing: \(String(apiKey.prefix(10)))...")
-                
-                // Make a simple search request
-                let searchResponse = try await performSimpleYouTubeSearch(apiKey: apiKey)
-                
-                await MainActor.run {
-                    youtubeTestResults = searchResponse
-                    isTestingYouTube = false
-                }
-            } catch {
-                await MainActor.run {
-                    youtubeTestError = error.localizedDescription
-                    isTestingYouTube = false
-                }
-            }
-        }
-    }
-    
-    private func performSimpleYouTubeSearch(apiKey: String) async throws -> [YouTubeTestVideo] {
-        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=soccer+dribbling+drills&type=video&key=\(apiKey)"
-        
-        guard let url = URL(string: urlString) else {
-            throw SimpleAPIError.invalidSearchQuery
-        }
-        
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw SimpleAPIError.networkError
-        }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
-            print("❌ YouTube API Error - Status Code: \(httpResponse.statusCode)")
-            if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let error = errorData["error"] as? [String: Any],
-               let message = error["message"] as? String {
-                print("❌ YouTube API Error Message: \(message)")
-            }
-            
-            if httpResponse.statusCode == 403 {
-                throw SimpleAPIError.quotaExceeded
-            } else {
-                throw SimpleAPIError.networkError
-            }
-        }
-        
-        // Simple JSON parsing
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = json["items"] as? [[String: Any]] else {
-            throw SimpleAPIError.parsingError
-        }
-        
-        return items.compactMap { item in
-            guard let id = item["id"] as? [String: Any],
-                  let videoId = id["videoId"] as? String,
-                  let snippet = item["snippet"] as? [String: Any],
-                  let title = snippet["title"] as? String,
-                  let channelTitle = snippet["channelTitle"] as? String else {
-                return nil
-            }
-            
-            return YouTubeTestVideo(
-                videoId: videoId,
-                title: title,
-                channel: channelTitle,
-                duration: "N/A"
-            )
-        }
-    }
-}
-
-struct YouTubeTestVideo {
-    let videoId: String
-    let title: String
-    let channel: String
-    let duration: String
-}
-
-enum SimpleAPIError: LocalizedError {
-    case apiKeyNotConfigured
-    case quotaExceeded
-    case invalidSearchQuery
-    case networkError
-    case parsingError
-    
-    var errorDescription: String? {
-        switch self {
-        case .apiKeyNotConfigured:
-            return "YouTube API key is not configured"
-        case .quotaExceeded:
-            return "YouTube API quota exceeded or API not enabled. Please enable YouTube Data API v3 in Google Cloud Console."
-        case .invalidSearchQuery:
-            return "Invalid search query"
-        case .networkError:
-            return "Network error occurred"
-        case .parsingError:
-            return "Error parsing YouTube response"
-        }
-    }
 }
 
 
@@ -1047,6 +809,7 @@ struct PhysicalIndicatorChip: View {
 }
 
 #Preview {
-    DashboardView()
+    DashboardView(selectedTab: .constant(0))
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
+        .environmentObject(AuthenticationManager.shared)
 }
