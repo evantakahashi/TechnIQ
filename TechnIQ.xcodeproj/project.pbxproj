@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
+		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
 		51CD5A8CCC9492D71F1EF23B /* CalendarHeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */; };
+		94759B03918562EAE418BADE /* TodaysTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */; };
 		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
 		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
@@ -43,6 +45,21 @@
 		DF1636532E133500001E8CF9 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636522E133500001E8CF9 /* DesignSystem.swift */; };
 		DF1636552E133500001E8CF9 /* ModernComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636542E133500001E8CF9 /* ModernComponents.swift */; };
 		DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF517F48A578644280B45163 /* DrillInstructionsView.swift */; };
+		DF48B9D12ED5241A00F7AC05 /* ActivePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9D02ED5241A00F7AC05 /* ActivePlanView.swift */; };
+		DF48B9D32ED5242700F7AC05 /* CustomPlanBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9D22ED5242700F7AC05 /* CustomPlanBuilderView.swift */; };
+		DF48B9D52ED5243700F7AC05 /* TrainingPlanDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9D42ED5243700F7AC05 /* TrainingPlanDetailView.swift */; };
+		DF48B9D72ED5244200F7AC05 /* TrainingPlanModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9D62ED5244200F7AC05 /* TrainingPlanModels.swift */; };
+		DF48B9D92ED5244800F7AC05 /* TrainingPlanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9D82ED5244800F7AC05 /* TrainingPlanService.swift */; };
+		DF48B9DB2ED5249200F7AC05 /* TrainingPlansListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9DA2ED5249200F7AC05 /* TrainingPlansListView.swift */; };
+		DF48B9E22ED524A600F7AC05 /* PlanSession+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9DC2ED524A600F7AC05 /* PlanSession+CoreDataClass.swift */; };
+		DF48B9E32ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9DD2ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift */; };
+		DF48B9E42ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9DE2ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift */; };
+		DF48B9E52ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9DF2ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift */; };
+		DF48B9E62ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9E02ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift */; };
+		DF48B9E72ED524A600F7AC05 /* PlanDay+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9E12ED524A600F7AC05 /* PlanDay+CoreDataClass.swift */; };
+		DF48B9EA2ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9E82ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift */; };
+		DF48B9EB2ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9E92ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift */; };
+		DF48B9ED2ED5798600F7AC05 /* SharePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF48B9EC2ED5798500F7AC05 /* SharePlanView.swift */; };
 		DF5CB2D22E2D6E040085F3ED /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D12E2D6E040085F3ED /* FirebaseFirestore */; };
 		DF5CB2D42E2D6E2A0085F3ED /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D32E2D6E2A0085F3ED /* FirebaseFirestoreCombine-Community */; };
 		DF5CB2D62E2D6E2A0085F3ED /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF5CB2D52E2D6E2A0085F3ED /* FirebaseFirestoreSwift */; };
@@ -103,6 +120,7 @@
 		DFE9F3062EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
 		DFE9F3072EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
 		DFE9F3082EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
+		F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,8 +141,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanGeneratorView.swift; sourceTree = "<group>"; };
 		583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarHeatMapView.swift; sourceTree = "<group>"; };
 		75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
+		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
+		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
 		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
 		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -161,6 +182,21 @@
 		DF1636522E133500001E8CF9 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		DF1636542E133500001E8CF9 /* ModernComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernComponents.swift; sourceTree = "<group>"; };
 		DF16365A2E133400001E8CF9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DF48B9D02ED5241A00F7AC05 /* ActivePlanView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActivePlanView.swift; sourceTree = "<group>"; };
+		DF48B9D22ED5242700F7AC05 /* CustomPlanBuilderView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomPlanBuilderView.swift; sourceTree = "<group>"; };
+		DF48B9D42ED5243700F7AC05 /* TrainingPlanDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrainingPlanDetailView.swift; sourceTree = "<group>"; };
+		DF48B9D62ED5244200F7AC05 /* TrainingPlanModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrainingPlanModels.swift; sourceTree = "<group>"; };
+		DF48B9D82ED5244800F7AC05 /* TrainingPlanService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrainingPlanService.swift; sourceTree = "<group>"; };
+		DF48B9DA2ED5249200F7AC05 /* TrainingPlansListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrainingPlansListView.swift; sourceTree = "<group>"; };
+		DF48B9DC2ED524A600F7AC05 /* PlanSession+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanSession+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF48B9DD2ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanDay+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF48B9DE2ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanWeek+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF48B9DF2ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanSession+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF48B9E02ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanWeek+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF48B9E12ED524A600F7AC05 /* PlanDay+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PlanDay+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF48B9E82ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "TrainingPlan+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		DF48B9E92ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "TrainingPlan+CoreDataClass.swift"; sourceTree = "<group>"; };
+		DF48B9EC2ED5798500F7AC05 /* SharePlanView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SharePlanView.swift; sourceTree = "<group>"; };
 		DF517F48A578644280B45163 /* DrillInstructionsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DrillInstructionsView.swift; sourceTree = "<group>"; };
 		DF5CB2F12E3054D60085F3ED /* EnhancedOnboardingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnhancedOnboardingView.swift; sourceTree = "<group>"; };
 		DF5CB2F32E3054E20085F3ED /* MLProfileModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MLProfileModels.swift; sourceTree = "<group>"; };
@@ -259,9 +295,24 @@
 		DF1635FA2E133001001E8CF9 /* TechnIQ */ = {
 			isa = PBXGroup;
 			children = (
+				DF48B9D02ED5241A00F7AC05 /* ActivePlanView.swift */,
+				DF48B9D22ED5242700F7AC05 /* CustomPlanBuilderView.swift */,
+				DF48B9D42ED5243700F7AC05 /* TrainingPlanDetailView.swift */,
+				DF48B9D82ED5244800F7AC05 /* TrainingPlanService.swift */,
+				DF48B9D62ED5244200F7AC05 /* TrainingPlanModels.swift */,
+				DF48B9DA2ED5249200F7AC05 /* TrainingPlansListView.swift */,
+				DF48B9E12ED524A600F7AC05 /* PlanDay+CoreDataClass.swift */,
+				DF48B9DD2ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift */,
+				DF48B9DC2ED524A600F7AC05 /* PlanSession+CoreDataClass.swift */,
+				DF48B9DF2ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift */,
+				DF48B9E02ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift */,
+				DF48B9E92ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift */,
+				DF48B9E82ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift */,
+				DF48B9DE2ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift */,
 				DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */,
 				DF1635FD2E133001001E8CF9 /* ContentView.swift */,
 				DF1636242E133100001E8CF9 /* CoreDataManager.swift */,
+				DF48B9EC2ED5798500F7AC05 /* SharePlanView.swift */,
 				DF1636262E133100001E8CF9 /* DashboardView.swift */,
 				DF1636282E133100001E8CF9 /* EditProfileView.swift */,
 				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
@@ -321,6 +372,9 @@
 				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
 				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
 				75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */,
+				89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */,
+				92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */,
+				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -510,13 +564,18 @@
 				DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */,
 				DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */,
 				DF5CB2F82E3054FB0085F3ED /* CloudSyncManager.swift in Sources */,
+				DF48B9E52ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift in Sources */,
 				DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */,
 				DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */,
 				DF5CB2F22E3054D60085F3ED /* EnhancedOnboardingView.swift in Sources */,
 				DFE9F2FB2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
+				DF48B9D72ED5244200F7AC05 /* TrainingPlanModels.swift in Sources */,
+				DF48B9D52ED5243700F7AC05 /* TrainingPlanDetailView.swift in Sources */,
 				DF5CB3132E41C58E0085F3ED /* ExerciseDetailView.swift in Sources */,
 				DF5CB30A2E30585E0085F3ED /* MLRecommendation+CoreDataProperties.swift in Sources */,
 				DFE9F2FE2EAD9083007BBFFA /* YouTubeAPIService.swift in Sources */,
+				DF48B9E62ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift in Sources */,
+				DF48B9E22ED524A600F7AC05 /* PlanSession+CoreDataClass.swift in Sources */,
 				DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */,
 				DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */,
 				DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
@@ -532,19 +591,26 @@
 				DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */,
 				DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */,
 				DF5CB3152E4825F60085F3ED /* CustomDrillGeneratorView.swift in Sources */,
+				DF48B9E72ED524A600F7AC05 /* PlanDay+CoreDataClass.swift in Sources */,
 				DF261CF2D02BFB489C80F08E /* DrillInstructionsView.swift in Sources */,
 				DF16363B2E133200001E8CF9 /* Player+CoreDataProperties.swift in Sources */,
 				DF16363D2E133200001E8CF9 /* Exercise+CoreDataClass.swift in Sources */,
+				DF48B9E42ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift in Sources */,
+				DF48B9EA2ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift in Sources */,
 				DF16363F2E133200001E8CF9 /* Exercise+CoreDataProperties.swift in Sources */,
 				DF1636412E133200001E8CF9 /* TrainingSession+CoreDataClass.swift in Sources */,
+				DF48B9D32ED5242700F7AC05 /* CustomPlanBuilderView.swift in Sources */,
 				DF1636432E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift in Sources */,
 				DF1636452E133200001E8CF9 /* SessionExercise+CoreDataClass.swift in Sources */,
 				DF1636472E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift in Sources */,
+				DF48B9EB2ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift in Sources */,
 				DF1636492E133200001E8CF9 /* PlayerStats+CoreDataClass.swift in Sources */,
 				DF16364B2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift in Sources */,
 				DF5CB3002E3058210085F3ED /* PlayerGoal+CoreDataClass.swift in Sources */,
+				DF48B9D92ED5244800F7AC05 /* TrainingPlanService.swift in Sources */,
 				DF5CB2F42E3054E20085F3ED /* MLProfileModels.swift in Sources */,
 				DF5CB2F62E3054F00085F3ED /* CloudDataService.swift in Sources */,
+				DF48B9D12ED5241A00F7AC05 /* ActivePlanView.swift in Sources */,
 				DF5CB3082E3058590085F3ED /* MLRecommendation+CoreDataClass.swift in Sources */,
 				DFE9F2F82EAD9083007BBFFA /* YouTubeModels.swift in Sources */,
 				DF5CB2FE2E3058110085F3ED /* PlayerProfile+CoreDataProperties.swift in Sources */,
@@ -553,6 +619,7 @@
 				DF16364F2E133400001E8CF9 /* AuthenticationManager.swift in Sources */,
 				DF1636532E133500001E8CF9 /* DesignSystem.swift in Sources */,
 				DF1636552E133500001E8CF9 /* ModernComponents.swift in Sources */,
+				DF48B9E32ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift in Sources */,
 				DF5CB30C2E30586D0085F3ED /* CloudSyncStatus+CoreDataClass.swift in Sources */,
 				DF5CB3022E30582B0085F3ED /* PlayerGoal+CoreDataProperties.swift in Sources */,
 				DF5CB30E2E3058730085F3ED /* CloudSyncStatus+CoreDataProperties.swift in Sources */,
@@ -563,6 +630,11 @@
 				DFE9F3062EAD90A5007BBFFA /* CalendarComponents.swift in Sources */,
 				1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */,
 				D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */,
+				DF48B9DB2ED5249200F7AC05 /* TrainingPlansListView.swift in Sources */,
+				DF48B9ED2ED5798600F7AC05 /* SharePlanView.swift in Sources */,
+				94759B03918562EAE418BADE /* TodaysTrainingView.swift in Sources */,
+				1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */,
+				F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
