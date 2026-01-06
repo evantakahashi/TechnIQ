@@ -12,8 +12,7 @@ struct TrainingPlanDetailView: View {
     @State private var expandedWeeks: Set<UUID> = []
 
     var body: some View {
-        NavigationView {
-            ScrollView {
+        ScrollView {
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     // Header Card
                     headerCard
@@ -47,7 +46,6 @@ struct TrainingPlanDetailView: View {
             } message: {
                 Text("This will set \"\(plan.name)\" as your active training plan. Any currently active plan will be deactivated.")
             }
-        }
     }
 
     // MARK: - Header Card

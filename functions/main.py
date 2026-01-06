@@ -931,3 +931,194 @@ def generate_fallback_recommendations(
     except Exception as e:
         logger.error(f"❌ Error generating fallback recommendations: {e}")
         return []
+
+# MARK: - Training Plan Generation
+
+@https_fn.on_request()
+def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
+    """
+    Generate AI-powered training plan using Vertex AI Gemini
+
+    Expected request body:
+    {
+        "user_id": "string",
+        "player_profile": {
+            "position": "midfielder",
+            "age": 16,
+            "experienceLevel": "intermediate",
+            "goals": ["improve ball control", "increase speed"]
+        },
+        "duration_weeks": 6,
+        "difficulty": "Intermediate",
+        "category": "Technical",
+        "focus_areas": ["Passing", "Vision"],
+        "target_role": "Midfielder"
+    }
+    """
+    try:
+        # Handle CORS preflight
+        if req.method == 'OPTIONS':
+            return https_fn.Response(
+                "",
+                status=200,
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                }
+            )
+
+        # Parse request
+        if req.method != 'POST':
+            return https_fn.Response("Method not allowed", status=405)
+
+        request_data = req.get_json()
+        if not request_data:
+            return https_fn.Response("Invalid JSON", status=400)
+
+        # Extract request parameters
+        user_id = request_data.get('user_id')
+        player_profile = request_data.get('player_profile', {})
+        duration_weeks = request_data.get('duration_weeks', 6)
+        difficulty = request_data.get('difficulty', 'Intermediate')
+        category = request_data.get('category', 'Technical')
+        focus_areas = request_data.get('focus_areas', [])
+        target_role = request_data.get('target_role')
+
+        if not user_id or not player_profile:
+            return https_fn.Response("Missing user_id or player_profile", status=400)
+
+        logger.info(f"🏋️ Generating {duration_weeks}-week {difficulty} training plan for {user_id}")
+        logger.info(f"📝 Category: {category}, Focus: {', '.join(focus_areas)}")
+
+        # Build AI prompt
+        player_goals = ', '.join(player_profile.get('goals', []))
+        focus_areas_str = ', '.join(focus_areas) if focus_areas else 'general improvement'
+        position = player_profile.get('position', 'player')
+        age = player_profile.get('age', 16)
+        experience = player_profile.get('experienceLevel', 'intermediate')
+
+        prompt = f"""You are a professional soccer coach. Create a {duration_weeks}-week {difficulty} training plan for a {position} focused on {category} skills.
+
+Player Details:
+- Age: {age}
+- Experience: {experience}
+- Position: {position}
+- Goals: {player_goals}
+{f'- Target Role: {target_role}' if target_role else ''}
+{f'- Focus Areas: {focus_areas_str}' if focus_areas else ''}
+
+Return ONLY valid JSON matching this exact structure (no markdown, no code blocks):
+{{
+  "name": "Plan Name",
+  "description": "Brief description",
+  "difficulty": "{difficulty}",
+  "category": "{category}",
+  "target_role": "{target_role or ''}",
+  "weeks": [
+    {{
+      "week_number": 1,
+      "focus_area": "Week theme",
+      "notes": "Week notes",
+      "days": [
+        {{
+          "day_number": 1,
+          "day_of_week": "Monday",
+          "is_rest_day": false,
+          "sessions": [
+            {{
+              "session_type": "Technical",
+              "duration": 45,
+              "intensity": 3,
+              "notes": "Session notes",
+              "suggested_exercise_names": ["Wall Passing", "Cone Weaving"]
+            }}
+          ]
+        }}
+      ]
+    }}
+  ]
+}}
+
+IMPORTANT REQUIREMENTS:
+- Include 5-7 days per week
+- Include 1-2 rest days per week (is_rest_day: true)
+- Use progressive difficulty (periodization)
+- Include 2-4 exercises per session
+- Match exercise names to: Wall Passing, Triangle Passing, Cone Weaving, Dribbling Course, First Touch Practice, Juggling, Passing Gates, Speed Ladder, Sprints, Interval Run, Yoga Flow, Foam Rolling
+- Session types: Technical, Physical, Tactical, Recovery
+- Duration: 30-90 minutes
+- Intensity: 1-5 scale
+- Return ONLY the JSON object, no extra text"""
+
+        # Use OpenAI as fallback (more reliable setup)
+        # Get OpenAI API key from environment
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+
+        if not openai_api_key:
+            return https_fn.Response(
+                json.dumps({"error": "OpenAI API key not configured"}),
+                status=500,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            )
+
+        # Call OpenAI GPT-4
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_api_key)
+
+        logger.info("🤖 Calling OpenAI GPT-4...")
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are an expert soccer coach specializing in personalized training plans. Return ONLY valid JSON, no markdown formatting."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=4000,
+            temperature=0.7
+        )
+
+        response_text = response.choices[0].message.content
+
+        logger.info(f"📄 AI Response length: {len(response_text)} characters")
+
+        # Parse JSON (remove markdown code blocks if present)
+        json_text = response_text.strip()
+        if '```json' in json_text:
+            json_text = json_text.split('```json')[1].split('```')[0].strip()
+        elif '```' in json_text:
+            json_text = json_text.split('```')[1].split('```')[0].strip()
+
+        # Parse to JSON
+        plan_data = json.loads(json_text)
+
+        logger.info(f"✅ Generated plan: {plan_data.get('name', 'Unknown')}")
+        logger.info(f"📊 Plan structure: {len(plan_data.get('weeks', []))} weeks")
+
+        # Return to app
+        return https_fn.Response(
+            json.dumps(plan_data),
+            status=200,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Error in generate_training_plan: {str(e)}")
+        logger.error(traceback.format_exc())
+        return https_fn.Response(
+            json.dumps({"error": str(e)}),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
