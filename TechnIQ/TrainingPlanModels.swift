@@ -177,7 +177,7 @@ enum SessionType: String, CaseIterable {
     }
 }
 
-enum DayOfWeek: String, CaseIterable {
+enum DayOfWeek: String, CaseIterable, Comparable {
     case monday = "Monday"
     case tuesday = "Tuesday"
     case wednesday = "Wednesday"
@@ -189,6 +189,22 @@ enum DayOfWeek: String, CaseIterable {
     var displayName: String { rawValue }
     var shortName: String {
         String(rawValue.prefix(3))
+    }
+
+    var sortOrder: Int {
+        switch self {
+        case .monday: return 0
+        case .tuesday: return 1
+        case .wednesday: return 2
+        case .thursday: return 3
+        case .friday: return 4
+        case .saturday: return 5
+        case .sunday: return 6
+        }
+    }
+
+    static func < (lhs: DayOfWeek, rhs: DayOfWeek) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
     }
 }
 

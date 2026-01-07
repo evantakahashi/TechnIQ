@@ -10,9 +10,12 @@ struct TrainingPlanDetailView: View {
 
     @State private var showingConfirmStart = false
     @State private var expandedWeeks: Set<UUID> = []
+    @State private var showingEditor = false
+    @State private var refreshID = UUID() // For refreshing view after edits
 
     var body: some View {
-        ScrollView {
+        NavigationView {
+            ScrollView {
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     // Header Card
                     headerCard
@@ -33,11 +36,29 @@ struct TrainingPlanDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        // Edit button (only for non-prebuilt plans)
+                        if !plan.isPrebuilt {
+                            Button {
+                                showingEditor = true
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                        }
+
+                        Button("Close") {
+                            dismiss()
+                        }
                     }
                 }
             }
+            .sheet(isPresented: $showingEditor) {
+                PlanEditorView(plan: plan, player: player) {
+                    // Refresh the view after editing
+                    refreshID = UUID()
+                }
+            }
+            .id(refreshID)
             .confirmationDialog("Start Training Plan?", isPresented: $showingConfirmStart) {
                 Button("Start Plan") {
                     startPlan()
@@ -46,6 +67,7 @@ struct TrainingPlanDetailView: View {
             } message: {
                 Text("This will set \"\(plan.name)\" as your active training plan. Any currently active plan will be deactivated.")
             }
+        }
     }
 
     // MARK: - Header Card

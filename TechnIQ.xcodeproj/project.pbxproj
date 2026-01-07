@@ -10,7 +10,12 @@
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
 		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
 		51CD5A8CCC9492D71F1EF23B /* CalendarHeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */; };
+		5FB2A74699C3EFDEF1677742 /* WeekEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB606D20EB0F9A45D449238F /* WeekEditorView.swift */; };
+		5FCF92ADAC7BC98998D587B2 /* AITrainingPlanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */; };
 		94759B03918562EAE418BADE /* TodaysTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */; };
+		A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F31304560398E5F65665084 /* DayEditorView.swift */; };
+		D46F7C2F5DD956FE0C38B8FB /* SessionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2465CE756CC3395B14507526 /* SessionEditorView.swift */; };
+		D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AD26664A9C012346D58B4E /* PlanEditorView.swift */; };
 		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
 		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
@@ -142,10 +147,14 @@
 
 /* Begin PBXFileReference section */
 		0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanGeneratorView.swift; sourceTree = "<group>"; };
+		18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanPreviewView.swift; sourceTree = "<group>"; };
+		1F31304560398E5F65665084 /* DayEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayEditorView.swift; sourceTree = "<group>"; };
+		2465CE756CC3395B14507526 /* SessionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionEditorView.swift; sourceTree = "<group>"; };
 		583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarHeatMapView.swift; sourceTree = "<group>"; };
 		75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
 		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
 		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
+		DB606D20EB0F9A45D449238F /* WeekEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekEditorView.swift; sourceTree = "<group>"; };
 		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
 		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -226,6 +235,7 @@
 		DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeAPIService.swift; sourceTree = "<group>"; };
 		DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CalendarComponents.swift; sourceTree = "<group>"; };
+		E9AD26664A9C012346D58B4E /* PlanEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanEditorView.swift; sourceTree = "<group>"; };
 		FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTrendChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -375,6 +385,11 @@
 				89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */,
 				92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */,
 				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
+				18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */,
+				E9AD26664A9C012346D58B4E /* PlanEditorView.swift */,
+				DB606D20EB0F9A45D449238F /* WeekEditorView.swift */,
+				1F31304560398E5F65665084 /* DayEditorView.swift */,
+				2465CE756CC3395B14507526 /* SessionEditorView.swift */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -635,6 +650,11 @@
 				94759B03918562EAE418BADE /* TodaysTrainingView.swift in Sources */,
 				1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */,
 				F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */,
+				5FCF92ADAC7BC98998D587B2 /* AITrainingPlanPreviewView.swift in Sources */,
+				D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */,
+				5FB2A74699C3EFDEF1677742 /* WeekEditorView.swift in Sources */,
+				A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */,
+				D46F7C2F5DD956FE0C38B8FB /* SessionEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

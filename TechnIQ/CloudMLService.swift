@@ -365,11 +365,15 @@ class CloudMLService: ObservableObject {
         difficulty: String,
         category: String,
         targetRole: String?,
-        focusAreas: [String]
+        focusAreas: [String],
+        preferredDays: [String] = [],
+        restDays: [String] = []
     ) async throws -> GeneratedPlanStructure {
         #if DEBUG
         print("🤖 CloudMLService: Generating AI training plan for \(player.name ?? "Unknown")")
         print("📋 Parameters: \(duration) weeks, \(difficulty), \(category), role: \(targetRole ?? "none")")
+        if !preferredDays.isEmpty { print("📅 Preferred days: \(preferredDays.joined(separator: ", "))") }
+        if !restDays.isEmpty { print("😴 Rest days: \(restDays.joined(separator: ", "))") }
         #endif
 
         guard let userUID = auth.currentUser?.uid else {
@@ -387,7 +391,9 @@ class CloudMLService: ObservableObject {
             difficulty: difficulty,
             category: category,
             targetRole: targetRole,
-            focusAreas: focusAreas
+            focusAreas: focusAreas,
+            preferredDays: preferredDays,
+            restDays: restDays
         )
     }
 
@@ -398,7 +404,9 @@ class CloudMLService: ObservableObject {
         difficulty: String,
         category: String,
         targetRole: String?,
-        focusAreas: [String]
+        focusAreas: [String],
+        preferredDays: [String],
+        restDays: [String]
     ) async throws -> GeneratedPlanStructure {
 
         // Construct Firebase Functions URL for AI plan generation
@@ -420,6 +428,14 @@ class CloudMLService: ObservableObject {
 
         if let role = targetRole {
             requestBody["target_role"] = role
+        }
+
+        // Add schedule preferences (Phase 2)
+        if !preferredDays.isEmpty {
+            requestBody["preferred_days"] = preferredDays
+        }
+        if !restDays.isEmpty {
+            requestBody["rest_days"] = restDays
         }
 
         var request = URLRequest(url: url)

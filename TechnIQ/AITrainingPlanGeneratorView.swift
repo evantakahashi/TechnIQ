@@ -17,12 +17,25 @@ struct AITrainingPlanGeneratorView: View {
     @State private var focusAreas: [String] = []
     @State private var newFocusArea: String = ""
 
+    // Schedule preferences (Phase 2)
+    @State private var preferredDays: Set<DayOfWeek> = []
+    @State private var restDays: Set<DayOfWeek> = []
+    @State private var showScheduleConflict = false
+
     // UI state
     @State private var isGenerating = false
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var showSuccess = false
     @State private var generatedPlan: TrainingPlan?
+
+    // Preview state (Phase 1 enhancement)
+    @State private var generatedStructure: GeneratedPlanStructure?
+    @State private var showPreview = false
+    @State private var regenerationCount = 0
+
+    // Loading phases for better UX
+    @State private var loadingPhase: LoadingPhase = .connecting
 
     var body: some View {
         ZStack {
@@ -39,6 +52,9 @@ struct AITrainingPlanGeneratorView: View {
 
                     // Focus Areas
                     focusAreasCard
+
+                    // Schedule Preferences (Phase 2)
+                    schedulePreferencesCard
 
                     // Generate Button
                     if !isGenerating {
@@ -57,10 +73,32 @@ struct AITrainingPlanGeneratorView: View {
         }
         .navigationTitle("AI Plan Generator")
         .navigationBarTitleDisplayMode(.large)
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) { }
+        .alert("Generation Failed", isPresented: $showError) {
+            Button("Retry") {
+                generatePlan()
+            }
+            Button("Cancel", role: .cancel) { }
         } message: {
             Text(errorMessage)
+        }
+        .sheet(isPresented: $showPreview) {
+            if let structure = generatedStructure {
+                AITrainingPlanPreviewView(
+                    generatedPlan: structure,
+                    player: player,
+                    customName: planName,
+                    onRegenerate: {
+                        regenerationCount += 1
+                        generatePlan()
+                    },
+                    onModifyParameters: {
+                        // Return to form - preview is dismissed, user can modify
+                    },
+                    onSave: {
+                        savePlanFromStructure(structure)
+                    }
+                )
+            }
         }
         .sheet(isPresented: $showSuccess) {
             if let plan = generatedPlan {
@@ -230,28 +268,192 @@ struct AITrainingPlanGeneratorView: View {
         }
     }
 
-    // MARK: - Loading View
+    // MARK: - Schedule Preferences Card (Phase 2)
+
+    private var schedulePreferencesCard: some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.title2)
+                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
+
+                    Text("Schedule Preferences")
+                        .font(DesignSystem.Typography.titleSmall)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    Spacer()
+
+                    // Optional toggle
+                    Text("Optional")
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(DesignSystem.Colors.textSecondary.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.xs)
+                }
+
+                Text("Customize when you prefer to train. Leave empty to let AI optimize your schedule.")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                // Preferred Training Days
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Text("Preferred Training Days")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    DaySelector(
+                        selectedDays: $preferredDays,
+                        disabledDays: restDays,
+                        accentColor: DesignSystem.Colors.primaryGreen
+                    )
+                }
+
+                // Rest Days
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Text("Required Rest Days")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    DaySelector(
+                        selectedDays: $restDays,
+                        disabledDays: preferredDays,
+                        accentColor: DesignSystem.Colors.accentYellow
+                    )
+                }
+
+                // Conflict warning
+                if hasScheduleConflict {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(DesignSystem.Colors.warning)
+
+                        Text("A day cannot be both a training day and rest day")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.warning)
+                    }
+                    .padding(DesignSystem.Spacing.sm)
+                    .background(DesignSystem.Colors.warning.opacity(0.1))
+                    .cornerRadius(DesignSystem.CornerRadius.sm)
+                }
+
+                // Summary
+                if !preferredDays.isEmpty || !restDays.isEmpty {
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        if !preferredDays.isEmpty {
+                            Text("Training: \(preferredDays.sorted(by: { $0.sortOrder < $1.sortOrder }).map { $0.shortName }.joined(separator: ", "))")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        }
+                        if !restDays.isEmpty {
+                            Text("Rest: \(restDays.sorted(by: { $0.sortOrder < $1.sortOrder }).map { $0.shortName }.joined(separator: ", "))")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.accentYellow)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var hasScheduleConflict: Bool {
+        !preferredDays.isDisjoint(with: restDays)
+    }
+
+    // MARK: - Loading View (Enhanced with phases)
 
     private var loadingView: some View {
         ModernCard {
             VStack(spacing: DesignSystem.Spacing.lg) {
-                ProgressView()
-                    .scaleEffect(1.5)
+                // Animated soccer ball icon
+                ZStack {
+                    Circle()
+                        .stroke(DesignSystem.Colors.primaryGreen.opacity(0.2), lineWidth: 4)
+                        .frame(width: 60, height: 60)
+
+                    Circle()
+                        .trim(from: 0, to: 0.3)
+                        .stroke(DesignSystem.Colors.primaryGreen, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .frame(width: 60, height: 60)
+                        .rotationEffect(.degrees(loadingRotation))
+
+                    Image(systemName: "soccerball")
+                        .font(.title)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Text(loadingPhase.title)
+                        .font(DesignSystem.Typography.titleMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .animation(.easeInOut, value: loadingPhase)
+
+                    Text(loadingPhase.description)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .animation(.easeInOut, value: loadingPhase)
+                }
+
+                // Progress indicator
+                ProgressView(value: loadingPhase.progress, total: 1.0)
                     .tint(DesignSystem.Colors.primaryGreen)
+                    .animation(.easeInOut, value: loadingPhase)
 
-                Text("Generating Your Plan...")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                if regenerationCount > 0 {
+                    Text("Regeneration attempt \(regenerationCount + 1)")
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                }
 
-                Text("Our AI is creating a personalized training plan based on your profile. This may take 30-60 seconds.")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                // Cancel button
+                Button(action: cancelGeneration) {
+                    Text("Cancel")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+                .padding(.top, DesignSystem.Spacing.sm)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, DesignSystem.Spacing.xl)
         }
+        .onAppear {
+            startLoadingAnimation()
+            startPhaseProgression()
+        }
+    }
+
+    @State private var loadingRotation: Double = 0
+
+    private func startLoadingAnimation() {
+        withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
+            loadingRotation = 360
+        }
+    }
+
+    private func startPhaseProgression() {
+        // Simulate phase progression
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if isGenerating { loadingPhase = .analyzing }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if isGenerating { loadingPhase = .generating }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+            if isGenerating { loadingPhase = .structuring }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+            if isGenerating { loadingPhase = .finalizing }
+        }
+    }
+
+    private func cancelGeneration() {
+        isGenerating = false
+        loadingPhase = .connecting
     }
 
     // MARK: - Success View
@@ -356,45 +558,100 @@ struct AITrainingPlanGeneratorView: View {
 
     private func generatePlan() {
         isGenerating = true
+        loadingPhase = .connecting
 
         Task {
             do {
+                // Convert schedule preferences to string arrays
+                let preferredDayStrings = preferredDays.sorted().map { $0.rawValue }
+                let restDayStrings = restDays.sorted().map { $0.rawValue }
+
                 // Call AI generation service
-                let generatedStructure = try await CloudMLService.shared.generateTrainingPlan(
+                let structure = try await CloudMLService.shared.generateTrainingPlan(
                     for: player,
                     duration: duration,
                     difficulty: difficulty.rawValue,
                     category: category.rawValue,
                     targetRole: category == .position ? targetRole : nil,
-                    focusAreas: focusAreas
+                    focusAreas: focusAreas,
+                    preferredDays: preferredDayStrings,
+                    restDays: restDayStrings
                 )
 
-                // Convert to Core Data
+                // Show preview instead of auto-saving
                 await MainActor.run {
-                    if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(generatedStructure, for: player) {
-                        // Override name if user provided one
-                        if !planName.trimmingCharacters(in: .whitespaces).isEmpty {
-                            plan.name = planName
-                            try? viewContext.save()
-                        }
-
-                        generatedPlan = plan
-                        isGenerating = false
-                        showSuccess = true
-                    } else {
-                        isGenerating = false
-                        errorMessage = "Failed to save generated plan. Please try again."
-                        showError = true
-                    }
+                    generatedStructure = structure
+                    isGenerating = false
+                    loadingPhase = .connecting
+                    showPreview = true
                 }
 
             } catch {
                 await MainActor.run {
                     isGenerating = false
+                    loadingPhase = .connecting
                     errorMessage = "AI generation failed: \(error.localizedDescription)\n\nPlease check your internet connection and try again."
                     showError = true
                 }
             }
+        }
+    }
+
+    private func savePlanFromStructure(_ structure: GeneratedPlanStructure) {
+        if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player) {
+            // Override name if user provided one
+            if !planName.trimmingCharacters(in: .whitespaces).isEmpty {
+                plan.name = planName
+                try? viewContext.save()
+            }
+
+            generatedPlan = plan
+            showPreview = false
+            showSuccess = true
+        } else {
+            showPreview = false
+            errorMessage = "Failed to save generated plan. Please try again."
+            showError = true
+        }
+    }
+}
+
+// MARK: - Loading Phase Enum
+
+enum LoadingPhase: Equatable {
+    case connecting
+    case analyzing
+    case generating
+    case structuring
+    case finalizing
+
+    var title: String {
+        switch self {
+        case .connecting: return "Connecting..."
+        case .analyzing: return "Analyzing Your Profile..."
+        case .generating: return "Generating Plan..."
+        case .structuring: return "Structuring Weeks..."
+        case .finalizing: return "Finalizing Details..."
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .connecting: return "Establishing connection to AI service"
+        case .analyzing: return "Reviewing your skills, goals, and preferences"
+        case .generating: return "Creating personalized training sessions"
+        case .structuring: return "Organizing weekly schedules and rest days"
+        case .finalizing: return "Adding exercises and final touches"
+        }
+    }
+
+    var progress: Double {
+        switch self {
+        case .connecting: return 0.1
+        case .analyzing: return 0.3
+        case .generating: return 0.5
+        case .structuring: return 0.7
+        case .finalizing: return 0.9
         }
     }
 }
@@ -465,6 +722,89 @@ struct FlowLayout: Layout {
             }
 
             self.size = CGSize(width: maxWidth, height: currentY + lineHeight)
+        }
+    }
+}
+
+// MARK: - Day Selector (Phase 2)
+
+struct DaySelector: View {
+    @Binding var selectedDays: Set<DayOfWeek>
+    let disabledDays: Set<DayOfWeek>
+    let accentColor: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(DayOfWeek.allCases, id: \.self) { day in
+                DayButton(
+                    day: day,
+                    isSelected: selectedDays.contains(day),
+                    isDisabled: disabledDays.contains(day),
+                    accentColor: accentColor
+                ) {
+                    toggleDay(day)
+                }
+            }
+        }
+    }
+
+    private func toggleDay(_ day: DayOfWeek) {
+        if selectedDays.contains(day) {
+            selectedDays.remove(day)
+        } else {
+            selectedDays.insert(day)
+        }
+    }
+}
+
+struct DayButton: View {
+    let day: DayOfWeek
+    let isSelected: Bool
+    let isDisabled: Bool
+    let accentColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(String(day.shortName.prefix(1)))
+                .font(DesignSystem.Typography.labelSmall)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .foregroundColor(foregroundColor)
+                .frame(width: 36, height: 36)
+                .background(backgroundColor)
+                .cornerRadius(DesignSystem.CornerRadius.sm)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
+                        .stroke(borderColor, lineWidth: isSelected ? 0 : 1)
+                )
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.4 : 1.0)
+    }
+
+    private var foregroundColor: Color {
+        if isSelected {
+            return .white
+        } else if isDisabled {
+            return DesignSystem.Colors.textSecondary
+        } else {
+            return DesignSystem.Colors.textPrimary
+        }
+    }
+
+    private var backgroundColor: Color {
+        if isSelected {
+            return accentColor
+        } else {
+            return Color.clear
+        }
+    }
+
+    private var borderColor: Color {
+        if isDisabled {
+            return DesignSystem.Colors.textSecondary.opacity(0.3)
+        } else {
+            return DesignSystem.Colors.textSecondary.opacity(0.3)
         }
     }
 }

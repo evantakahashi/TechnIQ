@@ -985,11 +985,19 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
         focus_areas = request_data.get('focus_areas', [])
         target_role = request_data.get('target_role')
 
+        # Schedule preferences (Phase 2)
+        preferred_days = request_data.get('preferred_days', [])
+        rest_days = request_data.get('rest_days', [])
+
         if not user_id or not player_profile:
             return https_fn.Response("Missing user_id or player_profile", status=400)
 
         logger.info(f"🏋️ Generating {duration_weeks}-week {difficulty} training plan for {user_id}")
         logger.info(f"📝 Category: {category}, Focus: {', '.join(focus_areas)}")
+        if preferred_days:
+            logger.info(f"📅 Preferred training days: {', '.join(preferred_days)}")
+        if rest_days:
+            logger.info(f"😴 Required rest days: {', '.join(rest_days)}")
 
         # Build AI prompt
         player_goals = ', '.join(player_profile.get('goals', []))
@@ -997,6 +1005,13 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
         position = player_profile.get('position', 'player')
         age = player_profile.get('age', 16)
         experience = player_profile.get('experienceLevel', 'intermediate')
+
+        # Build schedule preferences text
+        schedule_prefs_text = ""
+        if preferred_days:
+            schedule_prefs_text += f"- Preferred Training Days: {', '.join(preferred_days)}\n"
+        if rest_days:
+            schedule_prefs_text += f"- Required Rest Days: {', '.join(rest_days)}\n"
 
         prompt = f"""You are a professional soccer coach. Create a {duration_weeks}-week {difficulty} training plan for a {position} focused on {category} skills.
 
@@ -1007,7 +1022,7 @@ Player Details:
 - Goals: {player_goals}
 {f'- Target Role: {target_role}' if target_role else ''}
 {f'- Focus Areas: {focus_areas_str}' if focus_areas else ''}
-
+{schedule_prefs_text}
 Return ONLY valid JSON matching this exact structure (no markdown, no code blocks):
 {{
   "name": "Plan Name",
@@ -1041,14 +1056,15 @@ Return ONLY valid JSON matching this exact structure (no markdown, no code block
 }}
 
 IMPORTANT REQUIREMENTS:
-- Include 5-7 days per week
-- Include 1-2 rest days per week (is_rest_day: true)
+- Include ALL 7 days per week (Monday through Sunday)
 - Use progressive difficulty (periodization)
 - Include 2-4 exercises per session
 - Match exercise names to: Wall Passing, Triangle Passing, Cone Weaving, Dribbling Course, First Touch Practice, Juggling, Passing Gates, Speed Ladder, Sprints, Interval Run, Yoga Flow, Foam Rolling
 - Session types: Technical, Physical, Tactical, Recovery
 - Duration: 30-90 minutes
 - Intensity: 1-5 scale
+{f'- MUST mark these days as rest days (is_rest_day: true, sessions: []): {", ".join(rest_days)}' if rest_days else '- Include 1-2 rest days per week (is_rest_day: true)'}
+{f'- PRIORITIZE training sessions on these days: {", ".join(preferred_days)}' if preferred_days else ''}
 - Return ONLY the JSON object, no extra text"""
 
         # Use OpenAI as fallback (more reliable setup)
