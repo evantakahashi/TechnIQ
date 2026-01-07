@@ -61,7 +61,7 @@ struct TrainingPlansListView: View {
         }
         .sheet(isPresented: $showingPlanDetail) {
             if let plan = selectedPlan, let player = players.first {
-                TrainingPlanDetailView(plan: plan, player: player)
+                TrainingPlanDetailView(initialPlan: plan, player: player)
             }
         }
         .sheet(isPresented: $showingCustomBuilder) {

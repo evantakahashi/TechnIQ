@@ -5,13 +5,18 @@ struct TrainingPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var planService = TrainingPlanService.shared
 
-    let plan: TrainingPlanModel
+    let initialPlan: TrainingPlanModel
     let player: Player
 
+    @State private var currentPlan: TrainingPlanModel?
     @State private var showingConfirmStart = false
     @State private var expandedWeeks: Set<UUID> = []
     @State private var showingEditor = false
-    @State private var refreshID = UUID() // For refreshing view after edits
+
+    /// The plan to display (current or initial)
+    private var plan: TrainingPlanModel {
+        currentPlan ?? initialPlan
+    }
 
     var body: some View {
         NavigationView {
@@ -54,11 +59,10 @@ struct TrainingPlanDetailView: View {
             }
             .sheet(isPresented: $showingEditor) {
                 PlanEditorView(plan: plan, player: player) {
-                    // Refresh the view after editing
-                    refreshID = UUID()
+                    // Refresh plan data from Core Data after editing
+                    refreshPlanData()
                 }
             }
-            .id(refreshID)
             .confirmationDialog("Start Training Plan?", isPresented: $showingConfirmStart) {
                 Button("Start Plan") {
                     startPlan()
@@ -67,6 +71,13 @@ struct TrainingPlanDetailView: View {
             } message: {
                 Text("This will set \"\(plan.name)\" as your active training plan. Any currently active plan will be deactivated.")
             }
+        }
+    }
+
+    /// Refreshes plan data from Core Data
+    private func refreshPlanData() {
+        if let freshPlan = TrainingPlanService.shared.fetchPlan(byId: initialPlan.id) {
+            currentPlan = freshPlan
         }
     }
 
@@ -377,7 +388,7 @@ struct DayRow: View {
 
 #Preview {
     TrainingPlanDetailView(
-        plan: TrainingPlanModel(
+        initialPlan: TrainingPlanModel(
             id: UUID(),
             name: "Striker Development",
             description: "8-week program focused on finishing, positioning, and movement in the attacking third",

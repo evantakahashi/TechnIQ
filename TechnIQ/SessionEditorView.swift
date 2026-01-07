@@ -329,25 +329,33 @@ struct SessionEditorView: View {
     private func loadExerciseNames() {
         // Fetch exercise names from Core Data based on exercise IDs
         let context = CoreDataManager.shared.context
-        var names: [String] = []
+        let exerciseIDs = session.exerciseIDs
 
-        for exerciseId in session.exerciseIDs {
-            let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
-            request.predicate = NSPredicate(format: "id == %@", exerciseId as CVarArg)
-            request.fetchLimit = 1
+        // Use perform block for thread safety
+        context.perform {
+            var names: [String] = []
 
-            do {
-                if let exercise = try context.fetch(request).first {
-                    names.append(exercise.name ?? "Unknown Exercise")
+            for exerciseId in exerciseIDs {
+                let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+                request.predicate = NSPredicate(format: "id == %@", exerciseId as CVarArg)
+                request.fetchLimit = 1
+
+                do {
+                    if let exercise = try context.fetch(request).first {
+                        names.append(exercise.name ?? "Unknown Exercise")
+                    }
+                } catch {
+                    #if DEBUG
+                    print("Failed to fetch exercise: \(error)")
+                    #endif
                 }
-            } catch {
-                #if DEBUG
-                print("Failed to fetch exercise: \(error)")
-                #endif
+            }
+
+            // Update UI on main thread
+            DispatchQueue.main.async {
+                self.exerciseNames = names
             }
         }
-
-        exerciseNames = names
     }
 
     private func saveChanges() {

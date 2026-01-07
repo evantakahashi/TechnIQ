@@ -53,6 +53,23 @@ class TrainingPlanService: ObservableObject {
         }
     }
 
+    /// Fetches a single plan by ID (for refreshing after edits)
+    func fetchPlan(byId planId: UUID) -> TrainingPlanModel? {
+        let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", planId as CVarArg)
+        request.fetchLimit = 1
+
+        do {
+            let plan = try context.fetch(request).first
+            return plan?.toModel()
+        } catch {
+            #if DEBUG
+            print("Failed to fetch plan by ID: \(error)")
+            #endif
+            return nil
+        }
+    }
+
     // MARK: - Create Plans
 
     func createCustomPlan(
@@ -475,108 +492,137 @@ class TrainingPlanService: ObservableObject {
     // MARK: - Update Methods (Phase 3 - Plan Editing)
 
     /// Updates a training plan's basic information
-    func updatePlan(planId: UUID, name: String, description: String) {
+    /// - Returns: true if update succeeded, false otherwise
+    @discardableResult
+    func updatePlan(planId: UUID, name: String, description: String) -> Bool {
         let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", planId as CVarArg)
         request.fetchLimit = 1
 
         do {
-            if let plan = try context.fetch(request).first {
-                plan.name = name
-                plan.planDescription = description
-                plan.updatedAt = Date()
-                try context.save()
+            guard let plan = try context.fetch(request).first else {
                 #if DEBUG
-                print("Updated plan: \(name)")
+                print("Failed to find plan with ID: \(planId)")
                 #endif
+                return false
             }
+            plan.name = name
+            plan.planDescription = description
+            plan.updatedAt = Date()
+            try context.save()
+            #if DEBUG
+            print("Updated plan: \(name)")
+            #endif
+            return true
         } catch {
             #if DEBUG
             print("Failed to update plan: \(error)")
             #endif
+            return false
         }
     }
 
     /// Updates a week's focus area and notes
-    func updateWeek(weekId: UUID, focusArea: String?, notes: String?) {
+    /// - Returns: true if update succeeded, false otherwise
+    @discardableResult
+    func updateWeek(weekId: UUID, focusArea: String?, notes: String?) -> Bool {
         let request: NSFetchRequest<PlanWeek> = PlanWeek.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", weekId as CVarArg)
         request.fetchLimit = 1
 
         do {
-            if let week = try context.fetch(request).first {
-                week.focusArea = focusArea
-                week.notes = notes
-
-                // Also update the parent plan's timestamp
-                week.plan?.updatedAt = Date()
-
-                try context.save()
+            guard let week = try context.fetch(request).first else {
                 #if DEBUG
-                print("Updated week \(week.weekNumber): \(focusArea ?? "no focus")")
+                print("Failed to find week with ID: \(weekId)")
                 #endif
+                return false
             }
+            week.focusArea = focusArea
+            week.notes = notes
+
+            // Also update the parent plan's timestamp
+            week.plan?.updatedAt = Date()
+
+            try context.save()
+            #if DEBUG
+            print("Updated week \(week.weekNumber): \(focusArea ?? "no focus")")
+            #endif
+            return true
         } catch {
             #if DEBUG
             print("Failed to update week: \(error)")
             #endif
+            return false
         }
     }
 
     /// Updates a day's rest status and notes
-    func updateDay(dayId: UUID, isRestDay: Bool, notes: String?) {
+    /// - Returns: true if update succeeded, false otherwise
+    @discardableResult
+    func updateDay(dayId: UUID, isRestDay: Bool, notes: String?) -> Bool {
         let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", dayId as CVarArg)
         request.fetchLimit = 1
 
         do {
-            if let day = try context.fetch(request).first {
-                day.isRestDay = isRestDay
-                day.notes = notes
-
-                // If marked as rest day, we might want to clear sessions
-                // For now, keep sessions but just mark as rest day
-
-                // Update parent plan's timestamp
-                day.week?.plan?.updatedAt = Date()
-
-                try context.save()
+            guard let day = try context.fetch(request).first else {
                 #if DEBUG
-                print("Updated day \(day.dayNumber): isRestDay=\(isRestDay)")
+                print("Failed to find day with ID: \(dayId)")
                 #endif
+                return false
             }
+            day.isRestDay = isRestDay
+            day.notes = notes
+
+            // Update parent plan's timestamp
+            day.week?.plan?.updatedAt = Date()
+
+            try context.save()
+            #if DEBUG
+            print("Updated day \(day.dayNumber): isRestDay=\(isRestDay)")
+            #endif
+            return true
         } catch {
             #if DEBUG
             print("Failed to update day: \(error)")
             #endif
+            return false
         }
     }
 
     /// Updates a session's type, duration, intensity, and notes
-    func updateSession(sessionId: UUID, sessionType: SessionType, duration: Int, intensity: Int, notes: String?) {
+    /// - Returns: true if update succeeded, false otherwise
+    @discardableResult
+    func updateSession(sessionId: UUID, sessionType: SessionType, duration: Int, intensity: Int, notes: String?) -> Bool {
         let request: NSFetchRequest<PlanSession> = PlanSession.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", sessionId as CVarArg)
         request.fetchLimit = 1
 
         do {
-            if let session = try context.fetch(request).first {
-                session.sessionType = sessionType.rawValue
-                session.duration = Int16(duration)
-                session.intensity = Int16(intensity)
-                session.notes = notes
-
-                // Update parent plan's timestamp
-                session.day?.week?.plan?.updatedAt = Date()
-
-                try context.save()
+            guard let session = try context.fetch(request).first else {
                 #if DEBUG
-                print("Updated session: \(sessionType.displayName) - \(duration)min")
+                print("Failed to find session with ID: \(sessionId)")
                 #endif
+                return false
             }
+            session.sessionType = sessionType.rawValue
+            session.duration = Int16(duration)
+            session.intensity = Int16(intensity)
+            session.notes = notes
+
+            // Update parent plan's timestamp
+            session.day?.week?.plan?.updatedAt = Date()
+
+            try context.save()
+            #if DEBUG
+            print("Updated session: \(sessionType.displayName) - \(duration)min")
+            #endif
+            return true
         } catch {
             #if DEBUG
             print("Failed to update session: \(error)")
             #endif
+            return false
         }
     }
 

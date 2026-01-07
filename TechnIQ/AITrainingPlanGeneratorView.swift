@@ -37,6 +37,9 @@ struct AITrainingPlanGeneratorView: View {
     // Loading phases for better UX
     @State private var loadingPhase: LoadingPhase = .connecting
 
+    // Task management to prevent orphaned tasks
+    @State private var generationTask: Task<Void, Never>?
+
     var body: some View {
         ZStack {
             DesignSystem.Colors.backgroundGradient
@@ -107,6 +110,10 @@ struct AITrainingPlanGeneratorView: View {
         }
         .onAppear {
             prefillFromPlayerProfile()
+        }
+        .onDisappear {
+            // Cancel any running generation task when view is dismissed
+            cancelGeneration()
         }
     }
 
@@ -452,6 +459,8 @@ struct AITrainingPlanGeneratorView: View {
     }
 
     private func cancelGeneration() {
+        generationTask?.cancel()
+        generationTask = nil
         isGenerating = false
         loadingPhase = .connecting
     }
@@ -560,8 +569,14 @@ struct AITrainingPlanGeneratorView: View {
         isGenerating = true
         loadingPhase = .connecting
 
-        Task {
+        // Cancel any existing task before starting a new one
+        generationTask?.cancel()
+
+        generationTask = Task {
             do {
+                // Check for cancellation before starting
+                try Task.checkCancellation()
+
                 // Convert schedule preferences to string arrays
                 let preferredDayStrings = preferredDays.sorted().map { $0.rawValue }
                 let restDayStrings = restDays.sorted().map { $0.rawValue }
@@ -578,6 +593,9 @@ struct AITrainingPlanGeneratorView: View {
                     restDays: restDayStrings
                 )
 
+                // Check for cancellation before updating UI
+                try Task.checkCancellation()
+
                 // Show preview instead of auto-saving
                 await MainActor.run {
                     generatedStructure = structure
@@ -586,6 +604,12 @@ struct AITrainingPlanGeneratorView: View {
                     showPreview = true
                 }
 
+            } catch is CancellationError {
+                // Task was cancelled, clean up silently
+                await MainActor.run {
+                    isGenerating = false
+                    loadingPhase = .connecting
+                }
             } catch {
                 await MainActor.run {
                     isGenerating = false
