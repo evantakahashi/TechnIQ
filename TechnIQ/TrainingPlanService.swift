@@ -626,6 +626,96 @@ class TrainingPlanService: ObservableObject {
         }
     }
 
+    // MARK: - Clone/Duplicate Plans (Phase 4)
+
+    /// Creates a complete copy of an existing training plan
+    /// - Parameters:
+    ///   - planModel: The plan to clone
+    ///   - player: The player who will own the cloned plan
+    ///   - newName: Optional new name for the clone (defaults to "Copy of [original name]")
+    /// - Returns: The cloned TrainingPlan entity, or nil if cloning failed
+    func clonePlan(_ planModel: TrainingPlanModel, for player: Player, newName: String? = nil) -> TrainingPlan? {
+        // Create the base plan
+        let clonedPlan = TrainingPlan(context: context)
+        clonedPlan.id = UUID()
+        clonedPlan.name = newName ?? "Copy of \(planModel.name)"
+        clonedPlan.planDescription = planModel.description
+        clonedPlan.durationWeeks = Int16(planModel.durationWeeks)
+        clonedPlan.difficulty = planModel.difficulty.rawValue
+        clonedPlan.category = planModel.category.rawValue
+        clonedPlan.targetRole = planModel.targetRole
+        clonedPlan.isPrebuilt = false // Clones are never prebuilt
+        clonedPlan.isActive = false
+        clonedPlan.currentWeek = 1
+        clonedPlan.progressPercentage = 0.0
+        clonedPlan.createdAt = Date()
+        clonedPlan.updatedAt = Date()
+        clonedPlan.player = player
+
+        // Clone all weeks
+        for weekModel in planModel.weeks {
+            let clonedWeek = PlanWeek(context: context)
+            clonedWeek.id = UUID()
+            clonedWeek.weekNumber = Int16(weekModel.weekNumber)
+            clonedWeek.focusArea = weekModel.focusArea
+            clonedWeek.notes = weekModel.notes
+            clonedWeek.isCompleted = false
+            clonedWeek.plan = clonedPlan
+
+            // Clone all days in the week
+            for dayModel in weekModel.days {
+                let clonedDay = PlanDay(context: context)
+                clonedDay.id = UUID()
+                clonedDay.dayNumber = Int16(dayModel.dayNumber)
+                clonedDay.dayOfWeek = dayModel.dayOfWeek?.rawValue
+                clonedDay.isRestDay = dayModel.isRestDay
+                clonedDay.notes = dayModel.notes
+                clonedDay.isCompleted = false
+                clonedDay.week = clonedWeek
+
+                // Clone all sessions in the day
+                for sessionModel in dayModel.sessions {
+                    let clonedSession = PlanSession(context: context)
+                    clonedSession.id = UUID()
+                    clonedSession.sessionType = sessionModel.sessionType.rawValue
+                    clonedSession.duration = Int16(sessionModel.duration)
+                    clonedSession.intensity = Int16(sessionModel.intensity)
+                    clonedSession.notes = sessionModel.notes
+                    clonedSession.isCompleted = false
+                    clonedSession.day = clonedDay
+
+                    // Clone exercise references
+                    if !sessionModel.exerciseIDs.isEmpty {
+                        var exercises: [Exercise] = []
+                        for exerciseID in sessionModel.exerciseIDs {
+                            let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+                            request.predicate = NSPredicate(format: "id == %@", exerciseID as CVarArg)
+                            request.fetchLimit = 1
+                            if let exercise = try? context.fetch(request).first {
+                                exercises.append(exercise)
+                            }
+                        }
+                        clonedSession.exercises = NSSet(array: exercises)
+                    }
+                }
+            }
+        }
+
+        do {
+            try context.save()
+            #if DEBUG
+            print("Successfully cloned plan: \(planModel.name) -> \(clonedPlan.name ?? "")")
+            #endif
+            return clonedPlan
+        } catch {
+            #if DEBUG
+            print("Failed to clone plan: \(error)")
+            #endif
+            context.rollback()
+            return nil
+        }
+    }
+
     // MARK: - Today's Training Helpers
 
     /// Gets today's planned sessions for the active plan

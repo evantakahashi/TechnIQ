@@ -13,6 +13,11 @@ struct TrainingPlanDetailView: View {
     @State private var expandedWeeks: Set<UUID> = []
     @State private var showingEditor = false
 
+    // Phase 4: Share and Duplicate
+    @State private var showingShareSheet = false
+    @State private var showingDuplicateSuccess = false
+    @State private var duplicatedPlanName: String = ""
+
     /// The plan to display (current or initial)
     private var plan: TrainingPlanModel {
         currentPlan ?? initialPlan
@@ -42,13 +47,30 @@ struct TrainingPlanDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
-                        // Edit button (only for non-prebuilt plans)
-                        if !plan.isPrebuilt {
-                            Button {
-                                showingEditor = true
-                            } label: {
-                                Image(systemName: "pencil")
+                        // More options menu
+                        Menu {
+                            // Edit button (only for non-prebuilt plans)
+                            if !plan.isPrebuilt {
+                                Button {
+                                    showingEditor = true
+                                } label: {
+                                    Label("Edit Plan", systemImage: "pencil")
+                                }
                             }
+
+                            Button {
+                                duplicatePlan()
+                            } label: {
+                                Label("Duplicate Plan", systemImage: "doc.on.doc")
+                            }
+
+                            Button {
+                                showingShareSheet = true
+                            } label: {
+                                Label("Share to Community", systemImage: "square.and.arrow.up")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
 
                         Button("Close") {
@@ -63,6 +85,14 @@ struct TrainingPlanDetailView: View {
                     refreshPlanData()
                 }
             }
+            .sheet(isPresented: $showingShareSheet) {
+                SharePlanView(plan: plan)
+            }
+            .alert("Plan Duplicated!", isPresented: $showingDuplicateSuccess) {
+                Button("OK") { }
+            } message: {
+                Text("\"\(duplicatedPlanName)\" has been created. You can find it in My Plans.")
+            }
             .confirmationDialog("Start Training Plan?", isPresented: $showingConfirmStart) {
                 Button("Start Plan") {
                     startPlan()
@@ -71,6 +101,14 @@ struct TrainingPlanDetailView: View {
             } message: {
                 Text("This will set \"\(plan.name)\" as your active training plan. Any currently active plan will be deactivated.")
             }
+        }
+    }
+
+    /// Duplicates the current plan
+    private func duplicatePlan() {
+        if let clonedPlan = TrainingPlanService.shared.clonePlan(plan, for: player) {
+            duplicatedPlanName = clonedPlan.name ?? "Copy of \(plan.name)"
+            showingDuplicateSuccess = true
         }
     }
 
