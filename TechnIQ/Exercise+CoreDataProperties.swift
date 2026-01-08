@@ -22,6 +22,13 @@ extension Exercise {
     @NSManaged public var sessionExercises: NSSet?
     @NSManaged public var player: Player?
 
+    // Phase 1: Favorites & Quick Access
+    @NSManaged public var isFavorite: Bool
+    @NSManaged public var lastUsedAt: Date?
+
+    // Phase 5: Personal Notes
+    @NSManaged public var personalNotes: String?
+
 }
 
 // MARK: Generated accessors for sessionExercises

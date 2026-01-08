@@ -33,7 +33,9 @@ class NetworkManager: ObservableObject {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
+            #if DEBUG
             print("Decoding error: \(error)")
+            #endif
             throw NetworkError.decodingError(error)
         }
     }

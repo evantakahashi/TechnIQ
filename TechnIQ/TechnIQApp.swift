@@ -27,7 +27,9 @@ struct TechnIQApp: App {
 
         #if targetEnvironment(simulator)
         // For simulator testing - disable problematic features
+        #if DEBUG
         print("🔧 Configuring Firestore for simulator")
+        #endif
         #endif
 
         db.settings = settings
@@ -38,9 +40,13 @@ struct TechnIQApp: App {
            let clientId = plist["CLIENT_ID"] as? String {
             let config = GIDConfiguration(clientID: clientId)
             GIDSignIn.sharedInstance.configuration = config
+            #if DEBUG
             print("✅ Google Sign-In configured successfully with client ID: \(clientId)")
+            #endif
         } else {
+            #if DEBUG
             print("❌ Warning: Could not configure Google Sign-In - GoogleService-Info.plist not found or invalid")
+            #endif
         }
     }
 

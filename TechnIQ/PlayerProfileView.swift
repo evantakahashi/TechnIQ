@@ -85,7 +85,9 @@ struct PlayerProfileView: View {
         guard !authManager.userUID.isEmpty else { return }
         
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
+        #if DEBUG
         print("🔍 Updated PlayerProfileView filter for user: \(authManager.userUID)")
+        #endif
     }
     
     private func profileHeaderCard(player: Player) -> some View {

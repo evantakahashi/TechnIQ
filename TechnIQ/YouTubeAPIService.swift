@@ -224,7 +224,9 @@ class YouTubeAPIService: ObservableObject {
             _ = try await searchSoccerDrills(query: "test", maxResults: 1)
             return true
         } catch {
+            #if DEBUG
             print("API key validation failed: \(error)")
+            #endif
             return false
         }
     }

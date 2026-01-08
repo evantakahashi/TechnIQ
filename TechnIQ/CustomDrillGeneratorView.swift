@@ -320,7 +320,9 @@ struct CustomDrillGeneratorView: View {
                 
             } catch {
                 // Handle error - could show an error alert
+                #if DEBUG
                 print("Failed to generate drill: \(error)")
+                #endif
             }
         }
     }

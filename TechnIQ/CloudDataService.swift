@@ -50,7 +50,9 @@ class CloudDataService: ObservableObject {
                 guard let self = self else { return }
                 self.isNetworkAvailable = path.status == .satisfied
                 if path.status != .satisfied {
+                    #if DEBUG
                     print("🌐 Network connection lost - will skip cloud sync operations")
+                    #endif
                 }
             }
         }
@@ -202,18 +204,39 @@ class CloudDataService: ObservableObject {
     }
     
     // MARK: - Offline Queue Management
-    
+
     func syncOfflineChanges() async throws {
         // Implement offline change queue sync
         // This would sync any changes made while offline
         syncStatus = .syncing
-        
+
         // Fetch pending changes from Core Data
         // Sync each change type in order
         // Mark changes as synced
-        
+
         syncStatus = .success
         lastSyncDate = Date()
+    }
+
+    // MARK: - Community Training Plans
+
+    func shareTrainingPlan(_ plan: TrainingPlanModel, message: String) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        guard isNetworkAvailable else {
+            throw CloudDataError.networkError
+        }
+
+        let planData = try createSharedPlanDocument(plan: plan, message: message, userUID: userUID)
+
+        try await db.collection("communityPlans").document(plan.id.uuidString)
+            .setData(planData, merge: false)
+
+        #if DEBUG
+        print("✅ Successfully shared plan '\(plan.name)' to community")
+        #endif
     }
 }
 
@@ -328,6 +351,55 @@ extension CloudDataService {
             preferredIntensity: data["preferredIntensity"] as? Int ?? 5,
             physicalFocusAreas: data["physicalFocusAreas"] as? [String] ?? []
         )
+    }
+
+    private func createSharedPlanDocument(plan: TrainingPlanModel, message: String, userUID: String) throws -> [String: Any] {
+        // Serialize weeks
+        let weeksData = plan.weeks.map { week -> [String: Any] in
+            let daysData = week.days.map { day -> [String: Any] in
+                let sessionsData = day.sessions.map { session -> [String: Any] in
+                    return [
+                        "sessionType": session.sessionType.rawValue,
+                        "duration": session.duration,
+                        "intensity": session.intensity,
+                        "notes": session.notes ?? "",
+                        "exerciseIDs": session.exerciseIDs.map { $0.uuidString }
+                    ]
+                }
+
+                return [
+                    "dayNumber": day.dayNumber,
+                    "dayOfWeek": day.dayOfWeek?.rawValue ?? "",
+                    "isRestDay": day.isRestDay,
+                    "notes": day.notes ?? "",
+                    "sessions": sessionsData
+                ]
+            }
+
+            return [
+                "weekNumber": week.weekNumber,
+                "focusArea": week.focusArea ?? "",
+                "notes": week.notes ?? "",
+                "days": daysData
+            ]
+        }
+
+        return [
+            "id": plan.id.uuidString,
+            "name": plan.name,
+            "description": plan.description,
+            "durationWeeks": plan.durationWeeks,
+            "difficulty": plan.difficulty.rawValue,
+            "category": plan.category.rawValue,
+            "targetRole": plan.targetRole ?? "",
+            "estimatedTotalHours": plan.estimatedTotalHours,
+            "weeks": weeksData,
+            "contributorUID": userUID,
+            "contributorMessage": message,
+            "sharedAt": Date(),
+            "upvotes": 0,
+            "downloads": 0
+        ] as [String: Any]
     }
 }
 

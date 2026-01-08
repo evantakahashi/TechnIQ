@@ -28,10 +28,13 @@ struct SessionHistoryView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
     @FetchRequest var sessions: FetchedResults<TrainingSession>
-    
+    @FetchRequest var players: FetchedResults<Player>
+
     @State private var selectedSession: TrainingSession?
     @State private var showingSessionDetail = false
     @State private var viewMode: SessionViewMode = .list
+    @State private var activePlan: TrainingPlanModel?
+    @State private var showingTodaysTraining = false
     
     init() {
         // Initialize with empty predicate - will be updated in onAppear
@@ -40,47 +43,66 @@ struct SessionHistoryView: View {
             predicate: NSPredicate(value: false), // Temporary predicate
             animation: .default
         )
+        self._players = FetchRequest(
+            sortDescriptors: [],
+            predicate: NSPredicate(value: false),
+            animation: .default
+        )
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                DesignSystem.Colors.backgroundGradient
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    // View Mode Picker
-                    viewModePickerSection
-                    
-                    // Content based on view mode
-                    if viewMode == .list {
-                        listView
-                    } else {
-                        calendarView
-                    }
+        ZStack {
+            DesignSystem.Colors.backgroundGradient
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Today's Training Card (if active plan exists)
+                if let plan = activePlan {
+                    todaysTrainingCard(plan: plan)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.top, DesignSystem.Spacing.md)
+                }
+
+                // View Mode Picker
+                viewModePickerSection
+
+                // Content based on view mode
+                if viewMode == .list {
+                    listView
+                } else {
+                    calendarView
                 }
             }
-            .navigationTitle("Training History")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: toggleViewMode) {
-                        Image(systemName: viewMode == .list ? "calendar" : "list.bullet")
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
+        }
+        .navigationTitle("Training History")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: toggleViewMode) {
+                    Image(systemName: viewMode == .list ? "calendar" : "list.bullet")
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
             }
-            .sheet(isPresented: $showingSessionDetail) {
-                if let session = selectedSession {
-                    SessionDetailView(session: session)
-                }
+        }
+        .sheet(isPresented: $showingSessionDetail) {
+            if let session = selectedSession {
+                SessionDetailView(session: session)
             }
-            .onAppear {
-                updateSessionsFilter()
+        }
+        .sheet(isPresented: $showingTodaysTraining) {
+            if let plan = activePlan, let player = players.first {
+                TodaysTrainingView(player: player, activePlan: plan)
             }
-            .onChange(of: authManager.userUID) {
-                updateSessionsFilter()
-            }
+        }
+        .onAppear {
+            updateSessionsFilter()
+            updatePlayersFilter()
+            loadActivePlan()
+        }
+        .onChange(of: authManager.userUID) {
+            updateSessionsFilter()
+            updatePlayersFilter()
+            loadActivePlan()
         }
     }
     
@@ -213,30 +235,77 @@ struct SessionHistoryView: View {
         return Double(totalIntensity) / Double(sessions.count)
     }
     
+    // MARK: - Today's Training Card
+
+    private func todaysTrainingCard(plan: TrainingPlanModel) -> some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                HStack {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(DesignSystem.Colors.accentYellow)
+
+                    Text("Today's Training")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(DesignSystem.Colors.accentYellow)
+
+                    Spacer()
+                }
+
+                Text(plan.name)
+                    .font(DesignSystem.Typography.titleMedium)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                if let (week, day) = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan) {
+                    Text("Week \(week), Day \(day)")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+
+                ModernButton("View Today's Sessions", icon: "arrow.right.circle.fill", style: .primary) {
+                    showingTodaysTraining = true
+                }
+            }
+        }
+    }
+
     // MARK: - Helper Methods
-    
+
     private func toggleViewMode() {
         withAnimation(.easeInOut(duration: 0.3)) {
             viewMode = viewMode == .list ? .calendar : .list
         }
     }
-    
+
     private func updateSessionsFilter() {
         guard !authManager.userUID.isEmpty else { return }
-        
+
         // Filter sessions by player's Firebase UID
         sessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
+        #if DEBUG
         print("🔍 Updated SessionHistoryView filter for user: \(authManager.userUID)")
+        #endif
     }
-    
+
+    private func updatePlayersFilter() {
+        guard !authManager.userUID.isEmpty else { return }
+        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
+    }
+
+    private func loadActivePlan() {
+        guard let player = players.first else { return }
+        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
+    }
+
     private func deleteSessions(offsets: IndexSet) {
         withAnimation {
             offsets.map { sessions[$0] }.forEach(viewContext.delete)
-            
+
             do {
                 try viewContext.save()
             } catch {
+                #if DEBUG
                 print("Error deleting sessions: \(error)")
+                #endif
             }
         }
     }

@@ -5,8 +5,9 @@ struct NewSessionView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var coreDataManager: CoreDataManager
-    
+
     let player: Player
+    var planSession: PlanSession? = nil // Optional: if provided, this session is from a training plan
     
     @State private var sessionType = "Training"
     @State private var location = ""
@@ -87,6 +88,7 @@ struct NewSessionView: View {
             }
             .onAppear {
                 loadAvailableExercises()
+                prefillFromPlanSession()
             }
         }
     }
@@ -481,7 +483,28 @@ struct NewSessionView: View {
     private func loadAvailableExercises() {
         availableExercises = CoreDataManager.shared.fetchExercises(for: player)
     }
-    
+
+    private func prefillFromPlanSession() {
+        guard let planSession = planSession else { return }
+
+        // Pre-fill session details from plan
+        if let type = planSession.sessionType {
+            sessionType = type
+        }
+        intensity = Int(planSession.intensity)
+        manualDuration = Double(planSession.duration)
+        useManualDuration = true
+
+        if let notes = planSession.notes {
+            sessionNotes = notes
+        }
+
+        // Pre-fill exercises from plan
+        if let exercises = planSession.exercises?.allObjects as? [Exercise] {
+            selectedExercises = exercises
+        }
+    }
+
     private func removeExercise(_ exercise: Exercise) {
         selectedExercises.removeAll { $0.objectID == exercise.objectID }
         exerciseDetails.removeValue(forKey: exercise.id!)
@@ -520,9 +543,28 @@ struct NewSessionView: View {
         // Use manual duration if enabled, otherwise use calculated duration from exercises
         newSession.duration = useManualDuration ? manualDuration : totalDuration
         
+        #if DEBUG
+
         print("💾 Saving new session for player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
+
+        #endif
         coreDataManager.save()
+        #if DEBUG
         print("✅ Session saved successfully")
+        #endif
+
+        // Mark plan session as completed if this was from a training plan
+        if let planSession = planSession {
+            TrainingPlanService.shared.markSessionCompleted(
+                planSession.toModel(),
+                actualDuration: Int(newSession.duration),
+                actualIntensity: Int(intensity)
+            )
+            #if DEBUG
+            print("✅ Plan session marked as completed")
+            #endif
+        }
+
         dismiss()
     }
 }

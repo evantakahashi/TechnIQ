@@ -68,11 +68,15 @@ class CloudSyncManager: ObservableObject {
             try await syncRecommendationFeedback()
             
             lastSyncDate = Date()
+            #if DEBUG
             print("✅ Full cloud sync completed successfully")
             
+            #endif
         } catch {
             syncError = error.localizedDescription
+            #if DEBUG
             print("❌ Full sync failed: \(error)")
+            #endif
         }
         
         isSyncing = false
@@ -85,7 +89,9 @@ class CloudSyncManager: ObservableObject {
         // Throttle sync requests to prevent excessive network calls
         if let lastRequest = lastSyncRequest,
            Date().timeIntervalSince(lastRequest) < minSyncInterval {
+            #if DEBUG
             print("⏰ Sync request throttled - too soon since last sync")
+            #endif
             return
         }
         
@@ -98,7 +104,9 @@ class CloudSyncManager: ObservableObject {
             lastSyncDate = Date()
             
         } catch {
+            #if DEBUG
             print("⚠️ Incremental sync failed: \(error)")
+            #endif
             // Don't set error for incremental sync failures
         }
         
@@ -231,7 +239,9 @@ class CloudSyncManager: ObservableObject {
         do {
             try await cloudDataService.submitMLAnalyticsData(analyticsData)
         } catch {
+            #if DEBUG
             print("⚠️ Failed to track user event: \(error)")
+            #endif
         }
     }
     
@@ -241,7 +251,9 @@ class CloudSyncManager: ObservableObject {
         do {
             return try await cloudDataService.fetchSimilarPlayerProfiles(for: profile, limit: 10)
         } catch {
+            #if DEBUG
             print("⚠️ Failed to fetch similar players: \(error)")
+            #endif
             return []
         }
     }

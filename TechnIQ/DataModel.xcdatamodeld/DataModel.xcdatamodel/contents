@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21513" systemVersion="22G320" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="3.0">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21513" systemVersion="22G320" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="4.0">
     <entity name="Exercise" representedClassName="Exercise" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="difficulty" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="exerciseDescription" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="instructions" optional="YES" attributeType="String"/>
+        <attribute name="isFavorite" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isYouTubeContent" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="lastUsedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="personalNotes" optional="YES" attributeType="String"/>
         <attribute name="targetSkills" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
         <attribute name="videoDescription" optional="YES" attributeType="String"/>
         <attribute name="videoDuration" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
@@ -15,6 +18,7 @@
         <attribute name="youtubeVideoID" optional="YES" attributeType="String"/>
         <relationship name="sessionExercises" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SessionExercise" inverseName="exercise" inverseEntity="SessionExercise"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="exercises" inverseEntity="Player"/>
+        <relationship name="planSessions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="PlanSession" inverseName="exercises" inverseEntity="PlanSession"/>
     </entity>
     <entity name="Player" representedClassName="Player" syncable="YES" codeGenerationType="class">
         <attribute name="age" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
@@ -37,6 +41,7 @@
         <relationship name="playerProfile" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="PlayerProfile" inverseName="player" inverseEntity="PlayerProfile"/>
         <relationship name="playerGoals" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlayerGoal" inverseName="player" inverseEntity="PlayerGoal"/>
         <relationship name="recommendationFeedback" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecommendationFeedback" inverseName="player" inverseEntity="RecommendationFeedback"/>
+        <relationship name="trainingPlans" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TrainingPlan" inverseName="player" inverseEntity="TrainingPlan"/>
     </entity>
     <entity name="PlayerStats" representedClassName="PlayerStats" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -67,6 +72,7 @@
         <attribute name="sessionType" optional="YES" attributeType="String"/>
         <relationship name="exercises" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SessionExercise" inverseName="session" inverseEntity="SessionExercise"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="sessions" inverseEntity="Player"/>
+        <relationship name="planSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PlanSession" inverseName="completedSession" inverseEntity="PlanSession"/>
     </entity>
     <entity name="PlayerProfile" representedClassName="PlayerProfile" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
@@ -134,5 +140,59 @@
         <attribute name="retryCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="TrainingPlan" representedClassName="TrainingPlan" syncable="YES" codeGenerationType="category">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="planDescription" optional="YES" attributeType="String"/>
+        <attribute name="durationWeeks" optional="YES" attributeType="Integer 16" defaultValueString="4" usesScalarValueType="YES"/>
+        <attribute name="difficulty" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="targetRole" optional="YES" attributeType="String"/>
+        <attribute name="isPrebuilt" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="currentWeek" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="progressPercentage" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="startedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="trainingPlans" inverseEntity="Player"/>
+        <relationship name="weeks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlanWeek" inverseName="plan" inverseEntity="PlanWeek"/>
+    </entity>
+    <entity name="PlanWeek" representedClassName="PlanWeek" syncable="YES" codeGenerationType="category">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="weekNumber" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="focusArea" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="plan" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TrainingPlan" inverseName="weeks" inverseEntity="TrainingPlan"/>
+        <relationship name="days" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlanDay" inverseName="week" inverseEntity="PlanDay"/>
+    </entity>
+    <entity name="PlanDay" representedClassName="PlanDay" syncable="YES" codeGenerationType="category">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="dayNumber" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="dayOfWeek" optional="YES" attributeType="String"/>
+        <attribute name="isRestDay" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="week" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PlanWeek" inverseName="days" inverseEntity="PlanWeek"/>
+        <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlanSession" inverseName="day" inverseEntity="PlanSession"/>
+    </entity>
+    <entity name="PlanSession" representedClassName="PlanSession" syncable="YES" codeGenerationType="category">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="sessionType" optional="YES" attributeType="String"/>
+        <attribute name="duration" optional="YES" attributeType="Integer 16" defaultValueString="60" usesScalarValueType="YES"/>
+        <attribute name="intensity" optional="YES" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="actualDuration" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="actualIntensity" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="day" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PlanDay" inverseName="sessions" inverseEntity="PlanDay"/>
+        <relationship name="exercises" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Exercise" inverseName="planSessions" inverseEntity="Exercise"/>
+        <relationship name="completedSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TrainingSession" inverseName="planSession" inverseEntity="TrainingSession"/>
     </entity>
 </model>

@@ -25,9 +25,13 @@ class CustomDrillService: ObservableObject {
         request: CustomDrillRequest, 
         for player: Player
     ) async throws -> Exercise {
+        #if DEBUG
         print("🤖 CustomDrillService: Starting custom drill generation")
+        #endif
+        #if DEBUG
         print("📝 Request: \(request.skillDescription)")
         
+        #endif
         generationState = .generating
         isGenerating = true
         generationProgress = 0.1
@@ -77,7 +81,11 @@ class CustomDrillService: ObservableObject {
                 self.generationState = .idle
             }
             
+            #if DEBUG
+            
             print("✅ CustomDrillService: Successfully generated custom drill: \(drillResponse.name)")
+            
+            #endif
             return exercise
             
         } catch {
@@ -86,7 +94,11 @@ class CustomDrillService: ObservableObject {
             generationProgress = 0.0
             generationMessage = "Generation failed"
             
+            #if DEBUG
+            
             print("❌ CustomDrillService: Failed to generate drill: \(error)")
+            
+            #endif
             throw error
         }
     }
@@ -131,14 +143,20 @@ class CustomDrillService: ObservableObject {
                 let idToken = try await user.getIDToken()
                 urlRequest.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
             } catch {
+                #if DEBUG
                 print("⚠️ Could not get auth token: \(error.localizedDescription)")
+                #endif
             }
         }
         
         urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
+        #if DEBUG
+        
         print("🌐 Calling Firebase Function for custom drill generation...")
         
+        
+        #endif
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -147,8 +165,10 @@ class CustomDrillService: ObservableObject {
         
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            #if DEBUG
             print("❌ Firebase Function error: \(httpResponse.statusCode) - \(errorMessage)")
 
+            #endif
             // Check for OpenAI quota error
             if httpResponse.statusCode == 500 && errorMessage.contains("insufficient_quota") {
                 throw CustomDrillError.quotaExceeded

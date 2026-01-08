@@ -14,6 +14,15 @@ struct ManualDrillCreatorView: View {
     @State private var selectedSkills: Set<String> = []
     @State private var showingSuccessMessage = false
 
+    // Phase 6: Structured sections
+    @State private var useStructuredMode = false
+    @State private var setupRequirements = ""
+    @State private var instructionSteps: [String] = [""]
+    @State private var coachingPoints: [String] = [""]
+    @State private var progressions: [String] = [""]
+    @State private var selectedEquipment: Set<Equipment> = []
+    @State private var showingPreview = false
+
     // Available skills for selection
     private let availableSkills = [
         "Ball Control", "Dribbling", "Passing", "Shooting", "First Touch",
@@ -22,8 +31,60 @@ struct ManualDrillCreatorView: View {
     ]
 
     private var isValid: Bool {
-        !drillName.isEmpty && drillName.count >= 3 &&
-        !drillDescription.isEmpty && drillDescription.count >= 10
+        if useStructuredMode {
+            return !drillName.isEmpty && drillName.count >= 3 &&
+                   !setupRequirements.isEmpty &&
+                   instructionSteps.contains(where: { !$0.isEmpty })
+        } else {
+            return !drillName.isEmpty && drillName.count >= 3 &&
+                   !drillDescription.isEmpty && drillDescription.count >= 10
+        }
+    }
+
+    // Generate formatted instructions from structured sections
+    private var formattedInstructions: String {
+        var output = ""
+
+        // Setup section
+        if !setupRequirements.isEmpty {
+            output += "**Setup:**\n\(setupRequirements)\n"
+            if !selectedEquipment.isEmpty {
+                let equipmentNames = selectedEquipment.map { $0.displayName.components(separatedBy: " ").dropFirst().joined(separator: " ") }.sorted()
+                output += "Equipment: \(equipmentNames.joined(separator: ", "))\n"
+            }
+            output += "\n"
+        }
+
+        // Instructions section
+        let validSteps = instructionSteps.filter { !$0.isEmpty }
+        if !validSteps.isEmpty {
+            output += "**Instructions:**\n"
+            for (index, step) in validSteps.enumerated() {
+                output += "\(index + 1). \(step)\n"
+            }
+            output += "\n"
+        }
+
+        // Coaching points section
+        let validPoints = coachingPoints.filter { !$0.isEmpty }
+        if !validPoints.isEmpty {
+            output += "**Coaching Points:**\n"
+            for point in validPoints {
+                output += "• \(point)\n"
+            }
+            output += "\n"
+        }
+
+        // Progressions section
+        let validProgressions = progressions.filter { !$0.isEmpty }
+        if !validProgressions.isEmpty {
+            output += "**Progressions:**\n"
+            for progression in validProgressions {
+                output += "• \(progression)\n"
+            }
+        }
+
+        return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
@@ -35,8 +96,20 @@ struct ManualDrillCreatorView: View {
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.lg) {
                         headerSection
+                        modeToggleSection
                         nameSection
-                        descriptionSection
+
+                        if useStructuredMode {
+                            setupSection
+                            equipmentSection
+                            instructionsSection
+                            coachingPointsSection
+                            progressionsSection
+                            previewButton
+                        } else {
+                            descriptionSection
+                        }
+
                         categorySection
                         difficultySection
                         durationSection
@@ -74,6 +147,278 @@ struct ManualDrillCreatorView: View {
         } message: {
             Text("Your drill has been added to your exercise library!")
         }
+        .sheet(isPresented: $showingPreview) {
+            DrillPreviewSheet(
+                drillName: drillName,
+                instructions: formattedInstructions,
+                onDismiss: { showingPreview = false }
+            )
+        }
+    }
+
+    // MARK: - Mode Toggle Section
+
+    private var modeToggleSection: some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                HStack {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text("Structured Mode")
+                            .font(DesignSystem.Typography.titleSmall)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                        Text("Create drills with organized sections like AI-generated drills")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: $useStructuredMode)
+                        .labelsHidden()
+                        .tint(DesignSystem.Colors.primaryGreen)
+                }
+            }
+        }
+    }
+
+    // MARK: - Setup Section
+
+    private var setupSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Image(systemName: "map")
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                Text("Setup Requirements")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            ModernCard {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    TextField("Describe the setup area, cone placements, etc.", text: $setupRequirements, axis: .vertical)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .lineLimit(3...6)
+                        .textFieldStyle(.plain)
+                }
+                .padding(DesignSystem.Spacing.sm)
+            }
+        }
+    }
+
+    // MARK: - Equipment Section
+
+    private var equipmentSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Image(systemName: "sportscourt")
+                    .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                Text("Equipment (Optional)")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: DesignSystem.Spacing.sm) {
+                ForEach(Equipment.allCases.filter { $0 != .none }, id: \.self) { equipment in
+                    EquipmentSelectionCard(
+                        equipment: equipment,
+                        isSelected: selectedEquipment.contains(equipment)
+                    ) {
+                        if selectedEquipment.contains(equipment) {
+                            selectedEquipment.remove(equipment)
+                        } else {
+                            selectedEquipment.insert(equipment)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Instructions Section
+
+    private var instructionsSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Image(systemName: "list.number")
+                    .foregroundColor(DesignSystem.Colors.accentOrange)
+                Text("Step-by-Step Instructions")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                ForEach(instructionSteps.indices, id: \.self) { index in
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        ZStack {
+                            Circle()
+                                .fill(DesignSystem.Colors.accentOrange.opacity(0.15))
+                                .frame(width: 28, height: 28)
+                            Text("\(index + 1)")
+                                .font(DesignSystem.Typography.labelMedium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                        }
+
+                        ModernCard {
+                            TextField("Enter step \(index + 1)...", text: $instructionSteps[index])
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .textFieldStyle(.plain)
+                                .padding(DesignSystem.Spacing.sm)
+                        }
+
+                        if instructionSteps.count > 1 {
+                            Button {
+                                instructionSteps.remove(at: index)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundColor(.red.opacity(0.7))
+                            }
+                        }
+                    }
+                }
+
+                Button {
+                    instructionSteps.append("")
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Step")
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // MARK: - Coaching Points Section
+
+    private var coachingPointsSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Image(systemName: "lightbulb")
+                    .foregroundColor(.yellow)
+                Text("Coaching Points (Optional)")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                ForEach(coachingPoints.indices, id: \.self) { index in
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Circle()
+                            .fill(Color.yellow)
+                            .frame(width: 8, height: 8)
+
+                        ModernCard {
+                            TextField("Enter coaching tip...", text: $coachingPoints[index])
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .textFieldStyle(.plain)
+                                .padding(DesignSystem.Spacing.sm)
+                        }
+
+                        if coachingPoints.count > 1 {
+                            Button {
+                                coachingPoints.remove(at: index)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundColor(.red.opacity(0.7))
+                            }
+                        }
+                    }
+                }
+
+                Button {
+                    coachingPoints.append("")
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Coaching Point")
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // MARK: - Progressions Section
+
+    private var progressionsSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack {
+                Image(systemName: "arrow.up.right")
+                    .foregroundColor(.purple)
+                Text("Progressions/Variations (Optional)")
+                    .font(DesignSystem.Typography.titleSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                ForEach(progressions.indices, id: \.self) { index in
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Circle()
+                            .fill(Color.purple)
+                            .frame(width: 8, height: 8)
+
+                        ModernCard {
+                            TextField("e.g., Harder: Add defender pressure", text: $progressions[index])
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .textFieldStyle(.plain)
+                                .padding(DesignSystem.Spacing.sm)
+                        }
+
+                        if progressions.count > 1 {
+                            Button {
+                                progressions.remove(at: index)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundColor(.red.opacity(0.7))
+                            }
+                        }
+                    }
+                }
+
+                Button {
+                    progressions.append("")
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Add Progression")
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // MARK: - Preview Button
+
+    private var previewButton: some View {
+        Button {
+            showingPreview = true
+        } label: {
+            HStack {
+                Image(systemName: "eye")
+                Text("Preview Formatted Drill")
+            }
+            .font(DesignSystem.Typography.bodyMedium)
+            .fontWeight(.medium)
+            .foregroundColor(DesignSystem.Colors.secondaryBlue)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DesignSystem.Spacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(DesignSystem.Colors.secondaryBlue, lineWidth: 1.5)
+            )
+        }
+        .disabled(!isValid)
+        .opacity(isValid ? 1.0 : 0.5)
     }
 
     // MARK: - Header Section
@@ -287,11 +632,20 @@ struct ManualDrillCreatorView: View {
         let exercise = Exercise(context: viewContext)
         exercise.id = UUID()
         exercise.name = drillName
-        exercise.exerciseDescription = drillDescription
         exercise.category = selectedCategory.rawValue
         exercise.difficulty = Int16(selectedDifficulty.numericValue)
         exercise.targetSkills = Array(selectedSkills)
         exercise.isYouTubeContent = false
+
+        if useStructuredMode {
+            // Use formatted instructions for structured mode
+            exercise.exerciseDescription = "Manual Drill"
+            exercise.instructions = formattedInstructions
+        } else {
+            // Simple mode - use description directly
+            exercise.exerciseDescription = drillDescription
+            exercise.instructions = nil
+        }
 
         // Link to player
         exercise.player = player
@@ -300,7 +654,53 @@ struct ManualDrillCreatorView: View {
             try viewContext.save()
             showingSuccessMessage = true
         } catch {
+            #if DEBUG
             print("Failed to save drill: \(error)")
+            #endif
+        }
+    }
+}
+
+// MARK: - Drill Preview Sheet
+
+struct DrillPreviewSheet: View {
+    let drillName: String
+    let instructions: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    // Header
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text(drillName)
+                            .font(DesignSystem.Typography.titleLarge)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                        Text("Preview how your drill will appear")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+
+                    // Formatted Instructions
+                    DrillInstructionsView(instructions: instructions)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                }
+                .padding(.vertical, DesignSystem.Spacing.md)
+            }
+            .background(DesignSystem.Colors.backgroundGradient.ignoresSafeArea())
+            .navigationTitle("Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        onDismiss()
+                    }
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+            }
         }
     }
 }

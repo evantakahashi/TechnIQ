@@ -121,7 +121,7 @@ struct SkillTrendChartView: View {
                 selectedSkill = firstSkill
             }
         }
-        .onChange(of: selectedCategory) { _ in
+        .onChange(of: selectedCategory) {
             // Reset skill selection when category changes
             selectedSkill = availableSkills.first
         }
@@ -355,9 +355,7 @@ struct SkillDataPoint: Identifiable {
 }
 
 #Preview {
-    let context = CoreDataManager.shared.context
-
-    return SkillTrendChartView(sessions: [])
+    SkillTrendChartView(sessions: [])
         .padding()
         .background(DesignSystem.Colors.background)
 }

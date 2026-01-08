@@ -110,7 +110,9 @@ struct MainTabView: View {
     var currentPlayer: Player? {
         let player = players.first
         if player == nil && !authManager.userUID.isEmpty {
+            #if DEBUG
             print("⚠️ MainTabView: currentPlayer is nil despite having userUID. Players count: \(players.count)")
+            #endif
         }
         return player
     }
@@ -149,6 +151,15 @@ struct MainTabView: View {
             .tag(2)
 
             NavigationView {
+                TrainingPlansListView()
+            }
+            .tabItem {
+                Image(systemName: "calendar.badge.clock")
+                Text("Plans")
+            }
+            .tag(3)
+
+            NavigationView {
                 if let player = currentPlayer {
                     PlayerProgressView(player: player)
                 } else {
@@ -159,7 +170,7 @@ struct MainTabView: View {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                 Text("Progress")
             }
-            .tag(3)
+            .tag(4)
 
             NavigationView {
                 PlayerProfileView()
@@ -168,7 +179,7 @@ struct MainTabView: View {
                 Image(systemName: DesignSystem.Icons.profile)
                 Text("Profile")
             }
-            .tag(4)
+            .tag(5)
         }
         .accentColor(DesignSystem.Colors.primaryGreen)
         .onAppear {
@@ -178,7 +189,9 @@ struct MainTabView: View {
             updatePlayersFilter()
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { notification in
+            #if DEBUG
             print("🔔 MainTabView: Core Data context saved - currentPlayer is now: \(currentPlayer?.name ?? "nil")")
+            #endif
         }
     }
     

@@ -431,24 +431,21 @@ struct SessionCalendarView: View {
         guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else {
             return []
         }
-        
+
         let startOfMonth = monthInterval.start
-        let endOfMonth = monthInterval.end
-        
+
         // Find the first day to show (might be from previous month)
         let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: startOfMonth)?.start ?? startOfMonth
-        
-        // Find the last day to show (might be from next month)
-        let endOfWeek = calendar.dateInterval(of: .weekOfYear, for: calendar.date(byAdding: .day, value: -1, to: endOfMonth) ?? endOfMonth)?.end ?? endOfMonth
-        
+
+        // Always generate exactly 42 days (6 weeks) to prevent height shifts
         var dates: [Date] = []
         var currentDate = startOfWeek
-        
-        while currentDate < endOfWeek {
+
+        for _ in 0..<42 {
             dates.append(currentDate)
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
         }
-        
+
         return dates
     }
     

@@ -362,19 +362,29 @@ struct EnhancedOnboardingView: View {
     // MARK: - Helper Functions
     
     private func createPlayer() {
+        #if DEBUG
         print("🏗️ Starting player creation...")
         
+        #endif
         let userUID = authManager.userUID
         if userUID.isEmpty {
+            #if DEBUG
             print("❌ No Firebase UID available - cannot create player")
+            #endif
             return
         }
         
+        #if DEBUG
+        
         print("📝 Creating player for UID: \(userUID)")
+        
+        #endif
         let displayName = playerName.isEmpty ? authManager.userDisplayName : playerName
         let finalName = displayName.isEmpty ? "Player" : displayName
+        #if DEBUG
         print("👤 Player name: \(finalName)")
         
+        #endif
         let newPlayer = Player(context: viewContext)
         newPlayer.id = UUID()
         newPlayer.firebaseUID = userUID
@@ -386,26 +396,40 @@ struct EnhancedOnboardingView: View {
         newPlayer.experienceLevel = selectedExperienceLevel
         newPlayer.createdAt = Date()
         
+        #if DEBUG
+        
         print("✅ Player object created with ID: \(newPlayer.id?.uuidString ?? "nil")")
         
+        
+        #endif
         coreDataManager.createDefaultExercises(for: newPlayer)
+        #if DEBUG
         print("✅ Created default exercises")
         
+        #endif
         do {
             coreDataManager.save()
+            #if DEBUG
             print("✅ Successfully saved player profile to Core Data")
             
+            #endif
             // Verify the save worked
             let request = Player.fetchRequest()
             request.predicate = NSPredicate(format: "firebaseUID == %@", userUID)
             let savedPlayers = try viewContext.fetch(request)
+            #if DEBUG
             print("🔍 Verification: Found \(savedPlayers.count) players for UID \(userUID)")
             
+            #endif
             if let savedPlayer = savedPlayers.first {
+                #if DEBUG
                 print("✅ Saved player: \(savedPlayer.name ?? "Unknown") with ID: \(savedPlayer.id?.uuidString ?? "nil")")
+                #endif
             }
         } catch {
+            #if DEBUG
             print("❌ Failed to save player profile: \(error)")
+            #endif
             return
         }
         
@@ -417,15 +441,25 @@ struct EnhancedOnboardingView: View {
                     "onboarding_completed": true,
                     "player_name": playerName
                 ])
+                #if DEBUG
                 print("✅ Successfully synced to cloud")
+                #endif
             } catch {
+                #if DEBUG
                 print("⚠️ Failed to sync new player profile: \(error)")
+                #endif
             }
         }
         
+        #if DEBUG
+        
         print("🎯 Setting isOnboardingComplete = true")
+        
+        #endif
         isOnboardingComplete = true
+        #if DEBUG
         print("✅ Onboarding marked as complete")
+        #endif
     }
 }
 

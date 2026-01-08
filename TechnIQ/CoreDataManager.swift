@@ -64,20 +64,28 @@ class CoreDataManager: ObservableObject {
         container.loadPersistentStores { storeDescription, error in
             if let error = error as NSError? {
                 // If there's a migration error, delete the store and recreate
+                #if DEBUG
                 print("⚠️ Core Data error: \(error.localizedDescription)")
+                #endif
+                #if DEBUG
                 print("🔄 Attempting to reset Core Data store...")
 
+                #endif
                 if let storeURL = storeDescription.url {
                     do {
                         try FileManager.default.removeItem(at: storeURL)
+                        #if DEBUG
                         print("✅ Deleted corrupted store, will recreate")
 
+                        #endif
                         // Try loading again
                         container.loadPersistentStores { _, retryError in
                             if let retryError = retryError {
                                 fatalError("Failed to recreate store: \(retryError.localizedDescription)")
                             } else {
+                                #if DEBUG
                                 print("✅ Successfully recreated Core Data store")
+                                #endif
                             }
                         }
                     } catch {
@@ -100,7 +108,9 @@ class CoreDataManager: ObservableObject {
             do {
                 try context.save()
             } catch {
+                #if DEBUG
                 print("Save error: \(error.localizedDescription)")
+                #endif
             }
         }
     }
@@ -117,14 +127,18 @@ extension CoreDataManager {
         do {
             return try context.fetch(request).first
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch current player: \(error)")
+            #endif
             return nil
         }
     }
     
     func fetchTrainingSessions(for firebaseUID: String) -> [TrainingSession] {
         guard let player = getCurrentPlayer(for: firebaseUID) else {
+            #if DEBUG
             print("⚠️ No player found for Firebase UID: \(firebaseUID)")
+            #endif
             return []
         }
         
@@ -134,17 +148,23 @@ extension CoreDataManager {
         
         do {
             let sessions = try context.fetch(request)
+            #if DEBUG
             print("📊 Found \(sessions.count) training sessions for user \(firebaseUID)")
+            #endif
             return sessions
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch training sessions: \(error)")
+            #endif
             return []
         }
     }
     
     func fetchExercises(for firebaseUID: String) -> [Exercise] {
         guard let player = getCurrentPlayer(for: firebaseUID) else {
+            #if DEBUG
             print("⚠️ No player found for Firebase UID: \(firebaseUID)")
+            #endif
             return []
         }
         
@@ -155,7 +175,9 @@ extension CoreDataManager {
         // Check if exercises already exist for this player to prevent duplicates
         let existingExercises = fetchExercises(for: player)
         if !existingExercises.isEmpty {
+            #if DEBUG
             print("📚 Exercises already exist for player \(player.name ?? "Unknown"), skipping default creation")
+            #endif
             return
         }
         
@@ -198,7 +220,9 @@ extension CoreDataManager {
             let count = try context.count(for: request)
             return count > 0
         } catch {
+            #if DEBUG
             print("❌ Failed to check exercise existence: \(error)")
+            #endif
             return false
         }
     }
@@ -207,15 +231,102 @@ extension CoreDataManager {
         let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
         request.predicate = NSPredicate(format: "player == %@", player)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Exercise.name, ascending: true)]
-        
+
         do {
             return try context.fetch(request)
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch exercises for player: \(error)")
+            #endif
             return []
         }
     }
-    
+
+    // MARK: - Exercise Favorites & Recent
+
+    /// Toggle favorite status for an exercise
+    func toggleFavorite(exercise: Exercise) {
+        exercise.isFavorite.toggle()
+        save()
+        #if DEBUG
+        print("⭐ Exercise '\(exercise.name ?? "Unknown")' favorite status: \(exercise.isFavorite)")
+        #endif
+    }
+
+    /// Fetch all favorite exercises for a player
+    func fetchFavoriteExercises(for player: Player) -> [Exercise] {
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "player == %@ AND isFavorite == YES", player)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Exercise.name, ascending: true)]
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            #if DEBUG
+            print("❌ Failed to fetch favorite exercises: \(error)")
+            #endif
+            return []
+        }
+    }
+
+    /// Fetch recently used exercises for a player
+    func fetchRecentlyUsedExercises(for player: Player, limit: Int = 5) -> [Exercise] {
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "player == %@ AND lastUsedAt != nil", player)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Exercise.lastUsedAt, ascending: false)]
+        request.fetchLimit = limit
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            #if DEBUG
+            print("❌ Failed to fetch recently used exercises: \(error)")
+            #endif
+            return []
+        }
+    }
+
+    /// Record that an exercise was used (updates lastUsedAt timestamp)
+    func recordExerciseUsage(exercise: Exercise) {
+        exercise.lastUsedAt = Date()
+        save()
+    }
+
+    /// Update exercise with new values
+    func updateExercise(
+        exercise: Exercise,
+        name: String? = nil,
+        description: String? = nil,
+        category: String? = nil,
+        difficulty: Int16? = nil,
+        instructions: String? = nil,
+        targetSkills: [String]? = nil,
+        personalNotes: String? = nil
+    ) {
+        if let name = name { exercise.name = name }
+        if let description = description { exercise.exerciseDescription = description }
+        if let category = category { exercise.category = category }
+        if let difficulty = difficulty { exercise.difficulty = difficulty }
+        if let instructions = instructions { exercise.instructions = instructions }
+        if let targetSkills = targetSkills { exercise.targetSkills = targetSkills }
+        if let personalNotes = personalNotes { exercise.personalNotes = personalNotes }
+
+        save()
+        #if DEBUG
+        print("✏️ Updated exercise: \(exercise.name ?? "Unknown")")
+        #endif
+    }
+
+    /// Delete an exercise
+    func deleteExercise(_ exercise: Exercise) {
+        let exerciseName = exercise.name ?? "Unknown"
+        context.delete(exercise)
+        save()
+        #if DEBUG
+        print("🗑️ Deleted exercise: \(exerciseName)")
+        #endif
+    }
+
     // MARK: - YouTube Integration
     
     func createExerciseFromYouTubeVideo(
@@ -232,13 +343,17 @@ extension CoreDataManager {
     ) -> Exercise? {
         // Check if exercise with this title already exists for this player
         if exerciseExists(name: title, for: player) {
+            #if DEBUG
             print("📚 Exercise '\(title)' already exists for player \(player.name ?? "Unknown"), skipping creation")
+            #endif
             return fetchExerciseByName(title, for: player)
         }
         
         // Check if exercise with this YouTube video ID already exists for this player
         if youTubeExerciseExists(videoId: videoId, for: player) {
+            #if DEBUG
             print("📺 YouTube exercise with video ID '\(videoId)' already exists for player \(player.name ?? "Unknown"), skipping creation")
+            #endif
             return fetchExerciseByVideoId(videoId, for: player)
         }
         
@@ -268,7 +383,9 @@ extension CoreDataManager {
             let count = try context.count(for: request)
             return count > 0
         } catch {
+            #if DEBUG
             print("❌ Failed to check YouTube exercise existence: \(error)")
+            #endif
             return false
         }
     }
@@ -281,7 +398,9 @@ extension CoreDataManager {
         do {
             return try context.fetch(request).first
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch exercise by name: \(error)")
+            #endif
             return nil
         }
     }
@@ -294,7 +413,9 @@ extension CoreDataManager {
         do {
             return try context.fetch(request).first
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch exercise by video ID: \(error)")
+            #endif
             return nil
         }
     }
@@ -305,16 +426,22 @@ extension CoreDataManager {
         maxResults: Int = 10, 
         progressCallback: (@Sendable @MainActor (Double, String) -> Void)? = nil
     ) async throws {
+        #if DEBUG
         print("🚀 Starting YouTube drill analysis with enhanced difficulty detection")
+        #endif
+        #if DEBUG
         print("📋 Category: \(category ?? "All"), Max Results: \(maxResults)")
         
+        #endif
         // Use the same method as YouTubeConfig for consistency
         guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
               let plist = NSDictionary(contentsOfFile: path),
               let apiKey = plist["YOUTUBE_API_KEY"] as? String,
               !apiKey.isEmpty,
               apiKey != "YOUR_YOUTUBE_API_KEY_HERE" else {
+            #if DEBUG
             print("⚠️ YouTube API key not found or not configured in Info.plist")
+            #endif
             await progressCallback?(0.0, "API key not configured")
             throw APIError.apiKeyNotConfigured
         }
@@ -324,9 +451,13 @@ extension CoreDataManager {
                 await progressCallback?(0.1, "Searching YouTube...")
                 
                 let searchQuery = category ?? "soccer training drills"
+                #if DEBUG
                 print("🔍 Performing enhanced YouTube search for: \(searchQuery)")
+                #endif
+                #if DEBUG
                 print("📝 Note: Transcript analysis will be attempted but may not be available for all videos due to privacy restrictions")
                 
+                #endif
                 // Use enhanced search with transcript analysis, fallback to basic search if needed
                 let enhancedVideos: [EnhancedYouTubeVideo]
                 
@@ -338,7 +469,9 @@ extension CoreDataManager {
                         maxResults: maxResults
                     )
                 } catch {
+                    #if DEBUG
                     print("⚠️ Enhanced search failed, falling back to basic search: \(error)")
+                    #endif
                     await progressCallback?(0.3, "Using basic search...")
                     
                     // Fallback to basic search without enhanced analysis
@@ -375,14 +508,30 @@ extension CoreDataManager {
                     let existingExercise = findExerciseByYouTubeID(video.videoId, for: player)
                     if existingExercise == nil {
                         
+                        #if DEBUG
+                        
                         print("📊 Video Analysis for '\(video.title.prefix(50))...':")
+                        
+                        #endif
+                        #if DEBUG
                         print("   Difficulty: \(video.difficultyAnalysis.difficulty)/5")
+                        #endif
+                        #if DEBUG
                         print("   Confidence: \(String(format: "%.1f", video.difficultyAnalysis.confidence * 100))%")
+                        #endif
+                        #if DEBUG
                         print("   Target: \(video.difficultyAnalysis.targetAudience)")
+                        #endif
+                        #if DEBUG
                         print("   Skills: \(video.difficultyAnalysis.keySkills.joined(separator: ", "))")
+                        #endif
+                        #if DEBUG
                         print("   Transcript: \(video.transcript != nil ? "✅ Available" : "❌ Not available")")
+                        #endif
                         if !video.difficultyAnalysis.reasoning.isEmpty {
+                            #if DEBUG
                             print("   Reasoning: \(video.difficultyAnalysis.reasoning.prefix(3).joined(separator: "; "))")
+                            #endif
                         }
                         
                         _ = createEnhancedExerciseFromYouTubeVideo(
@@ -401,7 +550,9 @@ extension CoreDataManager {
                 }
                 await progressCallback?(0.95, "Finalizing...")
             } catch {
+                #if DEBUG
                 print("Error loading YouTube drills: \(error)")
+                #endif
                 await progressCallback?(0.0, "Error occurred")
             }
         }
@@ -509,7 +660,9 @@ extension CoreDataManager {
             let results = try context.fetch(request)
             return results.first
         } catch {
+            #if DEBUG
             print("Error finding exercise by YouTube ID: \(error)")
+            #endif
             return nil
         }
     }
@@ -888,7 +1041,9 @@ extension CoreDataManager {
             
             // Find English caption track (prefer auto-generated for better availability)
             guard let captionTrack = findBestCaptionTrack(tracks: captionTracks) else {
+                #if DEBUG
                 print("📝 No suitable caption track found for video: \(videoId) (this is normal - most videos don't have public captions)")
+                #endif
                 return nil
             }
             
@@ -906,12 +1061,18 @@ extension CoreDataManager {
             if let httpError = error as? SimpleAPIError {
                 switch httpError {
                 case .networkError:
+                    #if DEBUG
                     print("📝 Captions not accessible for video \(videoId) (privacy/auth restrictions)")
+                    #endif
                 default:
+                    #if DEBUG
                     print("📝 Caption fetch failed for video \(videoId): \(error.localizedDescription)")
+                    #endif
                 }
             } else {
+                #if DEBUG
                 print("📝 Caption fetch failed for video \(videoId): \(error)")
+                #endif
             }
             return nil
         }
@@ -941,11 +1102,17 @@ extension CoreDataManager {
             // Handle specific HTTP error codes for captions API
             switch httpResponse.statusCode {
             case 403:
+                #if DEBUG
                 print("⚠️ Captions API: Permission denied (403) - video \(videoId) may have restricted captions")
+                #endif
             case 404:
+                #if DEBUG
                 print("⚠️ Captions API: Video \(videoId) not found (404)")
+                #endif
             default:
+                #if DEBUG
                 print("⚠️ Captions API: HTTP error \(httpResponse.statusCode) for video \(videoId)")
+                #endif
             }
             throw SimpleAPIError.networkError
         }
@@ -1068,8 +1235,12 @@ extension CoreDataManager {
         // First get basic video info
         let basicVideos = try await performYouTubeSearch(query: query, apiKey: apiKey, maxResults: maxResults)
         
+        #if DEBUG
+        
         print("🚀 Processing \(basicVideos.count) videos concurrently for enhanced analysis...")
         
+        
+        #endif
         // Process all videos concurrently using TaskGroup with enhanced error handling
         let enhancedVideos = try await withThrowingTaskGroup(of: EnhancedYouTubeVideo?.self) { group in
             // Add a task for each video
@@ -1078,7 +1249,9 @@ extension CoreDataManager {
                     do {
                         return await self.processVideoEnhanced(video: video, apiKey: apiKey)
                     } catch {
+                        #if DEBUG
                         print("⚠️ TaskGroup error for video \(video.title.prefix(30)): \(error)")
+                        #endif
                         return nil
                     }
                 }
@@ -1092,21 +1265,29 @@ extension CoreDataManager {
             do {
                 for try await enhancedVideo in group {
                     completedCount += 1
+                    #if DEBUG
                     print("📊 Progress: \(completedCount)/\(totalCount) videos processed")
                     
+                    #endif
                     if let video = enhancedVideo {
                         results.append(video)
                     }
                 }
             } catch {
+                #if DEBUG
                 print("⚠️ TaskGroup collection error: \(error)")
+                #endif
                 // Continue with whatever results we have
             }
             
             return results
         }
         
+        #if DEBUG
+        
         print("✅ Enhanced analysis complete for \(enhancedVideos.count) videos")
+        
+        #endif
         return enhancedVideos
     }
     
@@ -1120,8 +1301,10 @@ extension CoreDataManager {
                 return try await operation()
             } catch {
                 lastError = error
+                #if DEBUG
                 print("⚠️ Attempt \(attempt)/\(maxAttempts) failed: \(error)")
                 
+                #endif
                 if attempt < maxAttempts {
                     // Exponential backoff: wait 0.5s, then 1s
                     let backoffTime = 0.5 * pow(2.0, Double(attempt - 1))
@@ -1181,12 +1364,16 @@ extension CoreDataManager {
     private func processVideoEnhanced(video: YouTubeVideo, apiKey: String) async -> EnhancedYouTubeVideo? {
         // Circuit breaker: skip processing if too many consecutive failures
         if consecutiveFailures >= maxConsecutiveFailures {
+            #if DEBUG
             print("🚨 Circuit breaker activated - skipping video processing due to \(consecutiveFailures) consecutive failures")
+            #endif
             return createFallbackVideo(video: video)
         }
         do {
+            #if DEBUG
             print("🔍 Processing video: \(video.title.prefix(50))...")
             
+            #endif
             // Get video details with caching
             let videoDetails = try await getCachedVideoDetails(videoId: video.videoId, apiKey: apiKey)
             
@@ -1212,12 +1399,18 @@ extension CoreDataManager {
                 difficultyAnalysis: difficultyAnalysis
             )
             
+            #if DEBUG
+            
             print("✅ Completed: \(video.title.prefix(30))...")
+            
+            #endif
             consecutiveFailures = 0  // Reset failure count on success
             return enhancedVideo
             
         } catch {
+            #if DEBUG
             print("⚠️ Failed to process video \(video.title.prefix(30)): \(error)")
+            #endif
             consecutiveFailures += 1
             
             return createFallbackVideo(video: video)
@@ -1226,8 +1419,10 @@ extension CoreDataManager {
     
     // Create a fallback video with basic analysis when processing fails
     private func createFallbackVideo(video: YouTubeVideo) -> EnhancedYouTubeVideo {
+        #if DEBUG
         print("🔄 Creating fallback video for: \(video.title.prefix(30))...")
         
+        #endif
         let basicAnalysis = analyzeVideoDifficultyComprehensive(
             title: video.title,
             description: "",
@@ -1252,7 +1447,9 @@ extension CoreDataManager {
     private func getCachedVideoDetails(videoId: String, apiKey: String) async throws -> EnhancedVideoDetails? {
         // Check cache first
         if let cachedDetails = videoDetailsCache[videoId] {
+            #if DEBUG
             print("📂 Using cached video details for: \(videoId)")
+            #endif
             return cachedDetails
         }
         
@@ -1265,15 +1462,19 @@ extension CoreDataManager {
         
         // Cache the result
         videoDetailsCache[videoId] = details
+        #if DEBUG
         print("💾 Cached video details for: \(videoId)")
         
+        #endif
         return details
     }
     
     private func getCachedTranscript(videoId: String, apiKey: String) async -> VideoTranscript? {
         // Check cache first
         if let cachedTranscript = transcriptCache[videoId] {
+            #if DEBUG
             print("📂 Using cached transcript for: \(videoId)")
+            #endif
             return cachedTranscript
         }
         
@@ -1285,7 +1486,9 @@ extension CoreDataManager {
         // Cache the result (even if nil to avoid repeated failed requests)
         transcriptCache[videoId] = transcript
         if transcript != nil {
+            #if DEBUG
             print("💾 Cached transcript for: \(videoId)")
+            #endif
         }
         
         return transcript
@@ -1297,7 +1500,9 @@ extension CoreDataManager {
         DispatchQueue.main.asyncAfter(deadline: .now() + cacheExpirationTime) {
             self.videoDetailsCache.removeAll()
             self.transcriptCache.removeAll()
+            #if DEBUG
             print("🧹 Cleared expired cache")
+            #endif
         }
     }
     
@@ -1378,7 +1583,9 @@ extension CoreDataManager {
         let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=\(maxResults)&q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&type=video&key=\(apiKey)"
         
         guard let url = URL(string: urlString) else {
+            #if DEBUG
             print("❌ Invalid URL for YouTube search")
+            #endif
             return []
         }
         
@@ -1386,23 +1593,31 @@ extension CoreDataManager {
             let (data, response) = try await URLSession.shared.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse else {
+                #if DEBUG
                 print("❌ Invalid HTTP response")
+                #endif
                 return []
             }
             
             guard 200...299 ~= httpResponse.statusCode else {
+                #if DEBUG
                 print("❌ YouTube API Error - Status Code: \(httpResponse.statusCode)")
+                #endif
                 if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let error = errorData["error"] as? [String: Any],
                    let message = error["message"] as? String {
+                    #if DEBUG
                     print("❌ YouTube API Error Message: \(message)")
+                    #endif
                 }
                 return []
             }
             
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
+                #if DEBUG
                 print("❌ Failed to parse YouTube response")
+                #endif
                 return []
             }
             
@@ -1423,7 +1638,9 @@ extension CoreDataManager {
                 )
             }
         } catch {
+            #if DEBUG
             print("❌ Network error: \(error)")
+            #endif
             return []
         }
     }
@@ -1588,8 +1805,10 @@ extension CoreDataManager {
     }
     
     func getSmartRecommendations(for player: Player, limit: Int = 5) -> [DrillRecommendation] {
+        #if DEBUG
         print("🧠 Generating smart recommendations for \(player.name ?? "Unknown")")
         
+        #endif
         // Ensure we're getting training history only for this specific player
         let trainingHistory = analyzeTrainingHistory(for: player)
         let skillGaps = identifySkillGaps(from: trainingHistory)
@@ -1643,8 +1862,14 @@ extension CoreDataManager {
             }
             .prefix(limit)
         
+        #if DEBUG
+        
         print("✅ Generated \(sortedRecommendations.count) unique smart recommendations")
+        
+        #endif
+        #if DEBUG
         print("📝 Used exercises: \(globalUsedExercises)")
+        #endif
         return Array(sortedRecommendations)
     }
     
@@ -1659,11 +1884,17 @@ extension CoreDataManager {
                 seenExerciseNames.insert(exerciseName)
                 uniqueRecommendations.append(recommendation)
             } else {
+                #if DEBUG
                 print("🔄 Skipping duplicate recommendation: \(exerciseName)")
+                #endif
             }
         }
         
+        #if DEBUG
+        
         print("📊 Filtered \(recommendations.count) recommendations to \(uniqueRecommendations.count) unique ones")
+        
+        #endif
         return uniqueRecommendations
     }
     
@@ -1693,7 +1924,9 @@ extension CoreDataManager {
     
     private func analyzeTrainingHistory(for player: Player) -> TrainingHistory {
         guard let sessionsSet = player.sessions as? Set<TrainingSession> else {
+            #if DEBUG
             print("⚠️ No training sessions found for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown"))")
+            #endif
             return TrainingHistory(
                 totalSessions: 0,
                 recentSessions: [],
@@ -1710,8 +1943,12 @@ extension CoreDataManager {
             )
         }
         
+        #if DEBUG
+        
         print("📊 Analyzing training history for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown")) - found \(sessionsSet.count) sessions")
         
+        
+        #endif
         let sessions = Array(sessionsSet).sorted {
             ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast)
         }
@@ -2154,11 +2391,15 @@ extension CoreDataManager {
                 if let recentPerf = recentPerformance, recentPerf < 3.0 {
                     // Strong boost for recent poor performance
                     confidence = 0.82 + ((3.0 - recentPerf) * 0.04) // 82-90% for recent struggles
+                    #if DEBUG
                     print("🔥 PRIORITY: \(gap) performed poorly recently (\(String(format: "%.1f", recentPerf))/5) - boosting confidence to \(String(format: "%.0f%%", confidence * 100))")
+                    #endif
                 } else if let veryRecentPerf = veryRecentPerformance, veryRecentPerf < 3.5 {
                     // Moderate boost for very recent struggles
                     confidence = 0.75 + ((3.5 - veryRecentPerf) * 0.06) // 75-84% for last week struggles
+                    #if DEBUG
                     print("⚡ RECENT: \(gap) showed room to grow last week (\(String(format: "%.1f", veryRecentPerf))/5) - confidence: \(String(format: "%.0f%%", confidence * 100))")
+                    #endif
                 } else if gapFrequency == 0 && totalSessions > 5 {
                     // High confidence for completely neglected skills
                     confidence = 0.85
@@ -2418,13 +2659,17 @@ extension CoreDataManager {
         do {
             return try context.fetch(request)
         } catch {
+            #if DEBUG
             print("❌ Failed to fetch exercises: \(error)")
+            #endif
             return []
         }
     }
     
     func removeDuplicateExercises(for player: Player) {
+        #if DEBUG
         print("🧹 Starting comprehensive duplicate cleanup for player \(player.name ?? "Unknown")...")
+        #endif
         let exercises = fetchExercises(for: player)
         var nameToExercises: [String: [Exercise]] = [:]
         var videoIdToExercises: [String: [Exercise]] = [:]
@@ -2447,17 +2692,23 @@ extension CoreDataManager {
         // Remove duplicates by name
         for (name, exerciseGroup) in nameToExercises {
             if exerciseGroup.count > 1 {
+                #if DEBUG
                 print("🔍 Found \(exerciseGroup.count) name duplicates for '\(name)'")
                 
+                #endif
                 // Keep the first one that hasn't been processed, delete the rest
                 var kept = false
                 for exercise in exerciseGroup {
                     if !kept && !processedExercises.contains(exercise.objectID) {
                         processedExercises.insert(exercise.objectID)
                         kept = true
+                        #if DEBUG
                         print("✅ Keeping: \(exercise.name ?? "Unnamed")")
+                        #endif
                     } else {
+                        #if DEBUG
                         print("🗑️ Deleting: \(exercise.name ?? "Unnamed")")
+                        #endif
                         context.delete(exercise)
                         duplicatesRemoved += 1
                     }
@@ -2470,13 +2721,17 @@ extension CoreDataManager {
         // Remove duplicates by YouTube video ID
         for (videoId, exerciseGroup) in videoIdToExercises {
             if exerciseGroup.count > 1 {
+                #if DEBUG
                 print("🎥 Found \(exerciseGroup.count) video ID duplicates for: \(videoId)")
                 
+                #endif
                 // Keep the first one that hasn't been deleted, delete the rest
                 let remainingExercises = exerciseGroup.filter { !$0.isDeleted }
                 if remainingExercises.count > 1 {
                     for duplicateExercise in remainingExercises.dropFirst() {
+                        #if DEBUG
                         print("🗑️ Deleting YouTube duplicate: \(duplicateExercise.name ?? "Unnamed")")
+                        #endif
                         context.delete(duplicateExercise)
                         duplicatesRemoved += 1
                     }
@@ -2486,14 +2741,20 @@ extension CoreDataManager {
         
         if duplicatesRemoved > 0 {
             save()
+            #if DEBUG
             print("🎉 Successfully removed \(duplicatesRemoved) duplicate exercises")
+            #endif
         } else {
+            #if DEBUG
             print("✅ No duplicate exercises found")
+            #endif
         }
         
         // Print final count
         let finalCount = fetchAllExercises().count
+        #if DEBUG
         print("📊 Exercise library now contains \(finalCount) unique exercises")
+        #endif
     }
     
     private func normalizeExerciseName(_ name: String) -> String {

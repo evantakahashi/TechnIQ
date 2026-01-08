@@ -3,8 +3,20 @@ import WebKit
 
 struct ExerciseDetailView: View {
     let exercise: Exercise
+    var onFavoriteChanged: (() -> Void)? = nil
+    var onExerciseDeleted: (() -> Void)? = nil
+
     @Environment(\.dismiss) private var dismiss
     @State private var showingWebView = false
+    @State private var isFavorite: Bool = false
+    @State private var showingEditor = false
+    @State private var personalNotes: String = ""
+    @State private var isEditingNotes = false
+
+    // Check if exercise is editable (not YouTube content)
+    private var isEditable: Bool {
+        exercise.exerciseDescription?.contains("YouTube Video") != true
+    }
     
     var body: some View {
         NavigationView {
@@ -98,8 +110,9 @@ struct ExerciseDetailView: View {
                                 .font(.headline)
                                 .foregroundColor(DesignSystem.Colors.primaryDark)
 
-                            // Use rich markdown display for AI-generated drills
-                            if exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true {
+                            // Use rich markdown display for AI-generated drills and structured manual drills
+                            if exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true ||
+                               instructions.contains("**Setup:**") || instructions.contains("**Instructions:**") {
                                 DrillInstructionsView(instructions: instructions)
                             } else {
                                 Text(instructions)
@@ -115,7 +128,7 @@ struct ExerciseDetailView: View {
                             Text("Target Skills")
                                 .font(.headline)
                                 .foregroundColor(DesignSystem.Colors.primaryDark)
-                            
+
                             LazyVGrid(columns: [
                                 GridItem(.adaptive(minimum: 100))
                             ], spacing: 8) {
@@ -133,17 +146,58 @@ struct ExerciseDetailView: View {
                             }
                         }
                     }
+
+                    // Personal Notes Section
+                    personalNotesSection
                 }
                 .padding()
             }
             .navigationTitle("Exercise Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        toggleFavorite()
+                    } label: {
+                        Image(systemName: isFavorite ? "heart.fill" : "heart")
+                            .foregroundColor(isFavorite ? .red : DesignSystem.Colors.textSecondary)
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        // Edit button (only for editable exercises)
+                        if isEditable {
+                            Button {
+                                showingEditor = true
+                            } label: {
+                                Image(systemName: "pencil.circle")
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            }
+                        }
+
+                        Button("Done") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                isFavorite = exercise.isFavorite
+                personalNotes = exercise.personalNotes ?? ""
+            }
+            .sheet(isPresented: $showingEditor) {
+                ExerciseEditorView(
+                    exercise: exercise,
+                    onSave: {
+                        // Refresh the detail view after save
+                        isFavorite = exercise.isFavorite
+                        onFavoriteChanged?()
+                    },
+                    onDelete: {
+                        onExerciseDeleted?()
+                        dismiss()
+                    }
+                )
             }
         }
         .sheet(isPresented: $showingWebView) {
@@ -181,7 +235,7 @@ struct ExerciseDetailView: View {
         // Remove YouTube-specific metadata from description
         let lines = description.components(separatedBy: .newlines)
         var cleanLines: [String] = []
-        
+
         var skipNextLines = false
         for line in lines {
             if line.contains("🎥 YouTube Video") {
@@ -194,8 +248,115 @@ struct ExerciseDetailView: View {
             skipNextLines = false
             cleanLines.append(line)
         }
-        
+
         return cleanLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func toggleFavorite() {
+        CoreDataManager.shared.toggleFavorite(exercise: exercise)
+        isFavorite = exercise.isFavorite
+        onFavoriteChanged?()
+    }
+
+    // MARK: - Personal Notes Section
+
+    private var personalNotesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("My Notes")
+                    .font(.headline)
+                    .foregroundColor(DesignSystem.Colors.primaryDark)
+
+                Spacer()
+
+                if !isEditingNotes && !personalNotes.isEmpty {
+                    Button {
+                        isEditingNotes = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.subheadline)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    }
+                }
+            }
+
+            if isEditingNotes {
+                // Editable text area
+                VStack(spacing: 8) {
+                    TextEditor(text: $personalNotes)
+                        .frame(minHeight: 80)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(DesignSystem.Colors.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(DesignSystem.Colors.primaryGreen.opacity(0.5), lineWidth: 1)
+                        )
+
+                    HStack {
+                        Button("Cancel") {
+                            personalNotes = exercise.personalNotes ?? ""
+                            isEditingNotes = false
+                        }
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                        Spacer()
+
+                        Button("Save") {
+                            savePersonalNotes()
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    }
+                }
+            } else if personalNotes.isEmpty {
+                // Empty state - tap to add
+                Button {
+                    isEditingNotes = true
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle")
+                        Text("Add personal notes...")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen.opacity(0.7))
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.05))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(DesignSystem.Colors.primaryGreen.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                            )
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                // Display notes
+                Text(personalNotes)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(DesignSystem.Colors.cardBackground)
+                    )
+                    .onTapGesture {
+                        isEditingNotes = true
+                    }
+            }
+        }
+    }
+
+    private func savePersonalNotes() {
+        exercise.personalNotes = personalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        CoreDataManager.shared.save()
+        isEditingNotes = false
+        onFavoriteChanged?() // Refresh parent view
     }
 }
 
@@ -230,11 +391,15 @@ struct YouTubeWebView: UIViewRepresentable {
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            #if DEBUG
             print("❌ WebView failed to load: \(error.localizedDescription)")
+            #endif
         }
         
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            #if DEBUG
             print("❌ WebView failed provisional navigation: \(error.localizedDescription)")
+            #endif
         }
     }
 }

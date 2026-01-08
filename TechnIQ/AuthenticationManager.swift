@@ -45,7 +45,9 @@ class AuthenticationManager: ObservableObject {
 
         do {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            #if DEBUG
             print("User signed in: \(result.user.uid)")
+            #endif
         } catch {
             await MainActor.run {
                 handleAuthError(error)
@@ -65,7 +67,9 @@ class AuthenticationManager: ObservableObject {
 
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            #if DEBUG
             print("User created: \(result.user.uid)")
+            #endif
         } catch {
             await MainActor.run {
                 handleAuthError(error)
@@ -87,7 +91,9 @@ class AuthenticationManager: ObservableObject {
 
         do {
             let result = try await Auth.auth().signInAnonymously()
+            #if DEBUG
             print("Anonymous user signed in: \(result.user.uid)")
+            #endif
         } catch {
             await MainActor.run {
                 handleAuthError(error)
@@ -117,13 +123,21 @@ class AuthenticationManager: ObservableObject {
                 return
             }
 
+            #if DEBUG
+
             print("🔄 Starting Google Sign-In...")
 
+
+            #endif
             // Perform Google Sign-In
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
 
+            #if DEBUG
+
             print("✅ Google Sign-In UI completed")
 
+
+            #endif
             // Get the ID token
             guard let idToken = result.user.idToken?.tokenString else {
                 await MainActor.run {
@@ -136,21 +150,35 @@ class AuthenticationManager: ObservableObject {
             // Get the access token
             let accessToken = result.user.accessToken.tokenString
 
+            #if DEBUG
+
             print("🔄 Creating Firebase credential...")
 
+
+            #endif
             // Create Firebase credential
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
 
             // Sign in to Firebase
             let authResult = try await Auth.auth().signIn(with: credential)
+            #if DEBUG
             print("✅ Google Sign-In successful: \(authResult.user.uid)")
+            #endif
+            #if DEBUG
             print("📧 User email: \(authResult.user.email ?? "No email")")
 
+            #endif
         } catch let error as NSError {
+            #if DEBUG
             print("❌ Google Sign-In error: \(error.localizedDescription)")
+            #endif
+            #if DEBUG
             print("❌ Error code: \(error.code)")
+            #endif
+            #if DEBUG
             print("❌ Error domain: \(error.domain)")
 
+            #endif
             // Handle specific Google Sign-In errors
             await MainActor.run {
                 if error.domain == "com.google.GIDSignIn" {
@@ -181,7 +209,9 @@ class AuthenticationManager: ObservableObject {
         do {
             try Auth.auth().signOut()
             GIDSignIn.sharedInstance.signOut()
+            #if DEBUG
             print("✅ User signed out successfully")
+            #endif
         } catch {
             handleAuthError(error)
         }
@@ -197,7 +227,9 @@ class AuthenticationManager: ObservableObject {
 
         do {
             try await Auth.auth().sendPasswordReset(withEmail: email)
+            #if DEBUG
             print("Password reset email sent")
+            #endif
         } catch {
             await MainActor.run {
                 handleAuthError(error)
@@ -236,7 +268,9 @@ class AuthenticationManager: ObservableObject {
         } else {
             errorMessage = error.localizedDescription
         }
+        #if DEBUG
         print("Auth error: \(errorMessage)")
+        #endif
     }
     
     private func clearError() {
