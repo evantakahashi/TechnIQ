@@ -123,20 +123,25 @@ struct DashboardView: View {
                 
                 Spacer()
                 
-                // Profile Avatar
-                Button(action: {}) {
-                    ZStack {
-                        Circle()
-                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.1))
-                            .frame(width: 50, height: 50)
-                        
-                        Image(systemName: "person.fill")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
+                // Level Badge
+                HStack(spacing: 8) {
+                    Image(systemName: "star.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(DesignSystem.Colors.accentYellow)
+                    Text("Lv.\(player.currentLevel)")
+                        .font(DesignSystem.Typography.titleSmall)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray6))
+                .cornerRadius(20)
             }
-            
+
+            // XP Progress Bar
+            xpProgressCard(player: player)
+
             // Modern Today's Goal Card
             ModernCard {
                 HStack {
@@ -212,16 +217,82 @@ struct DashboardView: View {
                 
                 StatCard(
                     title: "Streak",
-                    value: "3",
+                    value: "\(player.currentStreak)",
                     subtitle: "days",
                     icon: DesignSystem.Icons.trophy,
                     color: DesignSystem.Colors.accentYellow,
-                    progress: 0.6
+                    progress: min(1.0, Double(player.currentStreak) / 7.0)
                 )
             }
         }
     }
-    
+
+    // MARK: - XP Progress Card
+
+    private func xpProgressCard(player: Player) -> some View {
+        let progress = XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
+        let tier = XPService.shared.tierForLevel(Int(player.currentLevel))
+        let nextLevelXP = XPService.shared.xpRequiredForLevel(Int(player.currentLevel) + 1)
+        let currentLevelXP = XPService.shared.xpRequiredForLevel(Int(player.currentLevel))
+        let xpInLevel = player.totalXP - currentLevelXP
+        let xpNeeded = nextLevelXP - currentLevelXP
+
+        return ModernCard(padding: DesignSystem.Spacing.md) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let tier = tier {
+                            Text(tier.title)
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                        Text("\(player.totalXP) XP")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
+
+                    Spacer()
+
+                    // Streak flame
+                    if player.currentStreak > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                            Text("\(player.currentStreak)")
+                                .font(DesignSystem.Typography.labelLarge)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                        }
+                    }
+                }
+
+                // XP Progress Bar
+                VStack(spacing: 4) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color(.systemGray5))
+                                .frame(height: 8)
+
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(DesignSystem.Colors.primaryGreen)
+                                .frame(width: geometry.size.width * progress, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+
+                    HStack {
+                        Text("\(xpInLevel)/\(xpNeeded) to Level \(player.currentLevel + 1)")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                        Spacer()
+                    }
+                }
+            }
+        }
+    }
+
     private var modernQuickActions: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Quick Actions")

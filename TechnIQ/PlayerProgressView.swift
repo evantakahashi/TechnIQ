@@ -9,7 +9,7 @@ struct PlayerProgressView: View {
     @State private var selectedTimeRange: TimeRange = .month
     @State private var skillProgressData: [SkillProgress] = []
     @State private var overallStats: OverallStats?
-    @State private var recentAchievements: [Achievement] = []
+    @State private var recentAchievements: [ProgressAchievement] = []
     @State private var trainingInsights: [TrainingInsight] = []
     @State private var trainingSessions: [TrainingSession] = []
 
@@ -197,27 +197,30 @@ struct PlayerProgressView: View {
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.semibold)
 
-            if let stats = overallStats {
-                VStack(spacing: 10) {
-                    // Training frequency
-                    HStack {
-                        Image(systemName: "flame.fill")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                        Text("\(stats.currentStreak) day streak")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Spacer()
-                        Text("Best: \(stats.longestStreak)")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 14)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+            VStack(spacing: 10) {
+                // XP and Level Display
+                xpLevelRow
 
-                    // Sessions per week
+                // Training streak (using stored player values)
+                HStack {
+                    Image(systemName: "flame.fill")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.accentOrange)
+                    Text("\(player.currentStreak) day streak")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Spacer()
+                    Text("Best: \(player.longestStreak)")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 14)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+
+                // Sessions per week
+                if let stats = overallStats {
                     HStack {
                         Image(systemName: "calendar.badge.clock")
                             .font(DesignSystem.Typography.bodySmall)
@@ -234,6 +237,70 @@ struct PlayerProgressView: View {
                 }
             }
         }
+    }
+
+    // MARK: - XP and Level Row
+
+    private var xpLevelRow: some View {
+        let tier = XPService.shared.tierForLevel(Int(player.currentLevel))
+        let progress = XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
+
+        return VStack(spacing: 8) {
+            HStack {
+                // Level Badge
+                HStack(spacing: 6) {
+                    Image(systemName: "star.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(DesignSystem.Colors.accentYellow)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Level \(player.currentLevel)")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        if let tier = tier {
+                            Text(tier.title)
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                // XP Display
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(player.totalXP) XP")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    if player.currentLevel < 50 {
+                        Text("\(Int(XPService.shared.xpRequiredForLevel(Int(player.currentLevel) + 1) - player.totalXP)) to next")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+            }
+
+            // Progress Bar
+            if player.currentLevel < 50 {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color(.systemGray5))
+                            .frame(height: 8)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(DesignSystem.Colors.primaryGreen)
+                            .frame(width: geometry.size.width * progress, height: 8)
+                    }
+                }
+                .frame(height: 8)
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 
     // MARK: - Smart Insights Section
@@ -568,14 +635,14 @@ struct PlayerProgressView: View {
         return secondAvg - firstAvg
     }
 
-    private func generateAchievements(from sessions: [TrainingSession], stats: OverallStats?) -> [Achievement] {
-        var achievements: [Achievement] = []
+    private func generateAchievements(from sessions: [TrainingSession], stats: OverallStats?) -> [ProgressAchievement] {
+        var achievements: [ProgressAchievement] = []
 
         guard let stats = stats else { return [] }
 
         // Session milestones
         if stats.totalSessions >= 10 && stats.totalSessions < 25 {
-            achievements.append(Achievement(
+            achievements.append(ProgressAchievement(
                 id: UUID(),
                 icon: "star.fill",
                 title: "Getting Started",
@@ -586,7 +653,7 @@ struct PlayerProgressView: View {
         }
 
         if stats.totalSessions >= 25 && stats.totalSessions < 50 {
-            achievements.append(Achievement(
+            achievements.append(ProgressAchievement(
                 id: UUID(),
                 icon: "flame.fill",
                 title: "Committed Player",
@@ -597,7 +664,7 @@ struct PlayerProgressView: View {
         }
 
         if stats.totalSessions >= 50 {
-            achievements.append(Achievement(
+            achievements.append(ProgressAchievement(
                 id: UUID(),
                 icon: "crown.fill",
                 title: "Dedicated Athlete",
@@ -609,7 +676,7 @@ struct PlayerProgressView: View {
 
         // Streak achievements
         if stats.currentStreak >= 7 {
-            achievements.append(Achievement(
+            achievements.append(ProgressAchievement(
                 id: UUID(),
                 icon: "calendar.badge.checkmark",
                 title: "Week Warrior",
@@ -621,7 +688,7 @@ struct PlayerProgressView: View {
 
         // Improvement achievement
         if stats.improvementPercentage >= 20 {
-            achievements.append(Achievement(
+            achievements.append(ProgressAchievement(
                 id: UUID(),
                 icon: "chart.line.uptrend.xyaxis",
                 title: "Rising Star",
@@ -710,7 +777,7 @@ struct SkillProgressRow: View {
 }
 
 struct AchievementCard: View {
-    let achievement: Achievement
+    let achievement: ProgressAchievement
 
     var body: some View {
         HStack(spacing: 12) {
@@ -816,7 +883,7 @@ struct SkillProgress: Identifiable {
     let sessionsCount: Int
 }
 
-struct Achievement: Identifiable {
+struct ProgressAchievement: Identifiable {
     let id: UUID
     let icon: String
     let title: String

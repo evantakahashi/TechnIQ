@@ -19,8 +19,14 @@ struct NewSessionView: View {
     @State private var overallRating = 3
     @State private var manualDuration: Double = 60 // Default 60 minutes
     @State private var useManualDuration = false
-    
+
     @State private var availableExercises: [Exercise] = []
+
+    // XP and Celebration states
+    @State private var showSessionComplete = false
+    @State private var xpBreakdown: XPService.SessionXPBreakdown?
+    @State private var newLevel: Int?
+    @State private var unlockedAchievements: [Achievement] = []
     
     let sessionTypes = ["Training", "Match", "Fitness", "Technical", "Tactical"]
     
@@ -84,6 +90,18 @@ struct NewSessionView: View {
                 ExercisePickerView(
                     selectedExercises: $selectedExercises,
                     availableExercises: Array(availableExercises)
+                )
+            }
+            .sheet(isPresented: $showSessionComplete) {
+                SessionCompleteView(
+                    xpBreakdown: xpBreakdown,
+                    newLevel: newLevel,
+                    achievements: unlockedAchievements,
+                    player: player,
+                    onDismiss: {
+                        showSessionComplete = false
+                        dismiss()
+                    }
                 )
             }
             .onAppear {
@@ -565,7 +583,40 @@ struct NewSessionView: View {
             #endif
         }
 
-        dismiss()
+        // Process XP earning
+        let (breakdown, levelUp) = XPService.shared.processSessionCompletion(
+            session: newSession,
+            player: player,
+            context: viewContext
+        )
+        xpBreakdown = breakdown
+        newLevel = levelUp
+
+        #if DEBUG
+        print("🎮 XP earned: \(breakdown.total) (base: \(breakdown.baseXP), intensity: \(breakdown.intensityBonus), streak: \(breakdown.streakBonus))")
+        if let level = levelUp {
+            print("🎉 Level up! Now level \(level)")
+        }
+        #endif
+
+        // Check for achievement unlocks
+        unlockedAchievements = AchievementService.shared.checkAndUnlockAchievements(
+            for: player,
+            in: viewContext
+        )
+
+        #if DEBUG
+        if !unlockedAchievements.isEmpty {
+            print("🏆 Unlocked \(unlockedAchievements.count) achievements!")
+        }
+        #endif
+
+        // Show completion view if XP was earned
+        if breakdown.total > 0 {
+            showSessionComplete = true
+        } else {
+            dismiss()
+        }
     }
 }
 

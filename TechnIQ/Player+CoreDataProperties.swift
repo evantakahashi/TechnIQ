@@ -21,12 +21,20 @@ extension Player {
     @NSManaged public var competitiveLevel: String?
     @NSManaged public var playerRoleModel: String?
     @NSManaged public var lastCloudSync: Date?
+    @NSManaged public var totalXP: Int64
+    @NSManaged public var currentLevel: Int16
+    @NSManaged public var currentStreak: Int16
+    @NSManaged public var longestStreak: Int16
+    @NSManaged public var lastTrainingDate: Date?
+    @NSManaged public var unlockedAchievements: [String]?
+    @NSManaged public var streakFreezes: Int16
     @NSManaged public var sessions: NSSet?
     @NSManaged public var stats: NSSet?
     @NSManaged public var exercises: NSSet?
     @NSManaged public var playerProfile: PlayerProfile?
     @NSManaged public var playerGoals: NSSet?
     @NSManaged public var recommendationFeedback: NSSet?
+    @NSManaged public var trainingPlans: NSSet?
 
 }
 
@@ -112,6 +120,23 @@ extension Player {
 
     @objc(removeRecommendationFeedback:)
     @NSManaged public func removeFromRecommendationFeedback(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for trainingPlans
+extension Player {
+
+    @objc(addTrainingPlansObject:)
+    @NSManaged public func addToTrainingPlans(_ value: TrainingPlan)
+
+    @objc(removeTrainingPlansObject:)
+    @NSManaged public func removeFromTrainingPlans(_ value: TrainingPlan)
+
+    @objc(addTrainingPlans:)
+    @NSManaged public func addToTrainingPlans(_ values: NSSet)
+
+    @objc(removeTrainingPlans:)
+    @NSManaged public func removeFromTrainingPlans(_ values: NSSet)
 
 }
 

@@ -15,8 +15,10 @@ extension TrainingSession {
     @NSManaged public var notes: String?
     @NSManaged public var overallRating: Int16
     @NSManaged public var sessionType: String?
+    @NSManaged public var xpEarned: Int32
     @NSManaged public var exercises: NSSet?
     @NSManaged public var player: Player?
+    @NSManaged public var planSession: PlanSession?
 
 }
 

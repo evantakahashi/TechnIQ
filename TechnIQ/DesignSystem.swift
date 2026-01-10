@@ -17,7 +17,24 @@ struct DesignSystem {
         // Accent colors
         static let accentOrange = Color(red: 1.0, green: 0.6, blue: 0.0) // #FF9800
         static let accentYellow = Color(red: 1.0, green: 0.92, blue: 0.23) // #FFEB3B
-        
+
+        // Celebration & Gamification colors
+        static let successGreen = Color(red: 0.0, green: 0.9, blue: 0.4) // Brighter celebration green
+        static let streakOrange = Color(red: 1.0, green: 0.45, blue: 0.1) // Warm orange for flames
+        static let xpGold = Color(red: 1.0, green: 0.84, blue: 0.0) // Gold for XP/rewards
+        static let levelPurple = Color(red: 0.6, green: 0.4, blue: 0.9) // Purple for level-ups
+
+        // Confetti colors for celebrations
+        static let confettiColors: [Color] = [
+            primaryGreen,
+            secondaryBlue,
+            accentOrange,
+            accentYellow,
+            Color(red: 0.9, green: 0.3, blue: 0.5), // Pink
+            Color(red: 0.6, green: 0.4, blue: 0.9), // Purple
+            Color(red: 0.2, green: 0.8, blue: 0.9)  // Cyan
+        ]
+
         // Semantic colors
         static let success = primaryGreen
         static let warning = accentOrange
@@ -67,6 +84,31 @@ struct DesignSystem {
             colors: [neutral100, background],
             startPoint: .top,
             endPoint: .bottom
+        )
+
+        // Celebration gradients
+        static let xpGradient = LinearGradient(
+            colors: [xpGold, accentOrange],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        static let levelUpGradient = LinearGradient(
+            colors: [levelPurple, secondaryBlue],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        static let streakGradient = LinearGradient(
+            colors: [streakOrange, accentYellow],
+            startPoint: .bottom,
+            endPoint: .top
+        )
+
+        static let celebrationGradient = LinearGradient(
+            colors: [successGreen, primaryGreen],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
     }
     
