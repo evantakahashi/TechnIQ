@@ -32,6 +32,11 @@ struct DashboardView: View {
     @State private var smartRecommendations: [CoreDataManager.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
     @StateObject private var cloudMLService = CloudMLService.shared
+
+    // Welcome back detection
+    @State private var showWelcomeBack = false
+    @State private var daysInactive: Int = 0
+    @AppStorage("lastAppOpenDate") private var lastAppOpenDate: Double = Date().timeIntervalSince1970
     
     var currentPlayer: Player? {
         players.first
@@ -79,6 +84,7 @@ struct DashboardView: View {
         }
         .onAppear {
             updateDataFilters()
+            checkWelcomeBack()
         }
         .onChange(of: authManager.userUID) {
             updateDataFilters()
@@ -105,66 +111,106 @@ struct DashboardView: View {
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
     }
+
+    private func checkWelcomeBack() {
+        let lastOpen = Date(timeIntervalSince1970: lastAppOpenDate)
+        let daysSinceLastOpen = Calendar.current.dateComponents([.day], from: lastOpen, to: Date()).day ?? 0
+
+        if daysSinceLastOpen >= 1 {
+            daysInactive = daysSinceLastOpen
+            showWelcomeBack = true
+        }
+
+        // Update last open date
+        lastAppOpenDate = Date().timeIntervalSince1970
+    }
+
+    private func dismissWelcomeBack() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            showWelcomeBack = false
+        }
+    }
     
     private func modernHeaderSection(player: Player) -> some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            // Greeting Section
-            HStack {
+            // Welcome Back Overlay (when returning after inactivity)
+            if showWelcomeBack && daysInactive >= 3 {
+                WelcomeBackView(daysInactive: daysInactive) {
+                    dismissWelcomeBack()
+                    showingNewSession = true
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            // Greeting Section with Mascot
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // Mascot
+                MascotView(
+                    state: showWelcomeBack ? MascotState.forWelcomeBack(daysInactive: daysInactive) : MascotState.forTimeOfDay(),
+                    size: .small,
+                    animated: true
+                )
+
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text(getGreeting())
                         .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
-                    
+
                     Text(player.name ?? "Player")
                         .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
                         .fontWeight(.bold)
                 }
-                
+
                 Spacer()
-                
-                // Level Badge
-                HStack(spacing: 8) {
-                    Image(systemName: "star.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-                    Text("Lv.\(player.currentLevel)")
-                        .font(DesignSystem.Typography.titleSmall)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                // Level Badge with XP
+                VStack(spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(DesignSystem.Colors.xpGold)
+                        Text("Lv.\(player.currentLevel)")
+                            .font(DesignSystem.Typography.titleSmall)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
+
+                    // Streak flame badge
+                    if player.currentStreak > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(DesignSystem.Colors.streakOrange)
+                            Text("\(player.currentStreak)")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.streakOrange)
+                        }
+                    }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(Color(.systemGray6))
-                .cornerRadius(20)
+                .cornerRadius(16)
             }
 
             // XP Progress Bar
             xpProgressCard(player: player)
 
-            // Modern Today's Goal Card
-            ModernCard {
-                HStack {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Today's Goal")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        
-                        Text("Complete 1 training session")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                            .fontWeight(.semibold)
-                    }
-                    
-                    Spacer()
-                    
-                    FloatingActionButton(icon: "plus") {
-                        showingNewSession = true
-                    }
-                }
-            }
-            .pulseAnimation()
+            // Daily Goal Card with Progress Ring
+            DailyGoalCard(
+                sessionsToday: sessionsToday(for: player),
+                dailyGoal: 1,
+                onStartSession: { showingNewSession = true }
+            )
         }
+    }
+
+    private func sessionsToday(for player: Player) -> Int {
+        guard let sessions = player.sessions as? Set<TrainingSession> else { return 0 }
+        let today = Calendar.current.startOfDay(for: Date())
+        return sessions.filter { ($0.date ?? Date.distantPast) >= today }.count
     }
     
     private func getGreeting() -> String {
@@ -879,8 +925,188 @@ struct PhysicalIndicatorChip: View {
     }
 }
 
+// MARK: - Daily Goal Card
+
+struct DailyGoalCard: View {
+    let sessionsToday: Int
+    let dailyGoal: Int
+    let onStartSession: () -> Void
+
+    private var progress: Double {
+        min(1.0, Double(sessionsToday) / Double(dailyGoal))
+    }
+
+    private var isGoalComplete: Bool {
+        sessionsToday >= dailyGoal
+    }
+
+    var body: some View {
+        ModernCard {
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                // Circular Progress Ring
+                ZStack {
+                    // Background circle
+                    Circle()
+                        .stroke(Color(.systemGray5), lineWidth: 8)
+                        .frame(width: 70, height: 70)
+
+                    // Progress circle
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            isGoalComplete ? DesignSystem.Colors.successGreen : DesignSystem.Colors.primaryGreen,
+                            style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                        )
+                        .frame(width: 70, height: 70)
+                        .rotationEffect(.degrees(-90))
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
+
+                    // Center content
+                    VStack(spacing: 0) {
+                        if isGoalComplete {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(DesignSystem.Colors.successGreen)
+                        } else {
+                            Text("\(sessionsToday)")
+                                .font(DesignSystem.Typography.headlineMedium)
+                                .fontWeight(.bold)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                            Text("/\(dailyGoal)")
+                                .font(DesignSystem.Typography.labelSmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
+
+                // Goal Info
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text(isGoalComplete ? "Goal Complete!" : "Today's Goal")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(isGoalComplete ? DesignSystem.Colors.successGreen : DesignSystem.Colors.textSecondary)
+
+                    Text(isGoalComplete ? "Great work today!" : "Complete \(dailyGoal) session\(dailyGoal == 1 ? "" : "s")")
+                        .font(DesignSystem.Typography.titleSmall)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .fontWeight(.semibold)
+
+                    if !isGoalComplete {
+                        Text("\(dailyGoal - sessionsToday) more to go")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+
+                Spacer()
+
+                // Action button
+                FloatingActionButton(
+                    icon: isGoalComplete ? "plus" : "play.fill"
+                ) {
+                    onStartSession()
+                }
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(
+                    isGoalComplete ? DesignSystem.Colors.successGreen.opacity(0.3) : Color.clear,
+                    lineWidth: 2
+                )
+        )
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isGoalComplete)
+    }
+}
+
+// MARK: - Enhanced Stats Row
+
+struct StatsRowView: View {
+    let player: Player
+    let sessionsThisWeek: Int
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            // Streak
+            StatPill(
+                icon: "flame.fill",
+                value: "\(player.currentStreak)",
+                label: "Streak",
+                color: DesignSystem.Colors.streakOrange
+            )
+
+            // Week Sessions
+            StatPill(
+                icon: "calendar",
+                value: "\(sessionsThisWeek)",
+                label: "This Week",
+                color: DesignSystem.Colors.secondaryBlue
+            )
+
+            // Total XP
+            StatPill(
+                icon: "star.fill",
+                value: formatXP(player.totalXP),
+                label: "Total XP",
+                color: DesignSystem.Colors.xpGold
+            )
+
+            // Level
+            StatPill(
+                icon: "trophy.fill",
+                value: "Lv.\(player.currentLevel)",
+                label: "Level",
+                color: DesignSystem.Colors.levelPurple
+            )
+        }
+    }
+
+    private func formatXP(_ xp: Int64) -> String {
+        if xp >= 1000 {
+            return String(format: "%.1fK", Double(xp) / 1000.0)
+        }
+        return "\(xp)"
+    }
+}
+
+struct StatPill: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .foregroundColor(color)
+                Text(value)
+                    .font(DesignSystem.Typography.labelLarge)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+            Text(label)
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignSystem.Spacing.sm)
+        .background(color.opacity(0.1))
+        .cornerRadius(DesignSystem.CornerRadius.sm)
+    }
+}
+
 #Preview {
     DashboardView(selectedTab: .constant(0))
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
         .environmentObject(AuthenticationManager.shared)
+}
+
+#Preview("Daily Goal Card") {
+    VStack(spacing: 20) {
+        DailyGoalCard(sessionsToday: 0, dailyGoal: 1, onStartSession: {})
+        DailyGoalCard(sessionsToday: 1, dailyGoal: 1, onStartSession: {})
+        DailyGoalCard(sessionsToday: 1, dailyGoal: 3, onStartSession: {})
+    }
+    .padding()
 }
