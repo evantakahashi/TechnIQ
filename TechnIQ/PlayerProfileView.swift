@@ -4,6 +4,7 @@ import CoreData
 struct PlayerProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
+    @StateObject private var avatarService = AvatarService.shared
     @FetchRequest var players: FetchedResults<Player>
     
     init() {
@@ -17,6 +18,8 @@ struct PlayerProfileView: View {
     
     @State private var showingEditProfile = false
     @State private var showingSignOutAlert = false
+    @State private var showingAvatarCustomization = false
+    @State private var showingShop = false
     
     var currentPlayer: Player? {
         players.first
@@ -28,12 +31,19 @@ struct PlayerProfileView: View {
                 if let player = currentPlayer {
                     VStack(spacing: 20) {
                         profileHeaderCard(player: player)
+                        avatarCard(player: player)
                         physicalStatsCard(player: player)
                         playingStatsCard(player: player)
                         skillsProgressCard(player: player)
                         achievementsCard(player: player)
                     }
                     .padding()
+                    .sheet(isPresented: $showingAvatarCustomization) {
+                        AvatarCustomizationView()
+                    }
+                    .sheet(isPresented: $showingShop) {
+                        ShopView()
+                    }
                 } else {
                     ContentUnavailableView(
                         "No Profile Found",
@@ -74,6 +84,7 @@ struct PlayerProfileView: View {
             }
             .onAppear {
                 updatePlayersFilter()
+                avatarService.loadCurrentAvatar()
             }
             .onChange(of: authManager.userUID) {
                 updatePlayersFilter()
@@ -97,23 +108,90 @@ struct PlayerProfileView: View {
                     Text(player.name ?? "Player")
                         .font(.title)
                         .fontWeight(.bold)
-                    
+
                     Text("\(player.age) years old")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+
+                    // Level and XP
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(DesignSystem.Colors.xpGold)
+                            Text("Lv. \(player.currentLevel)")
+                                .fontWeight(.semibold)
+                        }
+                        .font(.subheadline)
+
+                        CoinDisplayView(size: .small)
+                    }
                 }
-                
+
                 Spacer()
-                
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.green)
+
+                // Avatar preview
+                AvatarView(avatarState: avatarService.currentAvatarState, size: .medium)
             }
-            
+
             HStack(spacing: 20) {
                 ProfileInfoItem(title: "Position", value: player.position ?? "N/A")
                 ProfileInfoItem(title: "Style", value: player.playingStyle ?? "N/A")
                 ProfileInfoItem(title: "Foot", value: player.dominantFoot ?? "N/A")
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+    }
+
+    private func avatarCard(player: Player) -> some View {
+        VStack(spacing: DesignSystem.Spacing.md) {
+            HStack {
+                Text("Your Avatar")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                // Customize button
+                Button {
+                    showingAvatarCustomization = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "paintbrush.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        Text("Customize")
+                            .font(DesignSystem.Typography.labelMedium)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                    .cornerRadius(DesignSystem.CornerRadius.md)
+                }
+
+                // Shop button
+                Button {
+                    showingShop = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "bag.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(DesignSystem.Colors.coinGold)
+                        Text("Shop")
+                            .font(DesignSystem.Typography.labelMedium)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.coinGold.opacity(0.1))
+                    .cornerRadius(DesignSystem.CornerRadius.md)
+                }
             }
         }
         .padding()

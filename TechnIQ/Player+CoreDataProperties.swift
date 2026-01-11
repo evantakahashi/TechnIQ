@@ -28,7 +28,11 @@ extension Player {
     @NSManaged public var lastTrainingDate: Date?
     @NSManaged public var unlockedAchievements: [String]?
     @NSManaged public var streakFreezes: Int16
+    @NSManaged public var coins: Int64
+    @NSManaged public var totalCoinsEarned: Int64
     @NSManaged public var sessions: NSSet?
+    @NSManaged public var avatarConfiguration: AvatarConfiguration?
+    @NSManaged public var ownedAvatarItems: NSSet?
     @NSManaged public var stats: NSSet?
     @NSManaged public var exercises: NSSet?
     @NSManaged public var playerProfile: PlayerProfile?
@@ -137,6 +141,23 @@ extension Player {
 
     @objc(removeTrainingPlans:)
     @NSManaged public func removeFromTrainingPlans(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for ownedAvatarItems
+extension Player {
+
+    @objc(addOwnedAvatarItemsObject:)
+    @NSManaged public func addToOwnedAvatarItems(_ value: OwnedAvatarItem)
+
+    @objc(removeOwnedAvatarItemsObject:)
+    @NSManaged public func removeFromOwnedAvatarItems(_ value: OwnedAvatarItem)
+
+    @objc(addOwnedAvatarItems:)
+    @NSManaged public func addToOwnedAvatarItems(_ values: NSSet)
+
+    @objc(removeOwnedAvatarItems:)
+    @NSManaged public func removeFromOwnedAvatarItems(_ values: NSSet)
 
 }
 

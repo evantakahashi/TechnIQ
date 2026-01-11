@@ -20,7 +20,7 @@
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="exercises" inverseEntity="Player"/>
         <relationship name="planSessions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="PlanSession" inverseName="exercises" inverseEntity="PlanSession"/>
     </entity>
-    <entity name="Player" representedClassName="Player" syncable="YES" codeGenerationType="class">
+    <entity name="Player" representedClassName="Player" syncable="YES">
         <attribute name="age" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dominantFoot" optional="YES" attributeType="String"/>
@@ -42,7 +42,11 @@
         <attribute name="lastTrainingDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="unlockedAchievements" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
         <attribute name="streakFreezes" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="coins" optional="YES" attributeType="Integer 64" defaultValueString="100" usesScalarValueType="YES"/>
+        <attribute name="totalCoinsEarned" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TrainingSession" inverseName="player" inverseEntity="TrainingSession"/>
+        <relationship name="avatarConfiguration" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="AvatarConfiguration" inverseName="player" inverseEntity="AvatarConfiguration"/>
+        <relationship name="ownedAvatarItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="OwnedAvatarItem" inverseName="player" inverseEntity="OwnedAvatarItem"/>
         <relationship name="stats" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlayerStats" inverseName="player" inverseEntity="PlayerStats"/>
         <relationship name="exercises" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Exercise" inverseName="player" inverseEntity="Exercise"/>
         <relationship name="playerProfile" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="PlayerProfile" inverseName="player" inverseEntity="PlayerProfile"/>
@@ -202,5 +206,25 @@
         <relationship name="day" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PlanDay" inverseName="sessions" inverseEntity="PlanDay"/>
         <relationship name="exercises" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Exercise" inverseName="planSessions" inverseEntity="Exercise"/>
         <relationship name="completedSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TrainingSession" inverseName="planSession" inverseEntity="TrainingSession"/>
+    </entity>
+    <entity name="AvatarConfiguration" representedClassName="AvatarConfiguration" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="skinTone" optional="YES" attributeType="String" defaultValueString="medium"/>
+        <attribute name="hairStyle" optional="YES" attributeType="String" defaultValueString="short_1"/>
+        <attribute name="hairColor" optional="YES" attributeType="String" defaultValueString="brown"/>
+        <attribute name="faceStyle" optional="YES" attributeType="String" defaultValueString="happy"/>
+        <attribute name="jerseyId" optional="YES" attributeType="String" defaultValueString="starter_jersey"/>
+        <attribute name="shortsId" optional="YES" attributeType="String" defaultValueString="starter_shorts"/>
+        <attribute name="cleatsId" optional="YES" attributeType="String" defaultValueString="starter_cleats"/>
+        <attribute name="accessoryIds" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
+        <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="avatarConfiguration" inverseEntity="Player"/>
+    </entity>
+    <entity name="OwnedAvatarItem" representedClassName="OwnedAvatarItem" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="itemId" optional="YES" attributeType="String"/>
+        <attribute name="purchasedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="equippedSlot" optional="YES" attributeType="String"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="ownedAvatarItems" inverseEntity="Player"/>
     </entity>
 </model>

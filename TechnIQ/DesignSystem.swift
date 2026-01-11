@@ -24,6 +24,16 @@ struct DesignSystem {
         static let xpGold = Color(red: 1.0, green: 0.84, blue: 0.0) // Gold for XP/rewards
         static let levelPurple = Color(red: 0.6, green: 0.4, blue: 0.9) // Purple for level-ups
 
+        // Coin currency color
+        static let coinGold = Color(red: 1.0, green: 0.76, blue: 0.03) // #FFC107 Coin gold
+
+        // Item Rarity colors
+        static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62) // Gray
+        static let rarityUncommon = Color(red: 0.3, green: 0.69, blue: 0.31) // Green
+        static let rarityRare = Color(red: 0.13, green: 0.59, blue: 0.95) // Blue
+        static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69) // Purple
+        static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03) // Gold
+
         // Confetti colors for celebrations
         static let confettiColors: [Color] = [
             primaryGreen,

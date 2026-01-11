@@ -118,7 +118,14 @@ class CoreDataManager: ObservableObject {
 
 extension CoreDataManager {
     // MARK: - User-aware data fetching
-    
+
+    /// Convenience method to get current player using AuthenticationManager
+    func getCurrentPlayer() -> Player? {
+        let userUID = AuthenticationManager.shared.userUID
+        guard !userUID.isEmpty else { return nil }
+        return getCurrentPlayer(for: userUID)
+    }
+
     func getCurrentPlayer(for firebaseUID: String) -> Player? {
         let request: NSFetchRequest<Player> = Player.fetchRequest()
         request.predicate = NSPredicate(format: "firebaseUID == %@", firebaseUID)
