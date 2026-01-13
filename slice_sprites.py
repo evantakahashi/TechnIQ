@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """
-Avatar Sprite Sheet Slicer for TechnIQ - Version 2.2
+Avatar Sprite Sheet Slicer for TechnIQ - Version 2.4
 Slices properly-layered sprite sheets into individual PNG files.
 
-NEW in v2.2:
+NEW in v2.4:
+- Expanded grayscale detection to include white (50-255 range)
+- Smart detection falls back to default for grayscale checkers
+- Better handling of white checkered backgrounds
+
+v2.3:
+- Detect ANY color checkered patterns (not just grayscale)
+- Fixes beige/tan checkered backgrounds from Gemini sprites
+
+v2.2:
 - Expanded gray range detection (50-230) to catch both light and dark checkered patterns
 
 v2.1:
@@ -106,9 +115,9 @@ def remove_checkered_background(img):
               (np.abs(g.astype(int) - b.astype(int)) < 15) & \
               (np.abs(r.astype(int) - b.astype(int)) < 15)
 
-    # Check if pixel is in the checker gray range (expanded: 50-230 to catch both light and dark checkers)
+    # Check if pixel is in the checker range (expanded: 50-255 to catch ALL checker shades including white)
     avg_color = (r.astype(int) + g.astype(int) + b.astype(int)) // 3
-    is_checker_gray = (avg_color >= 50) & (avg_color <= 230)
+    is_checker_gray = (avg_color >= 50) & (avg_color <= 255)
 
     # Additional check: detect the alternating pattern
     # Checkers usually have a specific pattern - neighboring pixels differ
@@ -137,9 +146,9 @@ def remove_checkered_background_smart(img):
     data = np.array(img)
     height, width = data.shape[:2]
 
-    # Sample pixels from corners (likely to be background)
+    # Sample pixels from all four corners (likely to be background)
     corner_samples = []
-    sample_size = 10
+    sample_size = 20  # Larger sample for better detection
 
     # Top-left corner
     for y in range(min(sample_size, height)):
@@ -151,27 +160,52 @@ def remove_checkered_background_smart(img):
         for x in range(max(0, width - sample_size), width):
             corner_samples.append(tuple(data[y, x, :3]))
 
-    # Find the two most common colors (the checker colors)
+    # Bottom-left corner
+    for y in range(max(0, height - sample_size), height):
+        for x in range(min(sample_size, width)):
+            corner_samples.append(tuple(data[y, x, :3]))
+
+    # Bottom-right corner
+    for y in range(max(0, height - sample_size), height):
+        for x in range(max(0, width - sample_size), width):
+            corner_samples.append(tuple(data[y, x, :3]))
+
+    # Group similar colors together (bucket by rounding to nearest 8)
     from collections import Counter
-    color_counts = Counter(corner_samples)
+
+    def bucket_color(rgb):
+        return (rgb[0] // 8 * 8, rgb[1] // 8 * 8, rgb[2] // 8 * 8)
+
+    bucketed_samples = [bucket_color(c) for c in corner_samples]
+    color_counts = Counter(bucketed_samples)
     most_common = color_counts.most_common(4)
 
-    # Get checker colors (allow some tolerance)
-    checker_colors = []
-    for color, count in most_common:
-        r, g, b = color
-        # Check if grayscale
-        if abs(r - g) < 20 and abs(g - b) < 20 and abs(r - b) < 20:
-            checker_colors.append(color)
-
-    if len(checker_colors) < 2:
+    # Get the two most common color buckets
+    if len(most_common) < 2:
         print("    Could not detect checkered pattern, using default removal")
+        return remove_checkered_background(img)
+
+    checker_colors = [color for color, count in most_common[:2]]
+
+    # Verify these are dominant (at least 5% of samples each)
+    total_samples = len(bucketed_samples)
+    min_count = total_samples * 0.05  # 5% threshold
+    if most_common[0][1] < min_count or most_common[1][1] < min_count:
+        print("    Corner colors not dominant enough, using default removal")
         return remove_checkered_background(img)
 
     print(f"    Detected checker colors: {checker_colors[:2]}")
 
-    # Create mask for pixels matching checker colors (with tolerance)
-    tolerance = 25
+    # Check if detected colors are grayscale - if so, use default removal which is more thorough
+    c1, c2 = checker_colors[0], checker_colors[1]
+    c1_gray = abs(c1[0] - c1[1]) < 20 and abs(c1[1] - c1[2]) < 20
+    c2_gray = abs(c2[0] - c2[1]) < 20 and abs(c2[1] - c2[2]) < 20
+    if c1_gray and c2_gray:
+        print("    Using default grayscale removal for better coverage")
+        return remove_checkered_background(img)
+
+    # For non-grayscale checkers, use color-specific matching
+    tolerance = 20
     mask = np.zeros((height, width), dtype=bool)
 
     for checker_color in checker_colors[:2]:
