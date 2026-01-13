@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Avatar Sprite Sheet Slicer for TechnIQ - Version 2.4
+Avatar Sprite Sheet Slicer for TechnIQ - Version 2.5
 Slices properly-layered sprite sheets into individual PNG files.
 
-NEW in v2.4:
+NEW in v2.5:
+- Auto-repositioning of sprites to correct layer positions
+- Hair moves to top, cleats to bottom, etc.
+
+v2.4:
 - Expanded grayscale detection to include white (50-255 range)
 - Smart detection falls back to default for grayscale checkers
 - Better handling of white checkered backgrounds
@@ -223,6 +227,65 @@ def remove_checkered_background_smart(img):
     return Image.fromarray(data, 'RGBA')
 
 
+def reposition_to_layer(img, target_y_center):
+    """
+    Reposition sprite content to the correct Y position for layering.
+    Moves the content so its center aligns with target_y_center.
+    """
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+
+    data = np.array(img)
+    alpha = data[:, :, 3]
+
+    # Find current content bounds
+    rows_with_content = np.any(alpha > 0, axis=1)
+    if not rows_with_content.any():
+        return img  # No content to move
+
+    ymin = np.where(rows_with_content)[0][0]
+    ymax = np.where(rows_with_content)[0][-1]
+    current_center = (ymin + ymax) // 2
+
+    # Calculate how much to shift
+    shift = target_y_center - current_center
+
+    if shift == 0:
+        return img  # Already in position
+
+    # Create new image with shifted content
+    height, width = data.shape[:2]
+    new_data = np.zeros_like(data)
+
+    if shift > 0:
+        # Move down
+        new_y_start = min(shift, height)
+        old_y_end = height - shift
+        if old_y_end > 0:
+            new_data[new_y_start:, :] = data[:old_y_end, :]
+    else:
+        # Move up
+        shift = abs(shift)
+        old_y_start = min(shift, height)
+        new_y_end = height - shift
+        if new_y_end > 0:
+            new_data[:new_y_end, :] = data[old_y_start:, :]
+
+    return Image.fromarray(new_data, 'RGBA')
+
+
+# Target Y centers for each layer (on 768px height canvas)
+LAYER_POSITIONS = {
+    'body': 384,      # Full body - centered
+    'hair': 80,       # Top of head
+    'face': 140,      # Face area
+    'jersey': 300,    # Upper torso
+    'shorts': 450,    # Waist/hips
+    'socks': 600,     # Lower legs
+    'cleats': 710,    # Feet at bottom
+}
+
+
 def ensure_dir(path):
     """Create directory if it doesn't exist."""
     os.makedirs(path, exist_ok=True)
@@ -257,10 +320,10 @@ def check_transparency(cell, name):
     return True
 
 
-def slice_standard_grid(img, cols, rows, names, output_dir, prefix, validate=True):
+def slice_standard_grid(img, cols, rows, names, output_dir, prefix, validate=True, layer_type=None):
     """
     Slice a sprite sheet using standard 512x768 cell size.
-    No cropping needed - assets should be pre-positioned correctly.
+    Optionally repositions content to correct layer position.
     """
     ensure_dir(output_dir)
 
@@ -298,6 +361,10 @@ def slice_standard_grid(img, cols, rows, names, output_dir, prefix, validate=Tru
 
             # Remove checkered background and convert to true transparency
             cell = remove_checkered_background_smart(cell)
+
+            # Reposition to correct layer position if specified
+            if layer_type and layer_type in LAYER_POSITIONS:
+                cell = reposition_to_layer(cell, LAYER_POSITIONS[layer_type])
 
             # Save
             filepath = os.path.join(output_dir, filename)
@@ -341,6 +408,9 @@ def slice_hair(img, output_dir):
             # Remove checkered background and convert to true transparency
             cell = remove_checkered_background_smart(cell)
 
+            # Reposition hair to top of canvas
+            cell = reposition_to_layer(cell, LAYER_POSITIONS['hair'])
+
             filepath = os.path.join(output_dir, filename)
             cell.save(filepath, "PNG")
             print(f"  Saved: {filename}")
@@ -375,7 +445,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "bodies")
         results["bodies"] = slice_standard_grid(img, cols=3, rows=3, names=BODY_NAMES,
-                                                 output_dir=output_dir, prefix="body")
+                                                 output_dir=output_dir, prefix="body", layer_type="body")
     else:
         print(f"\nSKIPPED: bodies - file not found: {filename}")
         results["bodies"] = 0
@@ -402,7 +472,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "faces")
         results["faces"] = slice_standard_grid(img, cols=3, rows=2, names=FACE_NAMES,
-                                                output_dir=output_dir, prefix="face")
+                                                output_dir=output_dir, prefix="face", layer_type="face")
     else:
         print(f"\nSKIPPED: faces - file not found: {filename}")
         results["faces"] = 0
@@ -416,7 +486,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "jerseys")
         results["jerseys"] = slice_standard_grid(img, cols=4, rows=2, names=JERSEY_NAMES,
-                                                  output_dir=output_dir, prefix="jersey")
+                                                  output_dir=output_dir, prefix="jersey", layer_type="jersey")
     else:
         print(f"\nSKIPPED: jerseys - file not found: {filename}")
         results["jerseys"] = 0
@@ -430,7 +500,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "shorts")
         results["shorts"] = slice_standard_grid(img, cols=3, rows=2, names=SHORTS_NAMES,
-                                                 output_dir=output_dir, prefix="shorts")
+                                                 output_dir=output_dir, prefix="shorts", layer_type="shorts")
     else:
         print(f"\nSKIPPED: shorts - file not found: {filename}")
         results["shorts"] = 0
@@ -444,7 +514,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "socks")
         results["socks"] = slice_standard_grid(img, cols=4, rows=1, names=SOCKS_NAMES,
-                                                output_dir=output_dir, prefix="socks")
+                                                output_dir=output_dir, prefix="socks", layer_type="socks")
     else:
         print(f"\nSKIPPED: socks - file not found: {filename}")
         results["socks"] = 0
@@ -458,7 +528,7 @@ def main():
         print(f"  Source: {img.width}x{img.height}")
         output_dir = os.path.join(OUTPUT_DIR, "cleats")
         results["cleats"] = slice_standard_grid(img, cols=3, rows=2, names=CLEATS_NAMES,
-                                                 output_dir=output_dir, prefix="cleats")
+                                                 output_dir=output_dir, prefix="cleats", layer_type="cleats")
     else:
         print(f"\nSKIPPED: cleats - file not found: {filename}")
         results["cleats"] = 0
