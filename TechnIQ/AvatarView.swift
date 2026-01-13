@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Composable avatar renderer that displays a soccer player character
-/// Uses layered composition with placeholder graphics (to be replaced with PNG assets)
+/// Uses layered PNG assets with consistent 512x768 canvas for perfect stacking
 struct AvatarView: View {
     let avatarState: AvatarState
     let size: AvatarSize
@@ -21,9 +21,9 @@ struct AvatarView: View {
             }
         }
 
-        /// Scale factor relative to xlarge
-        var scale: CGFloat {
-            dimension / 300.0
+        /// Avatar aspect ratio matches asset canvas (512:768 = 2:3)
+        var height: CGFloat {
+            dimension * 1.5
         }
     }
 
@@ -33,347 +33,140 @@ struct AvatarView: View {
     }
 
     var body: some View {
+        // SIMPLIFIED: All assets have same 512x768 canvas with pre-positioned components
+        // Just stack them with identical frames - no manual offsets needed
         ZStack {
-            // Layer 1: Shadow/Ground
-            groundShadow
+            // Layer 1: Body with skin tone
+            layerImage(avatarState.skinTone.bodyAssetName)
 
-            // Layer 2: Body base with skin tone
-            bodyBase
+            // Layer 2: Shorts
+            layerImage(avatarState.shortsStyle.assetName)
 
-            // Layer 3: Shorts
-            shortsLayer
+            // Layer 3: Jersey
+            layerImage(avatarState.jerseyStyle.assetName)
 
-            // Layer 4: Jersey
-            jerseyLayer
+            // Layer 4: Socks
+            layerImage(avatarState.socksStyle.assetName)
 
             // Layer 5: Cleats
-            cleatsLayer
+            layerImage(avatarState.cleatsStyle.assetName)
 
-            // Layer 6: Face expression
-            faceLayer
+            // Layer 6: Face (tinted to match skin tone)
+            layerImage(avatarState.faceStyle.assetName)
+                .colorMultiply(avatarState.skinTone.faceTintColor)
 
-            // Layer 7-8: Hair (back and front combined in placeholder)
-            hairLayer
-
-            // Layer 9-10: Accessories
-            accessoriesLayer
+            // Layer 7: Hair
+            layerImage(avatarState.hairStyle.assetName(color: avatarState.hairColor))
         }
-        .frame(width: size.dimension, height: size.dimension * 1.5)
+        .frame(width: size.dimension, height: size.height)
     }
 
-    // MARK: - Placeholder Layers
-
-    private var groundShadow: some View {
-        Ellipse()
-            .fill(Color.black.opacity(0.15))
-            .frame(width: size.dimension * 0.6, height: size.dimension * 0.15)
-            .offset(y: size.dimension * 0.65)
-    }
-
-    private var bodyBase: some View {
-        // Placeholder: Simple body shape with skin tone
-        VStack(spacing: 0) {
-            // Head
-            Circle()
-                .fill(skinToneColor)
-                .frame(width: size.dimension * 0.35, height: size.dimension * 0.35)
-
-            // Body/Torso
-            RoundedRectangle(cornerRadius: size.dimension * 0.1)
-                .fill(skinToneColor)
-                .frame(width: size.dimension * 0.4, height: size.dimension * 0.1)
-                .offset(y: -size.dimension * 0.02)
-
-            // Legs (visible below shorts)
-            HStack(spacing: size.dimension * 0.08) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(skinToneColor)
-                    .frame(width: size.dimension * 0.1, height: size.dimension * 0.3)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(skinToneColor)
-                    .frame(width: size.dimension * 0.1, height: size.dimension * 0.3)
-            }
-            .offset(y: size.dimension * 0.15)
-        }
-        .offset(y: -size.dimension * 0.1)
-    }
-
-    private var shortsLayer: some View {
-        // Placeholder shorts
-        RoundedRectangle(cornerRadius: size.dimension * 0.05)
-            .fill(shortsColor)
-            .frame(width: size.dimension * 0.4, height: size.dimension * 0.18)
-            .offset(y: size.dimension * 0.12)
-    }
-
-    private var jerseyLayer: some View {
-        // Placeholder jersey/shirt
-        VStack(spacing: 0) {
-            // Jersey body
-            RoundedRectangle(cornerRadius: size.dimension * 0.08)
-                .fill(jerseyColor)
-                .frame(width: size.dimension * 0.45, height: size.dimension * 0.25)
-
-            // Jersey number (placeholder)
-            if size != .small {
-                Text("10")
-                    .font(.system(size: size.dimension * 0.08, weight: .bold))
-                    .foregroundColor(.white.opacity(0.8))
-                    .offset(y: -size.dimension * 0.15)
-            }
-        }
-        .offset(y: -size.dimension * 0.05)
-    }
-
-    private var cleatsLayer: some View {
-        // Placeholder cleats
-        HStack(spacing: size.dimension * 0.1) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(cleatsColor)
-                .frame(width: size.dimension * 0.12, height: size.dimension * 0.06)
-            RoundedRectangle(cornerRadius: 2)
-                .fill(cleatsColor)
-                .frame(width: size.dimension * 0.12, height: size.dimension * 0.06)
-        }
-        .offset(y: size.dimension * 0.58)
-    }
-
-    private var faceLayer: some View {
-        // Placeholder face based on expression
-        VStack(spacing: size.dimension * 0.02) {
-            // Eyes
-            HStack(spacing: size.dimension * 0.08) {
-                Circle()
-                    .fill(Color.black)
-                    .frame(width: size.dimension * 0.04, height: size.dimension * 0.04)
-                Circle()
-                    .fill(Color.black)
-                    .frame(width: size.dimension * 0.04, height: size.dimension * 0.04)
-            }
-
-            // Mouth based on expression
-            faceExpression
-        }
-        .offset(y: -size.dimension * 0.35)
-    }
-
+    /// Helper to create consistent layer images - all use same frame
     @ViewBuilder
-    private var faceExpression: some View {
-        switch avatarState.faceStyle {
-        case "happy", "celebrating":
-            // Smile
-            ArcShape(startAngle: .degrees(0), endAngle: .degrees(180))
-                .stroke(Color.black, lineWidth: size.dimension * 0.015)
-                .frame(width: size.dimension * 0.1, height: size.dimension * 0.05)
-        case "determined", "focused":
-            // Neutral
-            Rectangle()
-                .fill(Color.black)
-                .frame(width: size.dimension * 0.08, height: size.dimension * 0.015)
-        case "cool":
-            // Slight smirk
-            ArcShape(startAngle: .degrees(10), endAngle: .degrees(170))
-                .stroke(Color.black, lineWidth: size.dimension * 0.015)
-                .frame(width: size.dimension * 0.08, height: size.dimension * 0.03)
-        case "surprised":
-            // Open mouth
-            Circle()
-                .fill(Color.black)
-                .frame(width: size.dimension * 0.05, height: size.dimension * 0.05)
-        default:
-            // Default happy
-            ArcShape(startAngle: .degrees(0), endAngle: .degrees(180))
-                .stroke(Color.black, lineWidth: size.dimension * 0.015)
-                .frame(width: size.dimension * 0.1, height: size.dimension * 0.05)
-        }
+    private func layerImage(_ assetName: String) -> some View {
+        Image(assetName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size.dimension, height: size.height)
     }
+}
 
-    private var hairLayer: some View {
-        // Placeholder hair with color tinting
-        Group {
-            switch avatarState.hairStyle {
-            case "short_1", "short_2", "short_3":
-                // Short hair - cap-like shape on top
-                Capsule()
-                    .fill(hairToneColor)
-                    .frame(width: size.dimension * 0.35, height: size.dimension * 0.15)
-                    .offset(y: -size.dimension * 0.52)
+// MARK: - Simple Avatar View (Full Body Render)
 
-            case "medium_1", "medium_2":
-                // Medium hair - extends slightly
-                VStack(spacing: 0) {
-                    Capsule()
-                        .fill(hairToneColor)
-                        .frame(width: size.dimension * 0.38, height: size.dimension * 0.12)
-                    Rectangle()
-                        .fill(hairToneColor)
-                        .frame(width: size.dimension * 0.35, height: size.dimension * 0.08)
-                        .offset(y: -size.dimension * 0.02)
-                }
-                .offset(y: -size.dimension * 0.5)
+/// Renders full avatar as a single layered composition
+struct SimpleAvatarView: View {
+    let avatarState: AvatarState
+    let size: CGFloat
 
-            case "long_1", "ponytail":
-                // Long hair
-                VStack(spacing: 0) {
-                    Capsule()
-                        .fill(hairToneColor)
-                        .frame(width: size.dimension * 0.38, height: size.dimension * 0.12)
-                    RoundedRectangle(cornerRadius: size.dimension * 0.05)
-                        .fill(hairToneColor)
-                        .frame(width: size.dimension * 0.3, height: size.dimension * 0.2)
-                        .offset(y: -size.dimension * 0.02)
-                }
-                .offset(y: -size.dimension * 0.48)
-
-            case "afro":
-                // Afro - larger rounded shape
-                Circle()
-                    .fill(hairToneColor)
-                    .frame(width: size.dimension * 0.45, height: size.dimension * 0.45)
-                    .offset(y: -size.dimension * 0.45)
-
-            case "mohawk":
-                // Mohawk - strip on top
-                Capsule()
-                    .fill(hairToneColor)
-                    .frame(width: size.dimension * 0.08, height: size.dimension * 0.2)
-                    .offset(y: -size.dimension * 0.55)
-
-            case "bald":
-                // No hair
-                EmptyView()
-
-            default:
-                // Default short hair
-                Capsule()
-                    .fill(hairToneColor)
-                    .frame(width: size.dimension * 0.35, height: size.dimension * 0.15)
-                    .offset(y: -size.dimension * 0.52)
-            }
-        }
-    }
-
-    private var accessoriesLayer: some View {
-        // Placeholder accessories
+    var body: some View {
         ZStack {
-            ForEach(avatarState.accessoryIds, id: \.self) { accessoryId in
-                accessoryView(for: accessoryId)
-            }
+            // Body
+            Image(avatarState.skinTone.bodyAssetName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+
+            // Face with skin tone tint
+            Image(avatarState.faceStyle.assetName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .colorMultiply(avatarState.skinTone.faceTintColor)
+
+            // Hair
+            Image(avatarState.hairStyle.assetName(color: avatarState.hairColor))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
         }
+        .frame(width: size, height: size * 1.5)
+    }
+}
+
+// MARK: - Compact Avatar View
+
+/// Smaller, simplified avatar for lists and headers - shows head only
+struct CompactAvatarView: View {
+    let avatarState: AvatarState
+
+    init(avatarState: AvatarState) {
+        self.avatarState = avatarState
     }
 
-    @ViewBuilder
-    private func accessoryView(for accessoryId: String) -> some View {
-        switch accessoryId {
-        case "captain_armband":
-            // Yellow armband on left arm
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.yellow)
-                .frame(width: size.dimension * 0.05, height: size.dimension * 0.03)
-                .offset(x: -size.dimension * 0.25, y: -size.dimension * 0.02)
+    var body: some View {
+        ZStack {
+            // Background circle with jersey color hint
+            Circle()
+                .fill(jerseyColor.opacity(0.2))
 
-        case "headband_white", "headband_black":
-            // Headband
-            RoundedRectangle(cornerRadius: 2)
-                .fill(accessoryId.contains("white") ? Color.white : Color.black)
-                .frame(width: size.dimension * 0.35, height: size.dimension * 0.025)
-                .offset(y: -size.dimension * 0.42)
+            // Face - use full layer, clip will handle the rest
+            Image(avatarState.faceStyle.assetName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .colorMultiply(avatarState.skinTone.faceTintColor)
+                .frame(width: 32, height: 48)
+                .offset(y: 8) // Show upper portion (face area)
 
-        case "wristband_left":
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.white)
-                .frame(width: size.dimension * 0.04, height: size.dimension * 0.02)
-                .offset(x: -size.dimension * 0.23, y: size.dimension * 0.05)
-
-        case "sunglasses":
-            // Sunglasses over eyes
-            HStack(spacing: size.dimension * 0.02) {
-                Circle()
-                    .fill(Color.black.opacity(0.8))
-                    .frame(width: size.dimension * 0.08, height: size.dimension * 0.05)
-                Circle()
-                    .fill(Color.black.opacity(0.8))
-                    .frame(width: size.dimension * 0.08, height: size.dimension * 0.05)
-            }
-            .offset(y: -size.dimension * 0.38)
-
-        default:
-            EmptyView()
+            // Hair
+            Image(avatarState.hairStyle.assetName(color: avatarState.hairColor))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 36, height: 54)
+                .offset(y: 8)
         }
-    }
-
-    // MARK: - Color Helpers
-
-    private var skinToneColor: Color {
-        guard let skinTone = SkinTone(rawValue: avatarState.skinTone) else {
-            return SkinTone.medium.color
-        }
-        return skinTone.color
-    }
-
-    private var hairToneColor: Color {
-        guard let hairColor = HairColor(rawValue: avatarState.hairColor) else {
-            return HairColor.brown.color
-        }
-        return hairColor.color
+        .frame(width: 44, height: 44)
+        .clipShape(Circle())
     }
 
     private var jerseyColor: Color {
-        // Map jersey ID to color (placeholder until real assets)
-        switch avatarState.jerseyId {
-        case "starter_jersey":
-            return DesignSystem.Colors.primaryGreen
-        case "jersey_blue":
-            return DesignSystem.Colors.secondaryBlue
-        case "jersey_red":
-            return Color.red
-        case "jersey_black":
-            return Color.black
-        case "jersey_white":
-            return Color.white
-        case "jersey_yellow":
-            return Color.yellow
-        case "jersey_stripes":
-            return DesignSystem.Colors.primaryGreen // Would be pattern in real asset
-        default:
-            return DesignSystem.Colors.primaryGreen
-        }
-    }
-
-    private var shortsColor: Color {
-        switch avatarState.shortsId {
-        case "starter_shorts":
-            return Color.white
-        case "shorts_black":
-            return Color.black
-        case "shorts_blue":
-            return DesignSystem.Colors.secondaryBlue
-        case "shorts_match":
-            return jerseyColor.opacity(0.9)
-        default:
-            return Color.white
-        }
-    }
-
-    private var cleatsColor: Color {
-        switch avatarState.cleatsId {
-        case "starter_cleats":
-            return Color.black
-        case "cleats_white":
-            return Color.white
-        case "cleats_gold":
-            return DesignSystem.Colors.xpGold
-        case "cleats_neon":
-            return Color.green
-        default:
-            return Color.black
+        switch avatarState.jerseyStyle {
+        case .starterGreen: return DesignSystem.Colors.primaryGreen
+        case .royalBlue: return DesignSystem.Colors.secondaryBlue
+        case .strikerRed: return Color.red
+        case .brazilYellow: return Color.yellow
+        case .barcelonaStyle: return Color(red: 0.6, green: 0.1, blue: 0.2)
+        case .classicBlack: return Color.black
+        case .classicWhite: return Color.gray
+        case .orangeBlaze: return DesignSystem.Colors.accentOrange
         }
     }
 }
 
-// MARK: - Helper Shapes
+// MARK: - Avatar Preview Cell
 
-/// Arc shape for smiles/frowns
+/// Preview cell for showing a single avatar option in customization grid
+struct AvatarOptionPreview: View {
+    let imageName: String
+    let size: CGFloat
+
+    var body: some View {
+        Image(imageName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+    }
+}
+
+// MARK: - Helper Shapes (kept for fallback)
+
+/// Arc shape for smiles/frowns (fallback if images fail to load)
 struct ArcShape: Shape {
     let startAngle: Angle
     let endAngle: Angle
@@ -388,76 +181,6 @@ struct ArcShape: Shape {
             clockwise: false
         )
         return path
-    }
-}
-
-// MARK: - Compact Avatar View
-
-/// Smaller, simplified avatar for lists and headers
-struct CompactAvatarView: View {
-    let avatarState: AvatarState
-
-    init(avatarState: AvatarState) {
-        self.avatarState = avatarState
-    }
-
-    var body: some View {
-        ZStack {
-            // Background circle
-            Circle()
-                .fill(jerseyColor.opacity(0.2))
-
-            // Simple face representation
-            VStack(spacing: 2) {
-                // Hair
-                Capsule()
-                    .fill(hairColor)
-                    .frame(width: 24, height: 8)
-                    .offset(y: 2)
-
-                // Face
-                Circle()
-                    .fill(skinColor)
-                    .frame(width: 22, height: 22)
-                    .overlay(
-                        VStack(spacing: 3) {
-                            HStack(spacing: 6) {
-                                Circle().fill(Color.black).frame(width: 3, height: 3)
-                                Circle().fill(Color.black).frame(width: 3, height: 3)
-                            }
-                            ArcShape(startAngle: .degrees(0), endAngle: .degrees(180))
-                                .stroke(Color.black, lineWidth: 1)
-                                .frame(width: 8, height: 3)
-                        }
-                        .offset(y: 1)
-                    )
-
-                // Jersey hint
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(jerseyColor)
-                    .frame(width: 20, height: 10)
-                    .offset(y: -2)
-            }
-        }
-        .frame(width: 44, height: 44)
-        .clipShape(Circle())
-    }
-
-    private var skinColor: Color {
-        SkinTone(rawValue: avatarState.skinTone)?.color ?? SkinTone.medium.color
-    }
-
-    private var hairColor: Color {
-        HairColor(rawValue: avatarState.hairColor)?.color ?? HairColor.brown.color
-    }
-
-    private var jerseyColor: Color {
-        switch avatarState.jerseyId {
-        case "starter_jersey": return DesignSystem.Colors.primaryGreen
-        case "jersey_blue": return DesignSystem.Colors.secondaryBlue
-        case "jersey_red": return Color.red
-        default: return DesignSystem.Colors.primaryGreen
-        }
     }
 }
 
@@ -477,19 +200,18 @@ struct CompactAvatarView: View {
 #Preview("Avatar Customizations") {
     ScrollView {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
-            // Different skin tones
             ForEach(SkinTone.allCases.prefix(4)) { skinTone in
                 VStack {
                     AvatarView(
                         avatarState: AvatarState(
-                            skinTone: skinTone.rawValue,
-                            hairStyle: "short_1",
-                            hairColor: "brown",
-                            faceStyle: "happy",
-                            jerseyId: "starter_jersey",
-                            shortsId: "starter_shorts",
-                            cleatsId: "starter_cleats",
-                            accessoryIds: []
+                            skinTone: skinTone,
+                            hairStyle: .shortWavy,
+                            hairColor: .brown,
+                            faceStyle: .happy,
+                            jerseyStyle: .starterGreen,
+                            shortsStyle: .starterWhite,
+                            socksStyle: .greenStriped,
+                            cleatsStyle: .starterGreen
                         ),
                         size: .medium
                     )
@@ -505,22 +227,22 @@ struct CompactAvatarView: View {
 #Preview("Hair Styles") {
     ScrollView {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
-            ForEach(["short_1", "medium_1", "long_1", "afro", "mohawk", "bald"], id: \.self) { hairStyle in
+            ForEach(HairStyle.allCases) { hairStyle in
                 VStack {
                     AvatarView(
                         avatarState: AvatarState(
-                            skinTone: "medium",
+                            skinTone: .medium,
                             hairStyle: hairStyle,
-                            hairColor: "black",
-                            faceStyle: "happy",
-                            jerseyId: "starter_jersey",
-                            shortsId: "starter_shorts",
-                            cleatsId: "starter_cleats",
-                            accessoryIds: []
+                            hairColor: .black,
+                            faceStyle: .happy,
+                            jerseyStyle: .starterGreen,
+                            shortsStyle: .starterWhite,
+                            socksStyle: .greenStriped,
+                            cleatsStyle: .starterGreen
                         ),
                         size: .small
                     )
-                    Text(hairStyle)
+                    Text(hairStyle.displayName)
                         .font(.caption)
                 }
             }
@@ -533,24 +255,24 @@ struct CompactAvatarView: View {
     HStack(spacing: 20) {
         CompactAvatarView(avatarState: .default)
         CompactAvatarView(avatarState: AvatarState(
-            skinTone: "dark",
-            hairStyle: "afro",
-            hairColor: "black",
-            faceStyle: "happy",
-            jerseyId: "jersey_blue",
-            shortsId: "shorts_black",
-            cleatsId: "starter_cleats",
-            accessoryIds: []
+            skinTone: .dark,
+            hairStyle: .afro,
+            hairColor: .black,
+            faceStyle: .happy,
+            jerseyStyle: .royalBlue,
+            shortsStyle: .classicBlack,
+            socksStyle: .blackAthletic,
+            cleatsStyle: .classicBlack
         ))
         CompactAvatarView(avatarState: AvatarState(
-            skinTone: "light",
-            hairStyle: "long_1",
-            hairColor: "blonde",
-            faceStyle: "cool",
-            jerseyId: "jersey_red",
-            shortsId: "starter_shorts",
-            cleatsId: "cleats_white",
-            accessoryIds: []
+            skinTone: .light,
+            hairStyle: .longWavy,
+            hairColor: .blonde,
+            faceStyle: .cool,
+            jerseyStyle: .strikerRed,
+            shortsStyle: .starterWhite,
+            socksStyle: .whiteClassic,
+            cleatsStyle: .speedWhite
         ))
     }
     .padding()

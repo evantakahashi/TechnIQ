@@ -11,6 +11,7 @@ enum AvatarSlot: String, CaseIterable, Identifiable {
     case faceStyle = "face_style"
     case jersey = "jersey"
     case shorts = "shorts"
+    case socks = "socks"
     case cleats = "cleats"
     case accessory = "accessory"
 
@@ -24,6 +25,7 @@ enum AvatarSlot: String, CaseIterable, Identifiable {
         case .faceStyle: return "Face"
         case .jersey: return "Jersey"
         case .shorts: return "Shorts"
+        case .socks: return "Socks"
         case .cleats: return "Cleats"
         case .accessory: return "Accessories"
         }
@@ -37,6 +39,7 @@ enum AvatarSlot: String, CaseIterable, Identifiable {
         case .faceStyle: return "face.smiling.fill"
         case .jersey: return "tshirt.fill"
         case .shorts: return "rectangle.fill"
+        case .socks: return "figure.walk"
         case .cleats: return "shoe.fill"
         case .accessory: return "sparkles"
         }
@@ -47,7 +50,7 @@ enum AvatarSlot: String, CaseIterable, Identifiable {
         switch self {
         case .skinTone, .hairColor, .faceStyle:
             return false // Free customization options
-        case .hairStyle, .jersey, .shorts, .cleats, .accessory:
+        case .hairStyle, .jersey, .shorts, .socks, .cleats, .accessory:
             return true // Items that can be purchased
         }
     }
@@ -175,46 +178,67 @@ struct AvatarItem: Identifiable, Hashable {
 
 /// Represents the current state of a player's avatar configuration
 struct AvatarState: Equatable {
-    var skinTone: String
-    var hairStyle: String
-    var hairColor: String
-    var faceStyle: String
-    var jerseyId: String
-    var shortsId: String
-    var cleatsId: String
-    var accessoryIds: [String]
+    var skinTone: SkinTone
+    var hairStyle: HairStyle
+    var hairColor: HairColor
+    var faceStyle: FaceStyle
+    var jerseyStyle: JerseyStyle
+    var shortsStyle: ShortsStyle
+    var socksStyle: SocksStyle
+    var cleatsStyle: CleatsStyle
 
     /// Default avatar configuration for new players
     static let `default` = AvatarState(
-        skinTone: "medium",
-        hairStyle: "short_1",
-        hairColor: "brown",
-        faceStyle: "happy",
-        jerseyId: "starter_jersey",
-        shortsId: "starter_shorts",
-        cleatsId: "starter_cleats",
-        accessoryIds: []
+        skinTone: .medium,
+        hairStyle: .shortWavy,
+        hairColor: .brown,
+        faceStyle: .happy,
+        jerseyStyle: .starterGreen,
+        shortsStyle: .starterWhite,
+        socksStyle: .greenStriped,
+        cleatsStyle: .starterGreen
     )
 
     /// Direct initialization
     init(
-        skinTone: String,
-        hairStyle: String,
-        hairColor: String,
-        faceStyle: String,
-        jerseyId: String,
-        shortsId: String,
-        cleatsId: String,
-        accessoryIds: [String]
+        skinTone: SkinTone,
+        hairStyle: HairStyle,
+        hairColor: HairColor,
+        faceStyle: FaceStyle,
+        jerseyStyle: JerseyStyle,
+        shortsStyle: ShortsStyle,
+        socksStyle: SocksStyle,
+        cleatsStyle: CleatsStyle
     ) {
         self.skinTone = skinTone
         self.hairStyle = hairStyle
         self.hairColor = hairColor
         self.faceStyle = faceStyle
-        self.jerseyId = jerseyId
-        self.shortsId = shortsId
-        self.cleatsId = cleatsId
-        self.accessoryIds = accessoryIds
+        self.jerseyStyle = jerseyStyle
+        self.shortsStyle = shortsStyle
+        self.socksStyle = socksStyle
+        self.cleatsStyle = cleatsStyle
+    }
+
+    /// Initialize from raw string values (for Core Data compatibility)
+    init(
+        skinToneRaw: String?,
+        hairStyleRaw: String?,
+        hairColorRaw: String?,
+        faceStyleRaw: String?,
+        jerseyStyleRaw: String?,
+        shortsStyleRaw: String?,
+        socksStyleRaw: String?,
+        cleatsStyleRaw: String?
+    ) {
+        self.skinTone = SkinTone(rawValue: skinToneRaw ?? "medium") ?? .medium
+        self.hairStyle = HairStyle(rawValue: hairStyleRaw ?? "short_wavy") ?? .shortWavy
+        self.hairColor = HairColor(rawValue: hairColorRaw ?? "brown") ?? .brown
+        self.faceStyle = FaceStyle(rawValue: faceStyleRaw ?? "happy") ?? .happy
+        self.jerseyStyle = JerseyStyle(rawValue: jerseyStyleRaw ?? "starter_green") ?? .starterGreen
+        self.shortsStyle = ShortsStyle(rawValue: shortsStyleRaw ?? "starter_white") ?? .starterWhite
+        self.socksStyle = SocksStyle(rawValue: socksStyleRaw ?? "green_striped") ?? .greenStriped
+        self.cleatsStyle = CleatsStyle(rawValue: cleatsStyleRaw ?? "starter_green") ?? .starterGreen
     }
 }
 
@@ -230,6 +254,7 @@ enum SkinTone: String, CaseIterable, Identifiable {
     case brown = "brown"
     case darkBrown = "dark_brown"
     case dark = "dark"
+    case deep = "deep"
 
     var id: String { rawValue }
 
@@ -243,6 +268,7 @@ enum SkinTone: String, CaseIterable, Identifiable {
         case .brown: return "Brown"
         case .darkBrown: return "Dark Brown"
         case .dark: return "Dark"
+        case .deep: return "Deep"
         }
     }
 
@@ -256,7 +282,18 @@ enum SkinTone: String, CaseIterable, Identifiable {
         case .brown: return Color(red: 0.55, green: 0.38, blue: 0.26)
         case .darkBrown: return Color(red: 0.43, green: 0.29, blue: 0.2)
         case .dark: return Color(red: 0.32, green: 0.21, blue: 0.15)
+        case .deep: return Color(red: 0.22, green: 0.14, blue: 0.1)
         }
+    }
+
+    /// Asset name for body image
+    var bodyAssetName: String {
+        "body_\(rawValue)"
+    }
+
+    /// Tint color for face to match skin tone
+    var faceTintColor: Color {
+        color
     }
 }
 
@@ -267,12 +304,11 @@ enum HairColor: String, CaseIterable, Identifiable {
     case black = "black"
     case darkBrown = "dark_brown"
     case brown = "brown"
-    case lightBrown = "light_brown"
+    case auburn = "auburn"
+    case red = "red"
+    case strawberryBlonde = "strawberry_blonde"
     case blonde = "blonde"
     case platinum = "platinum"
-    case red = "red"
-    case auburn = "auburn"
-    case gray = "gray"
     case white = "white"
 
     var id: String { rawValue }
@@ -282,12 +318,11 @@ enum HairColor: String, CaseIterable, Identifiable {
         case .black: return "Black"
         case .darkBrown: return "Dark Brown"
         case .brown: return "Brown"
-        case .lightBrown: return "Light Brown"
+        case .auburn: return "Auburn"
+        case .red: return "Red"
+        case .strawberryBlonde: return "Strawberry Blonde"
         case .blonde: return "Blonde"
         case .platinum: return "Platinum"
-        case .red: return "Red"
-        case .auburn: return "Auburn"
-        case .gray: return "Gray"
         case .white: return "White"
         }
     }
@@ -297,12 +332,11 @@ enum HairColor: String, CaseIterable, Identifiable {
         case .black: return Color(red: 0.1, green: 0.1, blue: 0.1)
         case .darkBrown: return Color(red: 0.26, green: 0.15, blue: 0.07)
         case .brown: return Color(red: 0.4, green: 0.26, blue: 0.13)
-        case .lightBrown: return Color(red: 0.6, green: 0.46, blue: 0.33)
+        case .auburn: return Color(red: 0.55, green: 0.27, blue: 0.07)
+        case .red: return Color(red: 0.7, green: 0.25, blue: 0.15)
+        case .strawberryBlonde: return Color(red: 0.85, green: 0.65, blue: 0.45)
         case .blonde: return Color(red: 0.9, green: 0.8, blue: 0.55)
         case .platinum: return Color(red: 0.95, green: 0.95, blue: 0.9)
-        case .red: return Color(red: 0.7, green: 0.25, blue: 0.15)
-        case .auburn: return Color(red: 0.55, green: 0.27, blue: 0.07)
-        case .gray: return Color(red: 0.6, green: 0.6, blue: 0.6)
         case .white: return Color(red: 0.95, green: 0.95, blue: 0.95)
         }
     }
@@ -315,8 +349,8 @@ enum FaceStyle: String, CaseIterable, Identifiable {
     case happy = "happy"
     case determined = "determined"
     case cool = "cool"
+    case excited = "excited"
     case focused = "focused"
-    case surprised = "surprised"
     case celebrating = "celebrating"
 
     var id: String { rawValue }
@@ -330,10 +364,177 @@ enum FaceStyle: String, CaseIterable, Identifiable {
         case .happy: return "face.smiling"
         case .determined: return "face.dashed"
         case .cool: return "eyeglasses"
+        case .excited: return "face.smiling.inverse"
         case .focused: return "eye"
-        case .surprised: return "face.smiling.inverse"
         case .celebrating: return "star.fill"
         }
+    }
+
+    /// Asset name for face image
+    var assetName: String {
+        "face_\(rawValue)"
+    }
+}
+
+// MARK: - Hair Style Options
+
+/// Available hair style options
+enum HairStyle: String, CaseIterable, Identifiable {
+    case shortWavy = "short_wavy"
+    case mediumWavy = "medium_wavy"
+    case longWavy = "long_wavy"
+    case buzzCut = "buzz_cut"
+    case crewCut = "crew_cut"
+    case afro = "afro"
+    case braided = "braided"
+    case slickedBack = "slicked_back"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .shortWavy: return "Short Wavy"
+        case .mediumWavy: return "Medium Wavy"
+        case .longWavy: return "Long Wavy"
+        case .buzzCut: return "Buzz Cut"
+        case .crewCut: return "Crew Cut"
+        case .afro: return "Afro"
+        case .braided: return "Braided"
+        case .slickedBack: return "Slicked Back"
+        }
+    }
+
+    /// Get asset name for this hair style with a given color
+    func assetName(color: HairColor) -> String {
+        "hair_\(rawValue)_\(color.rawValue)"
+    }
+}
+
+// MARK: - Jersey Style Options
+
+/// Available jersey styles
+enum JerseyStyle: String, CaseIterable, Identifiable {
+    case starterGreen = "starter_green"
+    case classicWhite = "classic_white"
+    case strikerRed = "striker_red"
+    case royalBlue = "royal_blue"
+    case brazilYellow = "brazil_yellow"
+    case barcelonaStyle = "barcelona_style"
+    case classicBlack = "classic_black"
+    case orangeBlaze = "orange_blaze"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .starterGreen: return "Starter Green"
+        case .classicWhite: return "Classic White"
+        case .strikerRed: return "Striker Red"
+        case .royalBlue: return "Royal Blue"
+        case .brazilYellow: return "Brazil Yellow"
+        case .barcelonaStyle: return "Barcelona Style"
+        case .classicBlack: return "Classic Black"
+        case .orangeBlaze: return "Orange Blaze"
+        }
+    }
+
+    var assetName: String {
+        "jersey_\(rawValue)"
+    }
+
+    var isStarter: Bool {
+        self == .starterGreen
+    }
+}
+
+// MARK: - Shorts Style Options
+
+/// Available shorts styles
+enum ShortsStyle: String, CaseIterable, Identifiable {
+    case starterWhite = "starter_white"
+    case classicBlack = "classic_black"
+    case matchingGreen = "matching_green"
+    case blueAthletic = "blue_athletic"
+    case redSport = "red_sport"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .starterWhite: return "Starter White"
+        case .classicBlack: return "Classic Black"
+        case .matchingGreen: return "Matching Green"
+        case .blueAthletic: return "Blue Athletic"
+        case .redSport: return "Red Sport"
+        }
+    }
+
+    var assetName: String {
+        "shorts_\(rawValue)"
+    }
+
+    var isStarter: Bool {
+        self == .starterWhite
+    }
+}
+
+// MARK: - Socks Style Options
+
+/// Available socks styles
+enum SocksStyle: String, CaseIterable, Identifiable {
+    case greenStriped = "green_striped"
+    case whiteClassic = "white_classic"
+    case blackAthletic = "black_athletic"
+    case matchingColor = "matching_color"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .greenStriped: return "Green Striped"
+        case .whiteClassic: return "White Classic"
+        case .blackAthletic: return "Black Athletic"
+        case .matchingColor: return "Matching Color"
+        }
+    }
+
+    var assetName: String {
+        "socks_\(rawValue)"
+    }
+
+    var isStarter: Bool {
+        self == .greenStriped
+    }
+}
+
+// MARK: - Cleats Style Options
+
+/// Available cleats styles
+enum CleatsStyle: String, CaseIterable, Identifiable {
+    case starterGreen = "starter_green"
+    case classicBlack = "classic_black"
+    case speedWhite = "speed_white"
+    case goldElite = "gold_elite"
+    case neonBlue = "neon_blue"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .starterGreen: return "Starter Green"
+        case .classicBlack: return "Classic Black"
+        case .speedWhite: return "Speed White"
+        case .goldElite: return "Gold Elite"
+        case .neonBlue: return "Neon Blue"
+        }
+    }
+
+    var assetName: String {
+        "cleats_\(rawValue)"
+    }
+
+    var isStarter: Bool {
+        self == .starterGreen
     }
 }
 
