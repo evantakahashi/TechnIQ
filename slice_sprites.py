@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-Avatar Sprite Sheet Slicer for TechnIQ - Version 2.0
+Avatar Sprite Sheet Slicer for TechnIQ - Version 2.2
 Slices properly-layered sprite sheets into individual PNG files.
 
-NEW in v2.0:
+NEW in v2.2:
+- Expanded gray range detection (50-230) to catch both light and dark checkered patterns
+
+v2.1:
+- Automatic checkered background removal (converts to true transparency)
+
+v2.0:
 - Standard 512x768 cell size for all assets
 - No cropping needed (assets pre-positioned correctly)
 - Transparency validation
@@ -11,6 +17,7 @@ NEW in v2.0:
 """
 
 from PIL import Image
+import numpy as np
 import os
 import shutil
 
@@ -73,6 +80,113 @@ CLEATS_NAMES = [
     "starter_green", "classic_black", "speed_white",
     "gold_elite", "neon_blue"
 ]
+
+
+def remove_checkered_background(img):
+    """
+    Remove checkered transparency pattern from image.
+    Detects gray checkered pixels and converts them to true transparency.
+    """
+    # Ensure RGBA mode
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+
+    # Convert to numpy array for fast processing
+    data = np.array(img)
+
+    # Extract RGB channels
+    r, g, b, a = data[:, :, 0], data[:, :, 1], data[:, :, 2], data[:, :, 3]
+
+    # Checkered patterns typically use two shades of gray
+    # Common values: light (~192-204) and dark (~128-153)
+    # We detect pixels where R≈G≈B (grayscale) within the checker range
+
+    # Check if pixel is grayscale (R, G, B are similar)
+    is_gray = (np.abs(r.astype(int) - g.astype(int)) < 15) & \
+              (np.abs(g.astype(int) - b.astype(int)) < 15) & \
+              (np.abs(r.astype(int) - b.astype(int)) < 15)
+
+    # Check if pixel is in the checker gray range (expanded: 50-230 to catch both light and dark checkers)
+    avg_color = (r.astype(int) + g.astype(int) + b.astype(int)) // 3
+    is_checker_gray = (avg_color >= 50) & (avg_color <= 230)
+
+    # Additional check: detect the alternating pattern
+    # Checkers usually have a specific pattern - neighboring pixels differ
+    # For simplicity, we'll just remove all gray pixels in the checker range
+
+    # Create mask for checkered background pixels
+    checker_mask = is_gray & is_checker_gray
+
+    # Set alpha to 0 for checkered pixels
+    data[:, :, 3] = np.where(checker_mask, 0, a)
+
+    # Convert back to PIL Image
+    result = Image.fromarray(data, 'RGBA')
+
+    return result
+
+
+def remove_checkered_background_smart(img):
+    """
+    Smarter checkered background removal that detects the actual pattern.
+    Samples corners to find the checkered colors, then removes them.
+    """
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+
+    data = np.array(img)
+    height, width = data.shape[:2]
+
+    # Sample pixels from corners (likely to be background)
+    corner_samples = []
+    sample_size = 10
+
+    # Top-left corner
+    for y in range(min(sample_size, height)):
+        for x in range(min(sample_size, width)):
+            corner_samples.append(tuple(data[y, x, :3]))
+
+    # Top-right corner
+    for y in range(min(sample_size, height)):
+        for x in range(max(0, width - sample_size), width):
+            corner_samples.append(tuple(data[y, x, :3]))
+
+    # Find the two most common colors (the checker colors)
+    from collections import Counter
+    color_counts = Counter(corner_samples)
+    most_common = color_counts.most_common(4)
+
+    # Get checker colors (allow some tolerance)
+    checker_colors = []
+    for color, count in most_common:
+        r, g, b = color
+        # Check if grayscale
+        if abs(r - g) < 20 and abs(g - b) < 20 and abs(r - b) < 20:
+            checker_colors.append(color)
+
+    if len(checker_colors) < 2:
+        print("    Could not detect checkered pattern, using default removal")
+        return remove_checkered_background(img)
+
+    print(f"    Detected checker colors: {checker_colors[:2]}")
+
+    # Create mask for pixels matching checker colors (with tolerance)
+    tolerance = 25
+    mask = np.zeros((height, width), dtype=bool)
+
+    for checker_color in checker_colors[:2]:
+        cr, cg, cb = checker_color
+        color_match = (
+            (np.abs(data[:, :, 0].astype(int) - cr) < tolerance) &
+            (np.abs(data[:, :, 1].astype(int) - cg) < tolerance) &
+            (np.abs(data[:, :, 2].astype(int) - cb) < tolerance)
+        )
+        mask = mask | color_match
+
+    # Set alpha to 0 for matched pixels
+    data[:, :, 3] = np.where(mask, 0, data[:, :, 3])
+
+    return Image.fromarray(data, 'RGBA')
 
 
 def ensure_dir(path):
@@ -148,8 +262,8 @@ def slice_standard_grid(img, cols, rows, names, output_dir, prefix, validate=Tru
             name = names[idx]
             filename = f"{prefix}_{name}.png"
 
-            # Check for transparency
-            check_transparency(cell, filename)
+            # Remove checkered background and convert to true transparency
+            cell = remove_checkered_background_smart(cell)
 
             # Save
             filepath = os.path.join(output_dir, filename)
@@ -190,8 +304,8 @@ def slice_hair(img, output_dir):
 
             filename = f"hair_{style}_{color}.png"
 
-            # Check for transparency
-            check_transparency(cell, filename)
+            # Remove checkered background and convert to true transparency
+            cell = remove_checkered_background_smart(cell)
 
             filepath = os.path.join(output_dir, filename)
             cell.save(filepath, "PNG")
