@@ -102,9 +102,9 @@ struct ProgrammaticAvatarView: View {
             endPoint: CGPoint(x: center.x, y: center.y + 60 * s)
         ))
 
-        // Jersey sleeves
-        let leftSleeveRect = CGRect(x: center.x - 50 * s, y: center.y + 5 * s, width: 18 * s, height: 28 * s)
-        let rightSleeveRect = CGRect(x: center.x + 32 * s, y: center.y + 5 * s, width: 18 * s, height: 28 * s)
+        // Jersey sleeves - wider and longer to fully cover arm skin
+        let leftSleeveRect = CGRect(x: center.x - 54 * s, y: center.y + 2 * s, width: 22 * s, height: 36 * s)
+        let rightSleeveRect = CGRect(x: center.x + 32 * s, y: center.y + 2 * s, width: 22 * s, height: 36 * s)
 
         context.fill(RoundedRectangle(cornerRadius: 8 * s).path(in: leftSleeveRect), with: .color(jerseyBase))
         context.fill(RoundedRectangle(cornerRadius: 8 * s).path(in: rightSleeveRect), with: .color(jerseyBase))
@@ -138,9 +138,9 @@ struct ProgrammaticAvatarView: View {
             endPoint: CGPoint(x: center.x, y: center.y + 83 * s)
         ))
 
-        // Socks
-        let leftSockRect = CGRect(x: center.x - 26 * s, y: center.y + 85 * s, width: 18 * s, height: 32 * s)
-        let rightSockRect = CGRect(x: center.x + 8 * s, y: center.y + 85 * s, width: 18 * s, height: 32 * s)
+        // Socks - start higher to cover leg skin under shorts
+        let leftSockRect = CGRect(x: center.x - 28 * s, y: center.y + 78 * s, width: 22 * s, height: 42 * s)
+        let rightSockRect = CGRect(x: center.x + 6 * s, y: center.y + 78 * s, width: 22 * s, height: 42 * s)
 
         context.fill(Capsule().path(in: leftSockRect), with: .color(socksColor))
         context.fill(Capsule().path(in: rightSockRect), with: .color(socksColor))
@@ -503,11 +503,11 @@ struct ProgrammaticAvatarView: View {
     private func drawSmile(context: GraphicsContext, headCenter: CGPoint, scale s: CGFloat) {
         var smilePath = Path()
         smilePath.addArc(
-            center: CGPoint(x: headCenter.x, y: headCenter.y + 15 * s),
-            radius: 12 * s,
+            center: CGPoint(x: headCenter.x, y: headCenter.y + 12 * s),
+            radius: 10 * s,
             startAngle: .degrees(20),
             endAngle: .degrees(160),
-            clockwise: true
+            clockwise: false
         )
         context.stroke(smilePath, with: .color(.black), style: StrokeStyle(lineWidth: 2.5 * s, lineCap: .round))
     }
@@ -529,11 +529,11 @@ struct ProgrammaticAvatarView: View {
     private func drawSmirk(context: GraphicsContext, headCenter: CGPoint, scale s: CGFloat) {
         var smirkPath = Path()
         smirkPath.addArc(
-            center: CGPoint(x: headCenter.x + 5 * s, y: headCenter.y + 18 * s),
-            radius: 10 * s,
+            center: CGPoint(x: headCenter.x + 5 * s, y: headCenter.y + 12 * s),
+            radius: 8 * s,
             startAngle: .degrees(30),
             endAngle: .degrees(150),
-            clockwise: true
+            clockwise: false
         )
         context.stroke(smirkPath, with: .color(.black), style: StrokeStyle(lineWidth: 2.5 * s, lineCap: .round))
     }
