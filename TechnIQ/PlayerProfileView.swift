@@ -20,6 +20,7 @@ struct PlayerProfileView: View {
     @State private var showingSignOutAlert = false
     @State private var showingAvatarCustomization = false
     @State private var showingShop = false
+    @State private var showingSettings = false
     
     var currentPlayer: Player? {
         players.first
@@ -60,6 +61,12 @@ struct PlayerProfileView: View {
                             Button("Edit Profile") {
                                 showingEditProfile = true
                             }
+                            Button {
+                                showingSettings = true
+                            } label: {
+                                Label("Settings", systemImage: "gearshape")
+                            }
+                            Divider()
                             Button("Sign Out", role: .destructive) {
                                 showingSignOutAlert = true
                             }
@@ -73,6 +80,9 @@ struct PlayerProfileView: View {
                 if let player = currentPlayer {
                     EditProfileView(player: player)
                 }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .alert("Sign Out", isPresented: $showingSignOutAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -130,7 +140,7 @@ struct PlayerProfileView: View {
                 Spacer()
 
                 // Avatar preview
-                AvatarView(avatarState: avatarService.currentAvatarState, size: .medium)
+                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium)
             }
 
             HStack(spacing: 20) {

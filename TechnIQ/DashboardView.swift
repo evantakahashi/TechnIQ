@@ -44,8 +44,8 @@ struct DashboardView: View {
     
     var body: some View {
         ZStack {
-            // Modern gradient background
-            DesignSystem.Colors.backgroundGradient
+            // Adaptive background (gradient light, solid dark)
+            AdaptiveBackground()
                 .ignoresSafeArea()
             
             ScrollView {
@@ -164,35 +164,41 @@ struct DashboardView: View {
 
                 Spacer()
 
-                // Level Badge with XP
-                VStack(spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(DesignSystem.Colors.xpGold)
-                        Text("Lv.\(player.currentLevel)")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                    }
+                // Level and Coins badges
+                HStack(spacing: 8) {
+                    // Level Badge with XP
+                    VStack(spacing: 2) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(DesignSystem.Colors.xpGold)
+                            Text("Lv.\(player.currentLevel)")
+                                .font(DesignSystem.Typography.titleSmall)
+                                .fontWeight(.bold)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                        }
 
-                    // Streak flame badge
-                    if player.currentStreak > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(DesignSystem.Colors.streakOrange)
-                            Text("\(player.currentStreak)")
-                                .font(DesignSystem.Typography.labelSmall)
-                                .fontWeight(.semibold)
-                                .foregroundColor(DesignSystem.Colors.streakOrange)
+                        // Streak flame badge
+                        if player.currentStreak > 0 {
+                            HStack(spacing: 2) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(DesignSystem.Colors.streakOrange)
+                                Text("\(player.currentStreak)")
+                                    .font(DesignSystem.Typography.labelSmall)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(DesignSystem.Colors.streakOrange)
+                            }
                         }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+
+                    // Coin Display
+                    CoinDisplayView(size: .small)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color(.systemGray6))
-                .cornerRadius(16)
             }
 
             // XP Progress Bar

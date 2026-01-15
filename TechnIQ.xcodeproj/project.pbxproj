@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */; };
 		0DA13903EEC0D6F969DC8CE7 /* AvatarModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1986206B3B3D0F8C77240541 /* AvatarModels.swift */; };
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
 		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
@@ -145,6 +146,7 @@
 		DFE9F3072EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
 		DFE9F3082EAD90A5007BBFFA /* CalendarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */; };
 		EA07A7012CE139C637532E02 /* AvatarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8676FB258A5AF6EC1244EC96 /* AvatarService.swift */; };
+		EAF307129B77BE4DD4EB648D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 856A6FF7600118F39E05CA74 /* SettingsView.swift */; };
 		EB539CB86095C8D1A10D01B5 /* CoinDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B68C1149036359889CAE238 /* CoinDisplayView.swift */; };
 		F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */; };
 /* End PBXBuildFile section */
@@ -167,6 +169,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgrammaticAvatarView.swift; sourceTree = "<group>"; };
 		09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarCustomizationView.swift; sourceTree = "<group>"; };
 		0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanGeneratorView.swift; sourceTree = "<group>"; };
 		0A6796ED72F183046E40ED28 /* HapticManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
@@ -183,6 +186,7 @@
 		6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExerciseEditorView.swift; sourceTree = "<group>"; };
 		75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
 		78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
+		856A6FF7600118F39E05CA74 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8676FB258A5AF6EC1244EC96 /* AvatarService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarService.swift; sourceTree = "<group>"; };
 		892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotView.swift; sourceTree = "<group>"; };
 		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
@@ -445,6 +449,7 @@
 				1986206B3B3D0F8C77240541 /* AvatarModels.swift */,
 				E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */,
 				30C5A24059E85EF44972B5D9 /* AvatarView.swift */,
+				53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */,
 				8676FB258A5AF6EC1244EC96 /* AvatarService.swift */,
 				09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */,
 				FDD1AC457D0F69F00356A18C /* ShopView.swift */,
@@ -453,6 +458,7 @@
 				402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */,
 				F7927AF10E032D5DE23A1409 /* OwnedAvatarItem+CoreDataClass.swift */,
 				BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */,
+				856A6FF7600118F39E05CA74 /* SettingsView.swift */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -731,6 +737,7 @@
 				0DA13903EEC0D6F969DC8CE7 /* AvatarModels.swift in Sources */,
 				D34B59801612065F91EE488E /* CoinService.swift in Sources */,
 				96C940FF4440422FF122285D /* AvatarView.swift in Sources */,
+				DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */,
 				EA07A7012CE139C637532E02 /* AvatarService.swift in Sources */,
 				7090DC3A80672B0935857A6F /* AvatarCustomizationView.swift in Sources */,
 				1F0F140035EE6E8483DD261C /* ShopView.swift in Sources */,
@@ -739,6 +746,7 @@
 				4201402677BE58588ADB059B /* AvatarConfiguration+CoreDataProperties.swift in Sources */,
 				341D5D1C69FBB71B19569D6D /* OwnedAvatarItem+CoreDataClass.swift in Sources */,
 				B9E40B1CD6CD65CAD6E52C01 /* OwnedAvatarItem+CoreDataProperties.swift in Sources */,
+				EAF307129B77BE4DD4EB648D /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
