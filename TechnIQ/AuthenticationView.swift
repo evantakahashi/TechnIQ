@@ -6,8 +6,8 @@ struct AuthenticationView: View {
     
     var body: some View {
         ZStack {
-            // Modern gradient background
-            DesignSystem.Colors.backgroundGradient
+            // Adaptive background (gradient light, solid dark)
+            AdaptiveBackground()
                 .ignoresSafeArea()
             
             if isSignUp {

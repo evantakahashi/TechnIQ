@@ -16,6 +16,7 @@ import FirebaseFirestore
 struct TechnIQApp: App {
     let coreDataManager = CoreDataManager.shared
     @StateObject private var authManager = AuthenticationManager.shared
+    @AppStorage("appColorScheme") private var appColorScheme: String = "system"
 
     init() {
         // Configure Firebase FIRST before accessing any Firebase services
@@ -56,6 +57,7 @@ struct TechnIQApp: App {
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
                 .environmentObject(authManager)
+                .preferredColorScheme(appColorScheme.toColorScheme)
         }
     }
 }

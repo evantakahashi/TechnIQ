@@ -42,7 +42,7 @@ struct AITrainingPlanGeneratorView: View {
 
     var body: some View {
         ZStack {
-            DesignSystem.Colors.backgroundGradient
+            AdaptiveBackground()
                 .ignoresSafeArea()
 
             ScrollView {
@@ -470,7 +470,7 @@ struct AITrainingPlanGeneratorView: View {
     private func successView(plan: TrainingPlan) -> some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
 
                 VStack(spacing: DesignSystem.Spacing.xl) {

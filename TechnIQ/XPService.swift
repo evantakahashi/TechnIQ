@@ -279,6 +279,13 @@ final class XPService {
         return nil
     }
 
+    /// Award XP from a match to player
+    /// Returns the new level if a level up occurred
+    @discardableResult
+    func awardMatchXP(to player: Player, xp: Int) -> Int? {
+        return awardXP(to: player, amount: Int32(xp))
+    }
+
     /// Process session completion - calculates XP, updates streak, and awards XP
     func processSessionCompletion(
         session: TrainingSession,

@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */; };
 		0DA13903EEC0D6F969DC8CE7 /* AvatarModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1986206B3B3D0F8C77240541 /* AvatarModels.swift */; };
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
 		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
@@ -28,6 +27,16 @@
 		96C940FF4440422FF122285D /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C5A24059E85EF44972B5D9 /* AvatarView.swift */; };
 		A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F31304560398E5F65665084 /* DayEditorView.swift */; };
 		AAEA4FBDE9B0A7FC7A86EF50 /* ExerciseEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */; };
+		AB1234567890ABCD12340001 /* Match+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */; };
+		AB1234567890ABCD12340002 /* Match+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340012 /* Match+CoreDataProperties.swift */; };
+		AB1234567890ABCD12340003 /* Season+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340013 /* Season+CoreDataClass.swift */; };
+		AB1234567890ABCD12340004 /* Season+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340014 /* Season+CoreDataProperties.swift */; };
+		AB1234567890ABCD12340005 /* MatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340015 /* MatchService.swift */; };
+		AB1234567890ABCD12340006 /* MatchLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340016 /* MatchLogView.swift */; };
+		AB1234567890ABCD12340007 /* CreateSeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340017 /* CreateSeasonView.swift */; };
+		AB1234567890ABCD12340008 /* MatchHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340018 /* MatchHistoryView.swift */; };
+		AB1234567890ABCD12340009 /* SeasonManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340019 /* SeasonManagementView.swift */; };
+		AB1234567890ABCD1234000A /* MatchStatsComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */; };
 		B9E40B1CD6CD65CAD6E52C01 /* OwnedAvatarItem+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */; };
 		C20B0C913A0B24ED6E1232FF /* ExerciseFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6108F5095BA39CE37DA7BB5D /* ExerciseFilterView.swift */; };
 		D34B59801612065F91EE488E /* CoinService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */; };
@@ -36,6 +45,7 @@
 		D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AD26664A9C012346D58B4E /* PlanEditorView.swift */; };
 		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
 		DD484A9B408252D569D21C7F /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */; };
+		DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */; };
 		DEAA5C802777F1D0E147B414 /* MascotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
 		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
@@ -169,7 +179,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgrammaticAvatarView.swift; sourceTree = "<group>"; };
 		09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarCustomizationView.swift; sourceTree = "<group>"; };
 		0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanGeneratorView.swift; sourceTree = "<group>"; };
 		0A6796ED72F183046E40ED28 /* HapticManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
@@ -179,6 +188,7 @@
 		2465CE756CC3395B14507526 /* SessionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionEditorView.swift; sourceTree = "<group>"; };
 		30C5A24059E85EF44972B5D9 /* AvatarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AvatarConfiguration+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgrammaticAvatarView.swift; sourceTree = "<group>"; };
 		54E2888C57A13F11DDCBE113 /* EmptyStateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarHeatMapView.swift; sourceTree = "<group>"; };
 		5B68C1149036359889CAE238 /* CoinDisplayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoinDisplayView.swift; sourceTree = "<group>"; };
@@ -192,6 +202,16 @@
 		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
 		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
 		9BA65D744B2E4860334C7B5D /* MascotState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotState.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Match+CoreDataClass.swift"; sourceTree = "<group>"; };
+		AB1234567890ABCD12340012 /* Match+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Match+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		AB1234567890ABCD12340013 /* Season+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Season+CoreDataClass.swift"; sourceTree = "<group>"; };
+		AB1234567890ABCD12340014 /* Season+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Season+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		AB1234567890ABCD12340015 /* MatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchService.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD12340016 /* MatchLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchLogView.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD12340017 /* CreateSeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateSeasonView.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD12340018 /* MatchHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchHistoryView.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD12340019 /* SeasonManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonManagementView.swift; sourceTree = "<group>"; };
+		AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchStatsComparisonView.swift; sourceTree = "<group>"; };
 		B26B160D4D25B47C1EDD7846 /* XPService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = XPService.swift; sourceTree = "<group>"; };
 		B85457B8B3C0C17681E48D02 /* AvatarConfiguration+CoreDataClass.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AvatarConfiguration+CoreDataClass.swift"; sourceTree = "<group>"; };
 		BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "OwnedAvatarItem+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -412,6 +432,16 @@
 				DF5CB2FD2E3058110085F3ED /* PlayerProfile+CoreDataProperties.swift */,
 				DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */,
 				DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */,
+				AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */,
+				AB1234567890ABCD12340012 /* Match+CoreDataProperties.swift */,
+				AB1234567890ABCD12340013 /* Season+CoreDataClass.swift */,
+				AB1234567890ABCD12340014 /* Season+CoreDataProperties.swift */,
+				AB1234567890ABCD12340015 /* MatchService.swift */,
+				AB1234567890ABCD12340016 /* MatchLogView.swift */,
+				AB1234567890ABCD12340017 /* CreateSeasonView.swift */,
+				AB1234567890ABCD12340018 /* MatchHistoryView.swift */,
+				AB1234567890ABCD12340019 /* SeasonManagementView.swift */,
+				AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */,
 				DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */,
 				DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */,
 				DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */,
@@ -683,6 +713,16 @@
 				DF48B9EA2ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift in Sources */,
 				DF16363F2E133200001E8CF9 /* Exercise+CoreDataProperties.swift in Sources */,
 				DF1636412E133200001E8CF9 /* TrainingSession+CoreDataClass.swift in Sources */,
+				AB1234567890ABCD12340001 /* Match+CoreDataClass.swift in Sources */,
+				AB1234567890ABCD12340002 /* Match+CoreDataProperties.swift in Sources */,
+				AB1234567890ABCD12340003 /* Season+CoreDataClass.swift in Sources */,
+				AB1234567890ABCD12340004 /* Season+CoreDataProperties.swift in Sources */,
+				AB1234567890ABCD12340005 /* MatchService.swift in Sources */,
+				AB1234567890ABCD12340006 /* MatchLogView.swift in Sources */,
+				AB1234567890ABCD12340007 /* CreateSeasonView.swift in Sources */,
+				AB1234567890ABCD12340008 /* MatchHistoryView.swift in Sources */,
+				AB1234567890ABCD12340009 /* SeasonManagementView.swift in Sources */,
+				AB1234567890ABCD1234000A /* MatchStatsComparisonView.swift in Sources */,
 				DF48B9D32ED5242700F7AC05 /* CustomPlanBuilderView.swift in Sources */,
 				DF1636432E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift in Sources */,
 				DF1636452E133200001E8CF9 /* SessionExercise+CoreDataClass.swift in Sources */,

@@ -33,8 +33,8 @@ struct NewSessionView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Modern gradient background
-                DesignSystem.Colors.backgroundGradient
+                // Adaptive background (gradient light, solid dark)
+                AdaptiveBackground()
                     .ignoresSafeArea()
                 
                 ScrollView {
@@ -910,9 +910,9 @@ struct ExercisePickerView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
-                
+
                 VStack(spacing: DesignSystem.Spacing.md) {
                     // Modern Category Filter
                     ScrollView(.horizontal, showsIndicators: false) {

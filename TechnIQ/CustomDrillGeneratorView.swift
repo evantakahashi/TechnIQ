@@ -12,9 +12,9 @@ struct CustomDrillGeneratorView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
-                
+
                 if drillService.isGenerating {
                     generatingOverlay
                 } else {

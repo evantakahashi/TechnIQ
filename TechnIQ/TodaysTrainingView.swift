@@ -14,7 +14,7 @@ struct TodaysTrainingView: View {
 
     var body: some View {
         ZStack {
-            DesignSystem.Colors.backgroundGradient
+            AdaptiveBackground()
                 .ignoresSafeArea()
 
             ScrollView {

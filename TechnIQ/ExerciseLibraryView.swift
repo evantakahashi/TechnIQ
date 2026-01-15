@@ -174,7 +174,7 @@ struct ExerciseLibraryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
 
                 if searchText.isEmpty {

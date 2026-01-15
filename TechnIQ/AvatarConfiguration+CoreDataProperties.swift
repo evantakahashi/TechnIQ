@@ -14,6 +14,7 @@ extension AvatarConfiguration {
     @NSManaged public var faceStyle: String?
     @NSManaged public var jerseyId: String?
     @NSManaged public var shortsId: String?
+    @NSManaged public var socksId: String?
     @NSManaged public var cleatsId: String?
     @NSManaged public var accessoryIds: NSArray?
     @NSManaged public var lastModified: Date?

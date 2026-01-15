@@ -120,6 +120,12 @@ struct DesignSystem {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+
+        // Dark mode solid background
+        static let darkModeBackground = Color(red: 0.11, green: 0.11, blue: 0.12) // #1C1C1E
+
+        // Cell background for dark UI (slightly lighter than dark mode background)
+        static let cellBackground = Color(red: 0.17, green: 0.17, blue: 0.18) // #2C2C2E
     }
     
     // MARK: - Typography
@@ -326,8 +332,30 @@ extension View {
     func pulseAnimation() -> some View {
         self.modifier(PulseAnimation())
     }
-    
+
     func pressAnimation() -> some View {
         self.modifier(PressAnimation())
+    }
+}
+
+// MARK: - Adaptive Background
+struct AdaptiveBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Group {
+            if colorScheme == .dark {
+                DesignSystem.Colors.darkModeBackground
+            } else {
+                DesignSystem.Colors.backgroundGradient
+            }
+        }
+    }
+}
+
+extension View {
+    /// Applies adaptive background: gradient in light mode, solid dark grey in dark mode
+    func adaptiveBackground() -> some View {
+        self.background(AdaptiveBackground().ignoresSafeArea())
     }
 }

@@ -52,7 +52,7 @@ struct SessionHistoryView: View {
     
     var body: some View {
         ZStack {
-            DesignSystem.Colors.backgroundGradient
+            AdaptiveBackground()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {

@@ -90,7 +90,7 @@ struct ManualDrillCreatorView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -690,7 +690,7 @@ struct DrillPreviewSheet: View {
                 }
                 .padding(.vertical, DesignSystem.Spacing.md)
             }
-            .background(DesignSystem.Colors.backgroundGradient.ignoresSafeArea())
+            .adaptiveBackground()
             .navigationTitle("Preview")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -39,6 +39,8 @@ extension Player {
     @NSManaged public var playerGoals: NSSet?
     @NSManaged public var recommendationFeedback: NSSet?
     @NSManaged public var trainingPlans: NSSet?
+    @NSManaged public var matches: NSSet?
+    @NSManaged public var seasons: NSSet?
 
 }
 
@@ -158,6 +160,40 @@ extension Player {
 
     @objc(removeOwnedAvatarItems:)
     @NSManaged public func removeFromOwnedAvatarItems(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for matches
+extension Player {
+
+    @objc(addMatchesObject:)
+    @NSManaged public func addToMatches(_ value: Match)
+
+    @objc(removeMatchesObject:)
+    @NSManaged public func removeFromMatches(_ value: Match)
+
+    @objc(addMatches:)
+    @NSManaged public func addToMatches(_ values: NSSet)
+
+    @objc(removeMatches:)
+    @NSManaged public func removeFromMatches(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for seasons
+extension Player {
+
+    @objc(addSeasonsObject:)
+    @NSManaged public func addToSeasons(_ value: Season)
+
+    @objc(removeSeasonsObject:)
+    @NSManaged public func removeFromSeasons(_ value: Season)
+
+    @objc(addSeasons:)
+    @NSManaged public func addToSeasons(_ values: NSSet)
+
+    @objc(removeSeasons:)
+    @NSManaged public func removeFromSeasons(_ values: NSSet)
 
 }
 

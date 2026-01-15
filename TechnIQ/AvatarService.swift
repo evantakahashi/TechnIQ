@@ -79,15 +79,15 @@ final class AvatarService: ObservableObject {
             player.avatarConfiguration = config
         }
 
-        // Update configuration
-        config.skinTone = avatarState.skinTone
-        config.hairStyle = avatarState.hairStyle
-        config.hairColor = avatarState.hairColor
-        config.faceStyle = avatarState.faceStyle
-        config.jerseyId = avatarState.jerseyId
-        config.shortsId = avatarState.shortsId
-        config.cleatsId = avatarState.cleatsId
-        config.accessoryIds = avatarState.accessoryIds as NSArray
+        // Update configuration with raw values
+        config.skinTone = avatarState.skinTone.rawValue
+        config.hairStyle = avatarState.hairStyle.rawValue
+        config.hairColor = avatarState.hairColor.rawValue
+        config.faceStyle = avatarState.faceStyle.rawValue
+        config.jerseyId = avatarState.jerseyStyle.rawValue
+        config.shortsId = avatarState.shortsStyle.rawValue
+        config.socksId = avatarState.socksStyle.rawValue
+        config.cleatsId = avatarState.cleatsStyle.rawValue
         config.lastModified = Date()
 
         do {
@@ -113,33 +113,47 @@ final class AvatarService: ObservableObject {
     /// Update a single avatar slot
     /// - Parameters:
     ///   - slot: The slot to update
-    ///   - value: The new value for the slot
+    ///   - value: The new value for the slot (raw string value)
     @discardableResult
     func updateSlot(_ slot: AvatarSlot, value: String) -> Bool {
         var newState = currentAvatarState
 
         switch slot {
         case .skinTone:
-            newState.skinTone = value
-        case .hairStyle:
-            newState.hairStyle = value
-        case .hairColor:
-            newState.hairColor = value
-        case .faceStyle:
-            newState.faceStyle = value
-        case .jersey:
-            newState.jerseyId = value
-        case .shorts:
-            newState.shortsId = value
-        case .cleats:
-            newState.cleatsId = value
-        case .accessory:
-            // For accessories, toggle the item
-            if newState.accessoryIds.contains(value) {
-                newState.accessoryIds.removeAll { $0 == value }
-            } else {
-                newState.accessoryIds.append(value)
+            if let skinTone = SkinTone(rawValue: value) {
+                newState.skinTone = skinTone
             }
+        case .hairStyle:
+            if let hairStyle = HairStyle(rawValue: value) {
+                newState.hairStyle = hairStyle
+            }
+        case .hairColor:
+            if let hairColor = HairColor(rawValue: value) {
+                newState.hairColor = hairColor
+            }
+        case .faceStyle:
+            if let faceStyle = FaceStyle(rawValue: value) {
+                newState.faceStyle = faceStyle
+            }
+        case .jersey:
+            if let jerseyStyle = JerseyStyle(rawValue: value) {
+                newState.jerseyStyle = jerseyStyle
+            }
+        case .shorts:
+            if let shortsStyle = ShortsStyle(rawValue: value) {
+                newState.shortsStyle = shortsStyle
+            }
+        case .socks:
+            if let socksStyle = SocksStyle(rawValue: value) {
+                newState.socksStyle = socksStyle
+            }
+        case .cleats:
+            if let cleatsStyle = CleatsStyle(rawValue: value) {
+                newState.cleatsStyle = cleatsStyle
+            }
+        case .accessory:
+            // Accessories not yet implemented with new system
+            break
         }
 
         return saveAvatarState(newState)
@@ -245,28 +259,31 @@ final class AvatarService: ObservableObject {
             return .default
         }
         return AvatarState(
-            skinTone: config.skinTone ?? AvatarState.default.skinTone,
-            hairStyle: config.hairStyle ?? AvatarState.default.hairStyle,
-            hairColor: config.hairColor ?? AvatarState.default.hairColor,
-            faceStyle: config.faceStyle ?? AvatarState.default.faceStyle,
-            jerseyId: config.jerseyId ?? AvatarState.default.jerseyId,
-            shortsId: config.shortsId ?? AvatarState.default.shortsId,
-            cleatsId: config.cleatsId ?? AvatarState.default.cleatsId,
-            accessoryIds: (config.accessoryIds as? [String]) ?? []
+            skinToneRaw: config.skinTone,
+            hairStyleRaw: config.hairStyle,
+            hairColorRaw: config.hairColor,
+            faceStyleRaw: config.faceStyle,
+            jerseyStyleRaw: config.jerseyId,
+            shortsStyleRaw: config.shortsId,
+            socksStyleRaw: config.socksId,
+            cleatsStyleRaw: config.cleatsId
         )
     }
 
     /// Create default avatar configuration for a new player
     private func createDefaultAvatarConfiguration(for player: Player, context: NSManagedObjectContext) {
         let config = AvatarConfiguration(context: context)
+        let defaultState = AvatarState.default
+
         config.id = UUID()
-        config.skinTone = AvatarState.default.skinTone
-        config.hairStyle = AvatarState.default.hairStyle
-        config.hairColor = AvatarState.default.hairColor
-        config.faceStyle = AvatarState.default.faceStyle
-        config.jerseyId = AvatarState.default.jerseyId
-        config.shortsId = AvatarState.default.shortsId
-        config.cleatsId = AvatarState.default.cleatsId
+        config.skinTone = defaultState.skinTone.rawValue
+        config.hairStyle = defaultState.hairStyle.rawValue
+        config.hairColor = defaultState.hairColor.rawValue
+        config.faceStyle = defaultState.faceStyle.rawValue
+        config.jerseyId = defaultState.jerseyStyle.rawValue
+        config.shortsId = defaultState.shortsStyle.rawValue
+        config.socksId = defaultState.socksStyle.rawValue
+        config.cleatsId = defaultState.cleatsStyle.rawValue
         config.accessoryIds = [] as NSArray
         config.lastModified = Date()
         player.avatarConfiguration = config
@@ -286,21 +303,18 @@ final class AvatarService: ObservableObject {
     /// IDs of items that are free for all players (starters)
     private var starterItemIds: Set<String> {
         Set([
-            // Starter jerseys
-            "starter_jersey",
-            "jersey_white_basic",
-            // Starter shorts
-            "starter_shorts",
-            "shorts_black_basic",
-            // Starter cleats
-            "starter_cleats",
-            "cleats_black_basic",
-            // Starter hair styles
-            "short_1",
-            "short_2",
-            "medium_1",
-            // Bald is always available
-            "bald"
+            // Starter jerseys (matches JerseyStyle enum raw values)
+            JerseyStyle.starterGreen.rawValue,
+            // Starter shorts (matches ShortsStyle enum raw values)
+            ShortsStyle.starterWhite.rawValue,
+            // Starter socks (matches SocksStyle enum raw values)
+            SocksStyle.greenStriped.rawValue,
+            // Starter cleats (matches CleatsStyle enum raw values)
+            CleatsStyle.starterGreen.rawValue,
+            // Starter hair styles (matches HairStyle enum raw values)
+            HairStyle.shortWavy.rawValue,
+            HairStyle.buzzCut.rawValue,
+            HairStyle.crewCut.rawValue
         ])
     }
 }

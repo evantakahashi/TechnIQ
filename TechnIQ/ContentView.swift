@@ -173,13 +173,26 @@ struct MainTabView: View {
             .tag(4)
 
             NavigationView {
+                if let player = currentPlayer {
+                    MatchHistoryView(player: player)
+                } else {
+                    SwiftUI.ProgressView("Loading...")
+                }
+            }
+            .tabItem {
+                Image(systemName: "sportscourt")
+                Text("Matches")
+            }
+            .tag(5)
+
+            NavigationView {
                 PlayerProfileView()
             }
             .tabItem {
                 Image(systemName: DesignSystem.Icons.profile)
                 Text("Profile")
             }
-            .tag(5)
+            .tag(6)
         }
         .accentColor(DesignSystem.Colors.primaryGreen)
         .onAppear {

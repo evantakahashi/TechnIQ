@@ -23,7 +23,7 @@ struct PlanEditorView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                DesignSystem.Colors.backgroundGradient
+                AdaptiveBackground()
                     .ignoresSafeArea()
 
                 ScrollView {

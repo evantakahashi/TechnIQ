@@ -53,6 +53,8 @@
         <relationship name="playerGoals" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlayerGoal" inverseName="player" inverseEntity="PlayerGoal"/>
         <relationship name="recommendationFeedback" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecommendationFeedback" inverseName="player" inverseEntity="RecommendationFeedback"/>
         <relationship name="trainingPlans" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TrainingPlan" inverseName="player" inverseEntity="TrainingPlan"/>
+        <relationship name="matches" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Match" inverseName="player" inverseEntity="Match"/>
+        <relationship name="seasons" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Season" inverseName="player" inverseEntity="Season"/>
     </entity>
     <entity name="PlayerStats" representedClassName="PlayerStats" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -210,12 +212,13 @@
     <entity name="AvatarConfiguration" representedClassName="AvatarConfiguration" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="skinTone" optional="YES" attributeType="String" defaultValueString="medium"/>
-        <attribute name="hairStyle" optional="YES" attributeType="String" defaultValueString="short_1"/>
+        <attribute name="hairStyle" optional="YES" attributeType="String" defaultValueString="short_wavy"/>
         <attribute name="hairColor" optional="YES" attributeType="String" defaultValueString="brown"/>
         <attribute name="faceStyle" optional="YES" attributeType="String" defaultValueString="happy"/>
-        <attribute name="jerseyId" optional="YES" attributeType="String" defaultValueString="starter_jersey"/>
-        <attribute name="shortsId" optional="YES" attributeType="String" defaultValueString="starter_shorts"/>
-        <attribute name="cleatsId" optional="YES" attributeType="String" defaultValueString="starter_cleats"/>
+        <attribute name="jerseyId" optional="YES" attributeType="String" defaultValueString="starter_green"/>
+        <attribute name="shortsId" optional="YES" attributeType="String" defaultValueString="starter_white"/>
+        <attribute name="socksId" optional="YES" attributeType="String" defaultValueString="green_striped"/>
+        <attribute name="cleatsId" optional="YES" attributeType="String" defaultValueString="starter_green"/>
         <attribute name="accessoryIds" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
         <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="avatarConfiguration" inverseEntity="Player"/>
@@ -226,5 +229,34 @@
         <attribute name="purchasedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="equippedSlot" optional="YES" attributeType="String"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="ownedAvatarItems" inverseEntity="Player"/>
+    </entity>
+    <entity name="Match" representedClassName="Match" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="opponent" optional="YES" attributeType="String"/>
+        <attribute name="competition" optional="YES" attributeType="String"/>
+        <attribute name="minutesPlayed" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="goals" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="assists" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="positionPlayed" optional="YES" attributeType="String"/>
+        <attribute name="isHomeGame" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="result" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="rating" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="xpEarned" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="matches" inverseEntity="Player"/>
+        <relationship name="season" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Season" inverseName="matches" inverseEntity="Season"/>
+    </entity>
+    <entity name="Season" representedClassName="Season" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="team" optional="YES" attributeType="String"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="seasons" inverseEntity="Player"/>
+        <relationship name="matches" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Match" inverseName="season" inverseEntity="Match"/>
     </entity>
 </model>
