@@ -295,7 +295,7 @@ Player Profile:
         
         equipment_list = ', '.join(equipment) if equipment else 'minimal equipment'
         
-        prompt = f"""You are an expert soccer coach. Create a training drill based on:
+        prompt = f"""You are an expert soccer coach. Create a CREATIVE training drill based on:
 
 {player_context}
 
@@ -307,79 +307,70 @@ Requirements:
 - Duration: {duration} minutes
 - Setup: {focus_area}
 
+=== EXAMPLE DRILLS (for inspiration - create something NEW) ===
+
+Example 1 - Linear Dribbling (5 cones in a LINE, not square):
+{{"name": "Speed Dribble Weave", "setup": "20m x 3m corridor. 5 cones (A-E) in a straight line, 5m apart.", "instructions": ["Start at cone A with the ball.", "Dribble at speed weaving through cones B, C, D, E using both feet.", "At cone E, turn sharply and dribble back.", "Complete 4 full runs."], "diagram": {{"field": {{"width": 20, "length": 5}}, "elements": [{{"type": "cone", "x": 0, "y": 2.5, "label": "A"}}, {{"type": "cone", "x": 5, "y": 2.5, "label": "B"}}, {{"type": "cone", "x": 10, "y": 2.5, "label": "C"}}, {{"type": "cone", "x": 15, "y": 2.5, "label": "D"}}, {{"type": "cone", "x": 20, "y": 2.5, "label": "E"}}], "paths": [{{"from": "A", "to": "E", "style": "dribble"}}]}}}}
+
+Example 2 - Triangle Passing (only 3 cones):
+{{"name": "Triangle Give-and-Go", "setup": "10m equilateral triangle. Cone A bottom-left, B bottom-right, C top center.", "instructions": ["Start at cone A with the ball.", "Pass to partner at B, sprint toward C.", "Receive return pass at C, control, pass back to A.", "Rotate positions. Complete 10 rotations."], "diagram": {{"field": {{"width": 10, "length": 9}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}, {{"type": "cone", "x": 10, "y": 0, "label": "B"}}, {{"type": "cone", "x": 5, "y": 9, "label": "C"}}], "paths": [{{"from": "A", "to": "B", "style": "pass"}}, {{"from": "A", "to": "C", "style": "run"}}]}}}}
+
+Example 3 - Ball Mastery (NO CONES needed):
+{{"name": "Foundation Footwork", "setup": "2m x 2m space. No cones - just a ball.", "instructions": ["Perform 30 toe taps alternating feet on top of the ball.", "Complete 20 inside-inside touches, rolling ball side to side.", "Do 20 sole rolls forward and back with each foot.", "Finish with 10 Cruyff turns each direction."], "diagram": {{"field": {{"width": 2, "length": 2}}, "elements": [{{"type": "ball", "x": 1, "y": 1, "label": ""}}, {{"type": "player", "x": 1, "y": 1, "label": "Player"}}], "paths": []}}}}
+
+Example 4 - Gate Drill (cone PAIRS):
+{{"name": "Precision Gate Passes", "setup": "15m x 10m area. 3 gates (cone pairs 1m apart) at 5m, 10m, 15m.", "instructions": ["Stand 3m from the first gate.", "Pass through gate 1, sprint to collect, pass through gate 2.", "Continue through gate 3, turn, repeat back.", "Complete 6 sequences using both feet."], "diagram": {{"field": {{"width": 15, "length": 10}}, "elements": [{{"type": "cone", "x": 5, "y": 4.5, "label": "G1a"}}, {{"type": "cone", "x": 5, "y": 5.5, "label": "G1b"}}, {{"type": "cone", "x": 10, "y": 4.5, "label": "G2a"}}, {{"type": "cone", "x": 10, "y": 5.5, "label": "G2b"}}], "paths": [{{"from": "Start", "to": "G1a", "style": "pass"}}]}}}}
+
+=== CREATIVITY GUIDANCE ===
+- DO NOT always use square/rectangular cone patterns
+- Match the drill layout to the available equipment
+- Use varied patterns: lines, triangles, zigzags, gates - based on what fits the skill
+- Ball mastery drills need NO cones - just describe the footwork
+- Passing drills work well with triangles; dribbling with lines; accuracy with gates
+- Be practical: if user has 2 cones, don't design a drill needing 8
+
 === INSTRUCTION FORMAT RULES ===
 1. Each instruction = ONE clear action (15-25 words max)
 2. Use imperative verbs: Dribble, Pass, Sprint, Control, Shoot, Turn
-3. Label cones as A, B, C, D - NOT "first cone", "second cone"
-4. NEVER use these formats:
-   - "Detailed step 1:", "Detailed step 2:"
-   - "Step 1:", "Step 2:"
-   - Any numbered prefix within the instruction text
-
-CORRECT: "Dribble from cone A to cone B using inside-foot touches."
-WRONG: "Detailed step 1: Dribble from cone A to cone B using inside-foot touches."
+3. NEVER use "Detailed step 1:" or "Step 1:" prefixes
 
 === SETUP FORMAT ===
-1. State field size first (e.g., "15m x 15m area")
-2. List each piece of equipment with exact position using labels
+1. State field size first
+2. List equipment with exact positions
 3. State player starting position last
 
-Return JSON:
+Return JSON (create a NEW drill, don't copy examples):
 {{
     "name": "Short drill name (max 40 chars)",
     "description": "One sentence explaining the drill's purpose.",
-    "setup": "15m x 15m area. Cone A at origin, cone B 15m north, cone C 15m east. Ball at cone A. Player starts at cone A.",
-    "instructions": [
-        "Dribble from cone A to cone B using small inside-foot touches.",
-        "At cone B, perform a drag-back turn and accelerate toward cone C.",
-        "Pass to your partner, then sprint to receive the return ball.",
-        "Control with your first touch and repeat the sequence 5 times."
-    ],
+    "setup": "Dimensions. Equipment positions. Player start.",
+    "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"],
     "diagram": {{
-        "field": {{"width": 15, "length": 15}},
-        "elements": [
-            {{"type": "cone", "x": 0, "y": 0, "label": "A"}},
-            {{"type": "cone", "x": 0, "y": 15, "label": "B"}},
-            {{"type": "cone", "x": 15, "y": 15, "label": "C"}},
-            {{"type": "player", "x": 0, "y": 0, "label": "Start"}},
-            {{"type": "target", "x": 15, "y": 7.5, "label": "Partner"}}
-        ],
-        "paths": [
-            {{"from": "A", "to": "B", "style": "dribble"}},
-            {{"from": "B", "to": "C", "style": "run"}},
-            {{"from": "C", "to": "Partner", "style": "pass"}}
-        ]
+        "field": {{"width": X, "length": Y}},
+        "elements": [{{"type": "cone/player/target/ball", "x": 0, "y": 0, "label": "A"}}],
+        "paths": [{{"from": "A", "to": "B", "style": "dribble/run/pass"}}]
     }},
-    "progressions": [
-        "Easier: Increase spacing to give more time between actions",
-        "Harder: Add a passive defender or reduce the area size"
-    ],
-    "coachingPoints": [
-        "Keep your head up to scan between touches",
-        "Use the inside of your foot for direction changes",
-        "Focus on quick, light touches"
-    ],
+    "progressions": ["Easier: ...", "Harder: ..."],
+    "coachingPoints": ["Point 1", "Point 2", "Point 3"],
     "estimatedDuration": {duration},
     "difficulty": "{difficulty}",
     "category": "{category}",
-    "targetSkills": ["Primary skill", "Secondary skill"],
+    "targetSkills": ["skill1", "skill2"],
     "equipment": {json.dumps(equipment)},
-    "safetyNotes": "Ensure clear space around the drill area"
+    "safetyNotes": "Brief safety note"
 }}
 
 === DIAGRAM RULES ===
-- field: width and length in meters (same as setup dimensions)
-- elements: list all cones, players, targets, goals with x,y coordinates
+- field: width and length in meters matching setup
 - element types: "cone", "player", "target", "goal", "ball"
-- paths: show movement between labeled elements
 - path styles: "dribble" (with ball), "run" (without ball), "pass" (ball trajectory)
-- x=0,y=0 is bottom-left corner; y increases going up (north)"""
+- x=0,y=0 is bottom-left; y increases going up"""
         
         # Call OpenAI API
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert soccer coach. Generate drills with clear, concise instructions."},
+                {"role": "system", "content": "You are an expert soccer coach who creates varied, practical drills. Avoid repetitive square/rectangular patterns - use lines, triangles, gates, or no-cone setups based on the skill being trained. Match drill complexity to available equipment."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,

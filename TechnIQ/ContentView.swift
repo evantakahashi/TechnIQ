@@ -100,16 +100,18 @@ struct MainTabView: View {
     @State private var selectedTab = 0
 
     init() {
-        // Initialize with false predicate - will be updated in onAppear with correct firebaseUID
+        // Fetch all players initially - currentPlayer filters by firebaseUID
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: false), // Empty initially, filtered in onAppear
+            predicate: NSPredicate(value: true),
             animation: .default
         )
     }
 
     var currentPlayer: Player? {
-        players.first
+        // Filter to authenticated user's player (not just first player)
+        guard !authManager.userUID.isEmpty else { return nil }
+        return players.first { $0.firebaseUID == authManager.userUID }
     }
 
     var body: some View {
@@ -190,23 +192,6 @@ struct MainTabView: View {
             .tag(6)
         }
         .accentColor(DesignSystem.Colors.primaryGreen)
-        .onAppear {
-            updatePlayersFilter()
-        }
-        .onChange(of: authManager.userUID) {
-            updatePlayersFilter()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { notification in
-            #if DEBUG
-            print("🔔 MainTabView: Core Data context saved - currentPlayer is now: \(currentPlayer?.name ?? "nil")")
-            #endif
-        }
-    }
-    
-    private func updatePlayersFilter() {
-        guard !authManager.userUID.isEmpty else { return }
-        
-        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
     }
 }
 
