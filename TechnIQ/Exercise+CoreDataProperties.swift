@@ -29,6 +29,9 @@ extension Exercise {
     // Phase 5: Personal Notes
     @NSManaged public var personalNotes: String?
 
+    // Diagram JSON for AI-generated drills
+    @NSManaged public var diagramJSON: String?
+
 }
 
 // MARK: Generated accessors for sessionExercises

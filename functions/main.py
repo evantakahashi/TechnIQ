@@ -295,62 +295,95 @@ Player Profile:
         
         equipment_list = ', '.join(equipment) if equipment else 'minimal equipment'
         
-        prompt = f"""You are an expert soccer/football coach. Create a highly detailed training drill based on the following requirements:
+        prompt = f"""You are an expert soccer coach. Create a training drill based on:
 
 {player_context}
 
-Drill Requirements:
+Requirements:
 - Focus: {skill_description}
 - Category: {category}
 - Difficulty: {difficulty}
-- Available Equipment: {equipment_list}
+- Equipment: {equipment_list}
 - Duration: {duration} minutes
-- Training Setup: {focus_area}
+- Setup: {focus_area}
 
-IMPORTANT: Create VERY detailed and specific instructions. For the setup, include exact field dimensions, cone placement, and any equipment positioning. For instructions, provide step-by-step actions that tell the player exactly what to do for each repetition or sequence.
+=== INSTRUCTION FORMAT RULES ===
+1. Each instruction = ONE clear action (15-25 words max)
+2. Use imperative verbs: Dribble, Pass, Sprint, Control, Shoot, Turn
+3. Label cones as A, B, C, D - NOT "first cone", "second cone"
+4. NEVER use these formats:
+   - "Detailed step 1:", "Detailed step 2:"
+   - "Step 1:", "Step 2:"
+   - Any numbered prefix within the instruction text
 
-Please provide a response in the following JSON format:
+CORRECT: "Dribble from cone A to cone B using inside-foot touches."
+WRONG: "Detailed step 1: Dribble from cone A to cone B using inside-foot touches."
+
+=== SETUP FORMAT ===
+1. State field size first (e.g., "15m x 15m area")
+2. List each piece of equipment with exact position using labels
+3. State player starting position last
+
+Return JSON:
 {{
-    "name": "Concise drill name (max 50 characters)",
-    "description": "Brief 2-3 sentence overview of the drill and its purpose",
-    "setup": "Set up a 10x10 meter square area using four cones. Place a ball at the starting position. Ensure there is a clear, safe space around the area with no obstacles or tripping hazards. Carson should start at the bottom left cone.",
+    "name": "Short drill name (max 40 chars)",
+    "description": "One sentence explaining the drill's purpose.",
+    "setup": "15m x 15m area. Cone A at origin, cone B 15m north, cone C 15m east. Ball at cone A. Player starts at cone A.",
     "instructions": [
-        "Standing at the bottom left cone, Carson should dribble the ball to the top left cone in a straight line. Aim to keep the ball close, taking small touches with the inside of the foot.",
-        "From the top left cone, dribble diagonally to the bottom right cone while maintaining close ball control.",
-        "At the bottom right cone, perform a sharp turn and dribble back to the starting position.",
-        "Repeat the sequence 5 times, focusing on smooth transitions between movements."
+        "Dribble from cone A to cone B using small inside-foot touches.",
+        "At cone B, perform a drag-back turn and accelerate toward cone C.",
+        "Pass to your partner, then sprint to receive the return ball.",
+        "Control with your first touch and repeat the sequence 5 times."
     ],
+    "diagram": {{
+        "field": {{"width": 15, "length": 15}},
+        "elements": [
+            {{"type": "cone", "x": 0, "y": 0, "label": "A"}},
+            {{"type": "cone", "x": 0, "y": 15, "label": "B"}},
+            {{"type": "cone", "x": 15, "y": 15, "label": "C"}},
+            {{"type": "player", "x": 0, "y": 0, "label": "Start"}},
+            {{"type": "target", "x": 15, "y": 7.5, "label": "Partner"}}
+        ],
+        "paths": [
+            {{"from": "A", "to": "B", "style": "dribble"}},
+            {{"from": "B", "to": "C", "style": "run"}},
+            {{"from": "C", "to": "Partner", "style": "pass"}}
+        ]
+    }},
     "progressions": [
-        "Easier: Increase cone spacing to 12x12 meters to allow more time between touches",
-        "Harder: Add a defender applying light pressure or reduce the area to 8x8 meters"
+        "Easier: Increase spacing to give more time between actions",
+        "Harder: Add a passive defender or reduce the area size"
     ],
     "coachingPoints": [
-        "Keep your head up between touches to scan the area",
-        "Use the inside of your foot for better control when changing direction",
-        "Focus on quick, light touches rather than heavy kicks"
+        "Keep your head up to scan between touches",
+        "Use the inside of your foot for direction changes",
+        "Focus on quick, light touches"
     ],
     "estimatedDuration": {duration},
     "difficulty": "{difficulty}",
     "category": "{category}",
-    "targetSkills": [
-        "Primary skill being developed",
-        "Secondary skills involved"
-    ],
+    "targetSkills": ["Primary skill", "Secondary skill"],
     "equipment": {json.dumps(equipment)},
-    "safetyNotes": "Ensure the training area is free of hazards and maintain proper spacing"
+    "safetyNotes": "Ensure clear space around the drill area"
 }}
 
-CRITICAL: Make the setup and instructions extremely detailed and specific, but write them naturally without prefixes like "Detailed step 1:" or "Step 1:". Just write clear, direct instructions as shown in the example above. Include exact measurements, specific actions, and clear sequences."""
+=== DIAGRAM RULES ===
+- field: width and length in meters (same as setup dimensions)
+- elements: list all cones, players, targets, goals with x,y coordinates
+- element types: "cone", "player", "target", "goal", "ball"
+- paths: show movement between labeled elements
+- path styles: "dribble" (with ball), "run" (without ball), "pass" (ball trajectory)
+- x=0,y=0 is bottom-left corner; y increases going up (north)"""
         
         # Call OpenAI API
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert soccer coach specializing in personalized training drills."},
+                {"role": "system", "content": "You are an expert soccer coach. Generate drills with clear, concise instructions."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1500,
-            temperature=0.7
+            temperature=0.5  # Lower temperature for more consistent formatting
         )
         
         # Parse response

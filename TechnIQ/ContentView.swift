@@ -58,11 +58,12 @@ struct PlayerContentView: View {
     
     init(isOnboardingComplete: Binding<Bool>) {
         self._isOnboardingComplete = isOnboardingComplete
-        
-        // Initialize with predicate that allows results initially
+
+        // Initialize with true predicate to detect if onboarding is needed
+        // Will be filtered by firebaseUID in onAppear
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true), // Allow all results initially
+            predicate: NSPredicate(value: true),
             animation: .default
         )
     }
@@ -99,22 +100,16 @@ struct MainTabView: View {
     @State private var selectedTab = 0
 
     init() {
-        // Initialize with predicate that allows results initially
+        // Initialize with false predicate - will be updated in onAppear with correct firebaseUID
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true), // Allow all results initially
+            predicate: NSPredicate(value: false), // Empty initially, filtered in onAppear
             animation: .default
         )
     }
 
     var currentPlayer: Player? {
-        let player = players.first
-        if player == nil && !authManager.userUID.isEmpty {
-            #if DEBUG
-            print("⚠️ MainTabView: currentPlayer is nil despite having userUID. Players count: \(players.count)")
-            #endif
-        }
-        return player
+        players.first
     }
 
     var body: some View {

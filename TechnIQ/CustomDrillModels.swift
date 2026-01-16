@@ -122,6 +122,7 @@ struct CustomDrillResponse: Codable {
     let description: String
     let setup: String
     let instructions: [String]
+    let diagram: DrillDiagram?
     let progressions: [String]?
     let coachingPoints: [String]?
     let estimatedDuration: Int
@@ -131,6 +132,56 @@ struct CustomDrillResponse: Codable {
     let equipment: [String]
     let safetyNotes: String?
     let variations: [DrillVariation]?
+}
+
+// MARK: - Drill Diagram Models
+
+struct DrillDiagram: Codable {
+    let field: DiagramField
+    let elements: [DiagramElement]
+    let paths: [DiagramPath]?
+}
+
+struct DiagramField: Codable {
+    let width: Double
+    let length: Double
+}
+
+struct DiagramElement: Codable, Identifiable {
+    let type: String  // "cone", "player", "target", "goal", "ball"
+    let x: Double
+    let y: Double
+    let label: String
+
+    var id: String { "\(type)_\(label)_\(x)_\(y)" }
+
+    var elementType: DiagramElementType {
+        DiagramElementType(rawValue: type) ?? .cone
+    }
+}
+
+struct DiagramPath: Codable {
+    let from: String
+    let to: String
+    let style: String  // "dribble", "run", "pass"
+
+    var pathStyle: DiagramPathStyle {
+        DiagramPathStyle(rawValue: style) ?? .run
+    }
+}
+
+enum DiagramElementType: String {
+    case cone = "cone"
+    case player = "player"
+    case target = "target"
+    case goal = "goal"
+    case ball = "ball"
+}
+
+enum DiagramPathStyle: String {
+    case dribble = "dribble"  // Solid line (with ball)
+    case run = "run"          // Dashed line (without ball)
+    case pass = "pass"        // Arrow line (ball trajectory)
 }
 
 struct DrillVariation: Codable {

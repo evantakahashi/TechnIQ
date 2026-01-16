@@ -211,6 +211,15 @@ class CustomDrillService: ObservableObject {
         
         // Mark as custom generated content
         exercise.isYouTubeContent = false // This will help us identify custom content
+
+        // Store diagram JSON if available
+        if let diagram = response.diagram {
+            let encoder = JSONEncoder()
+            if let diagramData = try? encoder.encode(diagram),
+               let diagramString = String(data: diagramData, encoding: .utf8) {
+                exercise.diagramJSON = diagramString
+            }
+        }
         
         // Create detailed instructions
         var instructionsText = "**Setup:**\n\(response.setup)\n\n"

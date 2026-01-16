@@ -103,6 +103,27 @@ struct ExerciseDetailView: View {
                         }
                     }
                     
+                    // Drill Diagram Section (for AI-generated drills)
+                    if let diagram = parseDiagram() {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "map")
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                                Text("Field Layout")
+                                    .font(.headline)
+                                    .foregroundColor(DesignSystem.Colors.primaryDark)
+                            }
+
+                            DrillDiagramView(diagram: diagram)
+                                .frame(height: 220)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.1))
+                        )
+                    }
+
                     // Instructions Section
                     if let instructions = exercise.instructions, !instructions.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -230,7 +251,17 @@ struct ExerciseDetailView: View {
         
         return nil
     }
-    
+
+    private func parseDiagram() -> DrillDiagram? {
+        guard let diagramJSON = exercise.diagramJSON,
+              let data = diagramJSON.data(using: .utf8) else {
+            return nil
+        }
+
+        let decoder = JSONDecoder()
+        return try? decoder.decode(DrillDiagram.self, from: data)
+    }
+
     private func cleanDescription(_ description: String) -> String {
         // Remove YouTube-specific metadata from description
         let lines = description.components(separatedBy: .newlines)
