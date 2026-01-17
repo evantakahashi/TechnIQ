@@ -116,6 +116,7 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            // Tab 0: Home
             NavigationView {
                 DashboardView(selectedTab: $selectedTab)
             }
@@ -125,28 +126,17 @@ struct MainTabView: View {
             }
             .tag(0)
 
+            // Tab 1: Train (Sessions + Exercises combined)
             NavigationView {
-                SessionHistoryView()
+                TrainHubView()
             }
             .tabItem {
-                Image(systemName: DesignSystem.Icons.sessions)
-                Text("Sessions")
+                Image(systemName: "figure.run")
+                Text("Train")
             }
             .tag(1)
 
-            NavigationView {
-                if let player = currentPlayer {
-                    ExerciseLibraryView(player: player)
-                } else {
-                    SwiftUI.ProgressView("Loading...")
-                }
-            }
-            .tabItem {
-                Image(systemName: DesignSystem.Icons.exercises)
-                Text("Exercises")
-            }
-            .tag(2)
-
+            // Tab 2: Plans
             NavigationView {
                 TrainingPlansListView()
             }
@@ -154,21 +144,9 @@ struct MainTabView: View {
                 Image(systemName: "calendar.badge.clock")
                 Text("Plans")
             }
-            .tag(3)
+            .tag(2)
 
-            NavigationView {
-                if let player = currentPlayer {
-                    PlayerProgressView(player: player)
-                } else {
-                    SwiftUI.ProgressView("Loading...")
-                }
-            }
-            .tabItem {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                Text("Progress")
-            }
-            .tag(4)
-
+            // Tab 3: Matches (prominent for match reflections)
             NavigationView {
                 if let player = currentPlayer {
                     MatchHistoryView(player: player)
@@ -177,19 +155,20 @@ struct MainTabView: View {
                 }
             }
             .tabItem {
-                Image(systemName: "sportscourt")
+                Image(systemName: "sportscourt.fill")
                 Text("Matches")
             }
-            .tag(5)
+            .tag(3)
 
+            // Tab 4: You (Profile hub with Progress accessible inside)
             NavigationView {
-                PlayerProfileView()
+                EnhancedProfileView()
             }
             .tabItem {
                 Image(systemName: DesignSystem.Icons.profile)
-                Text("Profile")
+                Text("You")
             }
-            .tag(6)
+            .tag(4)
         }
         .accentColor(DesignSystem.Colors.primaryGreen)
     }

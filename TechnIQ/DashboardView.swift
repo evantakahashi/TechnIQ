@@ -142,63 +142,33 @@ struct DashboardView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Greeting Section with Mascot
+            // Greeting Section with Avatar
             HStack(spacing: DesignSystem.Spacing.md) {
-                // Mascot
-                MascotView(
-                    state: showWelcomeBack ? MascotState.forWelcomeBack(daysInactive: daysInactive) : MascotState.forTimeOfDay(),
-                    size: .small,
-                    animated: true
+                // Player Avatar (compact)
+                ProgrammaticAvatarView(
+                    avatarState: AvatarService.shared.currentAvatarState,
+                    size: .small
                 )
+                .frame(width: 50, height: 75)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(getGreeting())
-                        .font(DesignSystem.Typography.bodyMedium)
+                        .font(DesignSystem.Typography.labelMedium)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     Text(player.name ?? "Player")
-                        .font(DesignSystem.Typography.headlineMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .font(DesignSystem.Typography.titleLarge)
                         .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
 
                 Spacer()
 
-                // Level and Coins badges
-                HStack(spacing: 8) {
-                    // Level Badge with XP
-                    VStack(spacing: 2) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(DesignSystem.Colors.xpGold)
-                            Text("Lv.\(player.currentLevel)")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                        }
-
-                        // Streak flame badge
-                        if player.currentStreak > 0 {
-                            HStack(spacing: 2) {
-                                Image(systemName: "flame.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(DesignSystem.Colors.streakOrange)
-                                Text("\(player.currentStreak)")
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(DesignSystem.Colors.streakOrange)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(16)
-
-                    // Coin Display
-                    CoinDisplayView(size: .small)
-                }
+                // Compact stats pill
+                CompactPlayerStats(player: player)
             }
 
             // XP Progress Bar
@@ -1099,6 +1069,56 @@ struct StatPill: View {
         .padding(.vertical, DesignSystem.Spacing.sm)
         .background(color.opacity(0.1))
         .cornerRadius(DesignSystem.CornerRadius.sm)
+    }
+}
+
+// MARK: - Compact Player Stats (for header)
+
+struct CompactPlayerStats: View {
+    let player: Player
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            // Level
+            HStack(spacing: 4) {
+                Image(systemName: "star.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(DesignSystem.Colors.xpGold)
+                Text("Lv.\(player.currentLevel)")
+                    .font(DesignSystem.Typography.labelMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+
+            // Divider
+            Text("•")
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .font(.caption2)
+
+            // Streak (if > 0)
+            if player.currentStreak > 0 {
+                HStack(spacing: 2) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(DesignSystem.Colors.streakOrange)
+                    Text("\(player.currentStreak)")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.streakOrange)
+                }
+
+                Text("•")
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .font(.caption2)
+            }
+
+            // Coins
+            CoinDisplayView(size: .small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
+        .cornerRadius(20)
     }
 }
 

@@ -322,47 +322,49 @@ struct ExerciseLibraryView: View {
 
     private var simpleHeader: some View {
         HStack {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                Text("Hello, \(player.name ?? "Player")!")
-                    .font(DesignSystem.Typography.headlineSmall)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Exercise Library")
+                    .font(DesignSystem.Typography.titleLarge)
+                    .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                Text("\(allExercises.count) exercises")
-                    .font(DesignSystem.Typography.bodyMedium)
+                Text("\(allExercises.count) exercises available")
+                    .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
             }
 
             Spacer()
 
-            // View Toggle Button
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    viewMode = isGridView ? "list" : "grid"
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                // View Toggle Button
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewMode = isGridView ? "list" : "grid"
+                    }
+                } label: {
+                    Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                        .font(.title3)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
-            } label: {
-                Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
-                    .font(.title3)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
 
-            // Filter Button
-            Button {
-                showingFilterSheet = true
-            } label: {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.title2)
-                        .foregroundColor(filterState.hasActiveFilters ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
+                // Filter Button
+                Button {
+                    showingFilterSheet = true
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.title2)
+                            .foregroundColor(filterState.hasActiveFilters ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
 
-                    // Badge for active filters
-                    if filterState.activeFilterCount > 0 {
-                        Text("\(filterState.activeFilterCount)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(4)
-                            .background(Circle().fill(DesignSystem.Colors.primaryGreen))
-                            .offset(x: 6, y: -6)
+                        if filterState.activeFilterCount > 0 {
+                            Text("\(filterState.activeFilterCount)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(4)
+                                .background(Circle().fill(DesignSystem.Colors.primaryGreen))
+                                .offset(x: 6, y: -6)
+                        }
                     }
                 }
             }
@@ -385,35 +387,30 @@ struct ExerciseLibraryView: View {
     }
 
     private var actionButtons: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            // Top row: AI Drill and Manual Drill
-            HStack(spacing: DesignSystem.Spacing.md) {
-                // AI Custom Drill Button
-                ModernButton(
-                    "AI Drill",
-                    icon: "brain.head.profile",
-                    style: .primary
-                ) {
-                    showingCustomDrillGenerator = true
-                }
-                .frame(maxWidth: .infinity)
-
-                // Manual Custom Drill Button
-                ModernButton(
-                    "Manual Drill",
-                    icon: "pencil.circle.fill",
-                    style: .primary
-                ) {
-                    showingManualDrillCreator = true
-                }
-                .frame(maxWidth: .infinity)
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            // AI Drill
+            CompactActionButton(
+                title: "AI",
+                icon: "brain.head.profile",
+                color: DesignSystem.Colors.primaryGreen
+            ) {
+                showingCustomDrillGenerator = true
             }
 
-            // Bottom row: YouTube button
-            ModernButton(
-                "YouTube",
+            // Manual Drill
+            CompactActionButton(
+                title: "Manual",
+                icon: "pencil.circle.fill",
+                color: DesignSystem.Colors.secondaryBlue
+            ) {
+                showingManualDrillCreator = true
+            }
+
+            // YouTube
+            CompactActionButton(
+                title: "YouTube",
                 icon: "play.rectangle.fill",
-                style: .secondary
+                color: DesignSystem.Colors.error
             ) {
                 loadYouTubeContent()
             }

@@ -313,93 +313,159 @@ struct SessionHistoryView: View {
 
 struct SessionHistoryRow: View {
     let session: TrainingSession
-    
+
+    private var sessionColor: Color {
+        switch session.sessionType?.lowercased() {
+        case "dribbling", "ball control":
+            return DesignSystem.Colors.primaryGreen
+        case "shooting", "finishing":
+            return DesignSystem.Colors.error
+        case "passing":
+            return DesignSystem.Colors.secondaryBlue
+        case "fitness", "conditioning":
+            return DesignSystem.Colors.accentOrange
+        case "match", "game":
+            return DesignSystem.Colors.levelPurple
+        default:
+            return DesignSystem.Colors.primaryGreen
+        }
+    }
+
+    private var sessionIcon: String {
+        switch session.sessionType?.lowercased() {
+        case "dribbling", "ball control":
+            return "figure.soccer"
+        case "shooting", "finishing":
+            return "target"
+        case "passing":
+            return "arrow.left.and.right"
+        case "fitness", "conditioning":
+            return "heart.fill"
+        case "match", "game":
+            return "sportscourt"
+        default:
+            return "figure.run"
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(session.sessionType ?? "Training")
-                        .font(.headline)
-                    
-                    Text(formatDate(session.date ?? Date()))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+        ModernCard(padding: DesignSystem.Spacing.md) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // Session type icon in colored circle
+                ZStack {
+                    Circle()
+                        .fill(sessionColor.opacity(0.15))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: sessionIcon)
+                        .font(.system(size: 20))
+                        .foregroundColor(sessionColor)
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(Int(session.duration)) min")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    HStack(spacing: 1) {
-                        ForEach(0..<5, id: \.self) { index in
-                            Image(systemName: index < session.overallRating ? "star.fill" : "star")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
+
+                // Info column
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text(session.sessionType ?? "Training")
+                        .font(DesignSystem.Typography.titleSmall)
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    Text(formatDate(session.date ?? Date()))
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                    if let location = session.location, !location.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "location")
+                                .font(.system(size: 10))
+                            Text(location)
                         }
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
                     }
                 }
-            }
-            
-            if let location = session.location {
-                Label(location, systemImage: "location")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            HStack {
-                IntensityIndicator(level: Int(session.intensity))
-                
+
                 Spacer()
-                
-                if let exercises = session.exercises, exercises.count > 0 {
+
+                // Stats column
+                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.xs) {
+                    Text("\(Int(session.duration))min")
+                        .font(DesignSystem.Typography.labelLarge)
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    // Star rating
+                    HStack(spacing: 2) {
+                        ForEach(0..<5, id: \.self) { index in
+                            Image(systemName: index < session.overallRating ? "star.fill" : "star")
+                                .font(.system(size: 10))
+                                .foregroundColor(index < session.overallRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400)
+                        }
+                    }
+
+                    // Intensity bars
+                    IntensityBars(level: Int(session.intensity))
+                }
+            }
+
+            // Exercise count if present
+            if let exercises = session.exercises, exercises.count > 0 {
+                HStack {
+                    Spacer()
                     Text("\(exercises.count) exercises")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .padding(.top, DesignSystem.Spacing.xs)
                 }
             }
         }
-        .padding(.vertical, 4)
     }
-    
+
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
         if Calendar.current.isDate(date, inSameDayAs: Date()) {
             return "Today"
         } else if Calendar.current.isDate(date, inSameDayAs: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()) {
             return "Yesterday"
         } else {
+            let formatter = DateFormatter()
             formatter.dateStyle = .medium
             return formatter.string(from: date)
         }
     }
 }
 
-struct IntensityIndicator: View {
+struct IntensityBars: View {
     let level: Int
-    
+
+    private var intensityColor: Color {
+        switch level {
+        case 1...2: return DesignSystem.Colors.primaryGreen
+        case 3: return DesignSystem.Colors.accentYellow
+        case 4: return DesignSystem.Colors.accentOrange
+        default: return DesignSystem.Colors.error
+        }
+    }
+
     var body: some View {
         HStack(spacing: 2) {
-            Text("Intensity:")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-            
             ForEach(1...5, id: \.self) { index in
-                Circle()
+                RoundedRectangle(cornerRadius: 1)
                     .fill(index <= level ? intensityColor : Color.gray.opacity(0.3))
-                    .frame(width: 6, height: 6)
+                    .frame(width: 4, height: 12)
             }
         }
     }
-    
-    private var intensityColor: Color {
-        switch level {
-        case 1...2: return .green
-        case 3: return .yellow
-        case 4: return .orange
-        default: return .red
+}
+
+// Legacy support - kept for any other usage
+struct IntensityIndicator: View {
+    let level: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Text("Intensity:")
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+
+            IntensityBars(level: level)
         }
     }
 }

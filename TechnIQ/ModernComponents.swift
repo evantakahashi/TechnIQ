@@ -124,6 +124,45 @@ struct ModernCard<Content: View>: View {
     }
 }
 
+// MARK: - Compact Action Button (for horizontal button rows)
+struct CompactActionButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: {
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+            action()
+        }) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(color)
+                Text(title)
+                    .font(DesignSystem.Typography.labelMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .background(color.opacity(0.12))
+            .cornerRadius(DesignSystem.CornerRadius.sm)
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(DesignSystem.Animation.quick, value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
+    }
+}
+
 // MARK: - Modern Text Field Component
 struct ModernTextField: View {
     let title: String
