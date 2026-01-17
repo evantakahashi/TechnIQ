@@ -213,23 +213,27 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         user_id = request_data.get('user_id')
         player_profile = request_data.get('player_profile', {})
         requirements = request_data.get('requirements', {})
-        
+        session_context = request_data.get('session_context', {})
+        drill_feedback = request_data.get('drill_feedback', [])
+
         if not all([user_id, player_profile, requirements]):
             return https_fn.Response("Missing required fields", status=400)
-        
+
         logger.info(f"🤖 Generating custom drill for user: {user_id}")
         logger.info(f"📝 Skill description: {requirements.get('skill_description', '')}")
-        
+        logger.info(f"📊 Session context: {len(session_context.get('recent_exercises', []))} recent exercises")
+        logger.info(f"📊 Drill feedback: {len(drill_feedback)} previous drill ratings")
+
         # Get OpenAI API key from environment variables
         openai_api_key = os.environ.get('OPENAI_API_KEY')
-        
+
         logger.info(f"🔑 OpenAI API key available: {bool(openai_api_key)}")
-        
+
         if not openai_api_key:
             return https_fn.Response("OpenAI API key not configured", status=500)
-        
+
         # Generate drill using OpenAI
-        drill_data = generate_drill_with_ai(player_profile, requirements, openai_api_key)
+        drill_data = generate_drill_with_ai(player_profile, requirements, session_context, drill_feedback, openai_api_key)
         
         # Format response
         response_data = {
@@ -267,12 +271,12 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             }
         )
 
-def generate_drill_with_ai(player_profile: Dict, requirements: Dict, openai_api_key: str) -> Dict:
+def generate_drill_with_ai(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, openai_api_key: str) -> Dict:
     """Generate custom drill using OpenAI GPT"""
     try:
         from openai import OpenAI
         client = OpenAI(api_key=openai_api_key)
-        
+
         # Build context prompt
         skill_description = requirements.get('skill_description', '')
         category = requirements.get('category', 'technical')
@@ -280,7 +284,37 @@ def generate_drill_with_ai(player_profile: Dict, requirements: Dict, openai_api_
         equipment = requirements.get('equipment', [])
         duration = requirements.get('duration', 30)
         focus_area = requirements.get('focus_area', 'individual')
-        
+
+        # Build session history context
+        recent_exercises = session_context.get('recent_exercises', [])
+        session_history_text = ""
+        if recent_exercises:
+            session_history_text = "\n=== RECENT TRAINING HISTORY ===\n"
+            for ex in recent_exercises:
+                skill = ex.get("skill", "Unknown")
+                rating = ex.get("rating", 0)
+                notes = ex.get("notes", "")
+                session_history_text += f"- {skill}: rated {rating}/5"
+                if notes:
+                    session_history_text += f' ("{notes}")'
+                session_history_text += "\n"
+            session_history_text += "\nUse this history to address weak areas (low ratings) and build on strengths.\n"
+
+        # Build drill feedback context
+        drill_feedback_text = ""
+        if drill_feedback:
+            drill_feedback_text = "\n=== PREVIOUS DRILL FEEDBACK ===\n"
+            for fb in drill_feedback:
+                rating = fb.get("rating", 0)
+                difficulty_fb = fb.get("difficulty_feedback", "appropriate")
+                feedback_type = fb.get("feedback_type", "Neutral")
+                notes = fb.get("notes", "")
+                drill_feedback_text += f"- Rated {rating}/5, difficulty: {difficulty_fb}, sentiment: {feedback_type}"
+                if notes:
+                    drill_feedback_text += f', notes: "{notes}"'
+                drill_feedback_text += "\n"
+            drill_feedback_text += "\nAdjust difficulty and style based on this feedback. If drills were 'too_easy', make this one harder. If 'too_hard', make it more accessible.\n"
+
         player_context = f"""
 Player Profile:
 - Name: {player_profile.get('name', 'Player')}
@@ -298,7 +332,8 @@ Player Profile:
         prompt = f"""You are an expert soccer coach. Create a CREATIVE training drill based on:
 
 {player_context}
-
+{session_history_text}
+{drill_feedback_text}
 Requirements:
 - Focus: {skill_description}
 - Category: {category}

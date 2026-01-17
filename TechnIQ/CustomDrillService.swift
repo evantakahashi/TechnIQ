@@ -55,7 +55,8 @@ class CustomDrillService: ObservableObject {
             // Step 3: Call Firebase Function to generate drill
             let drillResponse = try await callFirebaseCustomDrillFunction(
                 request: request,
-                playerProfile: playerProfile
+                playerProfile: playerProfile,
+                player: player
             )
             
             generationProgress = 0.8
@@ -107,22 +108,31 @@ class CustomDrillService: ObservableObject {
     
     private func callFirebaseCustomDrillFunction(
         request: CustomDrillRequest,
-        playerProfile: [String: Any]
+        playerProfile: [String: Any],
+        player: Player
     ) async throws -> CustomDrillResponse {
-        
+
         let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/generate_custom_drill"
-        
+
         guard let url = URL(string: functionsURL) else {
             throw CustomDrillError.networkError
         }
-        
+
         // Get user ID
         let userUID = auth.currentUser?.uid ?? "anonymous_user"
-        
+
+        // Build session context from recent training history
+        let sessionContext = buildSessionContext(for: player)
+
+        // Build drill feedback context from previous AI drills
+        let drillFeedback = buildDrillFeedbackContext(for: player)
+
         // Prepare request body
         let requestBody: [String: Any] = [
             "user_id": userUID,
             "player_profile": playerProfile,
+            "session_context": sessionContext,
+            "drill_feedback": drillFeedback,
             "requirements": [
                 "skill_description": request.skillDescription,
                 "category": request.category.rawValue,
@@ -298,6 +308,57 @@ class CustomDrillService: ObservableObject {
         }
         
         return profile
+    }
+
+    // MARK: - Session Context Building
+
+    private func buildSessionContext(for player: Player) -> [String: Any] {
+        let sessions = CoreDataManager.shared.fetchTrainingSessions(for: player.firebaseUID ?? "")
+        let recentSessions = Array(sessions.prefix(5))
+
+        var exerciseHistory: [[String: Any]] = []
+        for session in recentSessions {
+            guard let exercises = session.exercises?.allObjects as? [SessionExercise] else { continue }
+            for ex in exercises {
+                exerciseHistory.append([
+                    "skill": ex.exercise?.category ?? "Unknown",
+                    "rating": ex.performanceRating,
+                    "notes": ex.notes ?? ""
+                ])
+            }
+        }
+
+        // Limit to 10 most recent exercise records
+        return ["recent_exercises": Array(exerciseHistory.prefix(10))]
+    }
+
+    // MARK: - Drill Feedback Context Building
+
+    private func buildDrillFeedbackContext(for player: Player) -> [[String: Any]] {
+        let feedback = CoreDataManager.shared.fetchDrillFeedback(for: player, limit: 5)
+
+        return feedback.map { fb in
+            var feedbackDict: [String: Any] = [
+                "rating": fb.rating,
+                "feedback_type": fb.feedbackType ?? "Neutral"
+            ]
+
+            // Map difficulty rating to descriptive string
+            switch fb.difficultyRating {
+            case 1:
+                feedbackDict["difficulty_feedback"] = "too_easy"
+            case 5:
+                feedbackDict["difficulty_feedback"] = "too_hard"
+            default:
+                feedbackDict["difficulty_feedback"] = "appropriate"
+            }
+
+            if let notes = fb.notes, !notes.isEmpty {
+                feedbackDict["notes"] = notes
+            }
+
+            return feedbackDict
+        }
     }
 }
 

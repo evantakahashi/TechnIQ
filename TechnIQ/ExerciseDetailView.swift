@@ -13,6 +13,18 @@ struct ExerciseDetailView: View {
     @State private var personalNotes: String = ""
     @State private var isEditingNotes = false
 
+    // Drill feedback state (for AI-generated drills)
+    @State private var feedbackRating: Int = 0
+    @State private var difficultyFeedback: String = ""
+    @State private var feedbackNotes: String = ""
+    @State private var hasFeedback: Bool = false
+    @State private var showingFeedbackSuccess: Bool = false
+
+    // Check if this is an AI-generated drill
+    private var isAIGeneratedDrill: Bool {
+        exercise.exerciseDescription?.contains("🤖 AI-Generated") == true
+    }
+
     // Check if exercise is editable (not YouTube content)
     private var isEditable: Bool {
         exercise.exerciseDescription?.contains("YouTube Video") != true
@@ -170,6 +182,12 @@ struct ExerciseDetailView: View {
 
                     // Personal Notes Section
                     personalNotesSection
+
+                    // Drill Feedback Section (AI-generated drills only)
+                    if isAIGeneratedDrill {
+                        drillFeedbackSection
+                        progressionSection
+                    }
                 }
                 .padding()
             }
@@ -388,6 +406,164 @@ struct ExerciseDetailView: View {
         CoreDataManager.shared.save()
         isEditingNotes = false
         onFavoriteChanged?() // Refresh parent view
+    }
+
+    // MARK: - Drill Feedback Section
+
+    @ViewBuilder
+    private var drillFeedbackSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "hand.thumbsup")
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                Text("Was this drill helpful?")
+                    .font(.headline)
+                    .foregroundColor(DesignSystem.Colors.primaryDark)
+            }
+
+            if hasFeedback {
+                // Show existing feedback
+                HStack(spacing: 4) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= feedbackRating ? "star.fill" : "star")
+                            .foregroundColor(DesignSystem.Colors.accentOrange)
+                            .font(.title3)
+                    }
+                    Text("- Thanks for your feedback!")
+                        .font(.subheadline)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+            } else {
+                // Star rating
+                HStack(spacing: 8) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= feedbackRating ? "star.fill" : "star")
+                            .foregroundColor(DesignSystem.Colors.accentOrange)
+                            .font(.title2)
+                            .onTapGesture {
+                                feedbackRating = star
+                            }
+                    }
+                }
+
+                // Difficulty feedback chips
+                HStack(spacing: 8) {
+                    FeedbackChip(label: "Too Easy", selected: difficultyFeedback == "easy") {
+                        difficultyFeedback = difficultyFeedback == "easy" ? "" : "easy"
+                    }
+                    FeedbackChip(label: "Just Right", selected: difficultyFeedback == "right") {
+                        difficultyFeedback = difficultyFeedback == "right" ? "" : "right"
+                    }
+                    FeedbackChip(label: "Too Hard", selected: difficultyFeedback == "hard") {
+                        difficultyFeedback = difficultyFeedback == "hard" ? "" : "hard"
+                    }
+                }
+
+                // Optional notes
+                TextField("Any comments? (optional)", text: $feedbackNotes)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.subheadline)
+
+                // Submit button
+                if feedbackRating > 0 {
+                    Button(action: saveDrillFeedback) {
+                        Text("Submit Feedback")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(DesignSystem.Colors.primaryGreen)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.1))
+        )
+        .alert("Feedback Saved", isPresented: $showingFeedbackSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Thank you! Your feedback helps improve future drill recommendations.")
+        }
+    }
+
+    private func saveDrillFeedback() {
+        // Need to get player - for now use a simple approach
+        let players = try? CoreDataManager.shared.context.fetch(Player.fetchRequest())
+        guard let player = players?.first else { return }
+
+        CoreDataManager.shared.saveDrillFeedback(
+            for: exercise,
+            player: player,
+            rating: feedbackRating,
+            difficultyFeedback: difficultyFeedback,
+            notes: feedbackNotes
+        )
+
+        hasFeedback = true
+        showingFeedbackSuccess = true
+    }
+
+    // MARK: - Progression Section
+
+    @ViewBuilder
+    private var progressionSection: some View {
+        let completionCount = CoreDataManager.shared.getCompletionCount(for: exercise)
+        let avgRating = CoreDataManager.shared.getAveragePerformanceRating(for: exercise)
+
+        if completionCount >= 3 && avgRating >= 4.0 {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    Text("Ready for a Challenge?")
+                        .font(.headline)
+                        .foregroundColor(DesignSystem.Colors.primaryDark)
+                }
+
+                Text("You've mastered this drill! Completed \(completionCount) times with \(String(format: "%.1f", avgRating))/5 avg rating.")
+                    .font(.subheadline)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                Text("Go to Exercises → AI Drill Generator to create a harder version.")
+                    .font(.caption)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .italic()
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(DesignSystem.Colors.secondaryBlue.opacity(0.1))
+            )
+        }
+    }
+}
+
+// MARK: - Feedback Chip
+
+struct FeedbackChip: View {
+    let label: String
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption)
+                .fontWeight(selected ? .semibold : .regular)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(selected ? DesignSystem.Colors.primaryGreen : Color.gray.opacity(0.2))
+                )
+                .foregroundColor(selected ? .white : DesignSystem.Colors.textSecondary)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

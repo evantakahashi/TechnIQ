@@ -3013,4 +3013,84 @@ extension CoreDataManager {
             return .extended
         }
     }
+
+    // MARK: - Drill Feedback
+
+    func saveDrillFeedback(
+        for exercise: Exercise,
+        player: Player,
+        rating: Int,
+        difficultyFeedback: String,
+        notes: String
+    ) {
+        let feedback = RecommendationFeedback(context: context)
+        feedback.id = UUID()
+        feedback.createdAt = Date()
+        feedback.exerciseID = exercise.id?.uuidString
+        feedback.rating = Int16(rating)
+        feedback.recommendationSource = "AI-Generated"
+        feedback.feedbackType = rating >= 4 ? "Positive" : rating <= 2 ? "Negative" : "Neutral"
+        feedback.notes = notes.isEmpty ? nil : notes
+        feedback.player = player
+
+        // Map difficulty feedback to rating
+        switch difficultyFeedback {
+        case "easy":
+            feedback.difficultyRating = 1
+        case "right":
+            feedback.difficultyRating = 3
+        case "hard":
+            feedback.difficultyRating = 5
+        default:
+            feedback.difficultyRating = 3
+        }
+
+        save()
+        #if DEBUG
+        print("✅ Saved drill feedback: rating=\(rating), difficulty=\(difficultyFeedback)")
+        #endif
+    }
+
+    func fetchDrillFeedback(for player: Player, limit: Int = 10) -> [RecommendationFeedback] {
+        let request: NSFetchRequest<RecommendationFeedback> = RecommendationFeedback.fetchRequest()
+        request.predicate = NSPredicate(format: "player == %@ AND recommendationSource == %@", player, "AI-Generated")
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \RecommendationFeedback.createdAt, ascending: false)]
+        request.fetchLimit = limit
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            #if DEBUG
+            print("❌ Failed to fetch drill feedback: \(error)")
+            #endif
+            return []
+        }
+    }
+
+    func fetchFeedback(for exercise: Exercise, player: Player) -> RecommendationFeedback? {
+        guard let exerciseID = exercise.id?.uuidString else { return nil }
+
+        let request: NSFetchRequest<RecommendationFeedback> = RecommendationFeedback.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "player == %@ AND exerciseID == %@ AND recommendationSource == %@",
+            player, exerciseID, "AI-Generated"
+        )
+        request.fetchLimit = 1
+
+        return try? context.fetch(request).first
+    }
+
+    func getCompletionCount(for exercise: Exercise) -> Int {
+        return exercise.sessionExercises?.count ?? 0
+    }
+
+    func getAveragePerformanceRating(for exercise: Exercise) -> Double {
+        guard let sessionExercises = exercise.sessionExercises?.allObjects as? [SessionExercise],
+              !sessionExercises.isEmpty else {
+            return 0
+        }
+
+        let totalRating = sessionExercises.reduce(0) { $0 + Int($1.performanceRating) }
+        return Double(totalRating) / Double(sessionExercises.count)
+    }
 }
