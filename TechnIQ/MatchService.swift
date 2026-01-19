@@ -27,7 +27,9 @@ final class MatchService {
         result: String?,
         notes: String?,
         rating: Int16,
-        season: Season? = nil
+        season: Season? = nil,
+        strengths: String? = nil,
+        weaknesses: String? = nil
     ) -> Match {
         let match = Match(context: context)
         match.id = UUID()
@@ -45,6 +47,8 @@ final class MatchService {
         match.isHomeGame = isHomeGame
         match.result = result
         match.notes = notes
+        match.strengths = strengths
+        match.weaknesses = weaknesses
         match.createdAt = Date()
         match.player = player
         match.season = season

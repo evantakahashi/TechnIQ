@@ -20,6 +20,8 @@ extension Match {
     @NSManaged public var notes: String?
     @NSManaged public var rating: Int16
     @NSManaged public var xpEarned: Int32
+    @NSManaged public var strengths: String?
+    @NSManaged public var weaknesses: String?
     @NSManaged public var createdAt: Date?
     @NSManaged public var player: Player?
     @NSManaged public var season: Season?

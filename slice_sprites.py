@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Avatar Sprite Sheet Slicer for TechnIQ - Version 2.5
+Avatar Sprite Sheet Slicer for TechnIQ - Version 2.6
 Slices properly-layered sprite sheets into individual PNG files.
 
-NEW in v2.5:
+NEW in v2.6:
+- Region masking to isolate each component layer
+- Removes unwanted character parts from each sprite
+- Guarantees clean layering without overlaps
+
+v2.5:
 - Auto-repositioning of sprites to correct layer positions
 - Hair moves to top, cleats to bottom, etc.
 
@@ -285,6 +290,107 @@ LAYER_POSITIONS = {
     'cleats': 710,    # Feet at bottom
 }
 
+# SIMPLE APPROACH: Only Y masking, no X masking, no alignment
+# Just slice vertical regions where components naturally appear
+# Format: (y_min, y_max) - full width preserved
+LAYER_Y_REGIONS = {
+    'body': (0, 768),       # Full body - no masking
+    'hair': (0, 200),       # Top of head only
+    'face': (120, 280),     # Face region
+    'jersey': (220, 480),   # Torso area
+    'shorts': (440, 560),   # Hips/waist
+    'socks': (520, 700),    # Lower legs
+    'cleats': (660, 768),   # Feet at bottom
+}
+
+
+def align_to_bottom_anchor(img, target_bottom_y=750, target_center_x=256):
+    """
+    Align sprite content to a fixed bottom-center anchor point (Bitmoji-style).
+    All sprites will have their feet at Y=750 and be horizontally centered at X=256.
+    This guarantees perfect layer stacking regardless of original sprite position.
+    """
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+
+    data = np.array(img)
+    alpha = data[:, :, 3]
+    height, width = data.shape[:2]
+
+    # Find content bounds
+    rows_with_content = np.any(alpha > 0, axis=1)
+    cols_with_content = np.any(alpha > 0, axis=0)
+
+    if not rows_with_content.any() or not cols_with_content.any():
+        return img  # No content to align
+
+    # Current content bounds
+    y_min = np.where(rows_with_content)[0][0]
+    y_max = np.where(rows_with_content)[0][-1]
+    x_min = np.where(cols_with_content)[0][0]
+    x_max = np.where(cols_with_content)[0][-1]
+
+    current_bottom = y_max
+    current_center_x = (x_min + x_max) // 2
+
+    # Calculate shifts needed
+    y_shift = target_bottom_y - current_bottom
+    x_shift = target_center_x - current_center_x
+
+    if y_shift == 0 and x_shift == 0:
+        return img  # Already aligned
+
+    # Create new aligned image
+    new_data = np.zeros_like(data)
+
+    # Calculate source and destination ranges for Y
+    if y_shift >= 0:
+        src_y_start, src_y_end = 0, height - y_shift
+        dst_y_start, dst_y_end = y_shift, height
+    else:
+        src_y_start, src_y_end = -y_shift, height
+        dst_y_start, dst_y_end = 0, height + y_shift
+
+    # Calculate source and destination ranges for X
+    if x_shift >= 0:
+        src_x_start, src_x_end = 0, width - x_shift
+        dst_x_start, dst_x_end = x_shift, width
+    else:
+        src_x_start, src_x_end = -x_shift, width
+        dst_x_start, dst_x_end = 0, width + x_shift
+
+    # Ensure ranges are valid
+    if src_y_end > src_y_start and dst_y_end > dst_y_start and \
+       src_x_end > src_x_start and dst_x_end > dst_x_start:
+        new_data[dst_y_start:dst_y_end, dst_x_start:dst_x_end] = \
+            data[src_y_start:src_y_end, src_x_start:src_x_end]
+
+    return Image.fromarray(new_data, 'RGBA')
+
+
+def apply_region_mask(img, layer_type):
+    """
+    Simple Y-only masking - just slice the vertical region.
+    No X masking, no alignment - keep it simple.
+    """
+    if layer_type not in LAYER_Y_REGIONS:
+        return img
+
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+
+    y_min, y_max = LAYER_Y_REGIONS[layer_type]
+    data = np.array(img)
+    height = data.shape[0]
+
+    # Only Y masking - preserve full width
+    if y_min > 0:
+        data[:y_min, :, 3] = 0   # Above region
+    if y_max < height:
+        data[y_max:, :, 3] = 0   # Below region
+
+    return Image.fromarray(data, 'RGBA')
+
 
 def ensure_dir(path):
     """Create directory if it doesn't exist."""
@@ -362,9 +468,10 @@ def slice_standard_grid(img, cols, rows, names, output_dir, prefix, validate=Tru
             # Remove checkered background and convert to true transparency
             cell = remove_checkered_background_smart(cell)
 
-            # Reposition to correct layer position if specified
-            if layer_type and layer_type in LAYER_POSITIONS:
-                cell = reposition_to_layer(cell, LAYER_POSITIONS[layer_type])
+            # SIMPLE: Just apply Y mask, no alignment
+            # Let the natural sprite positions do the work
+            if layer_type:
+                cell = apply_region_mask(cell, layer_type)
 
             # Save
             filepath = os.path.join(output_dir, filename)
@@ -408,8 +515,8 @@ def slice_hair(img, output_dir):
             # Remove checkered background and convert to true transparency
             cell = remove_checkered_background_smart(cell)
 
-            # Reposition hair to top of canvas
-            cell = reposition_to_layer(cell, LAYER_POSITIONS['hair'])
+            # SIMPLE: Just apply Y mask, no alignment
+            cell = apply_region_mask(cell, 'hair')
 
             filepath = os.path.join(output_dir, filename)
             cell.save(filepath, "PNG")
@@ -423,7 +530,7 @@ def slice_hair(img, output_dir):
 def main():
     """Main function to slice all sprite sheets."""
     print("=" * 60)
-    print("TechnIQ Avatar Sprite Sheet Slicer v2.0")
+    print("TechnIQ Avatar Sprite Sheet Slicer v2.6 (Region Masking)")
     print(f"Standard cell size: {STANDARD_WIDTH}x{STANDARD_HEIGHT}")
     print("=" * 60)
 

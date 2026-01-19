@@ -33,15 +33,21 @@ final class XPService {
         let maxLevel: Int
         let title: String
         let description: String
+        let icon: String
     }
 
+    /// Soccer Career Path - 10 tiers representing the journey from grassroots to legend
     static let levelTiers: [LevelTier] = [
-        LevelTier(minLevel: 1, maxLevel: 5, title: "Youth Academy", description: "Starting your journey"),
-        LevelTier(minLevel: 6, maxLevel: 10, title: "Reserve Team", description: "Building fundamentals"),
-        LevelTier(minLevel: 11, maxLevel: 20, title: "First Team", description: "Established player"),
-        LevelTier(minLevel: 21, maxLevel: 30, title: "Club Captain", description: "Leading by example"),
-        LevelTier(minLevel: 31, maxLevel: 40, title: "National Team", description: "Elite performer"),
-        LevelTier(minLevel: 41, maxLevel: 50, title: "World Class Legend", description: "Mastery achieved")
+        LevelTier(minLevel: 1, maxLevel: 5, title: "Grassroots", description: "Starting your journey", icon: "leaf.fill"),
+        LevelTier(minLevel: 6, maxLevel: 10, title: "Rising Star", description: "Building fundamentals", icon: "sparkles"),
+        LevelTier(minLevel: 11, maxLevel: 15, title: "Squad Player", description: "Part of the team", icon: "person.fill"),
+        LevelTier(minLevel: 16, maxLevel: 20, title: "Key Player", description: "Making an impact", icon: "star.fill"),
+        LevelTier(minLevel: 21, maxLevel: 25, title: "Fan Favorite", description: "Crowd loves you", icon: "heart.fill"),
+        LevelTier(minLevel: 26, maxLevel: 30, title: "Club Icon", description: "Leading by example", icon: "crown.fill"),
+        LevelTier(minLevel: 31, maxLevel: 35, title: "International", description: "Representing your nation", icon: "globe.americas.fill"),
+        LevelTier(minLevel: 36, maxLevel: 40, title: "Elite", description: "Among the best", icon: "bolt.fill"),
+        LevelTier(minLevel: 41, maxLevel: 45, title: "World Class", description: "Top of the game", icon: "trophy.fill"),
+        LevelTier(minLevel: 46, maxLevel: 50, title: "Living Legend", description: "Mastery achieved", icon: "laurel.leading")
     ]
 
     /// Calculate XP required for a specific level using exponential curve

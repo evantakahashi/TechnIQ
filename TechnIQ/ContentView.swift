@@ -115,62 +115,31 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Tab 0: Home
-            NavigationView {
-                DashboardView(selectedTab: $selectedTab)
-            }
-            .tabItem {
-                Image(systemName: DesignSystem.Icons.home)
-                Text("Home")
-            }
-            .tag(0)
-
-            // Tab 1: Train (Sessions + Exercises combined)
-            NavigationView {
-                TrainHubView()
-            }
-            .tabItem {
-                Image(systemName: "figure.run")
-                Text("Train")
-            }
-            .tag(1)
-
-            // Tab 2: Plans
-            NavigationView {
-                TrainingPlansListView()
-            }
-            .tabItem {
-                Image(systemName: "calendar.badge.clock")
-                Text("Plans")
-            }
-            .tag(2)
-
-            // Tab 3: Matches (prominent for match reflections)
-            NavigationView {
-                if let player = currentPlayer {
-                    MatchHistoryView(player: player)
-                } else {
-                    SwiftUI.ProgressView("Loading...")
+        VStack(spacing: 0) {
+            AnimatedTabContent(selectedTab: $selectedTab) { tab in
+                Group {
+                    switch tab {
+                    case 0:
+                        NavigationView { DashboardView(selectedTab: $selectedTab) }
+                    case 1:
+                        NavigationView { TrainHubView() }
+                    case 2:
+                        NavigationView { TrainingPlansListView() }
+                    case 3:
+                        NavigationView { CommunityView() }
+                    case 4:
+                        NavigationView { EnhancedProfileView() }
+                    default:
+                        EmptyView()
+                    }
                 }
+                .environment(\.managedObjectContext, viewContext)
+                .environmentObject(authManager)
             }
-            .tabItem {
-                Image(systemName: "sportscourt.fill")
-                Text("Matches")
-            }
-            .tag(3)
 
-            // Tab 4: You (Profile hub with Progress accessible inside)
-            NavigationView {
-                EnhancedProfileView()
-            }
-            .tabItem {
-                Image(systemName: DesignSystem.Icons.profile)
-                Text("You")
-            }
-            .tag(4)
+            AnimatedTabBar(selectedTab: $selectedTab)
         }
-        .accentColor(DesignSystem.Colors.primaryGreen)
+        .ignoresSafeArea(.keyboard)
     }
 }
 

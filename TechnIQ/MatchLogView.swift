@@ -43,6 +43,19 @@ struct MatchLogView: View {
     let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST", "CF"]
     let results = ["W", "D", "L"]
 
+    // Performance categories for strengths/weaknesses
+    let performanceCategories: [String: [String]] = [
+        "Technical": ["Passing", "Shooting", "Dribbling", "First Touch", "Ball Control", "Crossing"],
+        "Physical": ["Speed", "Stamina", "Strength", "Agility"],
+        "Mental": ["Positioning", "Vision", "Decision Making", "Composure", "Communication"]
+    ]
+
+    // Strengths/Weaknesses state
+    @State private var selectedStrengths: Set<String> = []
+    @State private var selectedWeaknesses: Set<String> = []
+    @State private var customStrength: String = ""
+    @State private var customWeakness: String = ""
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -57,6 +70,8 @@ struct MatchLogView: View {
                         matchStatsCard
                         resultCard
                         ratingCard
+                        strengthsCard
+                        weaknessesCard
                         notesCard
                     }
                     .padding(.horizontal, DesignSystem.Spacing.screenPadding)
@@ -376,6 +391,186 @@ struct MatchLogView: View {
         }
     }
 
+    private var strengthsCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    Text("What went well?")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Spacer()
+                    if !selectedStrengths.isEmpty {
+                        Text("\(selectedStrengths.count)/3")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+
+                performanceSelectionGrid(
+                    selectedItems: $selectedStrengths,
+                    excludedItems: selectedWeaknesses,
+                    accentColor: DesignSystem.Colors.primaryGreen
+                )
+
+                // Custom strength input
+                HStack {
+                    TextField("Add custom...", text: $customStrength)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .padding(DesignSystem.Spacing.sm)
+                        .background(DesignSystem.Colors.cellBackground)
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
+
+                    if !customStrength.isEmpty && selectedStrengths.count < 3 {
+                        Button {
+                            let trimmed = customStrength.trimmingCharacters(in: .whitespaces)
+                            if !trimmed.isEmpty && !selectedStrengths.contains(trimmed) {
+                                selectedStrengths.insert(trimmed)
+                                customStrength = ""
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                                .font(.system(size: 24))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var weaknessesCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.accentOrange)
+                    Text("What needs work?")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Spacer()
+                    if !selectedWeaknesses.isEmpty {
+                        Text("\(selectedWeaknesses.count)/3")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+
+                performanceSelectionGrid(
+                    selectedItems: $selectedWeaknesses,
+                    excludedItems: selectedStrengths,
+                    accentColor: DesignSystem.Colors.accentOrange
+                )
+
+                // Custom weakness input
+                HStack {
+                    TextField("Add custom...", text: $customWeakness)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .padding(DesignSystem.Spacing.sm)
+                        .background(DesignSystem.Colors.cellBackground)
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
+
+                    if !customWeakness.isEmpty && selectedWeaknesses.count < 3 {
+                        Button {
+                            let trimmed = customWeakness.trimmingCharacters(in: .whitespaces)
+                            if !trimmed.isEmpty && !selectedWeaknesses.contains(trimmed) {
+                                selectedWeaknesses.insert(trimmed)
+                                customWeakness = ""
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                                .font(.system(size: 24))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func performanceSelectionGrid(
+        selectedItems: Binding<Set<String>>,
+        excludedItems: Set<String>,
+        accentColor: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            ForEach(["Technical", "Physical", "Mental"], id: \.self) { category in
+                if let skills = performanceCategories[category] {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text(category)
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                        FlowLayout(spacing: DesignSystem.Spacing.xs) {
+                            ForEach(skills, id: \.self) { skill in
+                                let isSelected = selectedItems.wrappedValue.contains(skill)
+                                let isExcluded = excludedItems.contains(skill)
+                                let isDisabled = isExcluded || (!isSelected && selectedItems.wrappedValue.count >= 3)
+
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        if isSelected {
+                                            selectedItems.wrappedValue.remove(skill)
+                                        } else if !isDisabled {
+                                            selectedItems.wrappedValue.insert(skill)
+                                        }
+                                    }
+                                } label: {
+                                    Text(skill)
+                                        .font(DesignSystem.Typography.labelSmall)
+                                        .fontWeight(.medium)
+                                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                                        .padding(.vertical, DesignSystem.Spacing.xs)
+                                        .background(
+                                            isSelected ? accentColor : DesignSystem.Colors.cellBackground
+                                        )
+                                        .foregroundColor(
+                                            isSelected ? .white :
+                                            isDisabled ? DesignSystem.Colors.textTertiary :
+                                            DesignSystem.Colors.textPrimary
+                                        )
+                                        .cornerRadius(DesignSystem.CornerRadius.pill)
+                                        .opacity(isDisabled && !isSelected ? 0.5 : 1.0)
+                                }
+                                .disabled(isDisabled && !isSelected)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Show selected custom items as removable pills
+            let customItems = selectedItems.wrappedValue.filter { item in
+                !performanceCategories.values.flatMap { $0 }.contains(item)
+            }
+            if !customItems.isEmpty {
+                FlowLayout(spacing: DesignSystem.Spacing.xs) {
+                    ForEach(Array(customItems), id: \.self) { item in
+                        Button {
+                            selectedItems.wrappedValue.remove(item)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(item)
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12))
+                            }
+                            .font(DesignSystem.Typography.labelSmall)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                            .padding(.vertical, DesignSystem.Spacing.xs)
+                            .background(accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(DesignSystem.CornerRadius.pill)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var notesCard: some View {
         ModernCard(padding: DesignSystem.Spacing.lg) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -406,6 +601,10 @@ struct MatchLogView: View {
     }
 
     private func saveMatch() {
+        // Convert selected strengths/weaknesses to comma-separated strings
+        let strengthsString = selectedStrengths.isEmpty ? nil : selectedStrengths.sorted().joined(separator: ",")
+        let weaknessesString = selectedWeaknesses.isEmpty ? nil : selectedWeaknesses.sorted().joined(separator: ",")
+
         let match = MatchService.shared.createMatch(
             for: player,
             date: matchDate,
@@ -419,7 +618,9 @@ struct MatchLogView: View {
             result: result,
             notes: matchNotes.isEmpty ? nil : matchNotes,
             rating: Int16(matchRating),
-            season: selectedSeason
+            season: selectedSeason,
+            strengths: strengthsString,
+            weaknesses: weaknessesString
         )
 
         earnedXP = match.xpEarned

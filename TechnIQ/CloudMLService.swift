@@ -345,7 +345,7 @@ class CloudMLService: ObservableObject {
             goals = playerGoals.compactMap { $0.skillName }
         }
 
-        return [
+        var profile: [String: Any] = [
             "position": player.position ?? "midfielder",
             "age": Int(player.age),
             "experienceLevel": player.experienceLevel ?? "intermediate",
@@ -355,6 +355,64 @@ class CloudMLService: ObservableObject {
             "dominantFoot": player.dominantFoot ?? "",
             "goals": goals
         ]
+
+        // Add match insights from recent matches for targeted recommendations
+        let matchInsights = getMatchInsights(for: player)
+        if !matchInsights.isEmpty {
+            profile["matchInsights"] = matchInsights
+        }
+
+        return profile
+    }
+
+    // MARK: - Match Insights for Recommendations
+
+    /// Analyzes recent matches to provide insights for video recommendations
+    private func getMatchInsights(for player: Player, limit: Int = 10) -> [String: Any] {
+        let matches = MatchService.shared.fetchMatches(for: player)
+        let recentMatches = Array(matches.prefix(limit))
+
+        guard !recentMatches.isEmpty else { return [:] }
+
+        // Count weakness and strength occurrences
+        var weaknessCount: [String: Int] = [:]
+        var strengthCount: [String: Int] = [:]
+
+        for match in recentMatches {
+            // Parse weaknesses
+            if let weaknessString = match.weaknesses, !weaknessString.isEmpty {
+                let weaknesses = weaknessString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+                for weakness in weaknesses {
+                    weaknessCount[weakness, default: 0] += 1
+                }
+            }
+
+            // Parse strengths
+            if let strengthString = match.strengths, !strengthString.isEmpty {
+                let strengths = strengthString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+                for strength in strengths {
+                    strengthCount[strength, default: 0] += 1
+                }
+            }
+        }
+
+        // Get top weaknesses and strengths by frequency
+        let topWeaknesses = weaknessCount.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+        let topStrengths = strengthCount.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+
+        var result: [String: Any] = [:]
+
+        if !topWeaknesses.isEmpty {
+            result["weaknessAreas"] = topWeaknesses
+            // Generate a focus recommendation based on top weakness
+            result["focusRecommendation"] = "\(topWeaknesses[0].lowercased()) training drills"
+        }
+
+        if !topStrengths.isEmpty {
+            result["strengthAreas"] = topStrengths
+        }
+
+        return result
     }
 
     // MARK: - AI Training Plan Generation

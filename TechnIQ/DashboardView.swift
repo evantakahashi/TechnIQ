@@ -8,6 +8,7 @@ struct DashboardView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @FetchRequest var players: FetchedResults<Player>
     @FetchRequest var recentSessions: FetchedResults<TrainingSession>
+    @FetchRequest var recentMatches: FetchedResults<Match>
     @Binding var selectedTab: Int
 
     init(selectedTab: Binding<Int>) {
@@ -18,9 +19,15 @@ struct DashboardView: View {
             predicate: NSPredicate(value: true), // Allow all results initially
             animation: .default
         )
-        
+
         self._recentSessions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
+            predicate: NSPredicate(value: true), // Allow all results initially
+            animation: .default
+        )
+
+        self._recentMatches = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Match.date, ascending: false)],
             predicate: NSPredicate(value: true), // Allow all results initially
             animation: .default
         )
@@ -28,6 +35,7 @@ struct DashboardView: View {
     
     @State private var showingNewSession = false
     @State private var showingProfileCreation = false
+    @State private var showingMatchLog = false
     @State private var isOnboardingComplete = false
     @State private var smartRecommendations: [CoreDataManager.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
@@ -55,6 +63,7 @@ struct DashboardView: View {
                         modernStatsOverview(player: player)
                         modernQuickActions
                         modernRecentActivity
+                        modernMatchesSection(player: player)
                         modernRecommendations(player: player)
                     } else {
                         emptyStateView
@@ -68,6 +77,13 @@ struct DashboardView: View {
         .sheet(isPresented: $showingNewSession) {
             if let player = currentPlayer {
                 NewSessionView(player: player)
+            }
+        }
+        .sheet(isPresented: $showingMatchLog) {
+            if let player = currentPlayer {
+                MatchLogView(player: player, preselectedSeason: nil) {
+                    // Refresh data after logging
+                }
             }
         }
         .sheet(isPresented: $showingProfileCreation) {
@@ -110,6 +126,7 @@ struct DashboardView: View {
 
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
+        recentMatches.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
     }
 
     private func checkWelcomeBack() {
@@ -165,9 +182,9 @@ struct DashboardView: View {
                         .minimumScaleFactor(0.8)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
-                // Compact stats pill
+                // Compact stats
                 CompactPlayerStats(player: player)
             }
 
@@ -413,7 +430,120 @@ struct DashboardView: View {
             }
         }
     }
-    
+
+    private func modernMatchesSection(player: Player) -> some View {
+        let stats = MatchService.shared.calculateStats(for: Array(recentMatches))
+
+        return VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+            HStack {
+                Text("Recent Matches")
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                if !recentMatches.isEmpty {
+                    NavigationLink("View All") {
+                        MatchHistoryView(player: player)
+                    }
+                    .font(DesignSystem.Typography.labelMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                }
+            }
+
+            // Quick Stats Row
+            if !recentMatches.isEmpty {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        Text("\(stats.matchesPlayed)")
+                            .font(DesignSystem.Typography.numberMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        Text("Matches")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Divider().frame(height: 30)
+
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        Text("\(stats.totalGoals)")
+                            .font(DesignSystem.Typography.numberMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        Text("Goals")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Divider().frame(height: 30)
+
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        Text("\(stats.totalAssists)")
+                            .font(DesignSystem.Typography.numberMedium)
+                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                        Text("Assists")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Divider().frame(height: 30)
+
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        Text(String(format: "%.0f%%", stats.winRate))
+                            .font(DesignSystem.Typography.numberMedium)
+                            .foregroundColor(DesignSystem.Colors.accentOrange)
+                        Text("Win Rate")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.cardBackground)
+                .cornerRadius(DesignSystem.CornerRadius.card)
+                .customShadow(DesignSystem.Shadow.small)
+            }
+
+            ModernCard {
+                if recentMatches.isEmpty {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        Image(systemName: "sportscourt")
+                            .font(.largeTitle)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                        Text("No matches logged yet")
+                            .font(DesignSystem.Typography.titleSmall)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                        Text("Track your match performance and stats")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
+
+                        ModernButton("LOG MATCH", icon: "plus.circle", style: .primary) {
+                            showingMatchLog = true
+                        }
+                    }
+                    .padding(.vertical, DesignSystem.Spacing.lg)
+                } else {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        ForEach(Array(recentMatches.prefix(3)), id: \.objectID) { match in
+                            MatchHistoryRow(match: match)
+                        }
+
+                        // Log Match Button
+                        CompactActionButton(
+                            title: "Log Match",
+                            icon: "plus.circle",
+                            color: DesignSystem.Colors.primaryGreen
+                        ) {
+                            showingMatchLog = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private func modernRecommendations(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Recommended for You")
@@ -1076,49 +1206,60 @@ struct StatPill: View {
 
 struct CompactPlayerStats: View {
     let player: Player
+    @StateObject private var coinVM = CoinBalanceViewModel()
+
+    private var tier: XPService.LevelTier? {
+        XPService.shared.tierForLevel(Int(player.currentLevel))
+    }
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            // Level
+        // Minimal vertical stack - just icons with values
+        VStack(alignment: .trailing, spacing: 6) {
+            // Rank row
             HStack(spacing: 4) {
-                Image(systemName: "star.circle.fill")
-                    .font(.system(size: 14))
+                Image(systemName: tier?.icon ?? "star.fill")
+                    .font(.system(size: 11))
                     .foregroundColor(DesignSystem.Colors.xpGold)
-                Text("Lv.\(player.currentLevel)")
-                    .font(DesignSystem.Typography.labelMedium)
-                    .fontWeight(.bold)
+                Text(tier?.title ?? "Rookie")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(DesignSystem.Colors.textPrimary)
             }
 
-            // Divider
-            Text("•")
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .font(.caption2)
+            // Stats row
+            HStack(spacing: 8) {
+                // Level
+                Text("Lv.\(player.currentLevel)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
 
-            // Streak (if > 0)
-            if player.currentStreak > 0 {
-                HStack(spacing: 2) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(DesignSystem.Colors.streakOrange)
-                    Text("\(player.currentStreak)")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.streakOrange)
+                // Streak (if > 0)
+                if player.currentStreak > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(DesignSystem.Colors.streakOrange)
+                        Text("\(player.currentStreak)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(DesignSystem.Colors.streakOrange)
+                    }
+                    .fixedSize()
                 }
 
-                Text("•")
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .font(.caption2)
+                // Coins
+                HStack(spacing: 2) {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(DesignSystem.Colors.coinGold)
+                    Text("\(coinVM.balance)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .fixedSize()
+                }
+                .fixedSize()
             }
-
-            // Coins
-            CoinDisplayView(size: .small)
+            .fixedSize()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(.systemGray6))
-        .cornerRadius(20)
+        .fixedSize()
     }
 }
 

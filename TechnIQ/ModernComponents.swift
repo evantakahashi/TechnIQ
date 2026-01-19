@@ -592,6 +592,80 @@ struct TabBarItem: View {
     }
 }
 
+// MARK: - Animated Tab Content
+struct AnimatedTabContent<Content: View>: View {
+    @Binding var selectedTab: Int
+    let content: (Int) -> Content
+
+    @State private var previousTab: Int = 0
+
+    private var slideDirection: Edge {
+        selectedTab > previousTab ? .trailing : .leading
+    }
+
+    var body: some View {
+        ZStack {
+            content(selectedTab)
+                .id(selectedTab)
+                .transition(.asymmetric(
+                    insertion: .move(edge: slideDirection).combined(with: .opacity),
+                    removal: .opacity
+                ))
+        }
+        .animation(DesignSystem.Animation.smooth, value: selectedTab)
+        .onChange(of: selectedTab) { oldValue, _ in
+            previousTab = oldValue
+        }
+    }
+}
+
+// MARK: - Animated Tab Bar
+struct AnimatedTabBar: View {
+    @Binding var selectedTab: Int
+    @Namespace private var tabAnimation
+
+    let tabs = [
+        ("house.fill", "Home"),
+        ("figure.run", "Train"),
+        ("calendar.badge.clock", "Plans"),
+        ("person.3.fill", "Community"),
+        ("person.fill", "You")
+    ]
+
+    var body: some View {
+        HStack {
+            ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
+                Button {
+                    withAnimation(DesignSystem.Animation.springBouncy) {
+                        selectedTab = index
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        ZStack {
+                            if selectedTab == index {
+                                Capsule()
+                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                                    .frame(width: 56, height: 32)
+                                    .matchedGeometryEffect(id: "tab_bg", in: tabAnimation)
+                            }
+                            Image(systemName: tab.0)
+                                .font(.system(size: 20, weight: selectedTab == index ? .semibold : .regular))
+                        }
+                        Text(tab.1)
+                            .font(DesignSystem.Typography.labelSmall)
+                    }
+                    .foregroundColor(selectedTab == index ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
+        .background(DesignSystem.Colors.cardBackground)
+    }
+}
+
 // MARK: - Preview Provider
 struct ModernComponents_Previews: PreviewProvider {
     static var previews: some View {

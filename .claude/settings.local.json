@@ -19,7 +19,15 @@
       "Bash(pip install:*)",
       "Bash(curl:*)",
       "Bash(-H \"Content-Type: application/json\")",
-      "Read(//Users/evantakahashi/Desktop/**)"
+      "Read(//Users/evantakahashi/Desktop/**)",
+      "Bash(git checkout:*)",
+      "Bash(ruby:*)",
+      "Bash(tee:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)",
+      "Bash(cat:*)",
+      "Bash(xcrun simctl boot:*)",
+      "Bash(open:*)"
     ],
     "deny": []
   }

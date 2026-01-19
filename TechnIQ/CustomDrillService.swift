@@ -270,7 +270,7 @@ class CustomDrillService: ObservableObject {
     }
     
     // MARK: - Player Profile Building
-    
+
     private func buildPlayerProfile(for player: Player) -> [String: Any] {
         var profile: [String: Any] = [
             "name": player.name ?? "Unknown",
@@ -279,35 +279,104 @@ class CustomDrillService: ObservableObject {
             "experienceLevel": player.experienceLevel ?? "intermediate",
             "competitiveLevel": player.competitiveLevel ?? "recreational"
         ]
-        
+
         if let playerRoleModel = player.playerRoleModel, !playerRoleModel.isEmpty {
             profile["playerRoleModel"] = playerRoleModel
         }
-        
+
         if let playingStyle = player.playingStyle, !playingStyle.isEmpty {
             profile["playingStyle"] = playingStyle
         }
-        
+
         if let dominantFoot = player.dominantFoot, !dominantFoot.isEmpty {
             profile["dominantFoot"] = dominantFoot
         }
-        
+
         // Add goals from PlayerProfile if available
         if let playerProfile = player.playerProfile {
             if let skillGoals = playerProfile.skillGoals, !skillGoals.isEmpty {
                 profile["skillGoals"] = skillGoals
             }
-            
+
             if let weaknesses = playerProfile.selfIdentifiedWeaknesses, !weaknesses.isEmpty {
                 profile["weaknesses"] = weaknesses
             }
-            
+
             if let physicalFocusAreas = playerProfile.physicalFocusAreas, !physicalFocusAreas.isEmpty {
                 profile["physicalFocusAreas"] = physicalFocusAreas
             }
         }
-        
+
+        // Add match performance data from recent matches
+        let matchPerformance = getMatchPerformanceData(for: player, limit: 5)
+        if !matchPerformance.isEmpty {
+            profile["matchPerformance"] = matchPerformance
+        }
+
         return profile
+    }
+
+    // MARK: - Match Performance Analysis
+
+    /// Analyzes recent matches to extract strengths/weaknesses frequency
+    private func getMatchPerformanceData(for player: Player, limit: Int = 5) -> [String: Any] {
+        let matches = MatchService.shared.fetchMatches(for: player)
+        let recentMatches = Array(matches.prefix(limit))
+
+        guard !recentMatches.isEmpty else { return [:] }
+
+        // Count weakness occurrences
+        var weaknessCount: [String: Int] = [:]
+        var strengthCount: [String: Int] = [:]
+        var totalRating: Int = 0
+        var ratedMatches: Int = 0
+
+        for match in recentMatches {
+            // Parse weaknesses
+            if let weaknessString = match.weaknesses, !weaknessString.isEmpty {
+                let weaknesses = weaknessString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+                for weakness in weaknesses {
+                    weaknessCount[weakness, default: 0] += 1
+                }
+            }
+
+            // Parse strengths
+            if let strengthString = match.strengths, !strengthString.isEmpty {
+                let strengths = strengthString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+                for strength in strengths {
+                    strengthCount[strength, default: 0] += 1
+                }
+            }
+
+            // Track ratings
+            if match.rating > 0 {
+                totalRating += Int(match.rating)
+                ratedMatches += 1
+            }
+        }
+
+        // Sort by frequency, get top items
+        let topWeaknesses = weaknessCount.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+        let topStrengths = strengthCount.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+        let averageRating = ratedMatches > 0 ? Double(totalRating) / Double(ratedMatches) : 0.0
+
+        var result: [String: Any] = [
+            "matchCount": recentMatches.count
+        ]
+
+        if !topWeaknesses.isEmpty {
+            result["recentWeaknesses"] = topWeaknesses
+        }
+
+        if !topStrengths.isEmpty {
+            result["recentStrengths"] = topStrengths
+        }
+
+        if averageRating > 0 {
+            result["averageRating"] = averageRating
+        }
+
+        return result
     }
 
     // MARK: - Session Context Building
