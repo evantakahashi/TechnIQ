@@ -34,47 +34,23 @@ struct ExerciseLibraryView: View {
     // Organized exercises by type
     var customGeneratedExercises: [Exercise] {
         allExercises
-            .filter { exercise in
-                exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true
-            }
-            .sorted { first, second in
-                guard let firstID = first.id?.uuidString,
-                      let secondID = second.id?.uuidString else {
-                    return false
-                }
-                return firstID > secondID
-            }
+            .filter { $0.isAIGenerated }
+            .sorted { ($0.id?.uuidString ?? "") > ($1.id?.uuidString ?? "") }
     }
 
     var youtubeExercises: [Exercise] {
-        allExercises.filter { exercise in
-            exercise.exerciseDescription?.contains("🎥 YouTube Video") == true
+        allExercises.filter { $0.isYouTubeExercise }
+    }
+
+    private func standardExercises(category: String) -> [Exercise] {
+        allExercises.filter {
+            $0.category?.lowercased() == category && !$0.isYouTubeExercise && !$0.isAIGenerated
         }
     }
 
-    var physicalExercises: [Exercise] {
-        allExercises.filter {
-            $0.category?.lowercased() == "physical" &&
-            $0.exerciseDescription?.contains("🎥 YouTube Video") == false &&
-            $0.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == false
-        }
-    }
-
-    var technicalExercises: [Exercise] {
-        allExercises.filter {
-            $0.category?.lowercased() == "technical" &&
-            $0.exerciseDescription?.contains("🎥 YouTube Video") == false &&
-            $0.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == false
-        }
-    }
-
-    var tacticalExercises: [Exercise] {
-        allExercises.filter {
-            $0.category?.lowercased() == "tactical" &&
-            $0.exerciseDescription?.contains("🎥 YouTube Video") == false &&
-            $0.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == false
-        }
-    }
+    var physicalExercises: [Exercise] { standardExercises(category: "physical") }
+    var technicalExercises: [Exercise] { standardExercises(category: "technical") }
+    var tacticalExercises: [Exercise] { standardExercises(category: "tactical") }
 
     // Get top 3 recommended exercises
     var recommendedExercises: [Exercise] {
@@ -117,19 +93,11 @@ struct ExerciseLibraryView: View {
         case .youtube:
             exercises = exercises.filter { $0.exerciseDescription?.contains("YouTube Video") == true }
         case .aiGenerated:
-            exercises = exercises.filter { $0.exerciseDescription?.contains("AI-Generated Custom Drill") == true }
+            exercises = exercises.filter { $0.isAIGenerated }
         case .manual:
-            exercises = exercises.filter { exercise in
-                exercise.exerciseDescription?.contains("YouTube Video") != true &&
-                exercise.exerciseDescription?.contains("AI-Generated Custom Drill") != true &&
-                exercise.exerciseDescription?.contains("Manual Custom Drill") == true
-            }
+            exercises = exercises.filter { !$0.isYouTubeExercise && !$0.isAIGenerated && $0.exerciseDescription?.contains("Manual Custom Drill") == true }
         case .template:
-            exercises = exercises.filter { exercise in
-                exercise.exerciseDescription?.contains("YouTube Video") != true &&
-                exercise.exerciseDescription?.contains("AI-Generated Custom Drill") != true &&
-                exercise.exerciseDescription?.contains("Manual Custom Drill") != true
-            }
+            exercises = exercises.filter { !$0.isYouTubeExercise && !$0.isAIGenerated && $0.exerciseDescription?.contains("Manual Custom Drill") != true }
         }
 
         // Filter by skills
@@ -902,6 +870,134 @@ struct ExerciseLibraryView: View {
     }
 }
 
+// MARK: - Exercise Helpers (shared across card types)
+
+extension Exercise {
+    var isAIGenerated: Bool {
+        exerciseDescription?.contains("AI-Generated Custom Drill") == true
+    }
+
+    var isYouTubeExercise: Bool {
+        exerciseDescription?.contains("YouTube Video") == true
+    }
+
+    var videoId: String? {
+        guard let description = exerciseDescription,
+              let videoIdRange = description.range(of: "Video ID: ") else { return nil }
+        let remaining = description[videoIdRange.upperBound...]
+        if let endRange = remaining.range(of: "\n") {
+            return String(remaining[..<endRange.lowerBound])
+        }
+        return String(remaining)
+    }
+
+    var categoryIcon: String {
+        switch category?.lowercased() {
+        case "technical": return "soccerball"
+        case "physical": return "figure.run"
+        case "tactical": return "brain.head.profile"
+        case "recovery": return "heart.circle"
+        default: return "figure.soccer"
+        }
+    }
+
+    var categoryColor: Color {
+        switch category?.lowercased() {
+        case "technical": return DesignSystem.Colors.primaryGreen
+        case "physical": return DesignSystem.Colors.accentOrange
+        case "tactical": return DesignSystem.Colors.secondaryBlue
+        case "recovery": return DesignSystem.Colors.accentYellow
+        default: return DesignSystem.Colors.primaryGreen
+        }
+    }
+}
+
+// MARK: - Shared Exercise Preview Views
+
+struct ExerciseYouTubePreview: View {
+    let exercise: Exercise
+    var height: CGFloat = 100
+
+    var body: some View {
+        if let videoId = exercise.videoId {
+            AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(videoId)/medium.jpg")) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: height)
+                    .clipped()
+                    .overlay(
+                        ZStack {
+                            Color.black.opacity(0.2)
+                            Image(systemName: "play.circle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.white)
+                        }
+                    )
+            } placeholder: {
+                Rectangle()
+                    .fill(Color.red.opacity(0.2))
+                    .overlay(ProgressView())
+            }
+        } else {
+            Rectangle()
+                .fill(Color.red.opacity(0.2))
+                .overlay(
+                    Image(systemName: "play.rectangle.fill")
+                        .font(.title)
+                        .foregroundColor(.red)
+                )
+        }
+    }
+}
+
+struct ExerciseIconPreview: View {
+    let exercise: Exercise
+    var iconSize: CGFloat = 32
+
+    var body: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [exercise.categoryColor.opacity(0.3), exercise.categoryColor.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                Image(systemName: exercise.categoryIcon)
+                    .font(.system(size: iconSize))
+                    .foregroundColor(exercise.categoryColor)
+            )
+    }
+}
+
+struct ExerciseTypeBadge: View {
+    let exercise: Exercise
+
+    var body: some View {
+        if exercise.isAIGenerated {
+            HStack(spacing: 4) {
+                Image(systemName: "brain.head.profile")
+                    .font(.caption2)
+                Text("AI Generated")
+                    .font(DesignSystem.Typography.labelSmall)
+            }
+            .foregroundColor(DesignSystem.Colors.primaryGreen)
+        } else if exercise.isYouTubeExercise {
+            HStack(spacing: 4) {
+                Image(systemName: "play.rectangle.fill")
+                    .font(.caption2)
+                Text("YouTube")
+                    .font(DesignSystem.Typography.labelSmall)
+            }
+            .foregroundColor(.red)
+        } else {
+            CategoryBadge(category: exercise.category ?? "General")
+        }
+    }
+}
+
 // MARK: - Recommended Exercise Card (Larger, with match % and reason)
 
 struct RecommendedExerciseCard: View {
@@ -909,22 +1005,16 @@ struct RecommendedExerciseCard: View {
     let matchPercentage: Int
     let reason: String
 
-    private var isYouTube: Bool {
-        exercise.exerciseDescription?.contains("🎥 YouTube Video") == true
-    }
-
     var body: some View {
         ModernCard(padding: 0) {
             VStack(spacing: 0) {
-                // Top Image/Icon Area
                 ZStack(alignment: .topTrailing) {
-                    if isYouTube {
-                        youTubePreview()
+                    if exercise.isYouTubeExercise {
+                        ExerciseYouTubePreview(exercise: exercise, height: 120)
                     } else {
-                        iconPreview()
+                        ExerciseIconPreview(exercise: exercise, iconSize: 40)
                     }
 
-                    // Match percentage badge
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.caption2)
@@ -941,9 +1031,7 @@ struct RecommendedExerciseCard: View {
                 }
                 .frame(height: 120)
 
-                // Content Area
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    // Exercise Name
                     Text(exercise.name ?? "Unknown Exercise")
                         .font(DesignSystem.Typography.bodyMedium)
                         .fontWeight(.semibold)
@@ -951,19 +1039,15 @@ struct RecommendedExerciseCard: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    // Reason
                     Text(reason)
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    // Category and Difficulty
                     HStack {
                         CategoryBadge(category: exercise.category ?? "General")
-
                         Spacer()
-
                         SimpleDifficultyIndicator(level: Int(exercise.difficulty))
                     }
                 }
@@ -971,91 +1055,6 @@ struct RecommendedExerciseCard: View {
             }
         }
         .frame(width: 260, height: 230)
-    }
-
-    @ViewBuilder
-    private func youTubePreview() -> some View {
-        if let description = exercise.exerciseDescription,
-           let videoIdRange = description.range(of: "Video ID: "),
-           let endRange = description[videoIdRange.upperBound...].range(of: "\n") ?? description[videoIdRange.upperBound...].range(of: "$") {
-            let videoId = String(description[videoIdRange.upperBound..<endRange.lowerBound])
-            let thumbnailURL = "https://img.youtube.com/vi/\(videoId)/medium.jpg"
-
-            AsyncImage(url: URL(string: thumbnailURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 120)
-                    .clipped()
-                    .overlay(
-                        ZStack {
-                            Color.black.opacity(0.2)
-                            Image(systemName: "play.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                        }
-                    )
-            } placeholder: {
-                Rectangle()
-                    .fill(Color.red.opacity(0.2))
-                    .overlay(
-                        ProgressView()
-                    )
-            }
-        } else {
-            Rectangle()
-                .fill(Color.red.opacity(0.2))
-                .overlay(
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.title)
-                        .foregroundColor(.red)
-                )
-        }
-    }
-
-    @ViewBuilder
-    private func iconPreview() -> some View {
-        let color = colorForCategory(exercise.category)
-
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [color.opacity(0.3), color.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(
-                Image(systemName: iconForCategory(exercise.category))
-                    .font(.system(size: 40))
-                    .foregroundColor(color)
-            )
-    }
-
-    private func iconForCategory(_ category: String?) -> String {
-        switch category?.lowercased() {
-        case "physical":
-            return "figure.run"
-        case "tactical":
-            return "brain.head.profile"
-        case "technical":
-            return "soccerball"
-        default:
-            return "figure.soccer"
-        }
-    }
-
-    private func colorForCategory(_ category: String?) -> Color {
-        switch category?.lowercased() {
-        case "physical":
-            return DesignSystem.Colors.accentOrange
-        case "tactical":
-            return DesignSystem.Colors.secondaryBlue
-        case "technical":
-            return DesignSystem.Colors.primaryGreen
-        default:
-            return DesignSystem.Colors.primaryGreen
-        }
     }
 }
 
@@ -1066,51 +1065,21 @@ struct SimpleExerciseCard: View {
     var isFavorite: Bool = false
     var onFavoriteToggle: (() -> Void)? = nil
 
-    private var isAIGenerated: Bool {
-        exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true
-    }
-
-    private var isYouTube: Bool {
-        exercise.exerciseDescription?.contains("🎥 YouTube Video") == true
-    }
-
     var body: some View {
         ModernCard(padding: 0) {
             VStack(spacing: 0) {
-                // Top Image/Icon Area
                 ZStack {
-                    if isYouTube {
-                        youTubePreview()
+                    if exercise.isYouTubeExercise {
+                        ExerciseYouTubePreview(exercise: exercise)
                     } else {
-                        iconPreview()
+                        ExerciseIconPreview(exercise: exercise)
                     }
                 }
                 .frame(height: 100)
 
-                // Content Area
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    // Badge
-                    if isAIGenerated {
-                        HStack(spacing: 4) {
-                            Image(systemName: "brain.head.profile")
-                                .font(.caption2)
-                            Text("AI Generated")
-                                .font(DesignSystem.Typography.labelSmall)
-                        }
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    } else if isYouTube {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.caption2)
-                            Text("YouTube")
-                                .font(DesignSystem.Typography.labelSmall)
-                        }
-                        .foregroundColor(.red)
-                    } else {
-                        CategoryBadge(category: exercise.category ?? "General")
-                    }
+                    ExerciseTypeBadge(exercise: exercise)
 
-                    // Exercise Name
                     Text(exercise.name ?? "Unknown Exercise")
                         .font(DesignSystem.Typography.bodyMedium)
                         .fontWeight(.semibold)
@@ -1119,7 +1088,6 @@ struct SimpleExerciseCard: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Difficulty
                     SimpleDifficultyIndicator(level: Int(exercise.difficulty))
                 }
                 .padding(DesignSystem.Spacing.sm)
@@ -1142,91 +1110,6 @@ struct SimpleExerciseCard: View {
             }
         }
     }
-
-    @ViewBuilder
-    private func youTubePreview() -> some View {
-        if let description = exercise.exerciseDescription,
-           let videoIdRange = description.range(of: "Video ID: "),
-           let endRange = description[videoIdRange.upperBound...].range(of: "\n") ?? description[videoIdRange.upperBound...].range(of: "$") {
-            let videoId = String(description[videoIdRange.upperBound..<endRange.lowerBound])
-            let thumbnailURL = "https://img.youtube.com/vi/\(videoId)/medium.jpg"
-
-            AsyncImage(url: URL(string: thumbnailURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 100)
-                    .clipped()
-                    .overlay(
-                        ZStack {
-                            Color.black.opacity(0.2)
-                            Image(systemName: "play.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                        }
-                    )
-            } placeholder: {
-                Rectangle()
-                    .fill(Color.red.opacity(0.2))
-                    .overlay(
-                        ProgressView()
-                    )
-            }
-        } else {
-            Rectangle()
-                .fill(Color.red.opacity(0.2))
-                .overlay(
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.title)
-                        .foregroundColor(.red)
-                )
-        }
-    }
-
-    @ViewBuilder
-    private func iconPreview() -> some View {
-        let color = colorForCategory(exercise.category)
-
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [color.opacity(0.3), color.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(
-                Image(systemName: iconForCategory(exercise.category))
-                    .font(.system(size: 32))
-                    .foregroundColor(color)
-            )
-    }
-
-    private func iconForCategory(_ category: String?) -> String {
-        switch category?.lowercased() {
-        case "physical":
-            return "figure.run"
-        case "tactical":
-            return "brain.head.profile"
-        case "technical":
-            return "soccerball"
-        default:
-            return "figure.soccer"
-        }
-    }
-
-    private func colorForCategory(_ category: String?) -> Color {
-        switch category?.lowercased() {
-        case "physical":
-            return DesignSystem.Colors.accentOrange
-        case "tactical":
-            return DesignSystem.Colors.secondaryBlue
-        case "technical":
-            return DesignSystem.Colors.primaryGreen
-        default:
-            return DesignSystem.Colors.primaryGreen
-        }
-    }
 }
 
 // MARK: - Favorite Exercise Card
@@ -1235,45 +1118,20 @@ struct FavoriteExerciseCard: View {
     let exercise: Exercise
     let onFavoriteToggle: () -> Void
 
-    private var isAIGenerated: Bool {
-        exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true
-    }
-
-    private var isYouTube: Bool {
-        exercise.exerciseDescription?.contains("🎥 YouTube Video") == true
-    }
-
     var body: some View {
         ModernCard(padding: 0) {
             VStack(spacing: 0) {
-                // Top Image/Icon Area with prominent favorite
                 ZStack(alignment: .topTrailing) {
-                    if isYouTube, let videoId = extractVideoId() {
+                    if exercise.isYouTubeExercise, let videoId = exercise.videoId {
                         AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(videoId)/medium.jpg")) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
+                            image.resizable().aspectRatio(contentMode: .fill)
                         } placeholder: {
-                            Rectangle()
-                                .fill(Color.red.opacity(0.3))
+                            Rectangle().fill(Color.red.opacity(0.3))
                         }
                     } else {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [categoryColor.opacity(0.3), categoryColor.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .overlay(
-                                Image(systemName: categoryIcon)
-                                    .font(.system(size: 30))
-                                    .foregroundColor(categoryColor)
-                            )
+                        ExerciseIconPreview(exercise: exercise, iconSize: 30)
                     }
 
-                    // Favorite Button
                     Button {
                         onFavoriteToggle()
                     } label: {
@@ -1290,30 +1148,9 @@ struct FavoriteExerciseCard: View {
                 .frame(height: 100)
                 .clipped()
 
-                // Content Area
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    // Badge
-                    if isAIGenerated {
-                        HStack(spacing: 4) {
-                            Image(systemName: "brain.head.profile")
-                                .font(.caption2)
-                            Text("AI Generated")
-                                .font(DesignSystem.Typography.labelSmall)
-                        }
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    } else if isYouTube {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.caption2)
-                            Text("YouTube")
-                                .font(DesignSystem.Typography.labelSmall)
-                        }
-                        .foregroundColor(.red)
-                    } else {
-                        CategoryBadge(category: exercise.category ?? "General")
-                    }
+                    ExerciseTypeBadge(exercise: exercise)
 
-                    // Exercise Name
                     Text(exercise.name ?? "Unknown Exercise")
                         .font(DesignSystem.Typography.bodyMedium)
                         .fontWeight(.semibold)
@@ -1322,41 +1159,12 @@ struct FavoriteExerciseCard: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Difficulty
                     SimpleDifficultyIndicator(level: Int(exercise.difficulty))
                 }
                 .padding(DesignSystem.Spacing.sm)
             }
         }
         .frame(width: 160, height: 180)
-    }
-
-    private func extractVideoId() -> String? {
-        guard let description = exercise.exerciseDescription,
-              let videoIdRange = description.range(of: "Video ID: ") else { return nil }
-        let remaining = description[videoIdRange.upperBound...]
-        if let endRange = remaining.range(of: "\n") {
-            return String(remaining[..<endRange.lowerBound])
-        }
-        return String(remaining)
-    }
-
-    private var categoryIcon: String {
-        switch exercise.category?.lowercased() {
-        case "technical": return "figure.soccer"
-        case "physical": return "figure.strengthtraining.traditional"
-        case "tactical": return "brain.head.profile"
-        default: return "figure.run"
-        }
-    }
-
-    private var categoryColor: Color {
-        switch exercise.category?.lowercased() {
-        case "technical": return DesignSystem.Colors.primaryGreen
-        case "physical": return DesignSystem.Colors.accentOrange
-        case "tactical": return DesignSystem.Colors.secondaryBlue
-        default: return DesignSystem.Colors.primaryGreen
-        }
     }
 }
 
@@ -1415,35 +1223,23 @@ struct ListExerciseCard: View {
     let exercise: Exercise
     let onFavoriteToggle: () -> Void
 
-    private var isAIGenerated: Bool {
-        exercise.exerciseDescription?.contains("AI-Generated Custom Drill") == true
-    }
-
-    private var isYouTube: Bool {
-        exercise.exerciseDescription?.contains("YouTube Video") == true
-    }
-
     var body: some View {
         ModernCard(padding: DesignSystem.Spacing.sm) {
             HStack(spacing: DesignSystem.Spacing.md) {
-                // Thumbnail/Icon
                 ZStack {
-                    if isYouTube, let videoId = extractVideoId() {
+                    if exercise.isYouTubeExercise, let videoId = exercise.videoId {
                         AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(videoId)/default.jpg")) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
+                            image.resizable().aspectRatio(contentMode: .fill)
                         } placeholder: {
-                            Rectangle()
-                                .fill(Color.red.opacity(0.2))
+                            Rectangle().fill(Color.red.opacity(0.2))
                         }
                     } else {
                         Rectangle()
-                            .fill(categoryColor.opacity(0.2))
+                            .fill(exercise.categoryColor.opacity(0.2))
                             .overlay(
-                                Image(systemName: categoryIcon)
+                                Image(systemName: exercise.categoryIcon)
                                     .font(.title3)
-                                    .foregroundColor(categoryColor)
+                                    .foregroundColor(exercise.categoryColor)
                             )
                     }
                 }
@@ -1451,43 +1247,32 @@ struct ListExerciseCard: View {
                 .cornerRadius(DesignSystem.CornerRadius.sm)
                 .clipped()
 
-                // Content
                 VStack(alignment: .leading, spacing: 4) {
-                    // Type badge
                     HStack(spacing: 4) {
-                        if isAIGenerated {
-                            Image(systemName: "brain.head.profile")
-                                .font(.caption2)
+                        if exercise.isAIGenerated {
+                            Image(systemName: "brain.head.profile").font(.caption2)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            Text("AI")
-                                .font(.caption2)
+                            Text("AI").font(.caption2)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        } else if isYouTube {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.caption2)
+                        } else if exercise.isYouTubeExercise {
+                            Image(systemName: "play.rectangle.fill").font(.caption2)
                                 .foregroundColor(.red)
-                            Text("YouTube")
-                                .font(.caption2)
+                            Text("YouTube").font(.caption2)
                                 .foregroundColor(.red)
                         } else {
-                            Text(exercise.category ?? "General")
-                                .font(.caption2)
-                                .foregroundColor(categoryColor)
+                            Text(exercise.category ?? "General").font(.caption2)
+                                .foregroundColor(exercise.categoryColor)
                         }
-
                         Spacer()
-
                         SimpleDifficultyIndicator(level: Int(exercise.difficulty))
                     }
 
-                    // Name
                     Text(exercise.name ?? "Unknown Exercise")
                         .font(DesignSystem.Typography.bodyMedium)
                         .fontWeight(.semibold)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
                         .lineLimit(1)
 
-                    // Skills preview
                     if let skills = exercise.targetSkills, !skills.isEmpty {
                         Text(skills.prefix(3).joined(separator: " • "))
                             .font(DesignSystem.Typography.labelSmall)
@@ -1496,7 +1281,6 @@ struct ListExerciseCard: View {
                     }
                 }
 
-                // Favorite button
                 Button {
                     onFavoriteToggle()
                 } label: {
@@ -1508,35 +1292,6 @@ struct ListExerciseCard: View {
         }
     }
 
-    private func extractVideoId() -> String? {
-        guard let description = exercise.exerciseDescription,
-              let videoIdRange = description.range(of: "Video ID: ") else { return nil }
-        let remaining = description[videoIdRange.upperBound...]
-        if let endRange = remaining.range(of: "\n") {
-            return String(remaining[..<endRange.lowerBound])
-        }
-        return String(remaining)
-    }
-
-    private var categoryIcon: String {
-        switch exercise.category?.lowercased() {
-        case "technical": return "figure.soccer"
-        case "physical": return "figure.strengthtraining.traditional"
-        case "tactical": return "brain.head.profile"
-        case "recovery": return "heart.circle"
-        default: return "figure.run"
-        }
-    }
-
-    private var categoryColor: Color {
-        switch exercise.category?.lowercased() {
-        case "technical": return DesignSystem.Colors.primaryGreen
-        case "physical": return DesignSystem.Colors.accentOrange
-        case "tactical": return DesignSystem.Colors.secondaryBlue
-        case "recovery": return DesignSystem.Colors.accentYellow
-        default: return DesignSystem.Colors.primaryGreen
-        }
-    }
 }
 
 // MARK: - Filter Chip (for showing active filters)

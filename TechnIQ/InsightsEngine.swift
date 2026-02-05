@@ -189,8 +189,8 @@ class InsightsEngine {
                 priority: 8,
                 actionable: nil
             ))
-        } else if currentStreak == 0 && !sessions.isEmpty {
-            let daysSinceLastSession = calendar.dateComponents([.day], from: dates.last!, to: today).day ?? 0
+        } else if currentStreak == 0 && !sessions.isEmpty, let lastDate = dates.last {
+            let daysSinceLastSession = calendar.dateComponents([.day], from: lastDate, to: today).day ?? 0
 
             if daysSinceLastSession >= 3 {
                 insights.append(TrainingInsight(

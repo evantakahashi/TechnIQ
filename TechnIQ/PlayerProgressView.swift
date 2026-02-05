@@ -471,7 +471,24 @@ struct PlayerProgressView: View {
             let streaks = calculateStreaks(sessions: sessions)
 
             // Calculate sessions per week
-            let daysBetween = Calendar.current.dateComponents([.day], from: sessions.first!.date!, to: sessions.last!.date!).day ?? 1
+            let validSessions = sessions.filter { $0.date != nil }
+            guard let firstDate = validSessions.first?.date, let lastDate = validSessions.last?.date else {
+                let streaks = calculateStreaks(sessions: sessions)
+                let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
+                return OverallStats(
+                    totalSessions: totalSessions,
+                    totalHours: totalHours,
+                    averageRating: averageRating,
+                    improvementPercentage: improvement,
+                    currentStreak: streaks.current,
+                    longestStreak: streaks.longest,
+                    sessionsPerWeek: 0,
+                    technicalPercentage: categoryBreakdown.technical,
+                    physicalPercentage: categoryBreakdown.physical,
+                    tacticalPercentage: categoryBreakdown.tactical
+                )
+            }
+            let daysBetween = Calendar.current.dateComponents([.day], from: firstDate, to: lastDate).day ?? 1
             let weeks = max(1, Double(daysBetween) / 7.0)
             let sessionsPerWeek = Double(totalSessions) / weeks
 

@@ -365,8 +365,8 @@ struct NewSessionView: View {
                             ModernExerciseRowView(
                                 exercise: exercise,
                                 detail: Binding(
-                                    get: { exerciseDetails[exercise.id!] ?? ExerciseDetail() },
-                                    set: { exerciseDetails[exercise.id!] = $0 }
+                                    get: { exercise.id.flatMap { exerciseDetails[$0] } ?? ExerciseDetail() },
+                                    set: { if let id = exercise.id { exerciseDetails[id] = $0 } }
                                 ),
                                 onRemove: {
                                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -525,7 +525,7 @@ struct NewSessionView: View {
 
     private func removeExercise(_ exercise: Exercise) {
         selectedExercises.removeAll { $0.objectID == exercise.objectID }
-        exerciseDetails.removeValue(forKey: exercise.id!)
+        if let id = exercise.id { exerciseDetails.removeValue(forKey: id) }
     }
     
     private func saveSession() {
@@ -547,7 +547,7 @@ struct NewSessionView: View {
             sessionExercise.session = newSession
             sessionExercise.exercise = exercise
             
-            if let detail = exerciseDetails[exercise.id!] {
+            if let id = exercise.id, let detail = exerciseDetails[id] {
                 sessionExercise.duration = detail.duration
                 sessionExercise.sets = Int16(detail.sets)
                 sessionExercise.reps = Int16(detail.reps)

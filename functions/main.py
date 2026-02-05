@@ -69,10 +69,11 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
         
-        # Optional Firebase Auth token verification (for testing, allow unauthenticated)
+        # Firebase Auth token verification (required in production)
         auth_header = req.headers.get('Authorization')
         authenticated_user_uid = None
-        
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+
         if auth_header and auth_header.startswith('Bearer '):
             try:
                 id_token = auth_header.split('Bearer ')[1]
@@ -81,9 +82,28 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
                 logger.info(f"🔐 Authenticated user: {authenticated_user_uid}")
             except Exception as e:
                 logger.warning(f"⚠️ Auth token verification failed: {e}")
-                logger.info("📝 Proceeding as unauthenticated for testing")
+                if not allow_unauth:
+                    return https_fn.Response(
+                        json.dumps({"error": "Invalid authentication token"}),
+                        status=401,
+                        headers={
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    )
+                logger.info("📝 Proceeding as unauthenticated (ALLOW_UNAUTHENTICATED=true)")
         else:
-            logger.info("📝 No auth token provided, proceeding as unauthenticated")
+            if not allow_unauth:
+                logger.warning("⚠️ No auth token provided, rejecting request")
+                return https_fn.Response(
+                    json.dumps({"error": "Authentication required"}),
+                    status=401,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                )
+            logger.info("📝 No auth token provided, proceeding as unauthenticated (ALLOW_UNAUTHENTICATED=true)")
         
         request_data = req.get_json()
         if not request_data:
@@ -162,7 +182,7 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
             }
         )
 
-@https_fn.on_request()
+@https_fn.on_request(timeout_sec=540)
 def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
     """
     Generate personalized drill using AI based on player profile and requirements
@@ -182,10 +202,9 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         "requirements": {
             "skill_description": "improve first touch under pressure",
             "category": "technical",
-            "difficulty": "intermediate", 
+            "difficulty": "intermediate",
             "equipment": ["ball", "cones"],
-            "duration": 30,
-            "focus_area": "individual"
+            "number_of_players": 1
         }
     }
     """
@@ -205,35 +224,49 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
-        
+
+        # Firebase Auth token verification
+        auth_header = req.headers.get('Authorization')
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                id_token = auth_header.split('Bearer ')[1]
+                decoded_token = auth.verify_id_token(id_token)
+                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
+            except Exception as e:
+                if not allow_unauth:
+                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        elif not allow_unauth:
+            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
-        
+
         user_id = request_data.get('user_id')
         player_profile = request_data.get('player_profile', {})
         requirements = request_data.get('requirements', {})
         session_context = request_data.get('session_context', {})
         drill_feedback = request_data.get('drill_feedback', [])
+        field_size = request_data.get('field_size', 'medium')
 
         if not all([user_id, player_profile, requirements]):
             return https_fn.Response("Missing required fields", status=400)
 
-        logger.info(f"🤖 Generating custom drill for user: {user_id}")
+        logger.info(f"🤖 Generating custom drill for user: {user_id} (4-phase pipeline)")
         logger.info(f"📝 Skill description: {requirements.get('skill_description', '')}")
+        logger.info(f"📐 Field size: {field_size}")
         logger.info(f"📊 Session context: {len(session_context.get('recent_exercises', []))} recent exercises")
         logger.info(f"📊 Drill feedback: {len(drill_feedback)} previous drill ratings")
 
         # Get OpenAI API key from environment variables
         openai_api_key = os.environ.get('OPENAI_API_KEY')
 
-        logger.info(f"🔑 OpenAI API key available: {bool(openai_api_key)}")
-
         if not openai_api_key:
             return https_fn.Response("OpenAI API key not configured", status=500)
 
-        # Generate drill using OpenAI
-        drill_data = generate_drill_with_ai(player_profile, requirements, session_context, drill_feedback, openai_api_key)
+        # Generate drill using 4-phase agentic pipeline
+        drill_data = generate_drill_pipeline(player_profile, requirements, session_context, drill_feedback, field_size, openai_api_key)
         
         # Format response
         response_data = {
@@ -271,165 +304,348 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             }
         )
 
-def generate_drill_with_ai(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, openai_api_key: str) -> Dict:
-    """Generate custom drill using OpenAI GPT"""
+def get_field_dimensions(field_size: str) -> Dict[str, int]:
+    """Get field dimensions based on size selection"""
+    sizes = {
+        "small": {"width": 20, "length": 15},
+        "medium": {"width": 30, "length": 20},
+        "large": {"width": 50, "length": 30}
+    }
+    return sizes.get(field_size, sizes["medium"])
+
+
+def parse_llm_json(content: str) -> Dict:
+    """Extract and parse JSON from LLM response, stripping markdown fences"""
+    if "```json" in content:
+        content = content.split("```json")[1].split("```")[0]
+    elif "```" in content:
+        content = content.split("```")[1]
+    return json.loads(content.strip())
+
+
+def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, field_size: str, openai_api_key: str) -> Dict:
+    """4-phase agentic drill generation: Scout → Coach → Writer ⇄ Referee"""
+    from openai import OpenAI
+    client = OpenAI(api_key=openai_api_key)
+
+    field_dims = get_field_dimensions(field_size)
+
+    # === Phase 1: Scout ===
+    logger.info("🔍 Phase 1: Scout - Analyzing player context...")
+    focus_strategy = phase_scout(client, player_profile, session_context, drill_feedback, requirements)
+    logger.info(f"🎯 Scout result: weakness='{focus_strategy.get('primary_weakness')}', archetype='{focus_strategy.get('drill_archetype')}'")
+
+    # === Phase 2: Coach ===
+    logger.info("📐 Phase 2: Coach - Designing spatial layout...")
+    skeletal_plan = phase_coach(client, focus_strategy, requirements, field_dims)
+    logger.info(f"📐 Coach result: pattern='{skeletal_plan.get('pattern_type')}', equipment={skeletal_plan.get('equipment_count')}")
+
+    # === Phase 3 & 4: Writer ⇄ Referee (self-correction loop) ===
+    best_drill = None
+    best_score = 0
+    revision_errors = []
+
+    for attempt in range(3):
+        logger.info(f"✍️ Phase 3: Writer - Attempt {attempt + 1}/3...")
+        drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors)
+
+        logger.info(f"⚖️ Phase 4: Referee - Validating...")
+        validation = phase_referee(client, drill, focus_strategy, requirements, field_dims)
+
+        score = validation.get("score", 0)
+        if score > best_score:
+            best_score = score
+            best_drill = drill
+
+        if validation.get("verdict") == "VALID":
+            logger.info(f"✅ Drill validated on attempt {attempt + 1} (score={score})")
+            return drill
+
+        # Collect errors for next attempt
+        errors = validation.get("errors", [])
+        revision_errors = [f"{e['check']}: {e['issue']}. Fix: {e['fix']}" for e in errors]
+        logger.info(f"⚠️ Referee found {len(errors)} errors, retrying...")
+
+    # After 3 failures: return best attempt with warnings
+    logger.warning(f"⚠️ Returning best attempt after 3 tries (score={best_score})")
+    if best_drill:
+        best_drill["validationWarnings"] = revision_errors
+    return best_drill or drill
+
+
+def phase_scout(client, player_profile: Dict, session_context: Dict, drill_feedback: list, requirements: Dict) -> Dict:
+    """Phase 1: Analyze player data, output Focus Strategy"""
+    # Build context strings
+    recent_exercises = session_context.get('recent_exercises', [])
+    history_text = ""
+    if recent_exercises:
+        for ex in recent_exercises:
+            history_text += f"- {ex.get('skill', 'Unknown')}: rated {ex.get('rating', 0)}/5"
+            if ex.get('notes'):
+                history_text += f" ({ex['notes']})"
+            history_text += "\n"
+
+    feedback_text = ""
+    if drill_feedback:
+        for fb in drill_feedback:
+            feedback_text += f"- Rated {fb.get('rating', 0)}/5, difficulty: {fb.get('difficulty_feedback', 'appropriate')}, sentiment: {fb.get('feedback_type', 'Neutral')}"
+            if fb.get('notes'):
+                feedback_text += f", notes: {fb['notes']}"
+            feedback_text += "\n"
+
+    match_perf = player_profile.get('matchPerformance', {})
+    match_text = ""
+    if match_perf:
+        weaknesses = match_perf.get('recentWeaknesses', [])
+        strengths = match_perf.get('recentStrengths', [])
+        if weaknesses:
+            match_text += f"Match weaknesses (last {match_perf.get('matchCount', 0)} matches): {', '.join(weaknesses)}\n"
+        if strengths:
+            match_text += f"Match strengths: {', '.join(strengths)}\n"
+
+    prompt = f"""Analyze this soccer player and identify their #1 weakness to target.
+
+Player: {player_profile.get('name', 'Player')}, Age {player_profile.get('age', 'Unknown')}, {player_profile.get('position', 'Unknown')}, {player_profile.get('experienceLevel', 'intermediate')} level
+Goals: {', '.join(player_profile.get('skillGoals', []))}
+Self-identified weaknesses: {', '.join(player_profile.get('weaknesses', []))}
+Request focus: {requirements.get('skill_description', '')}
+
+Recent training ratings:
+{history_text or 'No history available'}
+
+Previous drill feedback:
+{feedback_text or 'No feedback available'}
+
+{match_text}
+
+Return JSON:
+{{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
+
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=openai_api_key)
-
-        # Build context prompt
-        skill_description = requirements.get('skill_description', '')
-        category = requirements.get('category', 'technical')
-        difficulty = requirements.get('difficulty', 'intermediate')
-        equipment = requirements.get('equipment', [])
-        duration = requirements.get('duration', 30)
-        focus_area = requirements.get('focus_area', 'individual')
-
-        # Build session history context
-        recent_exercises = session_context.get('recent_exercises', [])
-        session_history_text = ""
-        if recent_exercises:
-            session_history_text = "\n=== RECENT TRAINING HISTORY ===\n"
-            for ex in recent_exercises:
-                skill = ex.get("skill", "Unknown")
-                rating = ex.get("rating", 0)
-                notes = ex.get("notes", "")
-                session_history_text += f"- {skill}: rated {rating}/5"
-                if notes:
-                    session_history_text += f' ("{notes}")'
-                session_history_text += "\n"
-            session_history_text += "\nUse this history to address weak areas (low ratings) and build on strengths.\n"
-
-        # Build drill feedback context
-        drill_feedback_text = ""
-        if drill_feedback:
-            drill_feedback_text = "\n=== PREVIOUS DRILL FEEDBACK ===\n"
-            for fb in drill_feedback:
-                rating = fb.get("rating", 0)
-                difficulty_fb = fb.get("difficulty_feedback", "appropriate")
-                feedback_type = fb.get("feedback_type", "Neutral")
-                notes = fb.get("notes", "")
-                drill_feedback_text += f"- Rated {rating}/5, difficulty: {difficulty_fb}, sentiment: {feedback_type}"
-                if notes:
-                    drill_feedback_text += f', notes: "{notes}"'
-                drill_feedback_text += "\n"
-            drill_feedback_text += "\nAdjust difficulty and style based on this feedback. If drills were 'too_easy', make this one harder. If 'too_hard', make it more accessible.\n"
-
-        player_context = f"""
-Player Profile:
-- Name: {player_profile.get('name', 'Player')}
-- Age: {player_profile.get('age', 'Unknown')}
-- Position: {player_profile.get('position', 'Unknown')}
-- Experience: {player_profile.get('experienceLevel', 'intermediate')}
-- Playing Style: {player_profile.get('playingStyle', 'Unknown')}
-- Role Model: {player_profile.get('playerRoleModel', 'N/A')}
-- Goals: {', '.join(player_profile.get('skillGoals', []))}
-- Weaknesses: {', '.join(player_profile.get('weaknesses', []))}
-"""
-        
-        equipment_list = ', '.join(equipment) if equipment else 'minimal equipment'
-        
-        prompt = f"""You are an expert soccer coach. Create a CREATIVE training drill based on:
-
-{player_context}
-{session_history_text}
-{drill_feedback_text}
-Requirements:
-- Focus: {skill_description}
-- Category: {category}
-- Difficulty: {difficulty}
-- Equipment: {equipment_list}
-- Duration: {duration} minutes
-- Setup: {focus_area}
-
-=== EXAMPLE DRILLS (for inspiration - create something NEW) ===
-
-Example 1 - Linear Dribbling (5 cones in a LINE, not square):
-{{"name": "Speed Dribble Weave", "setup": "20m x 3m corridor. 5 cones (A-E) in a straight line, 5m apart.", "instructions": ["Start at cone A with the ball.", "Dribble at speed weaving through cones B, C, D, E using both feet.", "At cone E, turn sharply and dribble back.", "Complete 4 full runs."], "diagram": {{"field": {{"width": 20, "length": 5}}, "elements": [{{"type": "cone", "x": 0, "y": 2.5, "label": "A"}}, {{"type": "cone", "x": 5, "y": 2.5, "label": "B"}}, {{"type": "cone", "x": 10, "y": 2.5, "label": "C"}}, {{"type": "cone", "x": 15, "y": 2.5, "label": "D"}}, {{"type": "cone", "x": 20, "y": 2.5, "label": "E"}}], "paths": [{{"from": "A", "to": "E", "style": "dribble"}}]}}}}
-
-Example 2 - Triangle Passing (only 3 cones):
-{{"name": "Triangle Give-and-Go", "setup": "10m equilateral triangle. Cone A bottom-left, B bottom-right, C top center.", "instructions": ["Start at cone A with the ball.", "Pass to partner at B, sprint toward C.", "Receive return pass at C, control, pass back to A.", "Rotate positions. Complete 10 rotations."], "diagram": {{"field": {{"width": 10, "length": 9}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}, {{"type": "cone", "x": 10, "y": 0, "label": "B"}}, {{"type": "cone", "x": 5, "y": 9, "label": "C"}}], "paths": [{{"from": "A", "to": "B", "style": "pass"}}, {{"from": "A", "to": "C", "style": "run"}}]}}}}
-
-Example 3 - Ball Mastery (NO CONES needed):
-{{"name": "Foundation Footwork", "setup": "2m x 2m space. No cones - just a ball.", "instructions": ["Perform 30 toe taps alternating feet on top of the ball.", "Complete 20 inside-inside touches, rolling ball side to side.", "Do 20 sole rolls forward and back with each foot.", "Finish with 10 Cruyff turns each direction."], "diagram": {{"field": {{"width": 2, "length": 2}}, "elements": [{{"type": "ball", "x": 1, "y": 1, "label": ""}}, {{"type": "player", "x": 1, "y": 1, "label": "Player"}}], "paths": []}}}}
-
-Example 4 - Gate Drill (cone PAIRS):
-{{"name": "Precision Gate Passes", "setup": "15m x 10m area. 3 gates (cone pairs 1m apart) at 5m, 10m, 15m.", "instructions": ["Stand 3m from the first gate.", "Pass through gate 1, sprint to collect, pass through gate 2.", "Continue through gate 3, turn, repeat back.", "Complete 6 sequences using both feet."], "diagram": {{"field": {{"width": 15, "length": 10}}, "elements": [{{"type": "cone", "x": 5, "y": 4.5, "label": "G1a"}}, {{"type": "cone", "x": 5, "y": 5.5, "label": "G1b"}}, {{"type": "cone", "x": 10, "y": 4.5, "label": "G2a"}}, {{"type": "cone", "x": 10, "y": 5.5, "label": "G2b"}}], "paths": [{{"from": "Start", "to": "G1a", "style": "pass"}}]}}}}
-
-=== CREATIVITY GUIDANCE ===
-- DO NOT always use square/rectangular cone patterns
-- Match the drill layout to the available equipment
-- Use varied patterns: lines, triangles, zigzags, gates - based on what fits the skill
-- Ball mastery drills need NO cones - just describe the footwork
-- Passing drills work well with triangles; dribbling with lines; accuracy with gates
-- Be practical: if user has 2 cones, don't design a drill needing 8
-
-=== INSTRUCTION FORMAT RULES ===
-1. Each instruction = ONE clear action (15-25 words max)
-2. Use imperative verbs: Dribble, Pass, Sprint, Control, Shoot, Turn
-3. NEVER use "Detailed step 1:" or "Step 1:" prefixes
-
-=== SETUP FORMAT ===
-1. State field size first
-2. List equipment with exact positions
-3. State player starting position last
-
-Return JSON (create a NEW drill, don't copy examples):
-{{
-    "name": "Short drill name (max 40 chars)",
-    "description": "One sentence explaining the drill's purpose.",
-    "setup": "Dimensions. Equipment positions. Player start.",
-    "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"],
-    "diagram": {{
-        "field": {{"width": X, "length": Y}},
-        "elements": [{{"type": "cone/player/target/ball", "x": 0, "y": 0, "label": "A"}}],
-        "paths": [{{"from": "A", "to": "B", "style": "dribble/run/pass"}}]
-    }},
-    "progressions": ["Easier: ...", "Harder: ..."],
-    "coachingPoints": ["Point 1", "Point 2", "Point 3"],
-    "estimatedDuration": {duration},
-    "difficulty": "{difficulty}",
-    "category": "{category}",
-    "targetSkills": ["skill1", "skill2"],
-    "equipment": {json.dumps(equipment)},
-    "safetyNotes": "Brief safety note"
-}}
-
-=== DIAGRAM RULES ===
-- field: width and length in meters matching setup
-- element types: "cone", "player", "target", "goal", "ball"
-- path styles: "dribble" (with ball), "run" (without ball), "pass" (ball trajectory)
-- x=0,y=0 is bottom-left; y increases going up"""
-        
-        # Call OpenAI API
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "You are an expert soccer coach who creates varied, practical drills. Avoid repetitive square/rectangular patterns - use lines, triangles, gates, or no-cone setups based on the skill being trained. Match drill complexity to available equipment."},
+                {"role": "system", "content": "You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a drill archetype. Weight the user's explicit request highest, then match weaknesses, then session ratings."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=1500,
-            temperature=0.5  # Lower temperature for more consistent formatting
+            max_tokens=500,
+            temperature=0.3
         )
-        
-        # Parse response
-        content = response.choices[0].message.content
-        
-        # Extract JSON from response (remove any markdown formatting)
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0]
-        elif "```" in content:
-            content = content.split("```")[1]
-        
-        drill_data = json.loads(content.strip())
-        
-        logger.info(f"🎯 Generated drill: {drill_data.get('name', 'Unknown')}")
-        return drill_data
-        
+        return parse_llm_json(response.choices[0].message.content)
     except Exception as e:
-        logger.error(f"❌ Error generating drill with AI: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise e  # Re-raise the exception instead of using fallback
+        logger.warning(f"⚠️ Scout phase parse error: {e}, using defaults")
+        return {
+            "primary_weakness": requirements.get('skill_description', 'general technique'),
+            "drill_archetype": "varied practice",
+            "difficulty_calibration": "maintain",
+            "reasoning": "Fallback: using user request as primary focus"
+        }
+
+
+def phase_coach(client, focus_strategy: Dict, requirements: Dict, field_dims: Dict) -> Dict:
+    """Phase 2: Design spatial layout and mechanics"""
+    equipment = requirements.get('equipment', [])
+    equipment_list = ', '.join(equipment) if equipment else 'minimal equipment'
+    num_players = requirements.get('number_of_players', 1)
+
+    prompt = f"""Design a soccer drill layout for this focus:
+
+Weakness: {focus_strategy.get('primary_weakness', '')}
+Drill archetype: {focus_strategy.get('drill_archetype', '')}
+Difficulty calibration: {focus_strategy.get('difficulty_calibration', 'maintain')}
+Field: {field_dims['width']}m x {field_dims['length']}m
+Equipment available: {equipment_list}
+Category: {requirements.get('category', 'technical')}
+Number of players: {num_players}
+
+Weakness→Pattern guidance:
+- Tight-space dribbling → cones 1-2m apart, zigzag/weave
+- Weak foot passing → angled gates requiring weak foot
+- First touch under pressure → receive + turn with defender cone behind
+- Shooting accuracy → target zones with approach angles
+- Speed/agility → ladder or sprint channels
+- Ball control → close-quarter footwork, no cones needed
+
+Wall equipment guidance (if wall is available):
+- Wall is flat and reflects ball at angle of incidence (NOT directly back to passer)
+- Player must position at correct angle to receive the rebound
+- Example: Pass at 45° angle, ball rebounds at 45° opposite side
+- Use wall for: one-touch passing, first touch work, weak foot practice
+
+Return JSON:
+{{"pattern_type": "zigzag|triangle|linear|gates|grid|free", "equipment_placement": [{{"type": "cone|goal|ball|player", "label": "A", "x": 0, "y": 0, "purpose": "start"}}], "field_dimensions": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "movement_paths": [{{"from": "A", "to": "B", "action": "dribble|pass|run", "detail": "description"}}], "weakness_address": "how this layout targets the weakness", "equipment_count": {{"cones": 0, "ball": 1}}}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a soccer drill architect. Design practical spatial layouts that directly address the identified weakness. Only use equipment the player has. Keep coordinates within field dimensions."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=600,
+            temperature=0.4
+        )
+        return parse_llm_json(response.choices[0].message.content)
+    except Exception as e:
+        logger.warning(f"⚠️ Coach phase parse error: {e}, using minimal plan")
+        return {
+            "pattern_type": "linear",
+            "equipment_placement": [{"type": "ball", "label": "Start", "x": field_dims["width"] // 2, "y": 2, "purpose": "start"}],
+            "field_dimensions": field_dims,
+            "movement_paths": [],
+            "weakness_address": focus_strategy.get('primary_weakness', ''),
+            "equipment_count": {"ball": 1}
+        }
+
+
+def phase_writer(client, skeletal_plan: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, revision_errors: list) -> Dict:
+    """Phase 3: Create full CustomDrillResponse JSON"""
+    equipment = requirements.get('equipment', [])
+    difficulty = requirements.get('difficulty', 'intermediate')
+    category = requirements.get('category', 'technical')
+    num_players = requirements.get('number_of_players', 1)
+
+    revision_text = ""
+    if revision_errors:
+        revision_text = "\n=== ERRORS TO FIX (from previous attempt) ===\n"
+        for err in revision_errors:
+            revision_text += f"- {err}\n"
+        revision_text += "\nFix ALL listed errors in this attempt.\n"
+
+    wall_guidance = ""
+    if 'wall' in equipment:
+        wall_guidance = """
+WALL PHYSICS (IMPORTANT):
+- Wall reflects ball at angle of incidence, NOT directly back to passer
+- Player must position at correct angle to receive rebound
+- Pass at 45° angle → ball rebounds 45° to opposite side
+"""
+
+    prompt = f"""Write a complete soccer drill using this blueprint.
+
+Focus: {focus_strategy.get('primary_weakness', '')}
+Archetype: {focus_strategy.get('drill_archetype', '')}
+Layout: {json.dumps(skeletal_plan, indent=2)}
+Field: {field_dims['width']}m x {field_dims['length']}m
+Number of players: {num_players}
+Difficulty: {difficulty}
+Category: {category}
+Equipment available: {', '.join(equipment) if equipment else 'minimal'}
+{revision_text}{wall_guidance}
+INSTRUCTION RULES:
+- Each instruction = ONE action, imperative verb, 15-25 words
+- Use: Dribble, Pass, Sprint, Control, Shoot, Turn, Set up, Place
+- NO "Step 1:" prefixes
+- Design for {num_players} player(s) - assign roles/positions if multiple
+
+DIAGRAM RULES:
+- All element x values must be 0 to {field_dims['width']}
+- All element y values must be 0 to {field_dims['length']}
+- element types: "cone", "player", "target", "goal", "ball"
+- path styles: "dribble", "run", "pass"
+
+Return ONLY valid JSON:
+{{"name": "Short name (max 40 chars)", "description": "One sentence purpose.", "setup": "Dimensions. Equipment. Player start.", "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"], "diagram": {{"field": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}], "paths": [{{"from": "A", "to": "B", "style": "dribble"}}]}}, "progressions": ["Easier: ...", "Harder: ..."], "coachingPoints": ["Point 1", "Point 2", "Point 3"], "estimatedDuration": 15, "difficulty": "{difficulty}", "category": "{category}", "targetSkills": ["skill1", "skill2"], "equipment": {json.dumps(equipment)}, "safetyNotes": "Brief safety note"}}"""
+
+    response = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": "You are an expert soccer coach. Write complete, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within the specified field dimensions."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1500,
+        temperature=0.6
+    )
+    return parse_llm_json(response.choices[0].message.content)
+
+
+def programmatic_validate(drill: Dict, field_dims: Dict, requirements: Dict) -> List[Dict]:
+    """Run programmatic checks before LLM referee"""
+    errors = []
+
+    # Schema completeness
+    required_fields = ["name", "description", "setup", "instructions", "diagram", "difficulty", "category", "targetSkills", "equipment"]
+    for field in required_fields:
+        if field not in drill:
+            errors.append({"check": "schema", "issue": f"Missing required field: {field}", "fix": f"Add '{field}' to response"})
+
+    # Coordinate bounds
+    diagram = drill.get("diagram", {})
+    elements = diagram.get("elements", [])
+    width = field_dims["width"]
+    length = field_dims["length"]
+    for el in elements:
+        x = el.get("x", 0)
+        y = el.get("y", 0)
+        if x < 0 or x > width:
+            errors.append({"check": "spatial", "issue": f"Element '{el.get('label', '?')}' x={x} exceeds width={width}", "fix": f"Set x to max {width}"})
+        if y < 0 or y > length:
+            errors.append({"check": "spatial", "issue": f"Element '{el.get('label', '?')}' y={y} exceeds length={length}", "fix": f"Set y to max {length}"})
+
+    # Equipment match
+    available = set(requirements.get('equipment', []))
+    if available:
+        drill_equipment = set(drill.get("equipment", []))
+        extra = drill_equipment - available - {"none"}
+        if extra:
+            errors.append({"check": "equipment", "issue": f"Uses unavailable equipment: {', '.join(extra)}", "fix": f"Only use: {', '.join(available)}"})
+
+    return errors
+
+
+def phase_referee(client, drill: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict) -> Dict:
+    """Phase 4: Validate drill quality (hybrid: programmatic + LLM)"""
+    # Run programmatic checks first
+    prog_errors = programmatic_validate(drill, field_dims, requirements)
+    if prog_errors:
+        return {"verdict": "ERRORS", "errors": prog_errors, "score": 30}
+
+    # LLM validation
+    prompt = f"""Review this soccer drill for quality and correctness.
+
+Drill JSON:
+{json.dumps(drill, indent=2)}
+
+Context:
+- Target weakness: {focus_strategy.get('primary_weakness', '')}
+- Field size: {field_dims['width']}m x {field_dims['length']}m
+- Available equipment: {', '.join(requirements.get('equipment', []))}
+- Difficulty: {requirements.get('difficulty', 'intermediate')}
+
+Validate:
+1. SPATIAL: All coordinates within {field_dims['width']}x{field_dims['length']}m?
+2. EQUIPMENT: Only uses available equipment?
+3. CLARITY: Instructions are imperative, 15-25 words, one action each?
+4. RELEVANCE: Addresses '{focus_strategy.get('primary_weakness', '')}'?
+5. SAFETY: Appropriate for the difficulty level?
+6. REALISM: Would a real coach assign this?
+7. SCHEMA: All required fields present with correct types?
+
+Return JSON:
+{{"verdict": "VALID or ERRORS", "errors": [{{"check": "category", "issue": "description", "fix": "suggestion"}}], "score": 0-100}}
+
+If everything passes, return {{"verdict": "VALID", "errors": [], "score": 85-100}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a soccer drill safety and logic checker. Be strict but fair. Only flag genuine issues that would make the drill confusing, unsafe, or ineffective. Score 85+ means production-ready."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=800,
+            temperature=0.1
+        )
+        result = parse_llm_json(response.choices[0].message.content)
+        # Ensure proper structure
+        if "verdict" not in result:
+            result["verdict"] = "VALID" if not result.get("errors") else "ERRORS"
+        if "score" not in result:
+            result["score"] = 85 if result["verdict"] == "VALID" else 50
+        return result
+    except Exception as e:
+        logger.warning(f"⚠️ Referee parse error: {e}, passing drill")
+        return {"verdict": "VALID", "errors": [], "score": 70}
 
 def get_existing_exercises(user_id: str) -> List[Dict]:
     """Get user's existing exercises to prevent duplicate recommendations"""
@@ -675,11 +891,25 @@ def get_advanced_recommendations(req: https_fn.Request) -> https_fn.Response:
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
-        
+
+        # Firebase Auth token verification
+        auth_header = req.headers.get('Authorization')
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                id_token = auth_header.split('Bearer ')[1]
+                decoded_token = auth.verify_id_token(id_token)
+                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
+            except Exception as e:
+                if not allow_unauth:
+                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        elif not allow_unauth:
+            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
-        
+
         user_id = request_data.get('user_id')
         player_profile = request_data.get('player_profile', {})
         candidate_exercises = request_data.get('candidate_exercises', [])
@@ -1030,6 +1260,20 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
+
+        # Firebase Auth token verification
+        auth_header = req.headers.get('Authorization')
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                id_token = auth_header.split('Bearer ')[1]
+                decoded_token = auth.verify_id_token(id_token)
+                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
+            except Exception as e:
+                if not allow_unauth:
+                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        elif not allow_unauth:
+            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
 
         request_data = req.get_json()
         if not request_data:

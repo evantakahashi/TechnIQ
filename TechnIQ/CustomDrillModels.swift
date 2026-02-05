@@ -7,8 +7,8 @@ struct CustomDrillRequest {
     var category: DrillCategory
     var difficulty: DifficultyLevel
     var equipment: Set<Equipment>
-    var duration: Int // minutes
-    var focusArea: FocusArea
+    var numberOfPlayers: Int
+    var fieldSize: FieldSize
 }
 
 enum DrillCategory: String, CaseIterable {
@@ -63,54 +63,67 @@ enum Equipment: String, CaseIterable {
     case cones = "cones"
     case goals = "goals"
     case partner = "partner"
-    case bibs = "bibs"
     case hurdles = "hurdles"
     case ladder = "ladder"
     case poles = "poles"
-    case rebounder = "rebounder"
+    case wall = "wall"
     case none = "none"
-    
+
     var displayName: String {
         switch self {
         case .ball: return "⚽ Ball"
         case .cones: return "🔶 Cones"
         case .goals: return "🥅 Goals"
         case .partner: return "👥 Partner"
-        case .bibs: return "👕 Bibs"
         case .hurdles: return "🚧 Hurdles"
         case .ladder: return "🪜 Agility Ladder"
         case .poles: return "📍 Poles"
-        case .rebounder: return "🎾 Rebounder"
+        case .wall: return "🧱 Wall"
         case .none: return "❌ No Equipment"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .ball: return "soccerball"
         case .cones: return "triangle"
         case .goals: return "rectangle.portrait"
         case .partner: return "person.2"
-        case .bibs: return "tshirt"
         case .hurdles: return "square.stack"
-        case .ladder: return "chart.bar.fill"  // Represents ladder/agility training
+        case .ladder: return "chart.bar.fill"
         case .poles: return "location"
-        case .rebounder: return "circle.hexagonpath"
+        case .wall: return "rectangle.portrait.fill"
         case .none: return "xmark.circle"
         }
     }
 }
 
-enum FocusArea: String, CaseIterable {
-    case individual = "individual"
-    case smallGroup = "small_group"
-    case fullTeam = "full_team"
-    
+enum FieldSize: String, CaseIterable {
+    case small = "small"      // 20x15m (individual)
+    case medium = "medium"    // 30x20m (small group)
+    case large = "large"      // 50x30m (full team)
+
     var displayName: String {
         switch self {
-        case .individual: return "👤 Individual"
-        case .smallGroup: return "👥 Small Group (2-6)"
-        case .fullTeam: return "⚽ Full Team (11+)"
+        case .small: return "Small (20x15m)"
+        case .medium: return "Medium (30x20m)"
+        case .large: return "Large (50x30m)"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .small: return "Individual drills"
+        case .medium: return "Small group work"
+        case .large: return "Full team exercises"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .small: return "square"
+        case .medium: return "rectangle"
+        case .large: return "rectangle.landscape"
         }
     }
 }
@@ -132,6 +145,7 @@ struct CustomDrillResponse: Codable {
     let equipment: [String]
     let safetyNotes: String?
     let variations: [DrillVariation]?
+    let validationWarnings: [String]?
 }
 
 // MARK: - Drill Diagram Models
@@ -208,18 +222,16 @@ extension CustomDrillRequest {
             category: .technical,
             difficulty: .intermediate,
             equipment: [.ball],
-            duration: 30,
-            focusArea: .individual
+            numberOfPlayers: 1,
+            fieldSize: .medium
         )
     }
-    
+
     var isValid: Bool {
         return !skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-               skillDescription.count >= 10 &&
-               duration >= 10 &&
-               duration <= 120
+               skillDescription.count >= 10
     }
-    
+
     var equipmentList: [String] {
         equipment.map { $0.rawValue }
     }

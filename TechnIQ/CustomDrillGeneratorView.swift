@@ -7,6 +7,8 @@ struct CustomDrillGeneratorView: View {
     
     @State private var request = CustomDrillRequest.empty
     @State private var showingSuccessMessage = false
+    @State private var showingWarnings = false
+    @State private var validationWarnings: [String] = []
     @State private var generatedExercise: Exercise?
     
     var body: some View {
@@ -42,11 +44,27 @@ struct CustomDrillGeneratorView: View {
             }
         }
         .alert("Drill Created!", isPresented: $showingSuccessMessage) {
+            if !validationWarnings.isEmpty {
+                Button("View Warnings") {
+                    showingWarnings = true
+                }
+            }
             Button("OK") {
                 dismiss()
             }
         } message: {
-            Text("Your custom drill has been added to your exercise library!")
+            if validationWarnings.isEmpty {
+                Text("Your custom drill has been added to your exercise library!")
+            } else {
+                Text("Your drill was created with minor quality notes. Tap 'View Warnings' for details.")
+            }
+        }
+        .alert("Quality Notes", isPresented: $showingWarnings) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text(validationWarnings.joined(separator: "\n\n"))
         }
     }
     
@@ -60,8 +78,8 @@ struct CustomDrillGeneratorView: View {
                 categorySection
                 difficultySection
                 equipmentSection
-                durationSection
-                focusAreaSection
+                numberOfPlayersSection
+                fieldSizeSection
                 generateButton
             }
             .padding(.horizontal, DesignSystem.Spacing.md)
@@ -196,28 +214,28 @@ struct CustomDrillGeneratorView: View {
         }
     }
     
-    // MARK: - Duration Section
-    
-    private var durationSection: some View {
+    // MARK: - Number of Players Section
+
+    private var numberOfPlayersSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Duration: \(request.duration) minutes")
+            Text("Number of Players: \(request.numberOfPlayers)")
                 .font(DesignSystem.Typography.titleSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
-            
+
             ModernCard {
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Slider(value: Binding(
-                        get: { Double(request.duration) },
-                        set: { request.duration = Int($0) }
-                    ), in: 10...120, step: 5)
+                        get: { Double(request.numberOfPlayers) },
+                        set: { request.numberOfPlayers = Int($0) }
+                    ), in: 1...6, step: 1)
                     .accentColor(DesignSystem.Colors.primaryGreen)
-                    
+
                     HStack {
-                        Text("10 min")
+                        Text("1")
                             .font(DesignSystem.Typography.labelSmall)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                         Spacer()
-                        Text("120 min")
+                        Text("6")
                             .font(DesignSystem.Typography.labelSmall)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                     }
@@ -226,28 +244,52 @@ struct CustomDrillGeneratorView: View {
             }
         }
     }
-    
-    // MARK: - Focus Area Section
-    
-    private var focusAreaSection: some View {
+
+    // MARK: - Field Size Section
+
+    private var fieldSizeSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Training Setup")
+            Text("Field Size")
                 .font(DesignSystem.Typography.titleSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(FocusArea.allCases, id: \.self) { focusArea in
-                    FocusAreaSelectionCard(
-                        focusArea: focusArea,
-                        isSelected: request.focusArea == focusArea
-                    ) {
-                        request.focusArea = focusArea
+
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                ForEach(FieldSize.allCases, id: \.self) { size in
+                    Button {
+                        request.fieldSize = size
+                    } label: {
+                        ModernCard(padding: DesignSystem.Spacing.sm) {
+                            VStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: size.icon)
+                                    .font(.title3)
+                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
+
+                                Text(size.displayName)
+                                    .font(DesignSystem.Typography.labelSmall)
+                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 60)
+                        }
+                        .background(
+                            request.fieldSize == size ? DesignSystem.Colors.primaryGreen : Color.clear
+                        )
+                        .cornerRadius(DesignSystem.CornerRadius.card)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                .stroke(
+                                    request.fieldSize == size ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
+                                    lineWidth: request.fieldSize == size ? 2 : 1
+                                )
+                        )
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
     }
-    
+
     // MARK: - Generate Button
     
     private var generateButton: some View {
@@ -311,15 +353,20 @@ struct CustomDrillGeneratorView: View {
         Task {
             do {
                 let exercise = try await drillService.generateCustomDrill(
-                    request: request, 
+                    request: request,
                     for: player
                 )
-                
+
                 generatedExercise = exercise
+
+                // Check for validation warnings from the generation state
+                if case .success(let response) = drillService.generationState {
+                    validationWarnings = response.validationWarnings ?? []
+                }
+
                 showingSuccessMessage = true
-                
+
             } catch {
-                // Handle error - could show an error alert
                 #if DEBUG
                 print("Failed to generate drill: \(error)")
                 #endif
@@ -412,43 +459,6 @@ struct EquipmentSelectionCard: View {
                         .lineLimit(2)
                 }
                 .frame(maxWidth: .infinity, minHeight: 60)
-            }
-            .background(
-                isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
-            )
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(
-                        isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct FocusAreaSelectionCard: View {
-    let focusArea: FocusArea
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ModernCard(padding: DesignSystem.Spacing.sm) {
-                HStack {
-                    Text(focusArea.displayName)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
-                    
-                    Spacer()
-                    
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(DesignSystem.Colors.primaryDark)
-                    }
-                }
             }
             .background(
                 isSelected ? DesignSystem.Colors.primaryGreen : Color.clear

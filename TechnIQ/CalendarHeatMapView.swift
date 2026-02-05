@@ -150,15 +150,15 @@ struct CalendarHeatMapView: View {
         var currentLabel = ""
 
         for column in monthColumns {
-            if let firstDate = column.first(where: { $0 != nil }) {
-                let month = calendar.component(.month, from: firstDate!)
+            if let firstDate = column.first(where: { $0 != nil }), let date = firstDate {
+                let month = calendar.component(.month, from: date)
                 if month != currentMonth {
                     // Save previous month if exists
                     if currentWidth > 0 {
                         result.append((label: currentLabel, width: currentWidth))
                     }
                     // Start new month
-                    currentLabel = dateFormatter.string(from: firstDate!)
+                    currentLabel = dateFormatter.string(from: date)
                     currentWidth = 1
                     currentMonth = month
                 } else {

@@ -45,6 +45,13 @@ struct DashboardView: View {
     @State private var showWelcomeBack = false
     @State private var daysInactive: Int = 0
     @AppStorage("lastAppOpenDate") private var lastAppOpenDate: Double = Date().timeIntervalSince1970
+
+    // Quick start flow
+    @State private var activePlan: TrainingPlanModel?
+    @State private var currentWeekDay: (week: Int, day: Int)?
+    @State private var showingQuickDrill = false
+    @State private var showingActiveTraining = false
+    @State private var quickStartExercises: [Exercise] = []
     
     var currentPlayer: Player? {
         players.first
@@ -61,7 +68,8 @@ struct DashboardView: View {
                     if let player = currentPlayer {
                         modernHeaderSection(player: player)
                         modernStatsOverview(player: player)
-                        modernQuickActions
+                        continuePlanCard(player: player)
+                        modernQuickActions(player: player)
                         modernRecentActivity
                         modernMatchesSection(player: player)
                         modernRecommendations(player: player)
@@ -89,6 +97,22 @@ struct DashboardView: View {
         .sheet(isPresented: $showingProfileCreation) {
             EnhancedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
         }
+        .sheet(isPresented: $showingQuickDrill) {
+            if let player = currentPlayer {
+                QuickDrillSheet(player: player) { exercise in
+                    showingQuickDrill = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        quickStartExercises = [exercise]
+                        showingActiveTraining = true
+                    }
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showingActiveTraining) {
+            ActiveTrainingView(exercises: quickStartExercises)
+                .environment(\.managedObjectContext, viewContext)
+                .environmentObject(authManager)
+        }
         .onChange(of: isOnboardingComplete) { completed in
             if completed {
                 showingProfileCreation = false
@@ -101,6 +125,7 @@ struct DashboardView: View {
         .onAppear {
             updateDataFilters()
             checkWelcomeBack()
+            loadActivePlan()
         }
         .onChange(of: authManager.userUID) {
             updateDataFilters()
@@ -147,7 +172,43 @@ struct DashboardView: View {
             showWelcomeBack = false
         }
     }
-    
+
+    private func loadActivePlan() {
+        guard let player = currentPlayer else { return }
+        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
+        if let plan = activePlan {
+            currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        }
+    }
+
+    private func surpriseMe(player: Player) {
+        guard let exercises = player.exercises?.allObjects as? [Exercise], !exercises.isEmpty else { return }
+
+        let weaknesses = player.playerProfile?.selfIdentifiedWeaknesses ?? []
+        var picked: Exercise?
+
+        if !weaknesses.isEmpty {
+            let matching = exercises.filter { ex in
+                guard let skills = ex.targetSkills else { return false }
+                return skills.contains(where: { skill in
+                    weaknesses.contains(where: { weakness in
+                        skill.localizedCaseInsensitiveContains(weakness) || weakness.localizedCaseInsensitiveContains(skill)
+                    })
+                })
+            }
+            picked = matching.randomElement()
+        }
+
+        if picked == nil {
+            picked = exercises.randomElement()
+        }
+
+        if let exercise = picked {
+            quickStartExercises = [exercise]
+            showingActiveTraining = true
+        }
+    }
+
     private func modernHeaderSection(player: Player) -> some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             // Welcome Back Overlay (when returning after inactivity)
@@ -332,7 +393,78 @@ struct DashboardView: View {
         }
     }
 
-    private var modernQuickActions: some View {
+    @ViewBuilder
+    private func continuePlanCard(player: Player) -> some View {
+        if let plan = activePlan {
+            NavigationLink {
+                TodaysTrainingView(player: player, activePlan: plan)
+            } label: {
+                ModernCard(padding: DesignSystem.Spacing.md) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                                .frame(width: 50, height: 50)
+                            Image(systemName: "play.fill")
+                                .font(.title3)
+                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        }
+
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            Text("Continue Plan")
+                                .font(DesignSystem.Typography.labelMedium)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                            Text(plan.name)
+                                .font(DesignSystem.Typography.titleSmall)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                                .fontWeight(.semibold)
+                                .lineLimit(1)
+                            if let wd = currentWeekDay {
+                                Text("Week \(wd.week), Day \(wd.day)")
+                                    .font(DesignSystem.Typography.bodySmall)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                            }
+
+                            // Progress bar
+                            VStack(spacing: 4) {
+                                GeometryReader { geo in
+                                    ZStack(alignment: .leading) {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color(.systemGray5))
+                                            .frame(height: 6)
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(DesignSystem.Colors.primaryGreen)
+                                            .frame(width: geo.size.width * min(1.0, plan.progressPercentage / 100.0), height: 6)
+                                    }
+                                }
+                                .frame(height: 6)
+
+                                HStack {
+                                    Text("\(Int(plan.progressPercentage))% Complete")
+                                        .font(DesignSystem.Typography.labelSmall)
+                                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    Spacer()
+                                }
+                            }
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Image(systemName: "chevron.right")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                        .stroke(DesignSystem.Colors.primaryGreen.opacity(0.3), lineWidth: 1.5)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+
+    private func modernQuickActions(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Quick Actions")
                 .font(DesignSystem.Typography.headlineSmall)
@@ -362,19 +494,22 @@ struct DashboardView: View {
                 }
                 
                 ModernActionCard(
-                    title: "Exercise Library",
-                    icon: DesignSystem.Icons.exercises,
+                    title: "Quick Drill",
+                    icon: "bolt.fill",
                     color: DesignSystem.Colors.accentOrange
                 ) {
-                    // Handle action
+                    showingQuickDrill = true
                 }
-                
+
+                let hasExercises = (player.exercises?.count ?? 0) > 0
                 ModernActionCard(
-                    title: "Profile",
-                    icon: DesignSystem.Icons.profile,
-                    color: DesignSystem.Colors.accentYellow
+                    title: "Surprise Me",
+                    icon: "shuffle",
+                    color: DesignSystem.Colors.accentYellow,
+                    subtitle: hasExercises ? nil : "Add exercises to unlock",
+                    disabled: !hasExercises
                 ) {
-                    // Handle action
+                    surpriseMe(player: player)
                 }
             }
         }
@@ -670,12 +805,15 @@ struct ModernActionCard: View {
     let title: String
     let icon: String
     let color: Color
+    var subtitle: String? = nil
+    var disabled: Bool = false
     let action: () -> Void
-    
+
     @State private var isPressed = false
-    
+
     var body: some View {
         Button(action: {
+            guard !disabled else { return }
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
             action()
@@ -683,19 +821,27 @@ struct ModernActionCard: View {
             VStack(spacing: DesignSystem.Spacing.sm) {
                 ZStack {
                     Circle()
-                        .fill(color.opacity(0.15))
+                        .fill(color.opacity(disabled ? 0.08 : 0.15))
                         .frame(width: 60, height: 60)
-                    
+
                     Image(systemName: icon)
                         .font(.title2)
-                        .foregroundColor(color)
+                        .foregroundColor(disabled ? color.opacity(0.4) : color)
                 }
-                
+
                 Text(title)
                     .font(DesignSystem.Typography.labelMedium)
                     .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .foregroundColor(disabled ? DesignSystem.Colors.textSecondary : DesignSystem.Colors.textPrimary)
                     .multilineTextAlignment(.center)
+
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(DesignSystem.Spacing.lg)
@@ -703,11 +849,13 @@ struct ModernActionCard: View {
             .cornerRadius(DesignSystem.CornerRadius.card)
             .customShadow(isPressed ? DesignSystem.Shadow.small : DesignSystem.Shadow.medium)
             .scaleEffect(isPressed ? 0.95 : 1.0)
+            .opacity(disabled ? 0.7 : 1.0)
             .animation(DesignSystem.Animation.quick, value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
+        .allowsHitTesting(!disabled)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            isPressed = pressing
+            if !disabled { isPressed = pressing }
         }, perform: {})
     }
 }

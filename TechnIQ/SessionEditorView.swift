@@ -120,6 +120,8 @@ struct SessionEditorView: View {
         case .tactical: return DesignSystem.Colors.secondaryBlue
         case .recovery: return DesignSystem.Colors.accentYellow
         case .match: return DesignSystem.Colors.textPrimary
+        case .warmup: return DesignSystem.Colors.accentOrange
+        case .cooldown: return DesignSystem.Colors.secondaryBlue
         }
     }
 
@@ -407,6 +409,8 @@ struct SessionTypeButton: View {
         case .tactical: return DesignSystem.Colors.secondaryBlue
         case .recovery: return DesignSystem.Colors.accentYellow
         case .match: return DesignSystem.Colors.textPrimary
+        case .warmup: return DesignSystem.Colors.accentOrange
+        case .cooldown: return DesignSystem.Colors.secondaryBlue
         }
     }
 }
@@ -418,6 +422,7 @@ struct SessionTypeButton: View {
             sessionType: .technical,
             duration: 45,
             intensity: 6,
+            orderIndex: 0,
             notes: "Focus on first touch",
             isCompleted: false,
             completedAt: nil,

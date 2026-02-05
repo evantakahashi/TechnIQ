@@ -9,8 +9,13 @@ struct TodaysTrainingView: View {
     let activePlan: TrainingPlanModel
 
     @State private var todaysSessions: [PlanSession] = []
+    @State private var currentDay: PlanDayModel?
+    @State private var currentWeek: Int = 1
+    @State private var planComplete = false
     @State private var showingNewSession = false
+    @State private var showingActiveTraining = false
     @State private var selectedPlanSession: PlanSession?
+    @State private var activeTrainingExercises: [Exercise] = []
 
     var body: some View {
         ZStack {
@@ -25,8 +30,9 @@ struct TodaysTrainingView: View {
                     // Progress Card
                     progressCard
 
-                    // Today's Sessions
-                    if todaysSessions.isEmpty {
+                    if planComplete {
+                        planCompleteCard
+                    } else if todaysSessions.isEmpty {
                         emptyStateCard
                     } else {
                         sessionsListCard
@@ -49,6 +55,10 @@ struct TodaysTrainingView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showingActiveTraining) {
+            ActiveTrainingView(exercises: activeTrainingExercises)
+                .environment(\.managedObjectContext, viewContext)
+        }
     }
 
     // MARK: - Header Card
@@ -66,8 +76,8 @@ struct TodaysTrainingView: View {
                             .font(DesignSystem.Typography.titleMedium)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                        if let (week, day) = TrainingPlanService.shared.getCurrentWeekAndDay(for: activePlan) {
-                            Text("Week \(week), Day \(day)")
+                        if let day = currentDay {
+                            Text("Week \(currentWeek), Day \(day.dayNumber)")
                                 .font(DesignSystem.Typography.labelSmall)
                                 .foregroundColor(DesignSystem.Colors.textSecondary)
                         }
@@ -76,6 +86,25 @@ struct TodaysTrainingView: View {
                     Spacer()
 
                     DifficultyBadge(difficulty: activePlan.difficulty)
+                }
+
+                // Skip Day button
+                if currentDay != nil && !planComplete {
+                    Button {
+                        skipCurrentDay()
+                    } label: {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "forward.fill")
+                                .font(.caption)
+                            Text("Skip Day")
+                                .font(DesignSystem.Typography.labelSmall)
+                        }
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .background(DesignSystem.Colors.textSecondary.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.sm)
+                    }
                 }
             }
         }
@@ -126,8 +155,14 @@ struct TodaysTrainingView: View {
                 PlanSessionCard(
                     session: session,
                     onStartSession: {
-                        selectedPlanSession = session
-                        showingNewSession = true
+                        let exercises = (session.exercises?.allObjects as? [Exercise]) ?? []
+                        if !exercises.isEmpty {
+                            activeTrainingExercises = exercises
+                            showingActiveTraining = true
+                        } else {
+                            selectedPlanSession = session
+                            showingNewSession = true
+                        }
                     }
                 )
             }
@@ -158,10 +193,49 @@ struct TodaysTrainingView: View {
         }
     }
 
+    // MARK: - Plan Complete
+
+    private var planCompleteCard: some View {
+        ModernCard {
+            VStack(spacing: DesignSystem.Spacing.lg) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(DesignSystem.Colors.accentYellow)
+
+                Text("Plan Complete!")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                Text("You've finished all training days in this plan. Great work!")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DesignSystem.Spacing.xl)
+        }
+    }
+
     // MARK: - Helper Functions
 
     private func loadTodaysSessions() {
-        todaysSessions = TrainingPlanService.shared.getTodaysSessions(for: activePlan)
+        if let (week, day) = TrainingPlanService.shared.getCurrentDay(for: activePlan) {
+            currentWeek = week
+            currentDay = day
+            planComplete = false
+            todaysSessions = TrainingPlanService.shared.getTodaysSessions(for: activePlan)
+        } else {
+            currentDay = nil
+            planComplete = true
+            todaysSessions = []
+        }
+    }
+
+    private func skipCurrentDay() {
+        guard let day = currentDay else { return }
+        TrainingPlanService.shared.skipDay(dayId: day.id)
+        loadTodaysSessions()
     }
 }
 
@@ -282,6 +356,8 @@ struct PlanSessionCard: View {
         case "tactical": return "brain.head.profile"
         case "recovery": return "bed.double.fill"
         case "match": return "sportscourt"
+        case "warmup": return "flame.fill"
+        case "cooldown": return "snowflake"
         default: return "soccerball"
         }
     }
@@ -294,6 +370,8 @@ struct PlanSessionCard: View {
         case "tactical": return DesignSystem.Colors.secondaryBlue
         case "recovery": return DesignSystem.Colors.warning
         case "match": return DesignSystem.Colors.accentOrange
+        case "warmup": return DesignSystem.Colors.accentOrange
+        case "cooldown": return DesignSystem.Colors.secondaryBlue
         default: return DesignSystem.Colors.primaryGreen
         }
     }

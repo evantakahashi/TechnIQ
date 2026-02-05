@@ -308,11 +308,14 @@ class TrainingPlanService: ObservableObject {
     }
 
     func addSessionToDay(_ day: PlanDay, sessionType: SessionType, duration: Int, intensity: Int, notes: String?, exercises: [Exercise]) -> PlanSession? {
+        let existingSessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
+
         let session = PlanSession(context: context)
         session.id = UUID()
         session.sessionType = sessionType.rawValue
         session.duration = Int16(duration)
         session.intensity = Int16(intensity)
+        session.orderIndex = Int16(existingSessions.count)
         session.notes = notes
         session.isCompleted = false
         session.day = day
@@ -418,9 +421,9 @@ class TrainingPlanService: ObservableObject {
 
     private func checkAndMarkWeekCompleted(_ week: PlanWeek) {
         let days = (week.days?.allObjects as? [PlanDay]) ?? []
-        let allCompleted = !days.isEmpty && days.allSatisfy { $0.isCompleted }
+        let allDone = !days.isEmpty && days.allSatisfy { $0.isCompleted || $0.isSkipped || $0.isRestDay }
 
-        if allCompleted {
+        if allDone {
             week.isCompleted = true
             week.completedAt = Date()
 
@@ -451,19 +454,18 @@ class TrainingPlanService: ObservableObject {
         let weeks = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
         guard !weeks.isEmpty else { return }
 
-        let totalSessions = weeks.reduce(0) { weekTotal, week in
-            let days = (week.days?.allObjects as? [PlanDay]) ?? []
-            return weekTotal + days.reduce(0) { dayTotal, day in
-                let sessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
-                return dayTotal + sessions.count
-            }
-        }
+        var totalSessions = 0
+        var completedSessions = 0
 
-        let completedSessions = weeks.reduce(0) { weekTotal, week in
+        for week in weeks {
             let days = (week.days?.allObjects as? [PlanDay]) ?? []
-            return weekTotal + days.reduce(0) { dayTotal, day in
+            for day in days {
+                // Exclude skipped and rest days from progress calculation
+                if day.isSkipped || day.isRestDay { continue }
+
                 let sessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
-                return dayTotal + sessions.filter { $0.isCompleted }.count
+                totalSessions += sessions.count
+                completedSessions += sessions.filter { $0.isCompleted }.count
             }
         }
 
@@ -669,6 +671,7 @@ class TrainingPlanService: ObservableObject {
                 clonedDay.dayNumber = Int16(dayModel.dayNumber)
                 clonedDay.dayOfWeek = dayModel.dayOfWeek?.rawValue
                 clonedDay.isRestDay = dayModel.isRestDay
+                clonedDay.isSkipped = false
                 clonedDay.notes = dayModel.notes
                 clonedDay.isCompleted = false
                 clonedDay.week = clonedWeek
@@ -680,6 +683,7 @@ class TrainingPlanService: ObservableObject {
                     clonedSession.sessionType = sessionModel.sessionType.rawValue
                     clonedSession.duration = Int16(sessionModel.duration)
                     clonedSession.intensity = Int16(sessionModel.intensity)
+                    clonedSession.orderIndex = Int16(sessionModel.orderIndex)
                     clonedSession.notes = sessionModel.notes
                     clonedSession.isCompleted = false
                     clonedSession.day = clonedDay
@@ -716,29 +720,72 @@ class TrainingPlanService: ObservableObject {
         }
     }
 
-    // MARK: - Today's Training Helpers
+    // MARK: - Completion-Based Progression
 
-    /// Gets today's planned sessions for the active plan
-    func getTodaysSessions(for planModel: TrainingPlanModel) -> [PlanSession] {
+    /// Returns the current day the player should work on (completion-based).
+    /// Auto-completes rest days encountered along the way.
+    /// Returns nil when plan is fully complete.
+    func getCurrentDay(for planModel: TrainingPlanModel) -> (week: Int, day: PlanDayModel)? {
         let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", planModel.id as CVarArg)
         request.fetchLimit = 1
 
         do {
-            guard let plan = try context.fetch(request).first else { return [] }
+            guard let plan = try context.fetch(request).first else { return nil }
 
-            // Get current week and day
-            guard let (weekNumber, dayNumber) = getCurrentWeekAndDay(for: planModel) else { return [] }
+            let weeks = (plan.weeks?.allObjects as? [PlanWeek])?.sorted { $0.weekNumber < $1.weekNumber } ?? []
+            var didAutoComplete = false
 
-            // Find the specific week and day
-            let weeks = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
-            guard let currentWeek = weeks.first(where: { $0.weekNumber == Int16(weekNumber) }) else { return [] }
+            for week in weeks {
+                let days = (week.days?.allObjects as? [PlanDay])?.sorted { $0.dayNumber < $1.dayNumber } ?? []
 
-            let days = (currentWeek.days?.allObjects as? [PlanDay]) ?? []
-            guard let currentDay = days.first(where: { $0.dayNumber == Int16(dayNumber) }) else { return [] }
+                for day in days {
+                    if day.isCompleted || day.isSkipped {
+                        continue
+                    }
 
-            // Return sessions for today
-            return (currentDay.sessions?.allObjects as? [PlanSession]) ?? []
+                    // Auto-complete rest days silently
+                    if day.isRestDay {
+                        day.isCompleted = true
+                        day.completedAt = Date()
+                        didAutoComplete = true
+                        checkAndMarkWeekCompleted(week)
+                        continue
+                    }
+
+                    // This is the current actionable day
+                    if didAutoComplete {
+                        try context.save()
+                    }
+                    return (week: Int(week.weekNumber), day: day.toModel())
+                }
+            }
+
+            // All days done
+            if didAutoComplete {
+                try context.save()
+            }
+            return nil
+        } catch {
+            #if DEBUG
+            print("Failed to get current day: \(error)")
+            #endif
+            return nil
+        }
+    }
+
+    /// Gets today's planned sessions for the active plan (completion-based)
+    func getTodaysSessions(for planModel: TrainingPlanModel) -> [PlanSession] {
+        guard let (_, dayModel) = getCurrentDay(for: planModel) else { return [] }
+
+        let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", dayModel.id as CVarArg)
+        request.fetchLimit = 1
+
+        do {
+            guard let day = try context.fetch(request).first else { return [] }
+            let sessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
+            return sessions.sorted { $0.orderIndex < $1.orderIndex }
         } catch {
             #if DEBUG
             print("Failed to get today's sessions: \(error)")
@@ -747,23 +794,33 @@ class TrainingPlanService: ObservableObject {
         }
     }
 
-    /// Calculates current week and day based on plan start date
+    /// Backward-compatible wrapper — returns (weekNumber, dayNumber) via completion-based logic
     func getCurrentWeekAndDay(for planModel: TrainingPlanModel) -> (week: Int, day: Int)? {
-        guard let startDate = planModel.startedAt else { return nil }
+        guard let (week, dayModel) = getCurrentDay(for: planModel) else { return nil }
+        return (week: week, day: dayModel.dayNumber)
+    }
 
-        let calendar = Calendar.current
-        let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: Date()).day ?? 0
+    /// Skips the current day without completing it. Does not inflate progress.
+    func skipDay(dayId: UUID) {
+        let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", dayId as CVarArg)
+        request.fetchLimit = 1
 
-        // Calculate week number (1-indexed)
-        let weekNumber = (daysSinceStart / 7) + 1
+        do {
+            guard let day = try context.fetch(request).first else { return }
+            day.isSkipped = true
 
-        // Calculate day number within the week (1-7)
-        let dayNumber = (daysSinceStart % 7) + 1
+            // Cascade: check week/plan completion
+            if let week = day.week {
+                checkAndMarkWeekCompleted(week)
+            }
 
-        // Ensure we don't exceed plan duration
-        guard weekNumber <= planModel.durationWeeks else { return nil }
-
-        return (week: weekNumber, day: dayNumber)
+            try context.save()
+        } catch {
+            #if DEBUG
+            print("Failed to skip day: \(error)")
+            #endif
+        }
     }
 
     // MARK: - Pre-built Plans

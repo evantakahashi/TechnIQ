@@ -538,13 +538,13 @@ struct CalendarDayView: View {
                     .fill(DesignSystem.Colors.neutral300)
                     .frame(width: 6, height: 6)
                     .opacity(0.3)
-            } else if sessions.count == 1 {
+            } else if sessions.count == 1, let first = sessions.first {
                 // Single session with icon
-                sessionTypeIcon(for: sessions.first!)
+                sessionTypeIcon(for: first)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(width: 16, height: 16)
-                    .background(colorForSession(sessions.first!))
+                    .background(colorForSession(first))
                     .cornerRadius(8)
             } else {
                 // Multiple sessions - show count with heat intensity
@@ -720,13 +720,13 @@ struct WeeklyDayView: View {
                 .fill(DesignSystem.Colors.neutral300)
                 .frame(width: 8, height: 8)
                 .opacity(0.4)
-        } else if sessions.count == 1 {
+        } else if sessions.count == 1, let first = sessions.first {
             // Single session with larger icon for weekly view
-            sessionTypeIcon(for: sessions.first!)
+            sessionTypeIcon(for: first)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 20, height: 20)
-                .background(colorForSession(sessions.first!))
+                .background(colorForSession(first))
                 .cornerRadius(10)
                 .customShadow(DesignSystem.Shadow.small)
         } else {

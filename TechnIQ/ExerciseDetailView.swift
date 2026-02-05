@@ -12,6 +12,7 @@ struct ExerciseDetailView: View {
     @State private var showingEditor = false
     @State private var personalNotes: String = ""
     @State private var isEditingNotes = false
+    @State private var showingActiveTraining = false
 
     // Drill feedback state (for AI-generated drills)
     @State private var feedbackRating: Int = 0
@@ -46,7 +47,23 @@ struct ExerciseDetailView: View {
                             DifficultyStars(difficulty: Int(exercise.difficulty))
                         }
                     }
-                    
+
+                    // Start Drill Button
+                    Button {
+                        showingActiveTraining = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "play.fill")
+                            Text("Start Drill")
+                                .fontWeight(.bold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(DesignSystem.Colors.primaryGreen)
+                        .cornerRadius(DesignSystem.CornerRadius.button)
+                    }
+
                     // YouTube Video Section
                     if let youtubeVideoId = extractYouTubeVideoId() {
                         VStack(alignment: .leading, spacing: 12) {
@@ -243,6 +260,10 @@ struct ExerciseDetailView: View {
             if let youtubeVideoId = extractYouTubeVideoId() {
                 YouTubeWebView(videoId: youtubeVideoId)
             }
+        }
+        .fullScreenCover(isPresented: $showingActiveTraining) {
+            ActiveTrainingView(exercises: [exercise])
+                .environment(\.managedObjectContext, CoreDataManager.shared.context)
         }
     }
     

@@ -27,7 +27,7 @@ class AuthenticationManager: ObservableObject {
     
     private func setupAuthStateListener() {
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self?.currentUser = user
                 self?.isAuthenticated = user != nil
                 self?.clearError()
@@ -115,7 +115,8 @@ class AuthenticationManager: ObservableObject {
 
         do {
             // Get the presenting view controller
-            guard let presentingViewController = await UIApplication.shared.windows.first?.rootViewController else {
+            guard let scene = await UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+                  let presentingViewController = scene.windows.first?.rootViewController else {
                 await MainActor.run {
                     errorMessage = "Unable to find root view controller"
                     isLoading = false
@@ -296,12 +297,3 @@ class AuthenticationManager: ObservableObject {
     }
 }
 
-// MARK: - UIApplication Extension for Root View Controller
-
-extension UIApplication {
-    var windows: [UIWindow] {
-        return UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-    }
-}

@@ -7,6 +7,7 @@ import UIKit
 // MARK: - Cloud Sync Manager
 // Handles synchronization between Core Data and Firebase Firestore for ML features
 
+@MainActor
 class CloudSyncManager: ObservableObject {
     static let shared = CloudSyncManager()
     
@@ -53,32 +54,40 @@ class CloudSyncManager: ObservableObject {
     
     func performFullSync() async {
         guard !isSyncing else { return }
-        
+
         isSyncing = true
         syncError = nil
-        
+
         do {
             // Sync player profiles and goals
             try await syncPlayerData()
-            
-            // Sync training sessions
+
+            // Sync training sessions (ALL sessions, no limit)
             try await syncTrainingHistory()
-            
+
+            // Sync avatar configuration and owned items
+            try await syncAvatarData()
+
+            // Sync custom exercises
+            try await syncCustomExercises()
+
+            // Sync training plans with full progress state
+            try await syncTrainingPlans()
+
             // Sync recommendation feedback
             try await syncRecommendationFeedback()
-            
+
             lastSyncDate = Date()
             #if DEBUG
-            print("✅ Full cloud sync completed successfully")
-            
+            print("Full cloud sync completed successfully")
             #endif
         } catch {
             syncError = error.localizedDescription
             #if DEBUG
-            print("❌ Full sync failed: \(error)")
+            print("Full sync failed: \(error)")
             #endif
         }
-        
+
         isSyncing = false
     }
     
@@ -143,21 +152,83 @@ class CloudSyncManager: ObservableObject {
     
     private func syncTrainingHistory() async throws {
         let context = coreDataManager.context
-        
-        // Fetch training sessions from last 30 days
-        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        
+
+        // Sync ALL training sessions (removed 30-day limit for cross-device persistence)
         let sessionRequest: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        sessionRequest.predicate = NSPredicate(format: "date >= %@", thirtyDaysAgo as NSDate)
         sessionRequest.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)]
-        
+
         do {
             let sessions = try context.fetch(sessionRequest)
-            
+
             for session in sessions {
                 try await cloudDataService.syncTrainingSession(session)
             }
-            
+
+        } catch {
+            throw error
+        }
+    }
+
+    // MARK: - Avatar Sync
+
+    private func syncAvatarData() async throws {
+        let context = coreDataManager.context
+
+        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
+        playerRequest.predicate = NSPredicate(format: "avatarConfiguration != nil")
+
+        do {
+            let players = try context.fetch(playerRequest)
+
+            for player in players {
+                if let avatar = player.avatarConfiguration {
+                    try await cloudDataService.syncAvatarConfiguration(avatar, for: player)
+                }
+
+                // Sync owned avatar items
+                if let ownedItems = player.ownedAvatarItems?.allObjects as? [OwnedAvatarItem], !ownedItems.isEmpty {
+                    try await cloudDataService.syncOwnedAvatarItems(ownedItems, for: player)
+                }
+            }
+        } catch {
+            throw error
+        }
+    }
+
+    // MARK: - Custom Exercises Sync
+
+    private func syncCustomExercises() async throws {
+        let context = coreDataManager.context
+
+        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
+
+        do {
+            let players = try context.fetch(playerRequest)
+
+            for player in players {
+                // Sync player-owned custom exercises (not template exercises)
+                if let exercises = player.exercises?.allObjects as? [Exercise], !exercises.isEmpty {
+                    try await cloudDataService.syncCustomExercises(exercises, for: player)
+                }
+            }
+        } catch {
+            throw error
+        }
+    }
+
+    // MARK: - Training Plans Sync
+
+    private func syncTrainingPlans() async throws {
+        let context = coreDataManager.context
+
+        let planRequest: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
+
+        do {
+            let plans = try context.fetch(planRequest)
+
+            for plan in plans {
+                try await cloudDataService.syncTrainingPlan(plan)
+            }
         } catch {
             throw error
         }

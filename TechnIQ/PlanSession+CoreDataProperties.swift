@@ -14,6 +14,7 @@ extension PlanSession {
     @NSManaged public var notes: String?
     @NSManaged public var isCompleted: Bool
     @NSManaged public var completedAt: Date?
+    @NSManaged public var orderIndex: Int16
     @NSManaged public var actualDuration: Int16
     @NSManaged public var actualIntensity: Int16
     @NSManaged public var day: PlanDay?

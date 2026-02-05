@@ -7,6 +7,7 @@ struct ActivePlanView: View {
     @StateObject private var planService = TrainingPlanService.shared
 
     @State private var activePlan: TrainingPlanModel?
+    @State private var currentDayID: UUID?
     @State private var selectedSession: PlanSessionModel?
     @State private var showingSessionCompletion = false
     @State private var completionDuration: Int = 60
@@ -163,7 +164,9 @@ struct ActivePlanView: View {
 
             if let currentWeek = plan.weeks.first(where: { $0.weekNumber == plan.currentWeek }) {
                 ForEach(currentWeek.days) { day in
-                    DayCard(day: day) { session in
+                    let isCurrent = day.id == currentDayID
+                    let isLocked = !day.isDone && !isCurrent
+                    DayCard(day: day, isCurrent: isCurrent, isLocked: isLocked) { session in
                         selectedSession = session
                         completionDuration = session.duration
                         completionIntensity = session.intensity
@@ -317,6 +320,9 @@ struct ActivePlanView: View {
     private func loadActivePlan() {
         guard let player = players.first else { return }
         activePlan = planService.fetchActivePlan(for: player)
+        if let plan = activePlan {
+            currentDayID = planService.getCurrentDay(for: plan)?.day.id
+        }
     }
 
     private func completeSession() {
@@ -331,6 +337,8 @@ struct ActivePlanView: View {
 
 struct DayCard: View {
     let day: PlanDayModel
+    var isCurrent: Bool = false
+    var isLocked: Bool = false
     let onSessionTap: (PlanSessionModel) -> Void
 
     var body: some View {
@@ -340,22 +348,53 @@ struct DayCard: View {
                     if let dayOfWeek = day.dayOfWeek {
                         Text(dayOfWeek.displayName)
                             .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .foregroundColor(isLocked ? DesignSystem.Colors.textSecondary : DesignSystem.Colors.textPrimary)
                     } else {
                         Text("Day \(day.dayNumber)")
                             .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .foregroundColor(isLocked ? DesignSystem.Colors.textSecondary : DesignSystem.Colors.textPrimary)
+                    }
+
+                    if isCurrent {
+                        Text("Current")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, DesignSystem.Spacing.xs)
+                            .padding(.vertical, 2)
+                            .background(DesignSystem.Colors.primaryGreen)
+                            .cornerRadius(DesignSystem.CornerRadius.xs)
                     }
 
                     Spacer()
 
-                    if day.isCompleted {
+                    if day.isSkipped {
+                        Text("Skipped")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .padding(.horizontal, DesignSystem.Spacing.xs)
+                            .padding(.vertical, 2)
+                            .background(DesignSystem.Colors.textSecondary.opacity(0.15))
+                            .cornerRadius(DesignSystem.CornerRadius.xs)
+                    } else if day.isCompleted {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(DesignSystem.Colors.success)
+                    } else if isLocked {
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
                     }
                 }
 
-                if day.isRestDay {
+                if isLocked {
+                    HStack {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.4))
+
+                        Text("Complete previous days to unlock")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.6))
+                    }
+                } else if day.isRestDay {
                     HStack {
                         Image(systemName: "bed.double.fill")
                             .foregroundColor(DesignSystem.Colors.accentYellow)
@@ -367,12 +406,19 @@ struct DayCard: View {
                 } else {
                     ForEach(day.sessions) { session in
                         SessionRow(session: session) {
-                            onSessionTap(session)
+                            if !isLocked {
+                                onSessionTap(session)
+                            }
                         }
                     }
                 }
             }
         }
+        .opacity(isLocked ? 0.6 : 1.0)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                .stroke(isCurrent ? DesignSystem.Colors.primaryGreen : Color.clear, lineWidth: 2)
+        )
     }
 }
 

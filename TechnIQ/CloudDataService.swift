@@ -45,11 +45,11 @@ class CloudDataService: ObservableObject {
     
     private func startNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
-            guard let self = self else { return }
+            let isAvailable = path.status == .satisfied
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
-                self.isNetworkAvailable = path.status == .satisfied
-                if path.status != .satisfied {
+                self.isNetworkAvailable = isAvailable
+                if !isAvailable {
                     #if DEBUG
                     print("🌐 Network connection lost - will skip cloud sync operations")
                     #endif
@@ -127,22 +127,94 @@ class CloudDataService: ObservableObject {
     }
     
     // MARK: - Recommendation Feedback Sync
-    
+
     func syncRecommendationFeedback(_ feedback: [RecommendationFeedback]) async throws {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
+
         let batch = db.batch()
-        
+
         for feedbackItem in feedback {
             let feedbackData = try createRecommendationFeedbackDocument(feedback: feedbackItem)
             let docRef = db.collection("users").document(userUID)
                 .collection("recommendationFeedback").document(feedbackItem.id?.uuidString ?? UUID().uuidString)
             batch.setData(feedbackData, forDocument: docRef, merge: true)
         }
-        
+
         try await batch.commit()
+    }
+
+    // MARK: - Avatar Configuration Sync
+
+    func syncAvatarConfiguration(_ avatar: AvatarConfiguration, for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        guard isNetworkAvailable else {
+            throw CloudDataError.networkError
+        }
+
+        let avatarData = createAvatarConfigurationDocument(avatar: avatar)
+
+        try await db.collection("users").document(userUID)
+            .collection("avatarConfiguration").document(player.id?.uuidString ?? "default")
+            .setData(avatarData, merge: true)
+    }
+
+    func syncOwnedAvatarItems(_ items: [OwnedAvatarItem], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        let batch = db.batch()
+
+        for item in items {
+            let itemData = createOwnedAvatarItemDocument(item: item)
+            let docRef = db.collection("users").document(userUID)
+                .collection("ownedAvatarItems").document(item.id?.uuidString ?? UUID().uuidString)
+            batch.setData(itemData, forDocument: docRef, merge: true)
+        }
+
+        try await batch.commit()
+    }
+
+    // MARK: - Custom Exercises (Drills) Sync
+
+    func syncCustomExercises(_ exercises: [Exercise], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        let batch = db.batch()
+
+        for exercise in exercises {
+            let exerciseData = createCustomExerciseDocument(exercise: exercise)
+            let docRef = db.collection("users").document(userUID)
+                .collection("customExercises").document(exercise.id?.uuidString ?? UUID().uuidString)
+            batch.setData(exerciseData, forDocument: docRef, merge: true)
+        }
+
+        try await batch.commit()
+    }
+
+    // MARK: - Training Plans Sync
+
+    func syncTrainingPlan(_ plan: TrainingPlan) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        guard isNetworkAvailable else {
+            throw CloudDataError.networkError
+        }
+
+        let planData = createTrainingPlanDocument(plan: plan)
+
+        try await db.collection("users").document(userUID)
+            .collection("trainingPlans").document(plan.id?.uuidString ?? UUID().uuidString)
+            .setData(planData, merge: true)
     }
     
     // MARK: - Data Retrieval
@@ -162,25 +234,50 @@ class CloudDataService: ObservableObject {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
+
         let userRef = db.collection("users").document(userUID)
-        
+
         // Fetch all collections in parallel
         async let profilesSnapshot = userRef.collection("playerProfiles").getDocuments()
         async let goalsSnapshot = userRef.collection("playerGoals").getDocuments()
         async let sessionsSnapshot = userRef.collection("trainingSessions").getDocuments()
         async let feedbackSnapshot = userRef.collection("recommendationFeedback").getDocuments()
-        
-        let (profiles, goals, sessions, feedback) = try await (
-            profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot
+        async let avatarSnapshot = userRef.collection("avatarConfiguration").getDocuments()
+        async let ownedItemsSnapshot = userRef.collection("ownedAvatarItems").getDocuments()
+        async let customExercisesSnapshot = userRef.collection("customExercises").getDocuments()
+        async let trainingPlansSnapshot = userRef.collection("trainingPlans").getDocuments()
+
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans) = try await (
+            profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
+            avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot
         )
-        
+
         return CloudUserData(
             playerProfiles: profiles.documents.compactMap { $0.data() },
             playerGoals: goals.documents.compactMap { $0.data() },
             trainingSessions: sessions.documents.compactMap { $0.data() },
-            recommendationFeedback: feedback.documents.compactMap { $0.data() }
+            recommendationFeedback: feedback.documents.compactMap { $0.data() },
+            avatarConfiguration: avatar.documents.first?.data(),
+            ownedAvatarItems: ownedItems.documents.compactMap { $0.data() },
+            customExercises: exercises.documents.compactMap { $0.data() },
+            trainingPlans: plans.documents.compactMap { $0.data() }
         )
+    }
+
+    /// Check if cloud data exists for current user (for restore flow)
+    func hasCloudData() async throws -> Bool {
+        guard let userUID = auth.currentUser?.uid else {
+            return false
+        }
+
+        guard isNetworkAvailable else {
+            return false
+        }
+
+        let profilesSnapshot = try await db.collection("users").document(userUID)
+            .collection("playerProfiles").limit(to: 1).getDocuments()
+
+        return !profilesSnapshot.documents.isEmpty
     }
     
     // MARK: - Analytics and ML Data Collection
@@ -253,6 +350,10 @@ extension CloudDataService {
             "experienceLevel": player.experienceLevel ?? "",
             "competitiveLevel": player.competitiveLevel ?? "",
             "playerRoleModel": player.playerRoleModel ?? "",
+            "playingStyle": player.playingStyle ?? "",
+            "dominantFoot": player.dominantFoot ?? "",
+            "height": player.height,
+            "weight": player.weight,
             "skillGoals": profile.skillGoals ?? [],
             "physicalFocusAreas": profile.physicalFocusAreas ?? [],
             "selfIdentifiedWeaknesses": profile.selfIdentifiedWeaknesses ?? [],
@@ -261,6 +362,16 @@ extension CloudDataService {
             "preferredDrillComplexity": profile.preferredDrillComplexity ?? "",
             "yearsPlaying": profile.yearsPlaying,
             "trainingBackground": profile.trainingBackground ?? "",
+            // Gamification data
+            "totalXP": player.totalXP,
+            "currentLevel": player.currentLevel,
+            "currentStreak": player.currentStreak,
+            "longestStreak": player.longestStreak,
+            "coins": player.coins,
+            "totalCoinsEarned": player.totalCoinsEarned,
+            "streakFreezes": player.streakFreezes,
+            "unlockedAchievements": player.unlockedAchievements ?? [],
+            "lastTrainingDate": player.lastTrainingDate as Any,
             "createdAt": profile.createdAt ?? Date(),
             "updatedAt": Date()
         ]
@@ -340,6 +451,126 @@ extension CloudDataService {
             "deviceInfo": data.deviceInfo
         ]
     }
+
+    private func createAvatarConfigurationDocument(avatar: AvatarConfiguration) -> [String: Any] {
+        return [
+            "id": avatar.id?.uuidString ?? "",
+            "skinTone": avatar.skinTone ?? "",
+            "hairStyle": avatar.hairStyle ?? "",
+            "hairColor": avatar.hairColor ?? "",
+            "faceStyle": avatar.faceStyle ?? "",
+            "jerseyId": avatar.jerseyId ?? "",
+            "shortsId": avatar.shortsId ?? "",
+            "socksId": avatar.socksId ?? "",
+            "cleatsId": avatar.cleatsId ?? "",
+            "accessoryIds": (avatar.accessoryIds as? [String]) ?? [],
+            "lastModified": avatar.lastModified ?? Date()
+        ]
+    }
+
+    private func createOwnedAvatarItemDocument(item: OwnedAvatarItem) -> [String: Any] {
+        return [
+            "id": item.id?.uuidString ?? "",
+            "itemId": item.itemId ?? "",
+            "purchasedAt": item.purchasedAt ?? Date(),
+            "equippedSlot": item.equippedSlot ?? ""
+        ]
+    }
+
+    private func createCustomExerciseDocument(exercise: Exercise) -> [String: Any] {
+        return [
+            "id": exercise.id?.uuidString ?? "",
+            "name": exercise.name ?? "",
+            "category": exercise.category ?? "",
+            "difficulty": exercise.difficulty,
+            "exerciseDescription": exercise.exerciseDescription ?? "",
+            "instructions": exercise.instructions ?? "",
+            "targetSkills": exercise.targetSkills ?? [],
+            "isYouTubeContent": exercise.isYouTubeContent,
+            "youtubeVideoID": exercise.youtubeVideoID ?? "",
+            "videoThumbnailURL": exercise.videoThumbnailURL ?? "",
+            "videoDuration": exercise.videoDuration,
+            "videoDescription": exercise.videoDescription ?? "",
+            "isFavorite": exercise.isFavorite,
+            "lastUsedAt": exercise.lastUsedAt as Any,
+            "personalNotes": exercise.personalNotes ?? "",
+            "diagramJSON": exercise.diagramJSON ?? "",
+            "metabolicLoad": exercise.metabolicLoad,
+            "technicalComplexity": exercise.technicalComplexity
+        ]
+    }
+
+    private func createTrainingPlanDocument(plan: TrainingPlan) -> [String: Any] {
+        // Serialize weeks with full progress state
+        var weeksData: [[String: Any]] = []
+        if let weeks = plan.weeks as? Set<PlanWeek> {
+            weeksData = weeks.sorted { $0.weekNumber < $1.weekNumber }.map { week in
+                var daysData: [[String: Any]] = []
+                if let days = week.days as? Set<PlanDay> {
+                    daysData = days.sorted { $0.dayNumber < $1.dayNumber }.map { day in
+                        var sessionsData: [[String: Any]] = []
+                        if let sessions = day.sessions as? Set<PlanSession> {
+                            sessionsData = sessions.map { session in
+                                let exerciseIDs = (session.exercises as? Set<Exercise>)?.compactMap { $0.id?.uuidString } ?? []
+                                return [
+                                    "id": session.id?.uuidString ?? "",
+                                    "sessionType": session.sessionType ?? "",
+                                    "duration": session.duration,
+                                    "intensity": session.intensity,
+                                    "notes": session.notes ?? "",
+                                    "isCompleted": session.isCompleted,
+                                    "completedAt": session.completedAt as Any,
+                                    "orderIndex": session.orderIndex,
+                                    "actualDuration": session.actualDuration,
+                                    "actualIntensity": session.actualIntensity,
+                                    "exerciseIDs": exerciseIDs
+                                ] as [String: Any]
+                            }
+                        }
+                        return [
+                            "id": day.id?.uuidString ?? "",
+                            "dayNumber": day.dayNumber,
+                            "dayOfWeek": day.dayOfWeek ?? "",
+                            "isRestDay": day.isRestDay,
+                            "isSkipped": day.isSkipped,
+                            "notes": day.notes ?? "",
+                            "isCompleted": day.isCompleted,
+                            "completedAt": day.completedAt as Any,
+                            "sessions": sessionsData
+                        ] as [String: Any]
+                    }
+                }
+                return [
+                    "id": week.id?.uuidString ?? "",
+                    "weekNumber": week.weekNumber,
+                    "focusArea": week.focusArea ?? "",
+                    "notes": week.notes ?? "",
+                    "isCompleted": week.isCompleted,
+                    "completedAt": week.completedAt as Any,
+                    "days": daysData
+                ] as [String: Any]
+            }
+        }
+
+        return [
+            "id": plan.id?.uuidString ?? "",
+            "name": plan.name ?? "",
+            "planDescription": plan.planDescription ?? "",
+            "durationWeeks": plan.durationWeeks,
+            "difficulty": plan.difficulty ?? "",
+            "category": plan.category ?? "",
+            "targetRole": plan.targetRole ?? "",
+            "isPrebuilt": plan.isPrebuilt,
+            "isActive": plan.isActive,
+            "currentWeek": plan.currentWeek,
+            "progressPercentage": plan.progressPercentage,
+            "startedAt": plan.startedAt as Any,
+            "completedAt": plan.completedAt as Any,
+            "createdAt": plan.createdAt ?? Date(),
+            "updatedAt": plan.updatedAt ?? Date(),
+            "weeks": weeksData
+        ] as [String: Any]
+    }
     
     private func createCloudPlayerProfile(from data: [String: Any]) throws -> CloudPlayerProfile {
         return CloudPlayerProfile(
@@ -410,6 +641,10 @@ struct CloudUserData {
     let playerGoals: [[String: Any]]
     let trainingSessions: [[String: Any]]
     let recommendationFeedback: [[String: Any]]
+    let avatarConfiguration: [String: Any]?
+    let ownedAvatarItems: [[String: Any]]
+    let customExercises: [[String: Any]]
+    let trainingPlans: [[String: Any]]
 }
 
 struct CloudPlayerProfile {

@@ -53,9 +53,14 @@ struct PlayerContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
     @Binding var isOnboardingComplete: Bool
-    
+
     @FetchRequest var players: FetchedResults<Player>
-    
+
+    @StateObject private var restoreService = CloudRestoreService.shared
+    @State private var isCheckingCloud = false
+    @State private var hasCheckedCloud = false
+    @State private var restoreError: String?
+
     init(isOnboardingComplete: Binding<Bool>) {
         self._isOnboardingComplete = isOnboardingComplete
 
@@ -67,10 +72,33 @@ struct PlayerContentView: View {
             animation: .default
         )
     }
-    
+
     var body: some View {
         Group {
-            if players.isEmpty && !isOnboardingComplete {
+            if !players.isEmpty {
+                // Has local player - show main app
+                MainTabView()
+            } else if isCheckingCloud || restoreService.isRestoring {
+                // Checking cloud or restoring
+                CloudRestoreProgressView(
+                    isChecking: isCheckingCloud,
+                    isRestoring: restoreService.isRestoring,
+                    progress: restoreService.restoreProgress
+                )
+            } else if !hasCheckedCloud {
+                // Haven't checked cloud yet - show loading and trigger check
+                CloudRestoreProgressView(isChecking: true, isRestoring: false, progress: 0)
+                    .onAppear {
+                        checkForCloudData()
+                    }
+            } else if let error = restoreError {
+                // Restore failed - show error with retry option
+                CloudRestoreErrorView(error: error) {
+                    restoreError = nil
+                    hasCheckedCloud = false
+                }
+            } else if !isOnboardingComplete {
+                // No local data, no cloud data - show onboarding
                 EnhancedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
             } else {
                 MainTabView()
@@ -78,17 +106,162 @@ struct PlayerContentView: View {
         }
         .onAppear {
             updatePlayersFilter()
-            isOnboardingComplete = !players.isEmpty
+            if !players.isEmpty {
+                isOnboardingComplete = true
+            }
         }
         .onChange(of: authManager.userUID) {
             updatePlayersFilter()
+            // Reset cloud check state when user changes
+            hasCheckedCloud = false
+            restoreError = nil
         }
     }
-    
+
     private func updatePlayersFilter() {
         guard !authManager.userUID.isEmpty else { return }
-        
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
+    }
+
+    private func checkForCloudData() {
+        guard !authManager.userUID.isEmpty else {
+            hasCheckedCloud = true
+            return
+        }
+
+        isCheckingCloud = true
+
+        Task {
+            do {
+                let hasData = await restoreService.hasCloudData()
+
+                if hasData {
+                    #if DEBUG
+                    print("Cloud data found - starting restore")
+                    #endif
+                    let _ = try await restoreService.restoreFromCloud()
+                    await MainActor.run {
+                        isOnboardingComplete = true
+                        hasCheckedCloud = true
+                        isCheckingCloud = false
+                    }
+                } else {
+                    #if DEBUG
+                    print("No cloud data found - showing onboarding")
+                    #endif
+                    await MainActor.run {
+                        hasCheckedCloud = true
+                        isCheckingCloud = false
+                    }
+                }
+            } catch {
+                #if DEBUG
+                print("Cloud restore failed: \(error)")
+                #endif
+                await MainActor.run {
+                    restoreError = error.localizedDescription
+                    hasCheckedCloud = true
+                    isCheckingCloud = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Cloud Restore Progress View
+
+struct CloudRestoreProgressView: View {
+    let isChecking: Bool
+    let isRestoring: Bool
+    let progress: Double
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "icloud.and.arrow.down")
+                .font(.system(size: 60))
+                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                .symbolEffect(.pulse, options: .repeating)
+
+            VStack(spacing: 12) {
+                Text(isRestoring ? "Restoring Your Data" : "Checking for Existing Data")
+                    .font(DesignSystem.Typography.headlineMedium)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                Text(isRestoring ? "Syncing your training history, progress, and settings..." : "Looking for your profile in the cloud...")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            if isRestoring {
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
+                        .frame(width: 200)
+
+                    Text("\(Int(progress * 100))%")
+                        .font(DesignSystem.Typography.labelSmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+            } else {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
+                    .scaleEffect(1.2)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.background)
+    }
+}
+
+// MARK: - Cloud Restore Error View
+
+struct CloudRestoreErrorView: View {
+    let error: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "exclamationmark.icloud")
+                .font(.system(size: 60))
+                .foregroundColor(DesignSystem.Colors.accentOrange)
+
+            VStack(spacing: 12) {
+                Text("Couldn't Restore Data")
+                    .font(DesignSystem.Typography.headlineMedium)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                Text(error)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            Button(action: onRetry) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Try Again")
+                }
+                .font(DesignSystem.Typography.bodyMedium.weight(.semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 14)
+                .background(DesignSystem.Colors.primaryGreen)
+                .cornerRadius(12)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.background)
     }
 }
 

@@ -252,20 +252,20 @@ class CloudMLService: ObservableObject {
         #if DEBUG
         print("🌐 CloudMLService: Calling Firebase Function at \(functionsURL)")
         #endif
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
+        let (data, response) = try await performRequestWithRetry(request)
+
         guard let httpResponse = response as? HTTPURLResponse else {
             #if DEBUG
             print("❌ CloudMLService: Invalid HTTP response")
             #endif
             throw MLError.networkError
         }
-        
+
         #if DEBUG
-        
+
         print("📡 CloudMLService: HTTP Status Code: \(httpResponse.statusCode)")
-        
-        
+
+
         #endif
         if httpResponse.statusCode != 200 {
             let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
@@ -405,7 +405,7 @@ class CloudMLService: ObservableObject {
         if !topWeaknesses.isEmpty {
             result["weaknessAreas"] = topWeaknesses
             // Generate a focus recommendation based on top weakness
-            result["focusRecommendation"] = "\(topWeaknesses[0].lowercased()) training drills"
+            result["focusRecommendation"] = "\((topWeaknesses.first ?? "skill").lowercased()) training drills"
         }
 
         if !topStrengths.isEmpty {
@@ -516,7 +516,7 @@ class CloudMLService: ObservableObject {
         print("🌐 CloudMLService: Calling AI plan generation at \(functionsURL)")
         #endif
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await performRequestWithRetry(request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MLError.networkError
@@ -558,8 +558,30 @@ class CloudMLService: ObservableObject {
         }
     }
 
+    // MARK: - Retry Helper
+
+    private func performRequestWithRetry(_ request: URLRequest, maxRetries: Int = 2) async throws -> (Data, URLResponse) {
+        var lastError: Error?
+        for attempt in 0...maxRetries {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode >= 500, attempt < maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt))) * 1_000_000_000)
+                    continue
+                }
+                return (data, response)
+            } catch {
+                lastError = error
+                if attempt < maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt))) * 1_000_000_000)
+                }
+            }
+        }
+        throw lastError ?? MLError.networkError
+    }
+
     // MARK: - Cloud ML Functions Integration
-    
+
     private func fetchFromCloudML(player: Player, limit: Int) async throws -> [MLDrillRecommendation] {
         guard let userUID = auth.currentUser?.uid else {
             throw MLError.notAuthenticated
@@ -606,8 +628,8 @@ class CloudMLService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
         // Make the request
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
+        let (data, response) = try await performRequestWithRetry(request)
+
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             throw MLError.networkError

@@ -11,6 +11,7 @@ extension PlanDay {
     @NSManaged public var dayNumber: Int16
     @NSManaged public var dayOfWeek: String?
     @NSManaged public var isRestDay: Bool
+    @NSManaged public var isSkipped: Bool
     @NSManaged public var notes: String?
     @NSManaged public var isCompleted: Bool
     @NSManaged public var completedAt: Date?

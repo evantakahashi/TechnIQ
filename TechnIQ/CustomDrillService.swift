@@ -42,25 +42,25 @@ class CustomDrillService: ObservableObject {
             guard request.isValid else {
                 throw CustomDrillError.invalidRequest
             }
-            
-            generationProgress = 0.2
-            generationMessage = "Analyzing your requirements..."
-            
+
+            generationProgress = 0.1
+            generationMessage = "Preparing your request..."
+
             // Step 2: Build player profile for context
             let playerProfile = buildPlayerProfile(for: player)
-            
-            generationProgress = 0.3
-            generationMessage = "Generating personalized drill..."
-            
-            // Step 3: Call Firebase Function to generate drill
+
+            // Start animated progress for 4-phase pipeline
+            startPhaseProgressAnimation()
+
+            // Step 3: Call Firebase Function (runs 4-phase pipeline server-side)
             let drillResponse = try await callFirebaseCustomDrillFunction(
                 request: request,
                 playerProfile: playerProfile,
                 player: player
             )
-            
-            generationProgress = 0.8
-            generationMessage = "Creating exercise..."
+
+            generationProgress = 0.9
+            generationMessage = "Finalizing..."
             
             // Step 4: Create Exercise from LLM response
             let exercise = try createExerciseFromLLMResponse(
@@ -104,8 +104,49 @@ class CustomDrillService: ObservableObject {
         }
     }
     
+    // MARK: - Phase Progress Animation
+
+    private func startPhaseProgressAnimation() {
+        let phases: [(Double, String, Double)] = [
+            (0.15, "Analyzing your training history...", 1.5),
+            (0.35, "Designing drill layout...", 3.0),
+            (0.55, "Writing instructions...", 5.0),
+            (0.75, "Validating drill quality...", 7.0)
+        ]
+
+        for (progress, message, delay) in phases {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self = self, self.isGenerating else { return }
+                self.generationProgress = progress
+                self.generationMessage = message
+            }
+        }
+    }
+
+    // MARK: - Retry Helper
+
+    private func performRequestWithRetry(_ request: URLRequest, maxRetries: Int = 2) async throws -> (Data, URLResponse) {
+        var lastError: Error?
+        for attempt in 0...maxRetries {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode >= 500, attempt < maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt))) * 1_000_000_000)
+                    continue
+                }
+                return (data, response)
+            } catch {
+                lastError = error
+                if attempt < maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt))) * 1_000_000_000)
+                }
+            }
+        }
+        throw lastError ?? CustomDrillError.networkError
+    }
+
     // MARK: - Firebase Function Integration
-    
+
     private func callFirebaseCustomDrillFunction(
         request: CustomDrillRequest,
         playerProfile: [String: Any],
@@ -133,13 +174,13 @@ class CustomDrillService: ObservableObject {
             "player_profile": playerProfile,
             "session_context": sessionContext,
             "drill_feedback": drillFeedback,
+            "field_size": request.fieldSize.rawValue,
             "requirements": [
                 "skill_description": request.skillDescription,
                 "category": request.category.rawValue,
                 "difficulty": request.difficulty.rawValue,
                 "equipment": request.equipmentList,
-                "duration": request.duration,
-                "focus_area": request.focusArea.rawValue
+                "number_of_players": request.numberOfPlayers
             ]
         ]
         
@@ -160,14 +201,15 @@ class CustomDrillService: ObservableObject {
         }
         
         urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-        
+        urlRequest.timeoutInterval = 90
+
         #if DEBUG
-        
+
         print("🌐 Calling Firebase Function for custom drill generation...")
-        
-        
+
+
         #endif
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await performRequestWithRetry(urlRequest)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw CustomDrillError.networkError

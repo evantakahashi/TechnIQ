@@ -43,16 +43,19 @@ struct DifficultyAnalysis {
 
 class CoreDataManager: ObservableObject {
     static let shared = CoreDataManager()
-    
+
     // Circuit breaker state for API protection
     private var consecutiveFailures = 0
     private let maxConsecutiveFailures = 3
-    
+
     // Simple in-memory cache for video details
     private var videoDetailsCache: [String: EnhancedVideoDetails] = [:]
     private var transcriptCache: [String: VideoTranscript] = [:]
     private let cacheExpirationTime: TimeInterval = 30 * 60  // 30 minutes
-    
+
+    /// Published error state so UI can react to Core Data failures
+    @Published var persistentStoreError: Error?
+
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "DataModel")
 
@@ -79,17 +82,23 @@ class CoreDataManager: ObservableObject {
 
                         #endif
                         // Try loading again
-                        container.loadPersistentStores { _, retryError in
+                        container.loadPersistentStores { [weak self] _, retryError in
                             if let retryError = retryError {
-                                fatalError("Failed to recreate store: \(retryError.localizedDescription)")
+                                #if DEBUG
+                                print("❌ Failed to recreate Core Data store: \(retryError.localizedDescription)")
+                                #endif
+                                self?.persistentStoreError = retryError
                             } else {
                                 #if DEBUG
-                                print("✅ Successfully recreated Core Data store")
+                                print("Successfully recreated Core Data store")
                                 #endif
                             }
                         }
                     } catch {
-                        fatalError("Failed to delete corrupted store: \(error.localizedDescription)")
+                        #if DEBUG
+                        print("❌ Failed to delete corrupted Core Data store: \(error.localizedDescription)")
+                        #endif
+                        self.persistentStoreError = error
                     }
                 }
             }

@@ -293,6 +293,8 @@ struct SessionEditorRow: View {
         case .tactical: return DesignSystem.Colors.secondaryBlue
         case .recovery: return DesignSystem.Colors.accentYellow
         case .match: return DesignSystem.Colors.textPrimary
+        case .warmup: return DesignSystem.Colors.accentOrange
+        case .cooldown: return DesignSystem.Colors.secondaryBlue
         }
     }
 
@@ -340,6 +342,7 @@ struct DayStatBadge: View {
             dayNumber: 1,
             dayOfWeek: .monday,
             isRestDay: false,
+            isSkipped: false,
             notes: "Focus on technique",
             isCompleted: false,
             completedAt: nil,

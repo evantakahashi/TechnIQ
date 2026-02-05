@@ -92,6 +92,7 @@ struct PlanDayModel: Identifiable, Hashable {
     let dayNumber: Int
     let dayOfWeek: DayOfWeek?
     let isRestDay: Bool
+    let isSkipped: Bool
     let notes: String?
     let isCompleted: Bool
     let completedAt: Date?
@@ -101,6 +102,11 @@ struct PlanDayModel: Identifiable, Hashable {
     var totalDuration: Int {
         sessions.reduce(0) { $0 + Int($1.duration) }
     }
+
+    /// Day is "done" for progression purposes (completed, skipped, or rest)
+    var isDone: Bool {
+        isCompleted || isSkipped || isRestDay
+    }
 }
 
 struct PlanSessionModel: Identifiable, Hashable {
@@ -108,6 +114,7 @@ struct PlanSessionModel: Identifiable, Hashable {
     let sessionType: SessionType
     let duration: Int
     let intensity: Int
+    let orderIndex: Int
     let notes: String?
     let isCompleted: Bool
     let completedAt: Date?
@@ -163,6 +170,8 @@ enum SessionType: String, CaseIterable {
     case tactical = "Tactical"
     case recovery = "Recovery"
     case match = "Match"
+    case warmup = "Warmup"
+    case cooldown = "Cooldown"
 
     var displayName: String { rawValue }
 
@@ -173,6 +182,8 @@ enum SessionType: String, CaseIterable {
         case .tactical: return "brain.head.profile"
         case .recovery: return "bed.double.fill"
         case .match: return "sportscourt"
+        case .warmup: return "flame.fill"
+        case .cooldown: return "snowflake"
         }
     }
 }
@@ -253,13 +264,15 @@ extension PlanWeek {
 
 extension PlanDay {
     func toModel() -> PlanDayModel {
-        let sessionsArray = (sessions?.allObjects as? [PlanSession]) ?? []
+        let sessionsArray = (sessions?.allObjects as? [PlanSession])?
+            .sorted { $0.orderIndex < $1.orderIndex } ?? []
 
         return PlanDayModel(
             id: id ?? UUID(),
             dayNumber: Int(dayNumber),
-            dayOfWeek: dayOfWeek != nil ? DayOfWeek(rawValue: dayOfWeek!) : nil,
+            dayOfWeek: dayOfWeek.flatMap { DayOfWeek(rawValue: $0) },
             isRestDay: isRestDay,
+            isSkipped: isSkipped,
             notes: notes,
             isCompleted: isCompleted,
             completedAt: completedAt,
@@ -277,6 +290,7 @@ extension PlanSession {
             sessionType: SessionType(rawValue: sessionType ?? "Technical") ?? .technical,
             duration: Int(duration),
             intensity: Int(intensity),
+            orderIndex: Int(orderIndex),
             notes: notes,
             isCompleted: isCompleted,
             completedAt: completedAt,
