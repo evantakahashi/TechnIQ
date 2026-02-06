@@ -538,6 +538,63 @@ struct SoccerBallSpinner: View {
     }
 }
 
+// MARK: - Modern Segment Control
+struct ModernSegmentControl: View {
+    let options: [String]
+    @Binding var selectedIndex: Int
+    let icons: [String]?
+
+    @Namespace private var segmentAnimation
+
+    init(options: [String], selectedIndex: Binding<Int>, icons: [String]? = nil) {
+        self.options = options
+        self._selectedIndex = selectedIndex
+        self.icons = icons
+    }
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.xs) {
+            ForEach(Array(options.enumerated()), id: \.offset) { index, option in
+                Button {
+                    withAnimation(DesignSystem.Animation.quick) {
+                        selectedIndex = index
+                    }
+                } label: {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        if let icons = icons, index < icons.count {
+                            Image(systemName: icons[index])
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        Text(option)
+                            .font(DesignSystem.Typography.labelMedium)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.sm + 2)
+                    .background(
+                        Group {
+                            if selectedIndex == index {
+                                Capsule()
+                                    .fill(DesignSystem.Colors.primaryGreen)
+                                    .matchedGeometryEffect(id: "segment_bg", in: segmentAnimation)
+                            }
+                        }
+                    )
+                    .foregroundColor(
+                        selectedIndex == index
+                            ? .white
+                            : DesignSystem.Colors.textSecondary
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(DesignSystem.Spacing.xs)
+        .background(DesignSystem.Colors.backgroundSecondary)
+        .cornerRadius(DesignSystem.CornerRadius.pill)
+    }
+}
+
 // MARK: - Custom Tab Bar Component
 struct ModernTabBar: View {
     @Binding var selectedTab: Int
@@ -612,7 +669,7 @@ struct AnimatedTabContent<Content: View>: View {
                     removal: .opacity
                 ))
         }
-        .animation(DesignSystem.Animation.smooth, value: selectedTab)
+        .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: selectedTab)
         .onChange(of: selectedTab) { oldValue, _ in
             previousTab = oldValue
         }
@@ -636,7 +693,9 @@ struct AnimatedTabBar: View {
         HStack {
             ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
                 Button {
-                    withAnimation(DesignSystem.Animation.springBouncy) {
+                    let impact = UIImpactFeedbackGenerator(style: .light)
+                    impact.impactOccurred()
+                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 28)) {
                         selectedTab = index
                     }
                 } label: {
@@ -644,7 +703,7 @@ struct AnimatedTabBar: View {
                         ZStack {
                             if selectedTab == index {
                                 Capsule()
-                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.2))
                                     .frame(width: 56, height: 32)
                                     .matchedGeometryEffect(id: "tab_bg", in: tabAnimation)
                             }

@@ -63,31 +63,17 @@ struct PlayerProgressView: View {
     // MARK: - Time Range Picker
 
     private var timeRangePicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(TimeRange.allCases, id: \.self) { range in
-                    Button {
-                        withAnimation {
-                            selectedTimeRange = range
-                            loadProgressData()
-                        }
-                    } label: {
-                        Text(range.displayName)
-                            .font(DesignSystem.Typography.labelMedium)
-                            .fontWeight(selectedTimeRange == range ? .semibold : .regular)
-                            .foregroundColor(selectedTimeRange == range ? .white : DesignSystem.Colors.textSecondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .frame(minWidth: 70)
-                            .background(
-                                selectedTimeRange == range ? DesignSystem.Colors.primaryGreen : Color(.systemGray6)
-                            )
-                            .cornerRadius(20)
-                    }
-                }
+        let selectedIndex = Binding<Int>(
+            get: { TimeRange.allCases.firstIndex(of: selectedTimeRange) ?? 0 },
+            set: { newIndex in
+                selectedTimeRange = TimeRange.allCases[newIndex]
+                loadProgressData()
             }
-            .padding(.horizontal, 2)
-        }
+        )
+        return ModernSegmentControl(
+            options: TimeRange.allCases.map { $0.displayName },
+            selectedIndex: selectedIndex
+        )
     }
 
     // MARK: - Overall Stats Section
@@ -153,10 +139,11 @@ struct PlayerProgressView: View {
                 Text("Start training to track your skill development")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, DesignSystem.Spacing.md)
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .background(DesignSystem.Colors.cardBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.md)
+                    .customShadow(DesignSystem.Shadow.small)
             }
         }
     }
@@ -180,10 +167,11 @@ struct PlayerProgressView: View {
                 Text("Keep training to unlock achievements!")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, DesignSystem.Spacing.md)
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .background(DesignSystem.Colors.cardBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.md)
+                    .customShadow(DesignSystem.Shadow.small)
             }
         }
     }
@@ -203,37 +191,51 @@ struct PlayerProgressView: View {
 
                 // Training streak (using stored player values)
                 HStack {
-                    Image(systemName: "flame.fill")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.accentOrange)
-                    Text("\(player.currentStreak) day streak")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    ZStack {
+                        Circle()
+                            .fill(DesignSystem.Colors.accentOrange.opacity(0.15))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(DesignSystem.Colors.accentOrange)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(player.currentStreak) day streak")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        Text("Best: \(player.longestStreak)")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
                     Spacer()
-                    Text("Best: \(player.longestStreak)")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
-                .padding(.vertical, 12)
-                .padding(.horizontal, 14)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.cardBackground)
+                .cornerRadius(DesignSystem.CornerRadius.md)
+                .customShadow(DesignSystem.Shadow.small)
 
                 // Sessions per week
                 if let stats = overallStats {
                     HStack {
-                        Image(systemName: "calendar.badge.clock")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                        ZStack {
+                            Circle()
+                                .fill(DesignSystem.Colors.secondaryBlue.opacity(0.15))
+                                .frame(width: 36, height: 36)
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 16))
+                                .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                        }
                         Text("\(String(format: "%.1f", stats.sessionsPerWeek)) sessions/week")
                             .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.medium)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
                         Spacer()
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 14)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .padding(DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.cardBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.md)
+                    .customShadow(DesignSystem.Shadow.small)
                 }
             }
         }
@@ -286,7 +288,7 @@ struct PlayerProgressView: View {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(.systemGray5))
+                            .fill(DesignSystem.Colors.neutral300)
                             .frame(height: 8)
 
                         RoundedRectangle(cornerRadius: 4)
@@ -297,10 +299,10 @@ struct PlayerProgressView: View {
                 .frame(height: 8)
             }
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 14)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.md)
+        .customShadow(DesignSystem.Shadow.small)
     }
 
     // MARK: - Smart Insights Section
@@ -765,7 +767,7 @@ struct SkillProgressRow: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color(.systemGray5))
+                        .fill(DesignSystem.Colors.neutral300)
                         .frame(height: 4)
                         .cornerRadius(2)
 
@@ -777,10 +779,10 @@ struct SkillProgressRow: View {
             }
             .frame(height: 4)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.md)
+        .customShadow(DesignSystem.Shadow.small)
     }
 
     private func progressColor(for level: Double) -> Color {
@@ -797,13 +799,15 @@ struct AchievementCard: View {
     let achievement: ProgressAchievement
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: achievement.icon)
-                .font(.system(size: 24))
-                .foregroundColor(achievement.color)
-                .frame(width: 40, height: 40)
-                .background(achievement.color.opacity(0.1))
-                .cornerRadius(20)
+        HStack(spacing: DesignSystem.Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(achievement.color.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: achievement.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(achievement.color)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(achievement.title)
@@ -818,10 +822,10 @@ struct AchievementCard: View {
 
             Spacer()
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.md)
+        .customShadow(DesignSystem.Shadow.small)
     }
 }
 
@@ -831,39 +835,58 @@ struct CategoryBar: View {
     let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(category)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Spacer()
-
-                Text("\(Int(percentage))%")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+        HStack(spacing: DesignSystem.Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: iconForCategory)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
             }
 
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .frame(height: 6)
-                        .cornerRadius(3)
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                HStack {
+                    Text(category)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .fontWeight(.medium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                    Rectangle()
-                        .fill(color)
-                        .frame(width: geometry.size.width * (percentage / 100.0), height: 6)
-                        .cornerRadius(3)
+                    Spacer()
+
+                    Text("\(Int(percentage))%")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(color)
                 }
+
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(DesignSystem.Colors.neutral300)
+                            .frame(height: 6)
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(color)
+                            .frame(width: geometry.size.width * (percentage / 100.0), height: 6)
+                    }
+                }
+                .frame(height: 6)
             }
-            .frame(height: 6)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.md)
+        .customShadow(DesignSystem.Shadow.small)
+    }
+
+    private var iconForCategory: String {
+        switch category.lowercased() {
+        case "technical": return "figure.soccer"
+        case "physical": return "heart.fill"
+        case "tactical": return "brain.head.profile"
+        default: return "sportscourt"
+        }
     }
 }
 

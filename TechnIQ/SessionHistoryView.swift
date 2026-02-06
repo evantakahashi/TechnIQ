@@ -109,16 +109,22 @@ struct SessionHistoryView: View {
     // MARK: - View Mode Picker
     
     private var viewModePickerSection: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            Picker("View Mode", selection: $viewMode) {
-                ForEach(SessionViewMode.allCases, id: \.self) { mode in
-                    Label(mode.displayName, systemImage: mode.icon)
-                        .tag(mode)
+        let selectedIndex = Binding<Int>(
+            get: { SessionViewMode.allCases.firstIndex(of: viewMode) ?? 0 },
+            set: { newIndex in
+                withAnimation(DesignSystem.Animation.quick) {
+                    viewMode = SessionViewMode.allCases[newIndex]
                 }
             }
-            .pickerStyle(SegmentedPickerStyle())
+        )
+        return VStack(spacing: DesignSystem.Spacing.sm) {
+            ModernSegmentControl(
+                options: SessionViewMode.allCases.map { $0.displayName },
+                selectedIndex: selectedIndex,
+                icons: SessionViewMode.allCases.map { $0.icon }
+            )
             .padding(.horizontal, DesignSystem.Spacing.md)
-            
+
             // Session summary for current month/week
             if !sessions.isEmpty {
                 sessionSummaryView

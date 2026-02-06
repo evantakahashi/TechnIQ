@@ -133,6 +133,7 @@ enum MascotState: String, CaseIterable, Identifiable {
         case .noAchievements: return .excited
         case .noProgress: return .encouraging
         case .noPlans: return .thinking
+        case .noPosts: return .waving
         }
     }
 
@@ -176,4 +177,5 @@ enum EmptyStateContext {
     case noAchievements
     case noProgress
     case noPlans
+    case noPosts
 }

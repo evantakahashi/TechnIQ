@@ -63,38 +63,15 @@ struct TrainHubView: View {
     }
 
     private var segmentedPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(TrainHubTab.allCases, id: \.self) { tab in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 14))
-                        Text(tab.rawValue)
-                            .font(DesignSystem.Typography.labelMedium)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, DesignSystem.Spacing.sm)
-                    .background(
-                        selectedTab == tab
-                            ? DesignSystem.Colors.primaryGreen
-                            : Color.clear
-                    )
-                    .foregroundColor(
-                        selectedTab == tab
-                            ? .white
-                            : DesignSystem.Colors.textSecondary
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .background(Color(.systemGray6))
-        .cornerRadius(DesignSystem.CornerRadius.sm)
+        let selectedIndex = Binding<Int>(
+            get: { TrainHubTab.allCases.firstIndex(of: selectedTab) ?? 0 },
+            set: { newIndex in selectedTab = TrainHubTab.allCases[newIndex] }
+        )
+        return ModernSegmentControl(
+            options: TrainHubTab.allCases.map { $0.rawValue },
+            selectedIndex: selectedIndex,
+            icons: TrainHubTab.allCases.map { $0.icon }
+        )
     }
 
     private func updatePlayersFilter() {

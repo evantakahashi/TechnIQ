@@ -98,13 +98,17 @@ struct TrainingPlansListView: View {
     // MARK: - Tab Selector
 
     private var tabSelector: some View {
-        HStack(spacing: 0) {
-            TabButton(title: "Pre-built Programs", tab: .prebuilt, selectedTab: $selectedTab)
-            TabButton(title: "My Plans", tab: .myPlans, selectedTab: $selectedTab)
-        }
+        let selectedIndex = Binding<Int>(
+            get: { PlanTab.allCases.firstIndex(of: selectedTab) ?? 0 },
+            set: { newIndex in selectedTab = PlanTab.allCases[newIndex] }
+        )
+        return ModernSegmentControl(
+            options: ["Pre-built", "My Plans"],
+            selectedIndex: selectedIndex,
+            icons: ["tray.full.fill", "doc.text.fill"]
+        )
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.sm)
-        .background(DesignSystem.Colors.background)
     }
 
     // MARK: - Active Plan Card
@@ -236,62 +240,81 @@ struct PlanCard: View {
     let onTap: () -> Void
     var onShare: (() -> Void)? = nil
 
+    private var difficultyColor: Color {
+        switch plan.difficulty {
+        case .beginner: return DesignSystem.Colors.success
+        case .intermediate: return DesignSystem.Colors.secondaryBlue
+        case .advanced: return DesignSystem.Colors.warning
+        case .elite: return DesignSystem.Colors.error
+        }
+    }
+
     var body: some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                // Header
-                HStack {
-                    Image(systemName: plan.category.icon)
-                        .font(.title2)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+        ModernCard(padding: 0) {
+            HStack(spacing: 0) {
+                // Colored left accent bar
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(difficultyColor)
+                    .frame(width: 4)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(plan.name)
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        if let targetRole = plan.targetRole {
-                            Text(targetRole)
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    // Header
+                    HStack(spacing: DesignSystem.Spacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(difficultyColor.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: plan.category.icon)
+                                .font(.system(size: 20))
+                                .foregroundColor(difficultyColor)
                         }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(plan.name)
+                                .font(DesignSystem.Typography.titleMedium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                            if let targetRole = plan.targetRole {
+                                Text(targetRole)
+                                    .font(DesignSystem.Typography.labelSmall)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        if showShareButton {
+                            Button {
+                                onShare?()
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.title3)
+                                    .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+
+                        DifficultyBadge(difficulty: plan.difficulty)
                     }
 
-                    Spacer()
+                    // Description
+                    Text(plan.description)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .lineLimit(2)
 
-                    if showShareButton {
-                        Button {
-                            onShare?()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.title3)
-                                .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    // Stats row
+                    HStack(spacing: DesignSystem.Spacing.lg) {
+                        StatItem(icon: "calendar", value: "\(plan.durationWeeks) weeks", color: DesignSystem.Colors.secondaryBlue)
+
+                        StatItem(icon: "clock", value: String(format: "%.0f hrs", plan.estimatedTotalHours), color: DesignSystem.Colors.accentOrange)
+
+                        Spacer()
                     }
-
-                    DifficultyBadge(difficulty: plan.difficulty)
+                    .padding(.top, DesignSystem.Spacing.xs)
                 }
-
-                // Description
-                Text(plan.description)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .lineLimit(2)
-
-                Divider()
-
-                // Stats
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    StatItem(icon: "calendar", value: "\(plan.durationWeeks) weeks", color: DesignSystem.Colors.secondaryBlue)
-
-                    Divider()
-                        .frame(height: 20)
-
-                    StatItem(icon: "clock", value: String(format: "%.0f hrs", plan.estimatedTotalHours), color: DesignSystem.Colors.accentOrange)
-
-                    Spacer()
-                }
+                .padding(DesignSystem.Spacing.md)
             }
         }
         .onTapGesture(perform: onTap)
@@ -340,33 +363,6 @@ struct StatItem: View {
                 .font(DesignSystem.Typography.labelSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
         }
-    }
-}
-
-// MARK: - Tab Button
-
-struct TabButton: View {
-    let title: String
-    let tab: PlanTab
-    @Binding var selectedTab: PlanTab
-
-    var body: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedTab = tab
-            }
-        } label: {
-            VStack(spacing: 4) {
-                Text(title)
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(selectedTab == tab ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
-
-                Rectangle()
-                    .fill(selectedTab == tab ? DesignSystem.Colors.primaryGreen : Color.clear)
-                    .frame(height: 2)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 

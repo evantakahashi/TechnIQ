@@ -76,6 +76,8 @@ struct EmptyStateView: View {
             return "Start Your Journey"
         case .noPlans:
             return "No Training Plans"
+        case .noPosts:
+            return "No Posts Yet"
         }
     }
 
@@ -91,6 +93,8 @@ struct EmptyStateView: View {
             return "Complete training sessions to see your skill improvements over time."
         case .noPlans:
             return "Create a personalized training plan to structure your practice."
+        case .noPosts:
+            return "Be the first to share something with the community!"
         }
     }
 
@@ -106,6 +110,8 @@ struct EmptyStateView: View {
             return "Every pro started here!"
         case .noPlans:
             return "Plan to succeed!"
+        case .noPosts:
+            return "Say hello!"
         }
     }
 
@@ -121,6 +127,8 @@ struct EmptyStateView: View {
             return "chart.line.uptrend.xyaxis"
         case .noPlans:
             return "calendar.badge.plus"
+        case .noPosts:
+            return "square.and.pencil"
         }
     }
 }
@@ -174,6 +182,8 @@ struct CompactEmptyStateView: View {
             return "No data yet"
         case .noPlans:
             return "No plans"
+        case .noPosts:
+            return "No posts yet"
         }
     }
 
@@ -189,6 +199,8 @@ struct CompactEmptyStateView: View {
             return "Complete sessions to track"
         case .noPlans:
             return "Create a training plan"
+        case .noPosts:
+            return "Share with the community"
         }
     }
 }
