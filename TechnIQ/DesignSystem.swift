@@ -245,8 +245,14 @@ struct DesignSystem {
         static let medium = (color: Colors.neutral900.opacity(0.1), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2))
         static let large = (color: Colors.neutral900.opacity(0.15), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4))
         static let xl = (color: Colors.neutral900.opacity(0.2), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(8))
+
+        // Glow variants for dark mode
+        static let glowSmall = (color: Colors.primaryGreen.opacity(0.08), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(0))
+        static let glowMedium = (color: Colors.primaryGreen.opacity(0.12), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(0))
+        static let glowLarge = (color: Colors.primaryGreen.opacity(0.15), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(0))
+        static let glowGold = (color: Colors.accentGold.opacity(0.15), radius: CGFloat(12), x: CGFloat(0), y: CGFloat(0))
     }
-    
+
     // MARK: - Animation
     struct Animation {
         static let quick = SwiftUI.Animation.easeInOut(duration: 0.2)
@@ -254,6 +260,12 @@ struct DesignSystem {
         static let slow = SwiftUI.Animation.easeInOut(duration: 0.5)
         static let spring = SwiftUI.Animation.spring(response: 0.6, dampingFraction: 0.8)
         static let springBouncy = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.6)
+
+        // Athletic transition curves
+        static let heroSpring = SwiftUI.Animation.spring(response: 0.5, dampingFraction: 0.82)
+        static let staggerSpring = SwiftUI.Animation.spring(response: 0.45, dampingFraction: 0.85)
+        static let tabMorph = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.86)
+        static let microBounce = SwiftUI.Animation.spring(response: 0.3, dampingFraction: 0.7)
     }
     
     // MARK: - Icons
@@ -298,12 +310,12 @@ extension View {
         self.shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
     }
     
-    // Apply consistent card styling
+    // Apply consistent card styling (adaptive glow in dark, shadow in light)
     func cardStyle() -> some View {
         self
-            .background(DesignSystem.Colors.cardBackground)
+            .background(DesignSystem.Colors.surfaceRaised)
             .cornerRadius(DesignSystem.CornerRadius.card)
-            .customShadow(DesignSystem.Shadow.medium)
+            .modifier(AdaptiveShadowModifier())
     }
     
     // Apply primary button styling
@@ -339,6 +351,19 @@ extension View {
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.textField)
                     .stroke(DesignSystem.Colors.neutral300, lineWidth: 1)
             )
+    }
+}
+
+// MARK: - Adaptive Shadow Modifier
+struct AdaptiveShadowModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        if colorScheme == .dark {
+            content.customShadow(DesignSystem.Shadow.glowMedium)
+        } else {
+            content.customShadow(DesignSystem.Shadow.medium)
+        }
     }
 }
 
