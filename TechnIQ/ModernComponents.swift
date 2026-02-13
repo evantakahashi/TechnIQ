@@ -418,8 +418,7 @@ struct FloatingActionButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            HapticManager.shared.mediumTap()
             action()
         }) {
             Image(systemName: icon)
@@ -428,7 +427,7 @@ struct FloatingActionButton: View {
                 .frame(width: 56, height: 56)
                 .background(color)
                 .cornerRadius(28)
-                .customShadow(DesignSystem.Shadow.large)
+                .shadow(color: color.opacity(0.4), radius: 12)
                 .scaleEffect(isPressed ? 0.9 : 1.0)
                 .animation(DesignSystem.Animation.spring, value: isPressed)
         }
@@ -459,6 +458,7 @@ struct PillSelector: View {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach(rowOptions, id: \.offset) { index, option in
                         Button(action: {
+                            HapticManager.shared.selectionChanged()
                             withAnimation(DesignSystem.Animation.quick) {
                                 selectedIndex = index
                             }
@@ -470,21 +470,20 @@ struct PillSelector: View {
                                 .padding(.vertical, DesignSystem.Spacing.sm)
                                 .frame(minWidth: 60)
                                 .background(
-                                    selectedIndex == index 
-                                        ? DesignSystem.Colors.primaryGreen 
-                                        : DesignSystem.Colors.neutral200
+                                    selectedIndex == index
+                                        ? DesignSystem.Colors.primaryGreen
+                                        : DesignSystem.Colors.surfaceHighlight
                                 )
                                 .foregroundColor(
-                                    selectedIndex == index 
-                                        ? .white 
+                                    selectedIndex == index
+                                        ? .white
                                         : DesignSystem.Colors.textSecondary
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.pill)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    
-                    // Fill remaining space if needed
+
                     if rowOptions.count < columns {
                         Spacer()
                     }
@@ -514,6 +513,7 @@ struct MultiSelectPillSelector: View {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach(rowOptions, id: \.self) { option in
                         Button(action: {
+                            HapticManager.shared.selectionChanged()
                             withAnimation(DesignSystem.Animation.quick) {
                                 if selectedOptions.contains(option) {
                                     selectedOptions.remove(option)
@@ -530,20 +530,19 @@ struct MultiSelectPillSelector: View {
                                 .frame(minWidth: 50)
                                 .background(
                                     selectedOptions.contains(option)
-                                        ? DesignSystem.Colors.primaryGreen 
-                                        : DesignSystem.Colors.neutral200
+                                        ? DesignSystem.Colors.primaryGreen
+                                        : DesignSystem.Colors.surfaceHighlight
                                 )
                                 .foregroundColor(
                                     selectedOptions.contains(option)
-                                        ? .white 
+                                        ? .white
                                         : DesignSystem.Colors.textSecondary
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.pill)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    
-                    // Fill remaining space if needed
+
                     if rowOptions.count < columns {
                         Spacer()
                     }
@@ -603,7 +602,7 @@ struct ModernAlert: View {
             }
         }
         .padding(DesignSystem.Spacing.xl)
-        .background(DesignSystem.Colors.background)
+        .background(DesignSystem.Colors.surfaceOverlay)
         .cornerRadius(DesignSystem.CornerRadius.xl)
         .customShadow(DesignSystem.Shadow.xl)
     }
@@ -643,6 +642,7 @@ struct ModernSegmentControl: View {
         HStack(spacing: DesignSystem.Spacing.xs) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                 Button {
+                    HapticManager.shared.selectionChanged()
                     withAnimation(DesignSystem.Animation.quick) {
                         selectedIndex = index
                     }
@@ -677,7 +677,7 @@ struct ModernSegmentControl: View {
             }
         }
         .padding(DesignSystem.Spacing.xs)
-        .background(DesignSystem.Colors.backgroundSecondary)
+        .background(DesignSystem.Colors.surfaceHighlight)
         .cornerRadius(DesignSystem.CornerRadius.pill)
     }
 }
@@ -767,6 +767,7 @@ struct AnimatedTabContent<Content: View>: View {
 struct AnimatedTabBar: View {
     @Binding var selectedTab: Int
     @Namespace private var tabAnimation
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let tabs = [
         ("house.fill", "Home"),
@@ -780,18 +781,22 @@ struct AnimatedTabBar: View {
         HStack {
             ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
                 Button {
-                    let impact = UIImpactFeedbackGenerator(style: .light)
-                    impact.impactOccurred()
-                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 28)) {
+                    HapticManager.shared.tabChanged()
+                    if reduceMotion {
                         selectedTab = index
+                    } else {
+                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 28)) {
+                            selectedTab = index
+                        }
                     }
                 } label: {
                     VStack(spacing: 4) {
                         ZStack {
                             if selectedTab == index {
                                 Capsule()
-                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.2))
+                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
                                     .frame(width: 56, height: 32)
+                                    .shadow(color: DesignSystem.Colors.primaryGreen.opacity(0.3), radius: 8)
                                     .matchedGeometryEffect(id: "tab_bg", in: tabAnimation)
                             }
                             Image(systemName: tab.0)
@@ -808,7 +813,7 @@ struct AnimatedTabBar: View {
         }
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.sm)
-        .background(DesignSystem.Colors.cardBackground)
+        .background(DesignSystem.Colors.surfaceRaised)
     }
 }
 
@@ -904,14 +909,19 @@ struct ModernComponents_Previews: PreviewProvider {
         VStack(spacing: 20) {
             ModernButton("Primary Button", icon: "play.fill") {}
             ModernButton("Secondary Button", style: .secondary) {}
-            
+            ModernButton("Accent Button", style: .accent) {}
+
             ModernTextField("Email", text: .constant(""), placeholder: "Enter your email", icon: "envelope.fill")
-            
+
             StatCard(title: "Total Sessions", value: "12", subtitle: "completed", icon: "calendar")
-            
+
             PillSelector(options: ["All", "Physical", "Tactical"], selectedIndex: .constant(0), columns: 3)
-            
+
             MultiSelectPillSelector(options: ["GK", "CB", "LB", "RB", "CM"], selectedOptions: .constant(Set(["CB", "CM"])), columns: 3)
+
+            GlowBadge("Level 5", icon: "star.fill")
+
+            ActionChip("Add Drill", icon: "plus.circle") {}
         }
         .padding()
     }
