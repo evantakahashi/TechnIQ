@@ -72,3 +72,63 @@ extension View {
         modifier(TabMorphModifier(selectedTab: selectedTab))
     }
 }
+
+// MARK: - Hero Transition Namespace
+private struct HeroNamespaceKey: EnvironmentKey {
+    static let defaultValue: Namespace.ID? = nil
+}
+
+extension EnvironmentValues {
+    var heroNamespace: Namespace.ID? {
+        get { self[HeroNamespaceKey.self] }
+        set { self[HeroNamespaceKey.self] = newValue }
+    }
+}
+
+extension View {
+    func heroNamespace(_ namespace: Namespace.ID) -> some View {
+        environment(\.heroNamespace, namespace)
+    }
+}
+
+// MARK: - Hero Source Modifier
+struct HeroSourceModifier: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .matchedGeometryEffect(
+                id: id,
+                in: namespace,
+                isSource: true
+            )
+    }
+}
+
+// MARK: - Hero Destination Modifier
+struct HeroDestinationModifier: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .matchedGeometryEffect(
+                id: id,
+                in: namespace,
+                isSource: false
+            )
+    }
+}
+
+extension View {
+    func heroSource(id: String, namespace: Namespace.ID) -> some View {
+        modifier(HeroSourceModifier(id: id, namespace: namespace))
+    }
+
+    func heroDestination(id: String, namespace: Namespace.ID) -> some View {
+        modifier(HeroDestinationModifier(id: id, namespace: namespace))
+    }
+}
