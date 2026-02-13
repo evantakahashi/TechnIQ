@@ -167,6 +167,51 @@ final class HapticManager {
         heavyImpact.impactOccurred()
     }
 
+    // MARK: - Transition Haptics
+
+    /// Prepare generators for imminent transition
+    func prepareForTransition() {
+        mediumImpact.prepare()
+        softImpact.prepare()
+        rigidImpact.prepare()
+        lightImpact.prepare()
+    }
+
+    /// Hero transition launch
+    func heroLaunch() {
+        mediumImpact.impactOccurred()
+    }
+
+    /// Hero transition settle
+    func heroSettle() {
+        softImpact.impactOccurred()
+    }
+
+    /// Sheet presented
+    func sheetPresent() {
+        softImpact.impactOccurred()
+    }
+
+    /// Sheet dismissed
+    func sheetDismiss() {
+        lightImpact.impactOccurred()
+    }
+
+    /// Pulse expand (achievement, reveal)
+    func pulseExpand() {
+        rigidImpact.impactOccurred()
+    }
+
+    /// Card flip midpoint
+    func cardFlipMidpoint() {
+        mediumImpact.impactOccurred()
+    }
+
+    /// Tab changed
+    func tabChanged() {
+        lightImpact.impactOccurred()
+    }
+
     // MARK: - Training-Specific Haptics
 
     /// Exercise started
