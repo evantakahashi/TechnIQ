@@ -1441,3 +1441,139 @@ IMPORTANT REQUIREMENTS:
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
             }
         )
+
+
+@https_fn.on_request(timeout_sec=60)
+def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
+    """
+    Generate daily coaching recommendation based on player context.
+    Returns focus area, reasoning, recommended drill, tips, and AI insights.
+    """
+    try:
+        # Handle CORS preflight
+        if req.method == 'OPTIONS':
+            return https_fn.Response(
+                "",
+                status=200,
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                }
+            )
+
+        if req.method != 'POST':
+            return https_fn.Response("Method not allowed", status=405)
+
+        # Auth verification (same pattern as existing endpoints)
+        auth_header = req.headers.get('Authorization')
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                id_token = auth_header.split('Bearer ')[1]
+                decoded_token = auth.verify_id_token(id_token)
+                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
+            except Exception as e:
+                if not allow_unauth:
+                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        elif not allow_unauth:
+            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
+        request_data = req.get_json()
+        if not request_data:
+            return https_fn.Response("Invalid JSON", status=400)
+
+        player_profile = request_data.get('player_profile', {})
+        recent_sessions = request_data.get('recent_sessions', [])
+        category_balance = request_data.get('category_balance', {})
+        active_plan = request_data.get('active_plan', {})
+        streak_days = request_data.get('streak_days', 0)
+        days_since_last = request_data.get('days_since_last_session', 0)
+        total_sessions = request_data.get('total_sessions', 0)
+
+        logger.info(f"🎯 Generating daily coaching for user with {len(recent_sessions)} recent sessions")
+
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_api_key:
+            return https_fn.Response(json.dumps({"error": "OpenAI API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_api_key)
+
+        # Build session summary for prompt
+        session_text = ""
+        for s in recent_sessions[:10]:
+            session_text += f"- {s.get('date', '?')}: {s.get('duration_minutes', 0)}min, rated {s.get('overall_rating', 0)}/5\n"
+            for ex in s.get('exercises', []):
+                session_text += f"  - {ex.get('name', '?')} ({ex.get('category', '?')}): skills={ex.get('skills', [])}, rated {ex.get('rating', 0)}/5\n"
+
+        balance_text = f"Technical: {category_balance.get('technical', 0)}%, Physical: {category_balance.get('physical', 0)}%, Tactical: {category_balance.get('tactical', 0)}%"
+
+        plan_text = ""
+        if active_plan:
+            plan_text = f"Active plan: {active_plan.get('name', 'Unknown')}, Week {active_plan.get('week', '?')}, {active_plan.get('progress', 0)*100:.0f}% complete"
+
+        streak_text = f"Current streak: {streak_days} days. Days since last session: {days_since_last}. Total sessions: {total_sessions}."
+
+        prompt = f"""Analyze this soccer player's recent training and provide today's coaching recommendation.
+
+Player: Age {player_profile.get('age', '?')}, {player_profile.get('position', '?')}, {player_profile.get('experience', 'intermediate')} level
+Style: {player_profile.get('style', 'unknown')}, Dominant foot: {player_profile.get('dominant_foot', 'unknown')}
+Goals: {', '.join(player_profile.get('goals', []))}
+Weaknesses: {', '.join(player_profile.get('weaknesses', []))}
+
+Recent sessions (newest first):
+{session_text or 'No sessions yet'}
+
+Category balance: {balance_text}
+{plan_text}
+{streak_text}
+
+Instructions:
+1. Identify the ONE most important focus area based on skill rating trends, category imbalance, or neglected weaknesses
+2. Provide 2-sentence reasoning with specific data points (e.g. "Your passing ratings dropped from 3.6 to 2.8")
+3. Design a specific drill targeting this focus area, appropriate for the player's level
+4. Give 1-3 actionable coaching tips
+5. Generate 1-2 data-backed insights (celebrations for improvements, warnings for declines, recommendations for imbalances)
+6. If streak > 3, include a brief motivational streak message
+
+Return ONLY valid JSON:
+{{"focus_area": "Passing", "reasoning": "Your passing ratings...", "recommended_drill": {{"name": "Short name", "description": "One sentence", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1", "Step 2"], "equipment": ["ball", "cones"], "target_skills": ["passing", "first touch"], "is_from_library": false, "library_exercise_id": null}}, "additional_tips": ["Tip 1"], "streak_message": "5 days strong!", "insights": [{{"title": "Title", "description": "Description with data", "type": "celebration|recommendation|warning|pattern", "priority": 9, "actionable": "Optional action"}}]}}"""
+
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert soccer coach providing daily personalized training guidance. Be concise, data-driven, and actionable. Focus on the most impactful improvement area."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1200,
+            temperature=0.4
+        )
+
+        result = parse_llm_json(response.choices[0].message.content)
+
+        logger.info(f"✅ Daily coaching generated: focus={result.get('focus_area', '?')}")
+        return https_fn.Response(
+            json.dumps(result),
+            status=200,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Error in get_daily_coaching: {str(e)}")
+        logger.error(traceback.format_exc())
+        return https_fn.Response(
+            json.dumps({"error": str(e)}),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
