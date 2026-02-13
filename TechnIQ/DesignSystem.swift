@@ -1,43 +1,47 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Design System
 struct DesignSystem {
     
     // MARK: - Colors
     struct Colors {
-        // Primary brand colors - Soccer field inspired
-        static let primaryGreen = Color(red: 0.0, green: 0.78, blue: 0.33) // #00C853
-        static let primaryGreenLight = Color(red: 0.3, green: 0.86, blue: 0.51) // #4CAF50
-        static let primaryGreenDark = Color(red: 0.0, green: 0.6, blue: 0.25) // #009624
-        
-        // Secondary colors
-        static let secondaryBlue = Color(red: 0.08, green: 0.4, blue: 0.75) // #1565C0
-        static let secondaryBlueLight = Color(red: 0.25, green: 0.54, blue: 0.96) // #42A5F5
-        
+        // Primary brand colors - Emerald
+        static let primaryGreen = Color(red: 0.0, green: 0.902, blue: 0.463) // #00E676
+        static let primaryGreenLight = Color(red: 0.2, green: 0.945, blue: 0.565) // Lighter emerald
+        static let primaryGreenDark = Color(red: 0.0, green: 0.72, blue: 0.37) // Darker emerald
+
+        // Secondary colors - Gold (repurposed)
+        static let secondaryBlue = Color(red: 1.0, green: 0.843, blue: 0.251) // #FFD740 Gold
+        static let secondaryBlueLight = Color(red: 1.0, green: 0.894, blue: 0.463) // Lighter gold
+
+        // Gold accent alias
+        static let accentGold = secondaryBlue
+
         // Accent colors
         static let accentOrange = Color(red: 1.0, green: 0.6, blue: 0.0) // #FF9800
         static let accentYellow = Color(red: 1.0, green: 0.92, blue: 0.23) // #FFEB3B
 
         // Celebration & Gamification colors
-        static let successGreen = Color(red: 0.0, green: 0.9, blue: 0.4) // Brighter celebration green
-        static let streakOrange = Color(red: 1.0, green: 0.45, blue: 0.1) // Warm orange for flames
-        static let xpGold = Color(red: 1.0, green: 0.84, blue: 0.0) // Gold for XP/rewards
-        static let levelPurple = Color(red: 0.6, green: 0.4, blue: 0.9) // Purple for level-ups
+        static let successGreen = Color(red: 0.0, green: 0.9, blue: 0.4)
+        static let streakOrange = Color(red: 1.0, green: 0.45, blue: 0.1)
+        static let xpGold = Color(red: 1.0, green: 0.84, blue: 0.0)
+        static let levelPurple = Color(red: 0.6, green: 0.4, blue: 0.9)
 
         // Coin currency color
-        static let coinGold = Color(red: 1.0, green: 0.76, blue: 0.03) // #FFC107 Coin gold
+        static let coinGold = Color(red: 1.0, green: 0.76, blue: 0.03) // #FFC107
 
         // Item Rarity colors
-        static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62) // Gray
-        static let rarityUncommon = Color(red: 0.3, green: 0.69, blue: 0.31) // Green
-        static let rarityRare = Color(red: 0.13, green: 0.59, blue: 0.95) // Blue
-        static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69) // Purple
-        static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03) // Gold
+        static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62)
+        static let rarityUncommon = Color(red: 0.3, green: 0.69, blue: 0.31)
+        static let rarityRare = Color(red: 0.13, green: 0.59, blue: 0.95)
+        static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69)
+        static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03)
 
-        // Confetti colors for celebrations
+        // Confetti colors
         static let confettiColors: [Color] = [
             primaryGreen,
-            secondaryBlue,
+            accentGold,
             accentOrange,
             accentYellow,
             Color(red: 0.9, green: 0.3, blue: 0.5), // Pink
@@ -47,11 +51,33 @@ struct DesignSystem {
 
         // Semantic colors
         static let success = primaryGreen
-        static let warning = accentOrange
-        static let error = Color(red: 0.96, green: 0.26, blue: 0.21) // #F44336
+        static let warning = Color(red: 1.0, green: 0.671, blue: 0.251) // #FFAB40
+        static let error = Color(red: 1.0, green: 0.231, blue: 0.361) // #FF3B5C
         static let info = secondaryBlue
-        
-        // Neutral colors with warm tint
+
+        // Dark-first surface colors (adaptive)
+        static let surfaceBase = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.039, green: 0.039, blue: 0.047, alpha: 1)
+                : UIColor(red: 0.961, green: 0.961, blue: 0.969, alpha: 1)
+        })
+        static let surfaceRaised = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.086, green: 0.086, blue: 0.094, alpha: 1)
+                : UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1)
+        })
+        static let surfaceOverlay = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.118, green: 0.118, blue: 0.133, alpha: 1)
+                : UIColor(red: 0.941, green: 0.941, blue: 0.949, alpha: 1)
+        })
+        static let surfaceHighlight = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.165, green: 0.165, blue: 0.188, alpha: 1)
+                : UIColor(red: 0.910, green: 0.910, blue: 0.925, alpha: 1)
+        })
+
+        // Neutral colors
         static let neutral100 = Color(red: 0.98, green: 0.98, blue: 0.98) // #FAFAFA
         static let neutral200 = Color(red: 0.96, green: 0.96, blue: 0.96) // #F5F5F5
         static let neutral300 = Color(red: 0.93, green: 0.93, blue: 0.93) // #EEEEEE
@@ -61,39 +87,59 @@ struct DesignSystem {
         static let neutral700 = Color(red: 0.38, green: 0.38, blue: 0.38) // #616161
         static let neutral800 = Color(red: 0.26, green: 0.26, blue: 0.26) // #424242
         static let neutral900 = Color(red: 0.13, green: 0.13, blue: 0.13) // #212121
-        
-        // Background colors
-        static let background = Color(.systemBackground)
-        static let backgroundSecondary = Color(.secondarySystemBackground)
-        static let backgroundTertiary = Color(.tertiarySystemBackground)
-        
-        // Text colors
-        static let textPrimary = Color(.label)
-        static let textSecondary = Color(.secondaryLabel)
-        static let textTertiary = Color(.tertiaryLabel)
+
+        // Background colors (mapped to surface tokens)
+        static let background = surfaceBase
+        static let backgroundSecondary = surfaceRaised
+        static let backgroundTertiary = surfaceOverlay
+
+        // Text colors (adaptive dark-first)
+        static let textPrimary = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.95)
+                : UIColor.label
+        })
+        static let textSecondary = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.60)
+                : UIColor.secondaryLabel
+        })
+        static let textTertiary = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.38)
+                : UIColor.tertiaryLabel
+        })
+        static let textOnAccent = Color(red: 0.039, green: 0.039, blue: 0.047) // #0A0A0C
         static let primaryDark = neutral900
-        
-        // Card backgrounds
-        static let cardBackground = Color(.systemBackground)
+
+        // Card backgrounds (mapped to surface tokens)
+        static let cardBackground = surfaceRaised
         static let cardBorder = neutral200
-        
+
         // Gradients
         static let primaryGradient = LinearGradient(
             colors: [primaryGreen, primaryGreenLight],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        
+
         static let secondaryGradient = LinearGradient(
             colors: [secondaryBlue, secondaryBlueLight],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-        
+
         static let backgroundGradient = LinearGradient(
-            colors: [neutral100, background],
+            colors: [surfaceBase, surfaceRaised],
             startPoint: .top,
             endPoint: .bottom
+        )
+
+        // Athletic gradient (emerald → gold diagonal)
+        static let athleticGradient = LinearGradient(
+            colors: [primaryGreen, accentGold],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
 
         // Celebration gradients
@@ -104,7 +150,7 @@ struct DesignSystem {
         )
 
         static let levelUpGradient = LinearGradient(
-            colors: [levelPurple, secondaryBlue],
+            colors: [primaryGreen, accentGold],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -116,16 +162,14 @@ struct DesignSystem {
         )
 
         static let celebrationGradient = LinearGradient(
-            colors: [successGreen, primaryGreen],
+            colors: [primaryGreen, primaryGreenDark],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
 
-        // Dark mode solid background
-        static let darkModeBackground = Color(red: 0.11, green: 0.11, blue: 0.12) // #1C1C1E
-
-        // Cell background for dark UI (slightly lighter than dark mode background)
-        static let cellBackground = Color(red: 0.17, green: 0.17, blue: 0.18) // #2C2C2E
+        // Dark mode backgrounds (mapped to surface tokens)
+        static let darkModeBackground = Color(red: 0.039, green: 0.039, blue: 0.047) // #0A0A0C
+        static let cellBackground = Color(red: 0.086, green: 0.086, blue: 0.094) // #161618
     }
     
     // MARK: - Typography
@@ -345,7 +389,7 @@ struct AdaptiveBackground: View {
     var body: some View {
         Group {
             if colorScheme == .dark {
-                DesignSystem.Colors.darkModeBackground
+                DesignSystem.Colors.surfaceBase
             } else {
                 DesignSystem.Colors.backgroundGradient
             }
