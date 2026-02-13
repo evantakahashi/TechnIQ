@@ -174,35 +174,35 @@ struct DesignSystem {
     
     // MARK: - Typography
     struct Typography {
-        // Display fonts
-        static let displayLarge = Font.system(size: 57, weight: .bold, design: .default)
-        static let displayMedium = Font.system(size: 45, weight: .bold, design: .default)
-        static let displaySmall = Font.system(size: 36, weight: .bold, design: .default)
-        
+        // Display fonts (rounded for athletic feel)
+        static let displayLarge = Font.system(size: 48, weight: .black, design: .rounded)
+        static let displayMedium = Font.system(size: 36, weight: .bold, design: .rounded)
+        static let displaySmall = Font.system(size: 28, weight: .bold, design: .rounded)
+
         // Headline fonts
-        static let headlineLarge = Font.system(size: 32, weight: .bold, design: .default)
-        static let headlineMedium = Font.system(size: 28, weight: .bold, design: .default)
-        static let headlineSmall = Font.system(size: 24, weight: .semibold, design: .default)
-        
+        static let headlineLarge = Font.system(size: 24, weight: .bold, design: .rounded)
+        static let headlineMedium = Font.system(size: 20, weight: .semibold, design: .rounded)
+        static let headlineSmall = Font.system(size: 17, weight: .semibold, design: .default)
+
         // Title fonts
         static let titleLarge = Font.system(size: 22, weight: .semibold, design: .default)
         static let titleMedium = Font.system(size: 16, weight: .medium, design: .default)
         static let titleSmall = Font.system(size: 14, weight: .medium, design: .default)
-        
+
         // Label fonts
-        static let labelLarge = Font.system(size: 14, weight: .medium, design: .default)
-        static let labelMedium = Font.system(size: 12, weight: .medium, design: .default)
+        static let labelLarge = Font.system(size: 15, weight: .semibold, design: .default)
+        static let labelMedium = Font.system(size: 13, weight: .medium, design: .default)
         static let labelSmall = Font.system(size: 11, weight: .medium, design: .default)
-        
+
         // Body fonts
-        static let bodyLarge = Font.system(size: 16, weight: .regular, design: .default)
-        static let bodyMedium = Font.system(size: 14, weight: .regular, design: .default)
-        static let bodySmall = Font.system(size: 12, weight: .regular, design: .default)
-        
+        static let bodyLarge = Font.system(size: 17, weight: .regular, design: .default)
+        static let bodyMedium = Font.system(size: 15, weight: .regular, design: .default)
+        static let bodySmall = Font.system(size: 13, weight: .regular, design: .default)
+
         // Numbers (tabular for consistency in stats)
-        static let numberLarge = Font.system(size: 32, weight: .bold, design: .monospaced)
+        static let numberLarge = Font.system(size: 36, weight: .bold, design: .monospaced)
         static let numberMedium = Font.system(size: 24, weight: .bold, design: .monospaced)
-        static let numberSmall = Font.system(size: 16, weight: .semibold, design: .monospaced)
+        static let numberSmall = Font.system(size: 17, weight: .semibold, design: .monospaced)
     }
     
     // MARK: - Spacing
