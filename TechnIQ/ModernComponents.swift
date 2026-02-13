@@ -290,12 +290,12 @@ struct ModernTextField: View {
                 }
             }
             .padding(DesignSystem.Spacing.textFieldPadding)
-            .background(DesignSystem.Colors.backgroundSecondary)
+            .background(DesignSystem.Colors.surfaceHighlight)
             .cornerRadius(DesignSystem.CornerRadius.textField)
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.textField)
                     .stroke(
-                        isFocused ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
+                        isFocused ? DesignSystem.Colors.primaryGreen : Color.white.opacity(0.1),
                         lineWidth: isFocused ? 2 : 1
                     )
             )
@@ -310,26 +310,38 @@ struct ProgressRing: View {
     let lineWidth: CGFloat
     let size: CGFloat
     let color: Color
-    
+
     init(progress: Double, lineWidth: CGFloat = 8, size: CGFloat = 60, color: Color = DesignSystem.Colors.primaryGreen) {
         self.progress = progress
         self.lineWidth = lineWidth
         self.size = size
         self.color = color
     }
-    
+
     var body: some View {
         ZStack {
             Circle()
-                .stroke(DesignSystem.Colors.neutral200, lineWidth: lineWidth)
-            
+                .stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
+
             Circle()
                 .trim(from: 0, to: CGFloat(progress))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .stroke(
+                    AngularGradient(
+                        colors: [DesignSystem.Colors.primaryGreen, DesignSystem.Colors.accentGold],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+                )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: color.opacity(0.4), radius: 4)
                 .animation(DesignSystem.Animation.smooth, value: progress)
         }
         .frame(width: size, height: size)
+        .onChange(of: progress) { _, newValue in
+            if newValue >= 1.0 {
+                HapticManager.shared.success()
+            }
+        }
     }
 }
 
@@ -361,7 +373,7 @@ struct StatCard: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                         
                         Text(value)
-                            .font(DesignSystem.Typography.numberMedium)
+                            .font(DesignSystem.Typography.displaySmall)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
                         
                         if !subtitle.isEmpty {
@@ -380,8 +392,9 @@ struct StatCard: View {
                             .font(.title2)
                             .foregroundColor(color)
                             .frame(width: 40, height: 40)
-                            .background(color.opacity(0.1))
-                            .cornerRadius(DesignSystem.CornerRadius.sm)
+                            .background(color.opacity(0.08))
+                            .clipShape(Circle())
+                            .shadow(color: color.opacity(0.15), radius: 8)
                     }
                 }
             }
