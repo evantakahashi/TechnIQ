@@ -6,28 +6,32 @@ struct ModernButton: View {
     let icon: String?
     let style: ButtonStyle
     let action: () -> Void
-    
+
     @State private var isPressed = false
-    
+
     enum ButtonStyle {
         case primary
         case secondary
         case ghost
         case danger
+        case accent
     }
-    
+
     init(_ title: String, icon: String? = nil, style: ButtonStyle = .primary, action: @escaping () -> Void) {
         self.title = title
         self.icon = icon
         self.style = style
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: {
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            switch style {
+            case .primary, .danger, .accent:
+                HapticManager.shared.mediumTap()
+            case .secondary, .ghost:
+                HapticManager.shared.selectionChanged()
+            }
             action()
         }) {
             HStack(spacing: DesignSystem.Spacing.sm) {
@@ -44,7 +48,12 @@ struct ModernButton: View {
             .background(backgroundForStyle)
             .foregroundColor(foregroundColorForStyle)
             .cornerRadius(DesignSystem.CornerRadius.button)
-            .overlay(overlayForStyle)
+            .overlay(
+                // Gradient sheen
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                    .fill(LinearGradient(colors: [.white.opacity(0.05), .clear], startPoint: .top, endPoint: .bottom))
+            )
+            .overlay(borderForStyle)
             .customShadow(shadowForStyle)
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .animation(DesignSystem.Animation.quick, value: isPressed)
@@ -54,25 +63,29 @@ struct ModernButton: View {
             isPressed = pressing
         }, perform: {})
     }
-    
+
     private var backgroundForStyle: some View {
         Group {
             switch style {
             case .primary:
-                DesignSystem.Colors.primaryGradient
+                DesignSystem.Colors.primaryGreen
             case .secondary:
-                DesignSystem.Colors.background
+                isPressed ? DesignSystem.Colors.primaryGreen.opacity(0.12) : Color.clear
             case .ghost:
-                Color.clear
+                isPressed ? DesignSystem.Colors.surfaceHighlight : Color.clear
             case .danger:
                 DesignSystem.Colors.error
+            case .accent:
+                DesignSystem.Colors.accentGold
             }
         }
     }
-    
+
     private var foregroundColorForStyle: Color {
         switch style {
-        case .primary, .danger:
+        case .primary, .accent:
+            return DesignSystem.Colors.textOnAccent
+        case .danger:
             return .white
         case .secondary:
             return DesignSystem.Colors.primaryGreen
@@ -80,22 +93,22 @@ struct ModernButton: View {
             return DesignSystem.Colors.textPrimary
         }
     }
-    
-    private var overlayForStyle: some View {
+
+    private var borderForStyle: some View {
         Group {
             switch style {
             case .secondary:
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .stroke(DesignSystem.Colors.primaryGreen, lineWidth: 2)
+                    .stroke(DesignSystem.Colors.primaryGreen, lineWidth: 1.5)
             default:
                 EmptyView()
             }
         }
     }
-    
+
     private var shadowForStyle: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
         switch style {
-        case .primary, .danger:
+        case .primary, .danger, .accent:
             return DesignSystem.Shadow.medium
         default:
             return DesignSystem.Shadow.small
@@ -107,20 +120,81 @@ struct ModernButton: View {
 struct ModernCard<Content: View>: View {
     let content: Content
     let padding: CGFloat
-    
-    init(padding: CGFloat = DesignSystem.Spacing.cardPadding, @ViewBuilder content: () -> Content) {
+    let accentEdge: Edge?
+    let accentColor: Color
+    let onTap: (() -> Void)?
+
+    @State private var isPressed = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(
+        padding: CGFloat = DesignSystem.Spacing.cardPadding,
+        accentEdge: Edge? = nil,
+        accentColor: Color = DesignSystem.Colors.primaryGreen,
+        onTap: (() -> Void)? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
         self.content = content()
         self.padding = padding
+        self.accentEdge = accentEdge
+        self.accentColor = accentColor
+        self.onTap = onTap
     }
-    
+
     var body: some View {
-        VStack {
+        let cardContent = VStack {
             content
         }
         .padding(padding)
-        .background(DesignSystem.Colors.cardBackground)
+        .background(DesignSystem.Colors.surfaceRaised)
         .cornerRadius(DesignSystem.CornerRadius.card)
-        .customShadow(DesignSystem.Shadow.medium)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .overlay(accentBorder)
+        .customShadow(colorScheme == .dark ? DesignSystem.Shadow.glowMedium : DesignSystem.Shadow.medium)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(DesignSystem.Animation.quick, value: isPressed)
+
+        if let onTap {
+            cardContent
+                .onTapGesture {
+                    HapticManager.shared.lightTap()
+                    onTap()
+                }
+                .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                    isPressed = pressing
+                }, perform: {})
+        } else {
+            cardContent
+        }
+    }
+
+    @ViewBuilder
+    private var accentBorder: some View {
+        if let edge = accentEdge {
+            switch edge {
+            case .leading:
+                HStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(accentColor)
+                        .frame(width: 3)
+                    Spacer()
+                }
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+            case .top:
+                VStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(accentColor)
+                        .frame(height: 3)
+                    Spacer()
+                }
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+            default:
+                EmptyView()
+            }
+        }
     }
 }
 
