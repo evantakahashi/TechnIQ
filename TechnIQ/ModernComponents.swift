@@ -812,6 +812,92 @@ struct AnimatedTabBar: View {
     }
 }
 
+// MARK: - Glow Badge Component
+struct GlowBadge: View {
+    let text: String
+    let color: Color
+    let icon: String?
+
+    @State private var appeared = false
+
+    init(_ text: String, color: Color = DesignSystem.Colors.primaryGreen, icon: String? = nil) {
+        self.text = text
+        self.color = color
+        self.icon = icon
+    }
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.xs) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+            }
+            Text(text)
+                .font(DesignSystem.Typography.labelSmall)
+                .fontWeight(.bold)
+                .textCase(.uppercase)
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, DesignSystem.Spacing.sm)
+        .padding(.vertical, DesignSystem.Spacing.xs)
+        .background(color.opacity(0.15))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(color.opacity(0.3), lineWidth: 1))
+        .shadow(color: color.opacity(appeared ? 0.3 : 0), radius: 8)
+        .scaleEffect(appeared ? 1.0 : 0.8)
+        .opacity(appeared ? 1.0 : 0)
+        .onAppear {
+            withAnimation(DesignSystem.Animation.springBouncy) {
+                appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Action Chip Component
+struct ActionChip: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    init(_ title: String, icon: String, color: Color = DesignSystem.Colors.primaryGreen, action: @escaping () -> Void) {
+        self.title = title
+        self.icon = icon
+        self.color = color
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: {
+            HapticManager.shared.selectionChanged()
+            action()
+        }) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(color)
+                Text(title)
+                    .font(DesignSystem.Typography.labelMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .background(color.opacity(isPressed ? 0.2 : 0.1))
+            .cornerRadius(DesignSystem.CornerRadius.sm)
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(DesignSystem.Animation.quick, value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
+    }
+}
+
 // MARK: - Preview Provider
 struct ModernComponents_Previews: PreviewProvider {
     static var previews: some View {
