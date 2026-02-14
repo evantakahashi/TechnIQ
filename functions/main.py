@@ -1577,3 +1577,130 @@ Return ONLY valid JSON:
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
             }
         )
+
+
+@https_fn.on_request(timeout_sec=60)
+def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
+    """
+    Review a completed plan week and propose adaptations for the next week.
+    """
+    try:
+        if req.method == 'OPTIONS':
+            return https_fn.Response("", status=200, headers={'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'})
+
+        if req.method != 'POST':
+            return https_fn.Response("Method not allowed", status=405)
+
+        # Auth verification
+        auth_header = req.headers.get('Authorization')
+        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                id_token = auth_header.split('Bearer ')[1]
+                decoded_token = auth.verify_id_token(id_token)
+                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
+            except Exception as e:
+                if not allow_unauth:
+                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        elif not allow_unauth:
+            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
+        request_data = req.get_json()
+        if not request_data:
+            return https_fn.Response("Invalid JSON", status=400)
+
+        player_profile = request_data.get('player_profile', {})
+        plan_structure = request_data.get('plan_structure', {})
+        completed_week = request_data.get('completed_week', {})
+        week_number = request_data.get('week_number', 1)
+
+        logger.info(f"📊 Generating plan adaptation for week {week_number}")
+
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_api_key:
+            return https_fn.Response(json.dumps({"error": "OpenAI API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_api_key)
+
+        # Build context
+        week_summary = ""
+        sessions_completed = 0
+        total_sessions = 0
+        ratings = []
+
+        for day in completed_week.get('days', []):
+            for session in day.get('sessions', []):
+                total_sessions += 1
+                if session.get('completed', False):
+                    sessions_completed += 1
+                    if session.get('rating'):
+                        ratings.append(session['rating'])
+                week_summary += f"- Day {day.get('day_number', '?')}: {session.get('type', '?')}, "
+                week_summary += f"{'completed' if session.get('completed') else 'skipped'}"
+                if session.get('rating'):
+                    week_summary += f", rated {session['rating']}/5"
+                week_summary += "\n"
+                for ex in session.get('exercises', []):
+                    week_summary += f"  - {ex.get('name', '?')}: rated {ex.get('rating', '?')}/5, skills: {ex.get('skills', [])}\n"
+
+        avg_rating = sum(ratings) / len(ratings) if ratings else 0
+
+        prompt = f"""Review this completed training plan week and propose specific adaptations for next week.
+
+Player: Age {player_profile.get('age', '?')}, {player_profile.get('position', '?')}, {player_profile.get('experience', 'intermediate')}
+Plan: {plan_structure.get('name', 'Unknown')}
+Week {week_number} completed: {sessions_completed}/{total_sessions} sessions, avg rating {avg_rating:.1f}/5
+
+Week details:
+{week_summary or 'No data'}
+
+Next week's current plan:
+{json.dumps(plan_structure.get('next_week', {}), indent=2)}
+
+Instructions:
+1. Summarize the week in 2-3 sentences (what went well, what needs work)
+2. Propose 1-3 specific adaptations for next week based on performance data
+3. Each adaptation should be one of: add_session, modify_difficulty, remove_session, swap_exercise
+4. Be conservative — only propose changes backed by clear data signals
+
+Return ONLY valid JSON:
+{{"summary": "Week summary...", "adaptations": [{{"type": "modify_difficulty", "day": 2, "session_index": 0, "description": "Bump dribbling difficulty from 3 to 4", "old_difficulty": 3, "new_difficulty": 4, "drill": null}}, {{"type": "add_session", "day": 3, "session_index": null, "description": "Add passing drill", "old_difficulty": null, "new_difficulty": null, "drill": {{"name": "Wall Pass Combos", "description": "...", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1"], "equipment": ["ball", "wall"], "target_skills": ["passing"], "is_from_library": false, "library_exercise_id": null}}}}]}}"""
+
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a soccer training plan analyst. Review weekly performance data and propose minimal, data-driven adaptations. Be conservative — only change what the data clearly supports."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.3
+        )
+
+        result = parse_llm_json(response.choices[0].message.content)
+
+        logger.info(f"✅ Plan adaptation generated: {len(result.get('adaptations', []))} changes proposed")
+        return https_fn.Response(
+            json.dumps(result),
+            status=200,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Error in get_plan_adaptation: {str(e)}")
+        logger.error(traceback.format_exc())
+        return https_fn.Response(
+            json.dumps({"error": str(e)}),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
