@@ -132,6 +132,9 @@ class CommunityService: ObservableObject {
     @Published var blockedUsers: Set<String> = []
     @Published var sharedDrills: [SharedDrill] = []
     @Published var isLoadingDrills = false
+    @Published var leaderboard: [LeaderboardEntry] = []
+    @Published var currentPlayerRank: Int?
+    @Published var isLoadingLeaderboard = false
 
     private var lastDocument: DocumentSnapshot?
     private var hasMorePosts = true
@@ -139,6 +142,8 @@ class CommunityService: ObservableObject {
     private var lastDrillDocument: DocumentSnapshot?
     private var hasMoreDrills = true
     private let drillPageSize = 20
+    private var leaderboardLastFetch: Date?
+    private let leaderboardCacheDuration: TimeInterval = 300
 
     private init() {
         loadBlockedUsers()
@@ -204,7 +209,20 @@ class CommunityService: ObservableObject {
                     likesCount: data["likesCount"] as? Int ?? 0,
                     commentsCount: data["commentsCount"] as? Int ?? 0,
                     isLikedByCurrentUser: likedBy.contains(userID),
-                    isReported: false
+                    isReported: false,
+                    drillID: data["drillID"] as? String,
+                    drillTitle: data["drillTitle"] as? String,
+                    drillCategory: data["drillCategory"] as? String,
+                    drillDifficulty: data["drillDifficulty"] as? Int,
+                    drillSaveCount: data["drillSaveCount"] as? Int,
+                    achievementName: data["achievementName"] as? String,
+                    achievementIcon: data["achievementIcon"] as? String,
+                    sessionDuration: data["sessionDuration"] as? Int,
+                    sessionExerciseCount: data["sessionExerciseCount"] as? Int,
+                    sessionRating: data["sessionRating"] as? Double,
+                    sessionXP: data["sessionXP"] as? Int,
+                    newLevel: data["newLevel"] as? Int,
+                    rankName: data["rankName"] as? String
                 )
             }
 
@@ -264,6 +282,68 @@ class CommunityService: ObservableObject {
             commentsCount: 0,
             isLikedByCurrentUser: false,
             isReported: false
+        )
+        posts.insert(newPost, at: 0)
+    }
+
+    // MARK: - Rich Post Creation (Opt-In Sharing)
+
+    func createRichPost(
+        content: String,
+        postType: CommunityPostType,
+        player: Player,
+        metadata: [String: Any] = [:]
+    ) async throws {
+        let userID = try requireAuth()
+
+        var postData: [String: Any] = [
+            "authorID": userID,
+            "authorName": player.name ?? "Player",
+            "authorLevel": player.currentLevel,
+            "authorPosition": player.position ?? "",
+            "content": content,
+            "postType": postType.rawValue,
+            "timestamp": FieldValue.serverTimestamp(),
+            "likesCount": 0,
+            "commentsCount": 0,
+            "likedBy": [],
+            "reportCount": 0,
+            "reportedBy": []
+        ]
+
+        for (key, value) in metadata {
+            postData[key] = value
+        }
+
+        let postRef = db.collection("communityPosts").document()
+        try await postRef.setData(postData)
+
+        let newPost = CommunityPost(
+            id: postRef.documentID,
+            authorID: userID,
+            authorName: player.name ?? "Player",
+            authorLevel: Int(player.currentLevel),
+            authorPosition: player.position ?? "",
+            content: content,
+            postType: postType,
+            timestamp: Date(),
+            likesCount: 0,
+            commentsCount: 0,
+            isLikedByCurrentUser: false,
+            isReported: false,
+            drillID: metadata["drillID"] as? String,
+            drillTitle: metadata["drillTitle"] as? String,
+            drillCategory: metadata["drillCategory"] as? String,
+            drillDifficulty: metadata["drillDifficulty"] as? Int,
+            drillSaveCount: nil,
+            achievementName: metadata["achievementName"] as? String,
+            achievementIcon: metadata["achievementIcon"] as? String,
+            sessionDuration: metadata["sessionDuration"] as? Int,
+            sessionExerciseCount: metadata["sessionExerciseCount"] as? Int,
+            sessionRating: metadata["sessionRating"] as? Double,
+            sessionXP: metadata["sessionXP"] as? Int,
+            newLevel: metadata["newLevel"] as? Int,
+            rankName: metadata["rankName"] as? String
         )
         posts.insert(newPost, at: 0)
     }
@@ -584,6 +664,71 @@ class CommunityService: ObservableObject {
             "reason": reason,
             "timestamp": FieldValue.serverTimestamp()
         ])
+    }
+
+    // MARK: - Leaderboard
+
+    func fetchLeaderboard(forceRefresh: Bool = false) async {
+        if !forceRefresh, let lastFetch = leaderboardLastFetch,
+           Date().timeIntervalSince(lastFetch) < leaderboardCacheDuration,
+           !leaderboard.isEmpty {
+            return
+        }
+
+        guard !isLoadingLeaderboard else { return }
+        isLoadingLeaderboard = true
+
+        do {
+            _ = try requireAuth()
+
+            let snapshot = try await db.collectionGroup("playerProfiles")
+                .order(by: "totalXP", descending: true)
+                .limit(to: 100)
+                .getDocuments()
+
+            var entries: [LeaderboardEntry] = []
+            for (index, doc) in snapshot.documents.enumerated() {
+                let data = doc.data()
+                entries.append(LeaderboardEntry(
+                    id: doc.reference.parent.parent?.documentID ?? doc.documentID,
+                    name: data["name"] as? String ?? "Player",
+                    level: data["currentLevel"] as? Int ?? 1,
+                    xp: (data["totalXP"] as? NSNumber)?.intValue ?? 0,
+                    position: data["position"] as? String ?? "",
+                    rank: index + 1
+                ))
+            }
+
+            leaderboard = entries
+            leaderboardLastFetch = Date()
+            isLoadingLeaderboard = false
+        } catch {
+            isLoadingLeaderboard = false
+            #if DEBUG
+            print("❌ CommunityService.fetchLeaderboard error: \(error)")
+            #endif
+        }
+    }
+
+    func fetchCurrentPlayerRank(playerXP: Int) async {
+        do {
+            _ = try requireAuth()
+
+            let snapshot = try await db.collectionGroup("playerProfiles")
+                .whereField("totalXP", isGreaterThan: playerXP)
+                .count
+                .getAggregation(source: .server)
+
+            currentPlayerRank = snapshot.count.intValue + 1
+        } catch {
+            if let uid = currentUserID,
+               let entry = leaderboard.first(where: { $0.id == uid }) {
+                currentPlayerRank = entry.rank
+            }
+            #if DEBUG
+            print("❌ CommunityService.fetchCurrentPlayerRank error: \(error)")
+            #endif
+        }
     }
 
     // MARK: - Block User
