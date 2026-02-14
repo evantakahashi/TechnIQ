@@ -88,8 +88,6 @@ struct CommunityFeedView: View {
             .padding(.bottom, DesignSystem.Spacing.lg)
         }
         .background(AdaptiveBackground().ignoresSafeArea())
-        .navigationTitle("Community")
-        .navigationBarTitleDisplayMode(.large)
         .onAppear {
             updatePlayersFilter()
             Task { await communityService.fetchPosts(refresh: true) }
