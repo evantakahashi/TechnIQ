@@ -174,6 +174,7 @@
 		EA07A7012CE139C637532E02 /* AvatarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8676FB258A5AF6EC1244EC96 /* AvatarService.swift */; };
 		EAF307129B77BE4DD4EB648D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 856A6FF7600118F39E05CA74 /* SettingsView.swift */; };
 		EB539CB86095C8D1A10D01B5 /* CoinDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B68C1149036359889CAE238 /* CoinDisplayView.swift */; };
+		EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */; };
 		ENHPROF01234567890ABCD01 /* EnhancedProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */; };
 		F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */; };
 		FD5024A47171F9981D988839 /* CreatePostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512D16A323E417A69261E316 /* CreatePostView.swift */; };
@@ -225,6 +226,7 @@
 		75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
 		78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityModifiers.swift; sourceTree = "<group>"; };
+		7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyCheckInView.swift; sourceTree = "<group>"; };
 		856A6FF7600118F39E05CA74 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8676FB258A5AF6EC1244EC96 /* AvatarService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarService.swift; sourceTree = "<group>"; };
 		892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotView.swift; sourceTree = "<group>"; };
@@ -554,6 +556,7 @@
 				C31C301512D7EBA8397649E2 /* AICoachModels.swift */,
 				719959B63C1C45A18B3C6BD5 /* AICoachService.swift */,
 				A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */,
+				7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -873,6 +876,7 @@
 				9D06AEC93234B277CCC67AE7 /* AICoachModels.swift in Sources */,
 				E2D2BEC5527618FA6329F05B /* AICoachService.swift in Sources */,
 				CAE5FD05AC17D94AC2B4E0D8 /* TodaysFocusCard.swift in Sources */,
+				EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
