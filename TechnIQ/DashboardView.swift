@@ -99,7 +99,7 @@ struct DashboardView: View {
             }
         }
         .sheet(isPresented: $showingProfileCreation) {
-            EnhancedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
+            UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
         }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {

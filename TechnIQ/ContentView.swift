@@ -99,7 +99,7 @@ struct PlayerContentView: View {
                 }
             } else if !isOnboardingComplete {
                 // No local data, no cloud data - show onboarding
-                EnhancedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
+                UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
             } else {
                 MainTabView()
             }
