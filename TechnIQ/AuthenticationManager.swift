@@ -218,6 +218,87 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
+    // MARK: - Delete Account
+
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw NSError(domain: "AuthenticationManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user"])
+        }
+
+        let uid = user.uid
+        guard let idToken = try? await user.getIDToken() else {
+            throw NSError(domain: "AuthenticationManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to get auth token"])
+        }
+
+        let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/delete_account"
+        guard let url = URL(string: functionsURL) else {
+            throw NSError(domain: "AuthenticationManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [:])
+        request.timeoutInterval = 120
+
+        var lastError: Error?
+        for attempt in 0..<3 {
+            do {
+                if attempt > 0 {
+                    let delay = pow(2.0, Double(attempt))
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+
+                let (data, response) = try await URLSession.shared.data(for: request)
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw NSError(domain: "AuthenticationManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+                }
+
+                if httpResponse.statusCode == 200 {
+                    #if DEBUG
+                    print("✅ Account deletion confirmed by server for UID: \(uid)")
+                    #endif
+
+                    await clearLocalData(uid: uid)
+
+                    await MainActor.run {
+                        signOut()
+                    }
+                    return
+                } else {
+                    let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+                    throw NSError(domain: "AuthenticationManager", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(errorBody)"])
+                }
+            } catch {
+                lastError = error
+                #if DEBUG
+                print("⚠️ Delete account attempt \(attempt + 1) failed: \(error.localizedDescription)")
+                #endif
+            }
+        }
+
+        throw lastError ?? NSError(domain: "AuthenticationManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Account deletion failed after retries"])
+    }
+
+    private func clearLocalData(uid: String) async {
+        let context = CoreDataManager.shared.context
+        await context.perform {
+            let request = Player.fetchRequest()
+            request.predicate = NSPredicate(format: "firebaseUID == %@", uid)
+            if let players = try? context.fetch(request) {
+                for player in players {
+                    context.delete(player)
+                }
+            }
+            try? context.save()
+        }
+        #if DEBUG
+        print("✅ Cleared local Core Data for UID: \(uid)")
+        #endif
+    }
+
     // MARK: - Password Reset
 
     func resetPassword(email: String) async {
