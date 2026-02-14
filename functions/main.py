@@ -1704,3 +1704,138 @@ Return ONLY valid JSON:
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
             }
         )
+
+
+@https_fn.on_request(timeout_sec=120)
+def delete_account(req: https_fn.Request) -> https_fn.Response:
+    """
+    Permanently delete a user's account and all associated data.
+    Anonymizes community posts, deletes Firestore docs, deletes Firebase Auth user.
+    """
+    try:
+        # Handle CORS preflight
+        if req.method == 'OPTIONS':
+            return https_fn.Response(
+                "",
+                status=200,
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                }
+            )
+
+        if req.method != 'POST':
+            return https_fn.Response("Method not allowed", status=405)
+
+        # Auth verification — REQUIRED, no ALLOW_UNAUTHENTICATED bypass
+        auth_header = req.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return https_fn.Response(
+                json.dumps({"error": "Authentication required"}),
+                status=401,
+                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+            )
+
+        try:
+            id_token = auth_header.split('Bearer ')[1]
+            decoded_token = auth.verify_id_token(id_token)
+            uid = decoded_token['uid']
+            logger.info(f"🗑️ Account deletion requested by user: {uid}")
+        except Exception as e:
+            return https_fn.Response(
+                json.dumps({"error": "Invalid authentication token"}),
+                status=401,
+                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+            )
+
+        global db
+        if not db:
+            db = firestore.client()
+
+        # Step 1: Anonymize community posts
+        try:
+            posts_ref = db.collection('communityPosts').where('authorID', '==', uid)
+            posts = posts_ref.get()
+            for post in posts:
+                post.reference.update({
+                    'authorID': 'deleted',
+                    'authorName': 'Deleted User',
+                    'authorProfileImageURL': '',
+                    'authorAvatarState': None
+                })
+            logger.info(f"📝 Anonymized {len(posts)} community posts")
+        except Exception as e:
+            logger.warning(f"⚠️ Error anonymizing posts: {e}")
+
+        # Step 2: Delete user-scoped Firestore documents
+        collections_to_delete = [
+            'playerProfiles',
+            'players',
+            'mlRecommendations',
+            'playerGoals',
+            'recommendationFeedback',
+            'cloudSyncStatus'
+        ]
+
+        for collection_name in collections_to_delete:
+            try:
+                doc_ref = db.collection(collection_name).document(uid)
+                doc_ref.delete()
+                logger.info(f"🗑️ Deleted {collection_name}/{uid}")
+            except Exception as e:
+                logger.warning(f"⚠️ Error deleting {collection_name}/{uid}: {e}")
+
+        # Step 3: Delete /users/{uid} and all subcollections
+        try:
+            user_doc_ref = db.collection('users').document(uid)
+            _delete_document_and_subcollections(user_doc_ref)
+            logger.info(f"🗑️ Deleted users/{uid} and subcollections")
+        except Exception as e:
+            logger.warning(f"⚠️ Error deleting users/{uid}: {e}")
+
+        # Step 4: Delete Firebase Auth user
+        try:
+            auth.delete_user(uid)
+            logger.info(f"🗑️ Deleted Firebase Auth user: {uid}")
+        except Exception as e:
+            logger.error(f"❌ Error deleting auth user: {e}")
+            return https_fn.Response(
+                json.dumps({"error": f"Failed to delete auth user: {str(e)}"}),
+                status=500,
+                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+            )
+
+        logger.info(f"✅ Account deletion complete for user: {uid}")
+        return https_fn.Response(
+            json.dumps({"success": True}),
+            status=200,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Error in delete_account: {str(e)}")
+        logger.error(traceback.format_exc())
+        return https_fn.Response(
+            json.dumps({"error": str(e)}),
+            status=500,
+            headers={
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        )
+
+
+def _delete_document_and_subcollections(doc_ref):
+    """Recursively delete a document and all its subcollections."""
+    for collection_ref in doc_ref.collections():
+        for doc in collection_ref.get():
+            _delete_document_and_subcollections(doc.reference)
+    doc_ref.delete()
