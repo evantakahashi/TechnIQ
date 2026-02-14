@@ -427,10 +427,81 @@ class TrainingPlanService: ObservableObject {
             week.isCompleted = true
             week.completedAt = Date()
 
+            // Trigger weekly check-in
+            Task { @MainActor in
+                AICoachService.shared.setWeeklyCheckInAvailable(weekNumber: Int(week.weekNumber))
+            }
+
             // Check if all weeks in the plan are complete
             if let plan = week.plan {
                 checkAndMarkPlanCompleted(plan)
             }
+        }
+    }
+
+    // MARK: - Plan Adaptation
+
+    func applyAdaptation(_ adaptation: PlanAdaptation, to planModel: TrainingPlanModel, targetWeek: Int) {
+        let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", planModel.id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let plan = try? context.fetch(request).first else { return }
+
+        let weeks = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
+        guard let week = weeks.first(where: { $0.weekNumber == Int16(targetWeek) }) else { return }
+
+        let days = (week.days?.allObjects as? [PlanDay]) ?? []
+
+        switch adaptation.type {
+        case "modify_difficulty":
+            if let day = days.first(where: { $0.dayNumber == Int16(adaptation.day) }),
+               let sessionIndex = adaptation.sessionIndex {
+                let sessions = ((day.sessions?.allObjects as? [PlanSession]) ?? []).sorted { $0.orderIndex < $1.orderIndex }
+                if sessionIndex < sessions.count, let newDiff = adaptation.newDifficulty {
+                    sessions[sessionIndex].intensity = Int16(newDiff)
+                }
+            }
+
+        case "add_session":
+            if let day = days.first(where: { $0.dayNumber == Int16(adaptation.day) }),
+               let drill = adaptation.drill {
+                let sessionType = SessionType(rawValue: drill.category.capitalized) ?? .technical
+                let exercises = matchExercisesFromLibrary(
+                    suggestedNames: [drill.name],
+                    sessionType: sessionType,
+                    for: plan.player!
+                )
+                _ = addSessionToDay(
+                    day,
+                    sessionType: sessionType,
+                    duration: drill.duration,
+                    intensity: drill.difficulty,
+                    notes: "AI Coach: \(adaptation.description)",
+                    exercises: exercises
+                )
+            }
+
+        case "remove_session":
+            if let day = days.first(where: { $0.dayNumber == Int16(adaptation.day) }),
+               let sessionIndex = adaptation.sessionIndex {
+                let sessions = ((day.sessions?.allObjects as? [PlanSession]) ?? []).sorted { $0.orderIndex < $1.orderIndex }
+                if sessionIndex < sessions.count {
+                    context.delete(sessions[sessionIndex])
+                }
+            }
+
+        default:
+            break
+        }
+
+        plan.updatedAt = Date()
+        do {
+            try context.save()
+        } catch {
+            #if DEBUG
+            print("❌ TrainingPlanService: Failed to apply adaptation: \(error)")
+            #endif
         }
     }
 
