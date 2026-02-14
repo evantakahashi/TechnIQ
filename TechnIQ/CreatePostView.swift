@@ -25,7 +25,7 @@ struct CreatePostView: View {
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: DesignSystem.Spacing.sm) {
-                                    ForEach(CommunityPostType.allCases, id: \.self) { type in
+                                    ForEach(CommunityPostType.allCases.filter { [.general, .sessionComplete, .achievement, .milestone].contains($0) }, id: \.self) { type in
                                         Button {
                                             withAnimation(DesignSystem.Animation.quick) {
                                                 selectedType = type

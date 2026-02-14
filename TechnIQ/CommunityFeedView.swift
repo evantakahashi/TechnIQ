@@ -306,6 +306,8 @@ struct CommunityPostCard: View {
         case .sessionComplete: return DesignSystem.Colors.primaryGreen
         case .achievement: return DesignSystem.Colors.accentYellow
         case .milestone: return DesignSystem.Colors.levelPurple
+        case .sharedDrill, .sharedSession: return DesignSystem.Colors.primaryGreen
+        case .sharedAchievement, .sharedLevelUp: return DesignSystem.Colors.accentGold
         }
     }
 }

@@ -36,6 +36,10 @@ extension Exercise {
     @NSManaged public var metabolicLoad: Int16
     @NSManaged public var technicalComplexity: Int16
 
+    // Community drill tracking
+    @NSManaged public var communityAuthor: String?
+    @NSManaged public var communityDrillID: String?
+
 }
 
 // MARK: Generated accessors for sessionExercises

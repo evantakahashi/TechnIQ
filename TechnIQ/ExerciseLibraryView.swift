@@ -877,6 +877,10 @@ extension Exercise {
         exerciseDescription?.contains("AI-Generated Custom Drill") == true
     }
 
+    var isCommunityDrill: Bool {
+        communityDrillID != nil
+    }
+
     var isYouTubeExercise: Bool {
         exerciseDescription?.contains("YouTube Video") == true
     }

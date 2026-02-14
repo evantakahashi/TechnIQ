@@ -1,4 +1,5 @@
 import Foundation
+import CoreData
 import FirebaseFirestore
 import FirebaseAuth
 
@@ -18,6 +19,21 @@ struct CommunityPost: Identifiable, Equatable {
     var isLikedByCurrentUser: Bool
     var isReported: Bool
 
+    // Rich post metadata (optional, only present for new post types)
+    var drillID: String?
+    var drillTitle: String?
+    var drillCategory: String?
+    var drillDifficulty: Int?
+    var drillSaveCount: Int?
+    var achievementName: String?
+    var achievementIcon: String?
+    var sessionDuration: Int?
+    var sessionExerciseCount: Int?
+    var sessionRating: Double?
+    var sessionXP: Int?
+    var newLevel: Int?
+    var rankName: String?
+
     static func == (lhs: CommunityPost, rhs: CommunityPost) -> Bool {
         lhs.id == rhs.id && lhs.likesCount == rhs.likesCount && lhs.commentsCount == rhs.commentsCount && lhs.isLikedByCurrentUser == rhs.isLikedByCurrentUser
     }
@@ -28,6 +44,10 @@ enum CommunityPostType: String, CaseIterable {
     case sessionComplete = "session_complete"
     case achievement = "achievement"
     case milestone = "milestone"
+    case sharedDrill = "shared_drill"
+    case sharedAchievement = "shared_achievement"
+    case sharedSession = "shared_session"
+    case sharedLevelUp = "shared_levelup"
 
     var icon: String {
         switch self {
@@ -35,6 +55,10 @@ enum CommunityPostType: String, CaseIterable {
         case .sessionComplete: return "checkmark.circle.fill"
         case .achievement: return "trophy.fill"
         case .milestone: return "star.fill"
+        case .sharedDrill: return "square.and.arrow.up.fill"
+        case .sharedAchievement: return "trophy.fill"
+        case .sharedSession: return "checkmark.circle.fill"
+        case .sharedLevelUp: return "arrow.up.circle.fill"
         }
     }
 
@@ -44,6 +68,10 @@ enum CommunityPostType: String, CaseIterable {
         case .sessionComplete: return "Session"
         case .achievement: return "Achievement"
         case .milestone: return "Milestone"
+        case .sharedDrill: return "Drill"
+        case .sharedAchievement: return "Achievement"
+        case .sharedSession: return "Session"
+        case .sharedLevelUp: return "Level Up"
         }
     }
 }
@@ -59,6 +87,36 @@ struct CommunityComment: Identifiable {
     var isReported: Bool
 }
 
+struct SharedDrill: Identifiable {
+    let id: String
+    let authorID: String
+    let authorName: String
+    let authorLevel: Int
+    let title: String
+    let description: String
+    let category: String
+    let difficulty: Int
+    let targetSkills: [String]
+    let duration: Int
+    let equipment: [String]
+    let steps: [String]
+    let sets: Int
+    let reps: Int
+    let timestamp: Date
+    var saveCount: Int
+    var isSavedByCurrentUser: Bool
+    let reportCount: Int
+}
+
+struct LeaderboardEntry: Identifiable {
+    let id: String
+    let name: String
+    let level: Int
+    let xp: Int
+    let position: String
+    let rank: Int
+}
+
 // MARK: - Community Service
 
 @MainActor
@@ -72,10 +130,15 @@ class CommunityService: ObservableObject {
     @Published var isLoading = false
     @Published var error: String?
     @Published var blockedUsers: Set<String> = []
+    @Published var sharedDrills: [SharedDrill] = []
+    @Published var isLoadingDrills = false
 
     private var lastDocument: DocumentSnapshot?
     private var hasMorePosts = true
     private let pageSize = 20
+    private var lastDrillDocument: DocumentSnapshot?
+    private var hasMoreDrills = true
+    private let drillPageSize = 20
 
     private init() {
         loadBlockedUsers()
@@ -332,6 +395,193 @@ class CommunityService: ObservableObject {
             "commentID": comment.id,
             "postID": comment.postID,
             "reporterID": userID,
+            "timestamp": FieldValue.serverTimestamp()
+        ])
+    }
+
+    // MARK: - Shared Drills
+
+    func fetchSharedDrills(refresh: Bool = false, category: String? = nil, difficulty: Int? = nil) async {
+        guard !isLoadingDrills else { return }
+
+        if refresh {
+            lastDrillDocument = nil
+            hasMoreDrills = true
+        }
+
+        guard hasMoreDrills else { return }
+
+        isLoadingDrills = true
+
+        do {
+            let userID = try requireAuth()
+
+            var query: Query = db.collection("sharedDrills")
+                .order(by: "timestamp", descending: true)
+                .limit(to: drillPageSize)
+
+            if let category = category {
+                query = db.collection("sharedDrills")
+                    .whereField("category", isEqualTo: category)
+                    .order(by: "timestamp", descending: true)
+                    .limit(to: drillPageSize)
+            }
+
+            if let lastDoc = lastDrillDocument {
+                query = query.start(afterDocument: lastDoc)
+            }
+
+            let snapshot = try await query.getDocuments()
+
+            let newDrills = snapshot.documents.compactMap { doc -> SharedDrill? in
+                let data = doc.data()
+                let authorID = data["authorID"] as? String ?? ""
+                guard !blockedUsers.contains(authorID) else { return nil }
+
+                let savedBy = data["savedBy"] as? [String] ?? []
+
+                return SharedDrill(
+                    id: doc.documentID,
+                    authorID: authorID,
+                    authorName: data["authorName"] as? String ?? "Player",
+                    authorLevel: data["authorLevel"] as? Int ?? 1,
+                    title: data["title"] as? String ?? "Untitled Drill",
+                    description: data["description"] as? String ?? "",
+                    category: data["category"] as? String ?? "technical",
+                    difficulty: data["difficulty"] as? Int ?? 3,
+                    targetSkills: data["targetSkills"] as? [String] ?? [],
+                    duration: data["duration"] as? Int ?? 15,
+                    equipment: data["equipment"] as? [String] ?? [],
+                    steps: data["steps"] as? [String] ?? [],
+                    sets: data["sets"] as? Int ?? 3,
+                    reps: data["reps"] as? Int ?? 10,
+                    timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
+                    saveCount: data["saveCount"] as? Int ?? 0,
+                    isSavedByCurrentUser: savedBy.contains(userID),
+                    reportCount: data["reportCount"] as? Int ?? 0
+                )
+            }
+
+            lastDrillDocument = snapshot.documents.last
+            hasMoreDrills = snapshot.documents.count == drillPageSize
+
+            if refresh {
+                sharedDrills = newDrills
+            } else {
+                sharedDrills.append(contentsOf: newDrills)
+            }
+
+            isLoadingDrills = false
+        } catch {
+            isLoadingDrills = false
+            #if DEBUG
+            print("❌ CommunityService.fetchSharedDrills error: \(error)")
+            #endif
+        }
+    }
+
+    func shareDrill(exercise: Exercise, player: Player) async throws {
+        let userID = try requireAuth()
+
+        let drillRef = db.collection("sharedDrills").document()
+        let drillData: [String: Any] = [
+            "authorID": userID,
+            "authorName": player.name ?? "Player",
+            "authorLevel": player.currentLevel,
+            "title": exercise.name ?? "Untitled Drill",
+            "description": exercise.exerciseDescription ?? "",
+            "category": exercise.category ?? "technical",
+            "difficulty": Int(exercise.difficulty),
+            "targetSkills": exercise.targetSkills ?? [],
+            "duration": 15,
+            "equipment": [],
+            "steps": (exercise.instructions ?? "").components(separatedBy: "\n").filter { !$0.isEmpty },
+            "sets": 3,
+            "reps": 10,
+            "timestamp": FieldValue.serverTimestamp(),
+            "saveCount": 0,
+            "savedBy": [],
+            "reportCount": 0,
+            "reportedBy": []
+        ]
+
+        let postRef = db.collection("communityPosts").document()
+        let postData: [String: Any] = [
+            "authorID": userID,
+            "authorName": player.name ?? "Player",
+            "authorLevel": player.currentLevel,
+            "authorPosition": player.position ?? "",
+            "content": "Shared a drill: \(exercise.name ?? "Untitled")",
+            "postType": CommunityPostType.sharedDrill.rawValue,
+            "timestamp": FieldValue.serverTimestamp(),
+            "likesCount": 0,
+            "commentsCount": 0,
+            "likedBy": [],
+            "reportCount": 0,
+            "reportedBy": [],
+            "drillID": drillRef.documentID,
+            "drillTitle": exercise.name ?? "Untitled Drill",
+            "drillCategory": exercise.category ?? "technical",
+            "drillDifficulty": Int(exercise.difficulty)
+        ]
+
+        let batch = db.batch()
+        batch.setData(drillData, forDocument: drillRef)
+        batch.setData(postData, forDocument: postRef)
+        try await batch.commit()
+    }
+
+    func saveDrillToLibrary(drill: SharedDrill, player: Player, context: NSManagedObjectContext) async throws {
+        let userID = try requireAuth()
+
+        // Check 50 cap
+        let fetchRequest: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "communityDrillID != nil AND player == %@", player)
+        let count = try context.count(for: fetchRequest)
+        guard count < 50 else {
+            throw NSError(domain: "CommunityService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Community drill library full (50 max). Remove a community drill to save new ones."])
+        }
+
+        guard !drill.isSavedByCurrentUser else { return }
+
+        let exercise = Exercise(context: context)
+        exercise.id = UUID()
+        exercise.name = drill.title
+        exercise.exerciseDescription = "🤖 AI-Generated Custom Drill\n\(drill.description)"
+        exercise.category = drill.category
+        exercise.difficulty = Int16(drill.difficulty)
+        exercise.targetSkills = drill.targetSkills
+        exercise.instructions = drill.steps.joined(separator: "\n")
+        exercise.player = player
+        exercise.communityAuthor = drill.authorName
+        exercise.communityDrillID = drill.id
+
+        try context.save()
+
+        let drillRef = db.collection("sharedDrills").document(drill.id)
+        try await drillRef.updateData([
+            "saveCount": FieldValue.increment(Int64(1)),
+            "savedBy": FieldValue.arrayUnion([userID])
+        ])
+
+        if let index = sharedDrills.firstIndex(where: { $0.id == drill.id }) {
+            sharedDrills[index].saveCount += 1
+            sharedDrills[index].isSavedByCurrentUser = true
+        }
+    }
+
+    func reportDrill(_ drill: SharedDrill, reason: String) async throws {
+        let userID = try requireAuth()
+
+        try await db.collection("sharedDrills").document(drill.id).updateData([
+            "reportCount": FieldValue.increment(Int64(1)),
+            "reportedBy": FieldValue.arrayUnion([userID])
+        ])
+
+        try await db.collection("reports").document().setData([
+            "drillID": drill.id,
+            "reporterID": userID,
+            "reason": reason,
             "timestamp": FieldValue.serverTimestamp()
         ])
     }
