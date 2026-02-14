@@ -194,26 +194,14 @@ struct ModernSignUpView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
-    @State private var currentStep = 0
-    @State private var selectedPositions: Set<String> = []
-    @State private var selectedStyle = "Balanced"
-    @State private var selectedFoot = "Right"
-    
-    private let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"]
-    private let styles = ["Aggressive", "Defensive", "Balanced", "Creative", "Fast", "Playmaker", "Box-to-Box", "Target Man", "Poacher", "Sweeper"]
-    private let feet = ["Left", "Right", "Both"]
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Modern Header
             HStack {
-                Button(action: { 
+                Button(action: {
                     withAnimation(DesignSystem.Animation.smooth) {
-                        if currentStep > 0 {
-                            currentStep -= 1
-                        } else {
-                            isSignUp = false
-                        }
+                        isSignUp = false
                     }
                 }) {
                     Image(systemName: "chevron.left")
@@ -223,15 +211,15 @@ struct ModernSignUpView: View {
                         .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
                         .cornerRadius(DesignSystem.CornerRadius.sm)
                 }
-                
+
                 Spacer()
-                
+
                 Text("Sign Up")
                     .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
-                
+
                 Spacer()
-                
+
                 Button(action: {}) {
                     Image(systemName: DesignSystem.Icons.settings)
                         .font(DesignSystem.Typography.titleMedium)
@@ -240,25 +228,10 @@ struct ModernSignUpView: View {
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
             .padding(.top, DesignSystem.Spacing.md)
-            
-            // Modern Progress Indicator
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                StepIndicator(title: "Your data", isActive: currentStep == 0, isCompleted: currentStep > 0)
-                
-                ProgressLine(isCompleted: currentStep > 0)
-                
-                StepIndicator(title: "Configuration", isActive: currentStep == 1, isCompleted: false)
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.top, DesignSystem.Spacing.xl)
-            
+
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.xl) {
-                    if currentStep == 0 {
-                        modernDataStep
-                    } else {
-                        modernConfigurationStep
-                    }
+                    modernDataStep
                 }
                 .padding(.top, DesignSystem.Spacing.xl)
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
@@ -338,14 +311,31 @@ struct ModernSignUpView: View {
                 }
             }
             
-            // Continue Button
-            ModernButton("CONTINUE", icon: "arrow.right") {
-                withAnimation(DesignSystem.Animation.smooth) {
-                    currentStep = 1
+            // Error Message
+            if !authManager.errorMessage.isEmpty {
+                HStack {
+                    Image(systemName: DesignSystem.Icons.xmark)
+                        .foregroundColor(DesignSystem.Colors.error)
+                    Text(authManager.errorMessage)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.error)
+                    Spacer()
+                }
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+            }
+
+            // Create Account Button
+            ModernButton("CREATE ACCOUNT", icon: "checkmark") {
+                let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+                if !fullName.isEmpty {
+                    UserDefaults.standard.set(fullName, forKey: "onboarding_prefill_name")
+                }
+                Task {
+                    await authManager.signUp(email: email, password: password)
                 }
             }
-            .disabled(!fieldsAreValid)
-            
+            .disabled(!fieldsAreValid || authManager.isLoading)
+
             // Terms Link
             Button("Terms and Conditions of Use") {
                 // Handle terms
@@ -355,153 +345,9 @@ struct ModernSignUpView: View {
         }
     }
     
-    private var modernConfigurationStep: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            // Header
-            VStack(spacing: DesignSystem.Spacing.md) {
-                Image(systemName: "soccerball")
-                    .font(.largeTitle)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .pulseAnimation()
-                
-                Text("Soccer Profile Setup")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            // Configuration Form
-            ModernCard(padding: DesignSystem.Spacing.lg) {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Position Selector (Multi-select)
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Positions (Select all that apply)")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        
-                        MultiSelectPillSelector(options: positions, selectedOptions: $selectedPositions, columns: 5)
-                    }
-                    
-                    // Playing Style Selector
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Playing Style")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        
-                        PillSelector(options: styles, selectedIndex: Binding(
-                            get: { styles.firstIndex(of: selectedStyle) ?? 0 },
-                            set: { selectedStyle = styles[$0] }
-                        ), columns: 3)
-                    }
-                    
-                    // Dominant Foot Selector
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Dominant Foot")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        
-                        PillSelector(options: feet, selectedIndex: Binding(
-                            get: { feet.firstIndex(of: selectedFoot) ?? 0 },
-                            set: { selectedFoot = feet[$0] }
-                        ), columns: 3)
-                    }
-                    
-                    // Error Message
-                    if !authManager.errorMessage.isEmpty {
-                        HStack {
-                            Image(systemName: DesignSystem.Icons.xmark)
-                                .foregroundColor(DesignSystem.Colors.error)
-                            Text(authManager.errorMessage)
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(DesignSystem.Colors.error)
-                            Spacer()
-                        }
-                    }
-                }
-            }
-            
-            // Create Account Button
-            ModernButton("CREATE ACCOUNT", icon: "checkmark") {
-                Task {
-                    await authManager.signUp(email: email, password: password)
-                }
-            }
-            .disabled(authManager.isLoading)
-        }
-    }
-    
     private var fieldsAreValid: Bool {
         !username.isEmpty && !firstName.isEmpty && !lastName.isEmpty && 
         !email.isEmpty && !password.isEmpty && password == confirmPassword && password.count >= 6
-    }
-}
-
-// MARK: - Step Indicator Components
-struct StepIndicator: View {
-    let title: String
-    let isActive: Bool
-    let isCompleted: Bool
-    
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.xs) {
-            Circle()
-                .fill(circleColor)
-                .frame(width: 12, height: 12)
-                .overlay(
-                    Circle()
-                        .stroke(borderColor, lineWidth: 2)
-                )
-            
-            Text(title)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(textColor)
-                .fontWeight(isActive ? .semibold : .regular)
-        }
-        .animation(DesignSystem.Animation.quick, value: isActive)
-        .animation(DesignSystem.Animation.quick, value: isCompleted)
-    }
-    
-    private var circleColor: Color {
-        if isCompleted {
-            return DesignSystem.Colors.primaryGreen
-        } else if isActive {
-            return DesignSystem.Colors.primaryGreen
-        } else {
-            return DesignSystem.Colors.background
-        }
-    }
-    
-    private var borderColor: Color {
-        if isCompleted || isActive {
-            return DesignSystem.Colors.primaryGreen
-        } else {
-            return DesignSystem.Colors.neutral300
-        }
-    }
-    
-    private var textColor: Color {
-        if isActive {
-            return DesignSystem.Colors.primaryGreen
-        } else {
-            return DesignSystem.Colors.textSecondary
-        }
-    }
-}
-
-struct ProgressLine: View {
-    let isCompleted: Bool
-    
-    var body: some View {
-        Rectangle()
-            .fill(isCompleted ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300)
-            .frame(height: 2)
-            .animation(DesignSystem.Animation.smooth, value: isCompleted)
     }
 }
 
