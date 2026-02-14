@@ -13,6 +13,8 @@ struct SessionCompleteView: View {
     @State private var animateLevel = false
     @State private var animateAchievements = false
     @State private var showConfetti = false
+    @StateObject private var aiCoachService = AICoachService.shared
+    @State private var showingWeeklyCheckIn = false
 
     /// Determine if this is a big celebration (level up or achievements)
     private var isBigCelebration: Bool {
@@ -66,6 +68,11 @@ struct SessionCompleteView: View {
                     // Streak Update
                     streakCard
 
+                    // Weekly Check-In Card
+                    if aiCoachService.weeklyCheckInAvailable {
+                        weeklyCheckInCard
+                    }
+
                     // Continue Button
                     continueButton
                 }
@@ -103,6 +110,9 @@ struct SessionCompleteView: View {
                     HapticManager.shared.achievementUnlocked()
                 }
             }
+        }
+        .sheet(isPresented: $showingWeeklyCheckIn) {
+            WeeklyCheckInView(weekNumber: aiCoachService.completedWeekNumber, player: player)
         }
     }
 
@@ -331,6 +341,38 @@ struct SessionCompleteView: View {
             }
         }
         .opacity(animateXP ? 1 : 0)
+    }
+
+    // MARK: - Weekly Check-In Card
+
+    private var weeklyCheckInCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundColor(DesignSystem.Colors.accentYellow)
+                    Text("Week \(aiCoachService.completedWeekNumber) Complete!")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Spacer()
+                }
+
+                Text("Your AI coach has reviewed your performance and may have suggestions for next week.")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                ModernButton("See AI Review", icon: "sparkles", style: .secondary) {
+                    showingWeeklyCheckIn = true
+                }
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(DesignSystem.Colors.accentYellow.opacity(0.3), lineWidth: 1.5)
+        )
+        .scaleEffect(animateAchievements ? 1 : 0.9)
+        .opacity(animateAchievements ? 1 : 0)
     }
 
     // MARK: - Continue Button
