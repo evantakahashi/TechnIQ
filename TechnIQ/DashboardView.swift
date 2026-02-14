@@ -40,6 +40,7 @@ struct DashboardView: View {
     @State private var smartRecommendations: [CoreDataManager.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
     @StateObject private var cloudMLService = CloudMLService.shared
+    @StateObject private var aiCoachService = AICoachService.shared
 
     // Welcome back detection
     @State private var showWelcomeBack = false
@@ -52,6 +53,8 @@ struct DashboardView: View {
     @State private var showingQuickDrill = false
     @State private var showingActiveTraining = false
     @State private var quickStartExercises: [Exercise] = []
+    @State private var aiDrillExercise: Exercise?
+    @State private var showingAIDrill = false
     
     var currentPlayer: Player? {
         players.first
@@ -68,6 +71,7 @@ struct DashboardView: View {
                     if let player = currentPlayer {
                         modernHeaderSection(player: player)
                         modernStatsOverview(player: player)
+                        todaysFocusSection(player: player)
                         continuePlanCard(player: player)
                         modernQuickActions(player: player)
                         modernRecentActivity
@@ -126,6 +130,11 @@ struct DashboardView: View {
             updateDataFilters()
             checkWelcomeBack()
             loadActivePlan()
+            if let player = currentPlayer {
+                Task {
+                    await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
+                }
+            }
         }
         .onChange(of: authManager.userUID) {
             updateDataFilters()
@@ -280,6 +289,55 @@ struct DashboardView: View {
     }
     
     
+    // MARK: - Today's Focus (AI Coach)
+
+    @ViewBuilder
+    private func todaysFocusSection(player: Player) -> some View {
+        if aiCoachService.isLoading {
+            TodaysFocusCardSkeleton()
+        } else if let coaching = aiCoachService.dailyCoaching {
+            TodaysFocusCard(
+                coaching: coaching,
+                isStale: aiCoachService.isCacheStale,
+                onStartDrill: {
+                    launchAIDrill(coaching.recommendedDrill, for: player)
+                },
+                onBrowseLibrary: {
+                    selectedTab = 2
+                }
+            )
+        }
+    }
+
+    private func launchAIDrill(_ drill: RecommendedDrill, for player: Player) {
+        // If drill references a library exercise, fetch it
+        if drill.isFromLibrary, let idString = drill.libraryExerciseID, let uuid = UUID(uuidString: idString) {
+            let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+            request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+            request.fetchLimit = 1
+            if let existing = try? viewContext.fetch(request).first {
+                quickStartExercises = [existing]
+                showingActiveTraining = true
+                return
+            }
+        }
+
+        // Otherwise create a temporary exercise from the AI drill
+        let exercise = Exercise(context: viewContext)
+        exercise.id = UUID()
+        exercise.name = drill.name
+        exercise.exerciseDescription = "AI Coach Recommendation: \(drill.description)"
+        exercise.category = drill.category
+        exercise.difficulty = Int16(drill.difficulty)
+        exercise.targetSkills = drill.targetSkills
+        exercise.instructions = drill.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        exercise.player = player
+
+        try? viewContext.save()
+        quickStartExercises = [exercise]
+        showingActiveTraining = true
+    }
+
     private func modernStatsOverview(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Your Progress")
