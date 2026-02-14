@@ -77,6 +77,144 @@ class AICoachService: ObservableObject {
         return !Calendar.current.isDateInToday(coaching.fetchDate)
     }
 
+    // MARK: - Plan Adaptation
+
+    @Published var weeklyCheckInAvailable: Bool = false
+    @Published var completedWeekNumber: Int = 0
+    @Published var adaptationResponse: PlanAdaptationResponse?
+    @Published var isLoadingAdaptation: Bool = false
+    @Published var adaptationError: String?
+
+    func setWeeklyCheckInAvailable(weekNumber: Int) {
+        completedWeekNumber = weekNumber
+        weeklyCheckInAvailable = true
+    }
+
+    func fetchPlanAdaptation(for player: Player, plan: TrainingPlanModel, weekNumber: Int) async {
+        isLoadingAdaptation = true
+        adaptationError = nil
+
+        do {
+            adaptationResponse = try await callPlanAdaptationFunction(for: player, plan: plan, weekNumber: weekNumber)
+        } catch {
+            #if DEBUG
+            print("❌ AICoachService: Failed to fetch plan adaptation: \(error)")
+            #endif
+            adaptationError = error.localizedDescription
+        }
+
+        isLoadingAdaptation = false
+    }
+
+    func dismissWeeklyCheckIn() {
+        weeklyCheckInAvailable = false
+        adaptationResponse = nil
+    }
+
+    private func callPlanAdaptationFunction(for player: Player, plan: TrainingPlanModel, weekNumber: Int) async throws -> PlanAdaptationResponse {
+        let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/get_plan_adaptation"
+
+        guard let url = URL(string: functionsURL) else {
+            throw URLError(.badURL)
+        }
+
+        let userUID = auth.currentUser?.uid ?? "anonymous_user"
+        let playerContext = buildPlayerContext(for: player)
+
+        // Build completed week data
+        var completedWeekData: [String: Any] = ["days": []]
+        var nextWeekData: [String: Any] = [:]
+
+        if let completedWeek = plan.weeks.first(where: { $0.weekNumber == weekNumber }) {
+            var daysData: [[String: Any]] = []
+            for day in completedWeek.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+                var sessionsData: [[String: Any]] = []
+                for session in day.sessions {
+                    var sessionDict: [String: Any] = [
+                        "type": session.sessionType.rawValue,
+                        "completed": session.isCompleted,
+                        "duration": session.duration,
+                        "intensity": session.intensity
+                    ]
+                    if session.isCompleted {
+                        sessionDict["rating"] = session.actualIntensity
+                    }
+                    sessionsData.append(sessionDict)
+                }
+                daysData.append([
+                    "day_number": day.dayNumber,
+                    "is_rest_day": day.isRestDay,
+                    "sessions": sessionsData
+                ])
+            }
+            completedWeekData["days"] = daysData
+        }
+
+        // Next week structure
+        if let nextWeek = plan.weeks.first(where: { $0.weekNumber == weekNumber + 1 }) {
+            var daysData: [[String: Any]] = []
+            for day in nextWeek.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+                var sessionsData: [[String: Any]] = []
+                for session in day.sessions {
+                    sessionsData.append([
+                        "type": session.sessionType.rawValue,
+                        "duration": session.duration,
+                        "intensity": session.intensity
+                    ])
+                }
+                daysData.append([
+                    "day_number": day.dayNumber,
+                    "is_rest_day": day.isRestDay,
+                    "sessions": sessionsData
+                ])
+            }
+            nextWeekData = ["days": daysData]
+        }
+
+        let requestBody: [String: Any] = [
+            "user_id": userUID,
+            "player_profile": playerContext.profile,
+            "plan_structure": [
+                "name": plan.name,
+                "next_week": nextWeekData
+            ],
+            "completed_week": completedWeekData,
+            "week_number": weekNumber
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+
+        if let user = auth.currentUser {
+            let idToken = try await user.getIDToken()
+            request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        // Single retry with 2s backoff
+        var lastError: Error?
+        for attempt in 0...1 {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+
+                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+
+                return try JSONDecoder().decode(PlanAdaptationResponse.self, from: data)
+            } catch {
+                lastError = error
+                if attempt == 0 {
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                }
+            }
+        }
+        throw lastError ?? URLError(.unknown)
+    }
+
     // MARK: - Insight Mapping
 
     private func mapToTrainingInsight(_ ai: AIInsight) -> TrainingInsight {
