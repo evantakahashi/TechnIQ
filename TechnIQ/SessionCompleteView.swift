@@ -15,6 +15,7 @@ struct SessionCompleteView: View {
     @State private var showConfetti = false
     @StateObject private var aiCoachService = AICoachService.shared
     @State private var showingWeeklyCheckIn = false
+    @State private var showingShareSheet = false
 
     /// Determine if this is a big celebration (level up or achievements)
     private var isBigCelebration: Bool {
@@ -75,6 +76,23 @@ struct SessionCompleteView: View {
 
                     // Continue Button
                     continueButton
+
+                    // Share to Community
+                    Button {
+                        showingShareSheet = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share to Community")
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(DesignSystem.Colors.primaryGreen.opacity(0.12))
+                        .cornerRadius(DesignSystem.CornerRadius.button)
+                    }
+                    .opacity(animateAchievements ? 1 : 0)
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 .padding(.vertical, DesignSystem.Spacing.xl)
@@ -113,6 +131,18 @@ struct SessionCompleteView: View {
         }
         .sheet(isPresented: $showingWeeklyCheckIn) {
             WeeklyCheckInView(weekNumber: aiCoachService.completedWeekNumber, player: player)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareToCommunitySheet(
+                shareType: .session(
+                    duration: Int(xpBreakdown?.baseXP ?? 0) / 2,
+                    exerciseCount: 0,
+                    rating: 0,
+                    xp: Int(xpBreakdown?.total ?? 0)
+                ),
+                player: player,
+                onDismiss: { showingShareSheet = false }
+            )
         }
     }
 

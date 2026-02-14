@@ -20,6 +20,7 @@ struct ExerciseDetailView: View {
     @State private var feedbackNotes: String = ""
     @State private var hasFeedback: Bool = false
     @State private var showingFeedbackSuccess: Bool = false
+    @State private var showingShareSheet = false
 
     // Check if this is an AI-generated drill
     private var isAIGeneratedDrill: Bool {
@@ -62,6 +63,24 @@ struct ExerciseDetailView: View {
                         .padding(.vertical, 14)
                         .background(DesignSystem.Colors.primaryGreen)
                         .cornerRadius(DesignSystem.CornerRadius.button)
+                    }
+
+                    // Share to Community (AI drills only)
+                    if isAIGeneratedDrill {
+                        Button {
+                            showingShareSheet = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share to Community")
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(DesignSystem.Colors.primaryGreen.opacity(0.12))
+                            .cornerRadius(DesignSystem.CornerRadius.button)
+                        }
                     }
 
                     // YouTube Video Section
@@ -264,6 +283,15 @@ struct ExerciseDetailView: View {
         .fullScreenCover(isPresented: $showingActiveTraining) {
             ActiveTrainingView(exercises: [exercise])
                 .environment(\.managedObjectContext, CoreDataManager.shared.context)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let player = exercise.player {
+                ShareToCommunitySheet(
+                    shareType: .drill(exercise),
+                    player: player,
+                    onDismiss: { showingShareSheet = false }
+                )
+            }
         }
     }
     
