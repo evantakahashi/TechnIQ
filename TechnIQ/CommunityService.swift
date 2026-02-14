@@ -666,6 +666,16 @@ class CommunityService: ObservableObject {
         ])
     }
 
+    // MARK: - Shared Drills Count
+
+    func fetchSharedDrillsCount(userID: String) async -> Int {
+        let snapshot = try? await db.collection("sharedDrills")
+            .whereField("authorID", isEqualTo: userID)
+            .count
+            .getAggregation(source: .server)
+        return snapshot?.count.intValue ?? 0
+    }
+
     // MARK: - Leaderboard
 
     func fetchLeaderboard(forceRefresh: Bool = false) async {

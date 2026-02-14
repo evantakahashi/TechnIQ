@@ -131,6 +131,9 @@ struct PostDetailView: View {
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
+            // Rich content for new post types
+            richPostContent
+
             // Stats
             HStack(spacing: DesignSystem.Spacing.lg) {
                 HStack(spacing: DesignSystem.Spacing.xs) {
@@ -157,6 +160,117 @@ struct PostDetailView: View {
         .background(DesignSystem.Colors.cardBackground)
         .cornerRadius(DesignSystem.CornerRadius.card)
         .customShadow(DesignSystem.Shadow.medium)
+    }
+
+    // MARK: - Rich Post Content
+
+    @ViewBuilder
+    private var richPostContent: some View {
+        switch post.postType {
+        case .sharedDrill:
+            if let title = post.drillTitle {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text(title)
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            if let cat = post.drillCategory {
+                                GlowBadge(cat.capitalized, color: DesignSystem.Colors.primaryGreen)
+                            }
+                            if let diff = post.drillDifficulty {
+                                HStack(spacing: 3) {
+                                    ForEach(1...5, id: \.self) { i in
+                                        Circle()
+                                            .fill(i <= diff ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textTertiary.opacity(0.3))
+                                            .frame(width: 6, height: 6)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
+                .cornerRadius(DesignSystem.CornerRadius.md)
+            }
+
+        case .sharedAchievement:
+            if let name = post.achievementName, let icon = post.achievementIcon {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: icon)
+                        .font(.system(size: 28))
+                        .foregroundColor(DesignSystem.Colors.accentGold)
+                        .frame(width: 48, height: 48)
+                        .background(DesignSystem.Colors.accentGold.opacity(0.12))
+                        .clipShape(Circle())
+                    GlowBadge(name, color: DesignSystem.Colors.accentGold)
+                    Spacer()
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.accentGold.opacity(0.06))
+                .cornerRadius(DesignSystem.CornerRadius.md)
+            }
+
+        case .sharedSession:
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                if let dur = post.sessionDuration {
+                    postStatItem(icon: "clock", value: "\(dur)m", label: "Duration")
+                }
+                if let count = post.sessionExerciseCount {
+                    postStatItem(icon: "figure.run", value: "\(count)", label: "Exercises")
+                }
+                if let xp = post.sessionXP {
+                    postStatItem(icon: "star.fill", value: "+\(xp)", label: "XP")
+                }
+            }
+            .padding(DesignSystem.Spacing.md)
+            .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
+            .cornerRadius(DesignSystem.CornerRadius.md)
+
+        case .sharedLevelUp:
+            if let level = post.newLevel {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Text("\(level)")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundColor(DesignSystem.Colors.accentGold)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Level Up!")
+                            .font(DesignSystem.Typography.titleSmall)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        if let rank = post.rankName {
+                            GlowBadge(rank, color: DesignSystem.Colors.accentGold)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.accentGold.opacity(0.06))
+                .cornerRadius(DesignSystem.CornerRadius.md)
+            }
+
+        default:
+            EmptyView()
+        }
+    }
+
+    private func postStatItem(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(DesignSystem.Colors.primaryGreen)
+            Text(value)
+                .font(DesignSystem.Typography.labelLarge)
+                .fontWeight(.bold)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+            Text(label)
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Comment Input Bar

@@ -13,6 +13,7 @@ struct PublicProfileView: View {
     @State private var isLoading = true
     @State private var showingBlockConfirm = false
     @State private var userPosts: [CommunityPost] = []
+    @State private var sharedDrillsCount = 0
 
     var body: some View {
         NavigationView {
@@ -117,20 +118,31 @@ struct PublicProfileView: View {
     // MARK: - Stats Section
 
     private var statsSection: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            StatCard(
-                title: "Total XP",
-                value: "\(profileXP)",
-                icon: "bolt.fill",
-                color: DesignSystem.Colors.xpGold
-            )
+        VStack(spacing: DesignSystem.Spacing.md) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                StatCard(
+                    title: "Total XP",
+                    value: "\(profileXP)",
+                    icon: "bolt.fill",
+                    color: DesignSystem.Colors.xpGold
+                )
 
-            StatCard(
-                title: "Sessions",
-                value: "\(profileSessions)",
-                icon: "calendar",
-                color: DesignSystem.Colors.primaryGreen
-            )
+                StatCard(
+                    title: "Sessions",
+                    value: "\(profileSessions)",
+                    icon: "calendar",
+                    color: DesignSystem.Colors.primaryGreen
+                )
+            }
+
+            HStack(spacing: DesignSystem.Spacing.md) {
+                StatCard(
+                    title: "Shared Drills",
+                    value: "\(sharedDrillsCount)",
+                    icon: "square.and.arrow.up.fill",
+                    color: DesignSystem.Colors.secondaryBlue
+                )
+            }
         }
     }
 
@@ -203,6 +215,9 @@ struct PublicProfileView: View {
 
                 // Load user's posts from the existing feed
                 userPosts = communityService.posts.filter { $0.authorID == userID }
+
+                // Load shared drills count
+                sharedDrillsCount = await communityService.fetchSharedDrillsCount(userID: userID)
 
                 isLoading = false
             } catch {
