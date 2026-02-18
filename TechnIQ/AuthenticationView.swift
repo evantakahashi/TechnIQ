@@ -133,6 +133,7 @@ struct ModernSignInView: View {
                             }
                             .disabled(!isLoginEnabled || authManager.isLoading)
                             .pressAnimation()
+                            .a11y(label: "Sign in", hint: "Double tap to sign in with your email and password")
                             
                             // Divider
                             HStack {
@@ -154,6 +155,7 @@ struct ModernSignInView: View {
                                 }
                             }
                             .disabled(authManager.isLoading)
+                            .a11y(label: "Continue with Google", hint: "Double tap to sign in with your Google account")
 
                             // Apple Sign-In Button
                             ModernButton("CONTINUE WITH APPLE", icon: "apple.logo", style: .secondary) {
@@ -162,6 +164,7 @@ struct ModernSignInView: View {
                                 }
                             }
                             .disabled(authManager.isLoading)
+                            .a11y(label: "Continue with Apple", hint: "Double tap to sign in with your Apple ID")
 
                             // Forgot Password
                             Button("Forgot password?") {
@@ -188,6 +191,7 @@ struct ModernSignInView: View {
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 .padding(.bottom, DesignSystem.Spacing.xl)
+                .a11y(label: "Create an account", hint: "Double tap to switch to the sign up form")
             }
         }
     }

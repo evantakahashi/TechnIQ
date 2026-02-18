@@ -81,6 +81,8 @@ struct ActiveTrainingView: View {
                     .font(DesignSystem.Typography.numberSmall)
             }
             .foregroundColor(DesignSystem.Colors.textSecondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Session time: \(manager.formattedTime(manager.totalElapsedTime))")
 
             Spacer()
 
@@ -100,6 +102,7 @@ struct ActiveTrainingView: View {
                     .font(.title2)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
             }
+            .a11y(label: "Pause session", hint: "Double tap to pause your training")
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
         .padding(.vertical, DesignSystem.Spacing.sm)

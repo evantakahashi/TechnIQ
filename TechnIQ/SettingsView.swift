@@ -10,7 +10,9 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @AppStorage("appColorScheme") private var appColorScheme: String = "system"
+    @State private var showingPaywall = false
     @State private var showingDeleteAlert = false
     @State private var showingDeleteConfirmation = false
     @State private var deleteConfirmationText = ""
@@ -21,6 +23,58 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             Form {
+                Section {
+                    if subscriptionManager.isPro {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(DesignSystem.Colors.accentGold)
+                            Text("TechnIQ Pro")
+                                .font(DesignSystem.Typography.labelLarge)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                            Spacer()
+                            GlowBadge("Active", color: DesignSystem.Colors.primaryGreen)
+                        }
+
+                        Button {
+                            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack {
+                                Text("Manage Subscription")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(DesignSystem.Colors.textTertiary)
+                            }
+                        }
+                    } else {
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "crown.fill")
+                                    .foregroundColor(DesignSystem.Colors.accentGold)
+                                Text("Upgrade to Pro")
+                                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(DesignSystem.Colors.textTertiary)
+                            }
+                        }
+                    }
+
+                    Button {
+                        Task { await subscriptionManager.restorePurchases() }
+                    } label: {
+                        Text("Restore Purchases")
+                    }
+                    .disabled(subscriptionManager.isLoading)
+                } header: {
+                    Text("Subscription")
+                }
+
                 Section {
                     Picker("Appearance", selection: $appColorScheme) {
                         Text("System").tag("system")
@@ -45,6 +99,7 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isDeletingAccount)
+                    .a11y(label: "Delete account", hint: "Double tap to permanently delete your account", trait: .isButton)
                 } header: {
                     Text("Account")
                 } footer: {
@@ -67,6 +122,7 @@ struct SettingsView: View {
                         }
                     }
                     .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .a11y(label: "Terms of Service", hint: "Opens in browser")
 
                     Button {
                         if let url = URL(string: "https://techniq-b9a27.web.app/privacy-policy.html") {
@@ -83,6 +139,7 @@ struct SettingsView: View {
                         }
                     }
                     .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .a11y(label: "Privacy Policy", hint: "Opens in browser")
                 }
 
                 Section("About") {

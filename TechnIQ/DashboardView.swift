@@ -33,6 +33,8 @@ struct DashboardView: View {
         )
     }
     
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showingQuickDrillPaywall = false
     @State private var showingNewSession = false
     @State private var showingProfileCreation = false
     @State private var showingMatchLog = false
@@ -87,6 +89,9 @@ struct DashboardView: View {
                 .padding(.bottom, DesignSystem.Spacing.xl)
             }
         }
+        .sheet(isPresented: $showingQuickDrillPaywall) {
+            PaywallView(feature: .quickDrill)
+        }
         .sheet(isPresented: $showingNewSession) {
             if let player = currentPlayer {
                 NewSessionView(player: player)
@@ -131,7 +136,7 @@ struct DashboardView: View {
             updateDataFilters()
             checkWelcomeBack()
             loadActivePlan()
-            if let player = currentPlayer {
+            if let player = currentPlayer, subscriptionManager.isPro {
                 Task {
                     await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
                 }
@@ -222,7 +227,11 @@ struct DashboardView: View {
     // MARK: - AI Drill Hero Banner
     private func aiDrillHeroBanner() -> some View {
         Button {
-            showingQuickDrill = true
+            if subscriptionManager.canUseQuickDrill() {
+                showingQuickDrill = true
+            } else {
+                showingQuickDrillPaywall = true
+            }
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "wand.and.stars")
@@ -340,19 +349,23 @@ struct DashboardView: View {
 
     @ViewBuilder
     private func todaysFocusSection(player: Player) -> some View {
-        if aiCoachService.isLoading {
-            TodaysFocusCardSkeleton()
-        } else if let coaching = aiCoachService.dailyCoaching {
-            TodaysFocusCard(
-                coaching: coaching,
-                isStale: aiCoachService.isCacheStale,
-                onStartDrill: {
-                    launchAIDrill(coaching.recommendedDrill, for: player)
-                },
-                onBrowseLibrary: {
-                    selectedTab = 2
-                }
-            )
+        if subscriptionManager.isPro {
+            if aiCoachService.isLoading {
+                TodaysFocusCardSkeleton()
+            } else if let coaching = aiCoachService.dailyCoaching {
+                TodaysFocusCard(
+                    coaching: coaching,
+                    isStale: aiCoachService.isCacheStale,
+                    onStartDrill: {
+                        launchAIDrill(coaching.recommendedDrill, for: player)
+                    },
+                    onBrowseLibrary: {
+                        selectedTab = 2
+                    }
+                )
+            }
+        } else {
+            ProLockedCardView(feature: .dailyCoaching)
         }
     }
 
@@ -429,6 +442,8 @@ struct DashboardView: View {
                     progress: min(1.0, Double(player.currentStreak) / 7.0)
                 )
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Progress: \(player.sessions?.count ?? 0) sessions, \(String(format: "%.1f", totalTrainingHours(for: player))) hours, \(sessionsThisWeek(for: player)) this week, \(player.currentStreak) day streak")
         }
     }
 
@@ -566,6 +581,9 @@ struct DashboardView: View {
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Continue plan: \(plan.name), \(Int(plan.progressPercentage)) percent complete")
+            .accessibilityHint("Double tap to start today's training")
         }
     }
 
@@ -603,7 +621,11 @@ struct DashboardView: View {
                     icon: "bolt.fill",
                     color: DesignSystem.Colors.accentOrange
                 ) {
-                    showingQuickDrill = true
+                    if subscriptionManager.canUseQuickDrill() {
+                        showingQuickDrill = true
+                    } else {
+                        showingQuickDrillPaywall = true
+                    }
                 }
 
                 let hasExercises = (player.exercises?.count ?? 0) > 0
@@ -790,34 +812,38 @@ struct DashboardView: View {
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.bold)
-            
-            ModernCard {
-                if smartRecommendations.isEmpty {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        SoccerBallSpinner()
-                        Text("Analyzing your training patterns...")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                    .padding(.vertical, DesignSystem.Spacing.lg)
-                } else {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        ForEach(Array(smartRecommendations.enumerated()), id: \.offset) { index, recommendation in
-                            SmartRecommendationRow(
-                                recommendation: recommendation
-                            )
-                            
-                            if index < smartRecommendations.count - 1 {
-                                Divider()
-                                    .background(DesignSystem.Colors.neutral200)
+
+            if subscriptionManager.isPro {
+                ModernCard {
+                    if smartRecommendations.isEmpty {
+                        VStack(spacing: DesignSystem.Spacing.md) {
+                            SoccerBallSpinner()
+                            Text("Analyzing your training patterns...")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                        .padding(.vertical, DesignSystem.Spacing.lg)
+                    } else {
+                        VStack(spacing: DesignSystem.Spacing.md) {
+                            ForEach(Array(smartRecommendations.enumerated()), id: \.offset) { index, recommendation in
+                                SmartRecommendationRow(
+                                    recommendation: recommendation
+                                )
+
+                                if index < smartRecommendations.count - 1 {
+                                    Divider()
+                                        .background(DesignSystem.Colors.neutral200)
+                                }
                             }
                         }
                     }
                 }
+                .onAppear {
+                    loadSmartRecommendations(for: player)
+                }
+            } else {
+                ProLockedCardView(feature: .mlRecommendations)
             }
-        }
-        .onAppear {
-            loadSmartRecommendations(for: player)
         }
     }
     

@@ -187,6 +187,7 @@ struct EnhancedProfileView: View {
                 color: DesignSystem.Colors.streakOrange
             )
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Menu Sections
@@ -311,6 +312,7 @@ struct EnhancedProfileView: View {
             .cornerRadius(DesignSystem.CornerRadius.md)
         }
         .padding(.top, DesignSystem.Spacing.md)
+        .a11y(label: "Sign out", hint: "Double tap to sign out of your account")
     }
 
     // MARK: - Helpers
