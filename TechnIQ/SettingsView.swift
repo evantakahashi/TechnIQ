@@ -51,6 +51,40 @@ struct SettingsView: View {
                     Text("Permanently deletes your account, training data, plans, and progress. This cannot be undone.")
                 }
 
+                Section("Legal") {
+                    Button {
+                        if let url = URL(string: "https://techniq-b9a27.web.app/terms-of-service.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.text")
+                            Text("Terms of Service")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+
+                    Button {
+                        if let url = URL(string: "https://techniq-b9a27.web.app/privacy-policy.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                            Text("Privacy Policy")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                }
+
                 Section("About") {
                     HStack {
                         Text("Version")
