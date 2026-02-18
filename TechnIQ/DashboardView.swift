@@ -70,6 +70,7 @@ struct DashboardView: View {
                 LazyVStack(spacing: DesignSystem.Spacing.xl) {
                     if let player = currentPlayer {
                         modernHeaderSection(player: player)
+                        aiDrillHeroBanner()
                         modernStatsOverview(player: player)
                         todaysFocusSection(player: player)
                         continuePlanCard(player: player)
@@ -215,6 +216,52 @@ struct DashboardView: View {
         if let exercise = picked {
             quickStartExercises = [exercise]
             showingActiveTraining = true
+        }
+    }
+
+    // MARK: - AI Drill Hero Banner
+    private func aiDrillHeroBanner() -> some View {
+        Button {
+            showingQuickDrill = true
+        } label: {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 30))
+                    .foregroundColor(DesignSystem.Colors.textOnAccent)
+
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("Generate AI Drill")
+                        .font(DesignSystem.Typography.headlineLarge)
+                        .foregroundColor(DesignSystem.Colors.textOnAccent)
+
+                    Text("Describe any skill — get a personalized drill instantly")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textOnAccent.opacity(0.8))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(DesignSystem.Colors.textOnAccent.opacity(0.6))
+            }
+            .padding(DesignSystem.Spacing.lg)
+            .background(DesignSystem.Colors.athleticGradient)
+            .cornerRadius(DesignSystem.CornerRadius.xl)
+            .modifier(HeroBannerShadowModifier())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private struct HeroBannerShadowModifier: ViewModifier {
+        @Environment(\.colorScheme) private var colorScheme
+
+        func body(content: Content) -> some View {
+            if colorScheme == .dark {
+                content.customShadow(DesignSystem.Shadow.glowLarge)
+            } else {
+                content.customShadow(DesignSystem.Shadow.large)
+            }
         }
     }
 
