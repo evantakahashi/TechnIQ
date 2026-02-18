@@ -42,6 +42,9 @@ extension Player {
     @NSManaged public var matches: NSSet?
     @NSManaged public var seasons: NSSet?
 
+    // AI training enhancement
+    @NSManaged public var weaknessProfileJSON: String?
+
 }
 
 // MARK: Generated accessors for sessions

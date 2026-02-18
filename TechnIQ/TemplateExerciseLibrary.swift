@@ -279,22 +279,328 @@ class TemplateExerciseLibrary {
         )
     ]
 
+    // MARK: - Weak Foot Exercises
+
+    let weakFootExercises: [TemplateExercise] = [
+        TemplateExercise(
+            name: "Weak Foot Wall Passes",
+            category: "Technical",
+            difficulty: "Beginner",
+            description: "Pass against a wall using only your weaker foot, focusing on accuracy and weight of pass"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Shooting Circuit",
+            category: "Technical",
+            difficulty: "Intermediate",
+            description: "Shoot from multiple angles and distances using only your non-dominant foot"
+        ),
+        TemplateExercise(
+            name: "Non-Dominant Dribbling Gates",
+            category: "Technical",
+            difficulty: "Beginner",
+            description: "Dribble through a series of cone gates using only your weaker foot"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Crossing Practice",
+            category: "Technical",
+            difficulty: "Intermediate",
+            description: "Deliver crosses into the box from wide positions using your non-dominant foot"
+        ),
+        TemplateExercise(
+            name: "Weak Foot First Touch",
+            category: "Technical",
+            difficulty: "Beginner",
+            description: "Receive and control balls of varying height and speed using only your weaker foot"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Juggling Progression",
+            category: "Technical",
+            difficulty: "Intermediate",
+            description: "Juggle the ball using only your weaker foot, progressing from 10 to 50 consecutive touches"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Passing Patterns",
+            category: "Technical",
+            difficulty: "Intermediate",
+            description: "Complete passing sequences with a partner using only your non-dominant foot for all passes"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Volleys",
+            category: "Technical",
+            difficulty: "Advanced",
+            description: "Strike volleys and half-volleys with your weaker foot from tossed or crossed balls"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Finesse Shooting",
+            category: "Technical",
+            difficulty: "Advanced",
+            description: "Practice curling shots into corners using the inside of your non-dominant foot"
+        ),
+        TemplateExercise(
+            name: "Weak Foot Speed Dribble",
+            category: "Technical",
+            difficulty: "Intermediate",
+            description: "Sprint with the ball over 30-40 meters controlling exclusively with your weaker foot"
+        )
+    ]
+
+    // MARK: - Defending Exercises
+
+    let defendingExercises: [TemplateExercise] = [
+        TemplateExercise(
+            name: "1v1 Channel Defending",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Defend in a narrow channel forcing the attacker to one side while staying on your feet"
+        ),
+        TemplateExercise(
+            name: "Recovery Run Drill",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Sprint to recover defensive position after being beaten, angling the run to cut off the attacker"
+        ),
+        TemplateExercise(
+            name: "Pressing Trigger Exercise",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Identify and react to pressing triggers such as a poor touch or backwards pass to win the ball"
+        ),
+        TemplateExercise(
+            name: "Aerial Duel Practice",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Practice timing jumps, body positioning, and heading clearances in aerial challenges"
+        ),
+        TemplateExercise(
+            name: "Defensive Positioning Shadow Drill",
+            category: "Tactical",
+            difficulty: "Beginner",
+            description: "Mirror an attacker's movements without the ball, maintaining correct body shape and distance"
+        ),
+        TemplateExercise(
+            name: "Interception Timing Drill",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Read passing lanes and step in to intercept passes at the right moment"
+        ),
+        TemplateExercise(
+            name: "Sliding Tackle Technique",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Practice safe and effective sliding tackle form on a padded surface"
+        ),
+        TemplateExercise(
+            name: "Defensive Header Practice",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Clear crossed and lofted balls with powerful, directed defensive headers"
+        ),
+        TemplateExercise(
+            name: "Cover and Balance Positioning",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Practice providing cover for a pressing teammate while maintaining balance across the backline"
+        ),
+        TemplateExercise(
+            name: "Defensive Block Drill",
+            category: "Tactical",
+            difficulty: "Beginner",
+            description: "Practice shot-blocking technique with correct body positioning to deflect or absorb strikes"
+        )
+    ]
+
+    // MARK: - Under Pressure Exercises
+
+    let underPressureExercises: [TemplateExercise] = [
+        TemplateExercise(
+            name: "Rondo 3v1",
+            category: "Tactical",
+            difficulty: "Beginner",
+            description: "Three players keep possession against one defender in a tight grid, emphasizing quick passing"
+        ),
+        TemplateExercise(
+            name: "Rondo 4v2",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Four attackers maintain possession against two defenders, focusing on body shape and first touch"
+        ),
+        TemplateExercise(
+            name: "Rondo 5v2",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Five attackers vs two defenders in a larger grid, practicing split passes and movement off the ball"
+        ),
+        TemplateExercise(
+            name: "Pressing Escape Drill",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Receive the ball under immediate pressure and find a pass, turn, or dribble to escape the press"
+        ),
+        TemplateExercise(
+            name: "Tight Space Turning",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Receive and turn in a small area with a passive then active defender closing in"
+        ),
+        TemplateExercise(
+            name: "Receive and Turn Under Pressure",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Check to the ball, receive with back to goal, and turn past a defender using Cruyff turns, hooks, or roll-behinds"
+        ),
+        TemplateExercise(
+            name: "Two-Touch Passing Under Press",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Complete passing circuits with a maximum of two touches while defenders apply progressive pressure"
+        ),
+        TemplateExercise(
+            name: "Decision Making Under Pressure",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Receive in central areas with multiple options and choose the best action while being closed down"
+        ),
+        TemplateExercise(
+            name: "Shielding the Ball",
+            category: "Technical",
+            difficulty: "Beginner",
+            description: "Use body strength and positioning to protect the ball from a defender applying pressure from behind"
+        ),
+        TemplateExercise(
+            name: "Quick Combination Play",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Execute rapid one-two and third-man combinations to break through pressing opponents"
+        )
+    ]
+
+    // MARK: - Game-Realistic Scenario Exercises
+
+    let gameScenarioExercises: [TemplateExercise] = [
+        TemplateExercise(
+            name: "Counter-Attack Transition",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Win the ball and launch a fast break with direct passing and forward runs within 10 seconds"
+        ),
+        TemplateExercise(
+            name: "Overlapping Run Patterns",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Practice timed overlapping runs between fullback and winger to create 2v1 situations"
+        ),
+        TemplateExercise(
+            name: "Switching Play Exercise",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Move the ball from one side of the field to the other quickly to exploit space behind the defense"
+        ),
+        TemplateExercise(
+            name: "Build-Up From Back",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Play out from the goalkeeper through defenders and midfielders under opposition pressure"
+        ),
+        TemplateExercise(
+            name: "Final Third Combinations",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Practice wall passes, through balls, and cutbacks in and around the penalty area to create scoring chances"
+        ),
+        TemplateExercise(
+            name: "Wing Play and Crossing",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Beat a defender on the wing and deliver crosses to runners attacking near post, far post, and cutback zones"
+        ),
+        TemplateExercise(
+            name: "Set Piece Routines",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Rehearse coordinated free kick and corner routines with decoy runs and set delivery targets"
+        ),
+        TemplateExercise(
+            name: "Transition Defense to Attack",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Practice regaining possession and immediately transitioning into an organized attacking move"
+        ),
+        TemplateExercise(
+            name: "Positional Rotation Play",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Rotate positions fluidly in a small group to confuse defenders while maintaining team shape"
+        ),
+        TemplateExercise(
+            name: "Through Ball Timing",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Time forward runs to receive through balls between or behind defensive lines without being offside"
+        )
+    ]
+
+    // MARK: - Mental and Decision-Making Exercises
+
+    let mentalExercises: [TemplateExercise] = [
+        TemplateExercise(
+            name: "Scanning Drill",
+            category: "Tactical",
+            difficulty: "Beginner",
+            description: "Check shoulders before receiving the ball, calling out the number of fingers a coach holds up behind you"
+        ),
+        TemplateExercise(
+            name: "Decision Gates",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Dribble toward color-coded gates and choose the correct one based on a coach's call or visual cue"
+        ),
+        TemplateExercise(
+            name: "Reaction-Based Passing",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Pass to targets that light up or are called out randomly, training quick recognition and execution"
+        ),
+        TemplateExercise(
+            name: "Visual Awareness Exercise",
+            category: "Tactical",
+            difficulty: "Intermediate",
+            description: "Navigate a dribbling course while identifying and avoiding randomly moving obstacles or players"
+        ),
+        TemplateExercise(
+            name: "Communication Drill",
+            category: "Tactical",
+            difficulty: "Beginner",
+            description: "Practice verbal and non-verbal communication during possession, calling for the ball and directing teammates"
+        ),
+        TemplateExercise(
+            name: "Cognitive Overload Training",
+            category: "Tactical",
+            difficulty: "Advanced",
+            description: "Perform technical tasks while simultaneously solving mental challenges like math problems or color sequences"
+        )
+    ]
+
     // MARK: - Helper Methods
 
     /// Get all exercises across all categories
     var allExercises: [TemplateExercise] {
         technicalExercises + physicalExercises + tacticalExercises + recoveryExercises
+        + weakFootExercises + defendingExercises + underPressureExercises
+        + gameScenarioExercises + mentalExercises
     }
 
     /// Find exercises by category
     func exercises(for category: String) -> [TemplateExercise] {
         switch category.lowercased() {
         case "technical":
-            return technicalExercises
+            return technicalExercises + weakFootExercises.filter { $0.category == "Technical" }
+                + underPressureExercises.filter { $0.category == "Technical" }
         case "physical":
             return physicalExercises
         case "tactical":
-            return tacticalExercises
+            return tacticalExercises + defendingExercises + underPressureExercises.filter { $0.category == "Tactical" }
+                + gameScenarioExercises + mentalExercises
+                + weakFootExercises.filter { $0.category == "Tactical" }
         case "recovery":
             return recoveryExercises
         default:

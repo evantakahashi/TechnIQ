@@ -403,6 +403,46 @@ def phase_scout(client, player_profile: Dict, session_context: Dict, drill_feedb
         if strengths:
             match_text += f"Match strengths: {', '.join(strengths)}\n"
 
+    # Handle structured weaknesses (new) vs freeform (legacy)
+    selected_weaknesses = requirements.get('selected_weaknesses', [])
+    weakness_text = ""
+    if selected_weaknesses:
+        weakness_text = "STRUCTURED WEAKNESSES (highest priority):\n"
+        for w in selected_weaknesses:
+            weakness_text += f"- {w.get('category', '')}: {w.get('specific', '')}\n"
+
+    # Anti-repetition: recent drill names
+    recent_drills = requirements.get('recent_drill_names', [])
+    anti_repeat_text = ""
+    if recent_drills:
+        anti_repeat_text = f"\nDO NOT generate drills similar to these recent ones: {', '.join(recent_drills)}\n"
+
+    # Weakness-to-archetype mapping for better targeting
+    archetype_hints = {
+        "Under Pressure": "rondo variants, pressing escape drills, tight-space possession games",
+        "Change Of Direction": "cone weave drills, cut-and-go exercises, directional change circuits",
+        "Tight Spaces": "small-sided possession, close-control dribbling boxes, 1v1 in limited area",
+        "Weak Foot Dribbling": "non-dominant foot gates, weak-foot-only dribbling circuits",
+        "Beat 1v1": "1v1 attacking drills, feint practice, step-over sequences",
+        "Long Range Accuracy": "target passing from distance, driven pass practice, switching play drills",
+        "Weak Foot Passing": "non-dominant passing walls, weak-foot triangle passing",
+        "Through Balls": "through-ball timing drills, splitting defenders, weight-of-pass practice",
+        "Finishing 1v1": "1v1 vs keeper, angle finishing, composure drills",
+        "Weak Foot Shooting": "non-dominant shooting circuits, weak-foot finishing angles",
+        "Touch Under Pressure": "receive-and-turn with passive defender, first-touch-under-pressure rondos",
+        "Tackling 1v1": "1v1 channel defending, jockeying drills, timing tackles",
+        "Recovery Runs": "recovery run and defend circuits, transition defending",
+        "Acceleration": "sprint starts, first-5-yard explosiveness, reaction sprints",
+        "Heading Accuracy": "heading target practice, headed passing drills"
+    }
+
+    archetype_hint = ""
+    if selected_weaknesses:
+        for w in selected_weaknesses:
+            specific = w.get('specific', '')
+            if specific in archetype_hints:
+                archetype_hint += f"\nFor '{specific}', consider: {archetype_hints[specific]}"
+
     prompt = f"""Analyze this soccer player and identify their #1 weakness to target.
 
 Player: {player_profile.get('name', 'Player')}, Age {player_profile.get('age', 'Unknown')}, {player_profile.get('position', 'Unknown')}, {player_profile.get('experienceLevel', 'intermediate')} level
@@ -410,6 +450,7 @@ Goals: {', '.join(player_profile.get('skillGoals', []))}
 Self-identified weaknesses: {', '.join(player_profile.get('weaknesses', []))}
 Request focus: {requirements.get('skill_description', '')}
 
+{weakness_text}
 Recent training ratings:
 {history_text or 'No history available'}
 
@@ -417,6 +458,11 @@ Previous drill feedback:
 {feedback_text or 'No feedback available'}
 
 {match_text}
+{anti_repeat_text}
+{archetype_hint}
+
+Priority order: 1) Structured weaknesses if provided, 2) User's text description, 3) Match weaknesses, 4) Session ratings.
+Be CREATIVE and SPECIFIC with drill archetypes. Avoid generic drills.
 
 Return JSON:
 {{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
@@ -425,7 +471,7 @@ Return JSON:
         response = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a drill archetype. Weight the user's explicit request highest, then match weaknesses, then session ratings."},
+                {"role": "system", "content": "You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a creative, specific drill archetype. Prioritize structured weakness selections, then explicit requests, then match data, then session ratings. Be inventive — avoid generic drills."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
@@ -434,8 +480,9 @@ Return JSON:
         return parse_llm_json(response.choices[0].message.content)
     except Exception as e:
         logger.warning(f"⚠️ Scout phase parse error: {e}, using defaults")
+        primary = selected_weaknesses[0].get('specific', 'general technique') if selected_weaknesses else requirements.get('skill_description', 'general technique')
         return {
-            "primary_weakness": requirements.get('skill_description', 'general technique'),
+            "primary_weakness": primary,
             "drill_archetype": "varied practice",
             "difficulty_calibration": "maintain",
             "reasoning": "Fallback: using user request as primary focus"
@@ -473,7 +520,15 @@ Wall equipment guidance (if wall is available):
 - Use wall for: one-touch passing, first touch work, weak foot practice
 
 Return JSON:
-{{"pattern_type": "zigzag|triangle|linear|gates|grid|free", "equipment_placement": [{{"type": "cone|goal|ball|player", "label": "A", "x": 0, "y": 0, "purpose": "start"}}], "field_dimensions": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "movement_paths": [{{"from": "A", "to": "B", "action": "dribble|pass|run", "detail": "description"}}], "weakness_address": "how this layout targets the weakness", "equipment_count": {{"cones": 0, "ball": 1}}}}"""
+{{"pattern_type": "zigzag|triangle|linear|gates|grid|free|diamond|square|rondo_circle|channel|overlap_run|wall_pass_sequence", "equipment_placement": [{{"type": "cone|goal|ball|player", "label": "A", "x": 0, "y": 0, "purpose": "start"}}], "field_dimensions": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "movement_paths": [{{"from": "A", "to": "B", "action": "dribble|pass|run", "detail": "description"}}], "weakness_address": "how this layout targets the weakness", "equipment_count": {{"cones": 0, "ball": 1}}}}
+
+Additional pattern guidance:
+- diamond: 4 points forming a diamond, ideal for passing rotations and positional play
+- square: 4 corner stations, good for combination play and overlaps
+- rondo_circle: circular arrangement for possession games, rondos, pressure drills
+- channel: long narrow corridor for 1v1 defending, recovery runs, dribbling under pressure
+- overlap_run: offset stations simulating wing play, overlapping runs, crossing
+- wall_pass_sequence: stations arranged for wall-pass combinations (give-and-go patterns)"""
 
     try:
         response = client.chat.completions.create(
@@ -543,18 +598,24 @@ DIAGRAM RULES:
 - All element y values must be 0 to {field_dims['length']}
 - element types: "cone", "player", "target", "goal", "ball"
 - path styles: "dribble", "run", "pass"
+- EVERY path MUST include a "step" integer (1-indexed) linking it to the corresponding instruction
+- Example: instruction 1 = "Dribble from cone A to cone B" → path {{"from": "A", "to": "B", "style": "dribble", "step": 1}}
+
+VARIATIONS RULES:
+- Return "variations" as a structured JSON array with objects: {{"name": "...", "description": "...", "modification": "..."}}
+- Include at least 2 variations (1 easier, 1 harder)
 
 Return ONLY valid JSON:
-{{"name": "Short name (max 40 chars)", "description": "One sentence purpose.", "setup": "Dimensions. Equipment. Player start.", "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"], "diagram": {{"field": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}], "paths": [{{"from": "A", "to": "B", "style": "dribble"}}]}}, "progressions": ["Easier: ...", "Harder: ..."], "coachingPoints": ["Point 1", "Point 2", "Point 3"], "estimatedDuration": 15, "difficulty": "{difficulty}", "category": "{category}", "targetSkills": ["skill1", "skill2"], "equipment": {json.dumps(equipment)}, "safetyNotes": "Brief safety note"}}"""
+{{"name": "Short name (max 40 chars)", "description": "One sentence purpose.", "setup": "Dimensions. Equipment. Player start.", "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"], "diagram": {{"field": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}], "paths": [{{"from": "A", "to": "B", "style": "dribble", "step": 1}}]}}, "progressions": ["Easier: ...", "Harder: ..."], "coachingPoints": ["Point 1", "Point 2", "Point 3"], "estimatedDuration": 15, "difficulty": "{difficulty}", "category": "{category}", "targetSkills": ["skill1", "skill2"], "equipment": {json.dumps(equipment)}, "safetyNotes": "Brief safety note", "variations": [{{"name": "Easier variation", "description": "...", "modification": "..."}}, {{"name": "Harder variation", "description": "...", "modification": "..."}}]}}"""
 
     response = client.chat.completions.create(
         model="gpt-4-turbo",
         messages=[
-            {"role": "system", "content": "You are an expert soccer coach. Write complete, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within the specified field dimensions."},
+            {"role": "system", "content": "You are an expert soccer coach. Write complete, creative, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within field dimensions. Every diagram path MUST include a step integer linking to its instruction. Be inventive and specific — avoid generic drills."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=1500,
-        temperature=0.6
+        temperature=0.7
     )
     return parse_llm_json(response.choices[0].message.content)
 
@@ -589,6 +650,15 @@ def programmatic_validate(drill: Dict, field_dims: Dict, requirements: Dict) -> 
         extra = drill_equipment - available - {"none"}
         if extra:
             errors.append({"check": "equipment", "issue": f"Uses unavailable equipment: {', '.join(extra)}", "fix": f"Only use: {', '.join(available)}"})
+
+    # Step-path consistency: every instruction step should have at least one matching path
+    instructions = drill.get("instructions", [])
+    paths = diagram.get("paths", [])
+    if instructions and paths:
+        steps_with_paths = {p.get("step") for p in paths if p.get("step") is not None}
+        for i in range(1, len(instructions) + 1):
+            if steps_with_paths and i not in steps_with_paths:
+                errors.append({"check": "step_path", "issue": f"Instruction step {i} has no matching diagram path", "fix": f"Add a path with 'step': {i}"})
 
     return errors
 

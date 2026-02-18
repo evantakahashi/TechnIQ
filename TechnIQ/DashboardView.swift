@@ -53,6 +53,7 @@ struct DashboardView: View {
     @State private var activePlan: TrainingPlanModel?
     @State private var currentWeekDay: (week: Int, day: Int)?
     @State private var showingQuickDrill = false
+    @State private var quickDrillWeakness: SelectedWeakness? = nil
     @State private var showingActiveTraining = false
     @State private var quickStartExercises: [Exercise] = []
     @State private var aiDrillExercise: Exercise?
@@ -75,6 +76,10 @@ struct DashboardView: View {
                         aiDrillHeroBanner()
                         modernStatsOverview(player: player)
                         todaysFocusSection(player: player)
+                        SmartDrillRecommendationsView(player: player) { weakness in
+                            quickDrillWeakness = weakness
+                            showingQuickDrill = true
+                        }
                         continuePlanCard(player: player)
                         modernQuickActions(player: player)
                         modernRecentActivity
@@ -109,13 +114,14 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {
-                QuickDrillSheet(player: player) { exercise in
+                QuickDrillSheet(player: player, onGenerated: { exercise in
                     showingQuickDrill = false
+                    quickDrillWeakness = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         quickStartExercises = [exercise]
                         showingActiveTraining = true
                     }
-                }
+                }, prefilledWeakness: quickDrillWeakness)
             }
         }
         .fullScreenCover(isPresented: $showingActiveTraining) {

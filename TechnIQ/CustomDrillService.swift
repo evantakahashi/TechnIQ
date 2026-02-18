@@ -168,6 +168,28 @@ class CustomDrillService: ObservableObject {
         // Build drill feedback context from previous AI drills
         let drillFeedback = buildDrillFeedbackContext(for: player)
 
+        // Build requirements dict
+        var requirements: [String: Any] = [
+            "skill_description": request.skillDescription,
+            "category": request.category.rawValue,
+            "difficulty": request.difficulty.rawValue,
+            "equipment": request.equipmentList,
+            "number_of_players": request.numberOfPlayers
+        ]
+
+        // Add structured weaknesses if present
+        if !request.selectedWeaknesses.isEmpty {
+            requirements["selected_weaknesses"] = request.selectedWeaknesses.map {
+                ["category": $0.category, "specific": $0.specific]
+            }
+        }
+
+        // Build recent drill names for anti-repetition
+        let recentDrillNames = getRecentDrillNames(for: player, limit: 5)
+        if !recentDrillNames.isEmpty {
+            requirements["recent_drill_names"] = recentDrillNames
+        }
+
         // Prepare request body
         let requestBody: [String: Any] = [
             "user_id": userUID,
@@ -175,13 +197,7 @@ class CustomDrillService: ObservableObject {
             "session_context": sessionContext,
             "drill_feedback": drillFeedback,
             "field_size": request.fieldSize.rawValue,
-            "requirements": [
-                "skill_description": request.skillDescription,
-                "category": request.category.rawValue,
-                "difficulty": request.difficulty.rawValue,
-                "equipment": request.equipmentList,
-                "number_of_players": request.numberOfPlayers
-            ]
+            "requirements": requirements
         ]
         
         var urlRequest = URLRequest(url: url)
@@ -304,13 +320,41 @@ class CustomDrillService: ObservableObject {
         instructionsText += "\n**Original Request:** \(originalRequest.skillDescription)"
         
         exercise.instructions = instructionsText
-        
+
+        // Store structured data
+        exercise.estimatedDurationSeconds = Int16(response.estimatedDuration * 60)
+
+        if let variations = response.variations, !variations.isEmpty {
+            if let data = try? JSONEncoder().encode(variations),
+               let jsonString = String(data: data, encoding: .utf8) {
+                exercise.variationsJSON = jsonString
+            }
+        }
+
+        // Store weakness categories from the request
+        if !originalRequest.selectedWeaknesses.isEmpty {
+            exercise.weaknessCategories = originalRequest.selectedWeaknesses
+                .map { "\($0.category):\($0.specific)" }
+                .joined(separator: ",")
+        }
+
         // Save to Core Data
         try CoreDataManager.shared.save()
-        
+
         return exercise
     }
-    
+
+    // MARK: - Anti-Repetition
+
+    private func getRecentDrillNames(for player: Player, limit: Int) -> [String] {
+        guard let exercises = player.exercises as? Set<Exercise> else { return [] }
+        return exercises
+            .filter { $0.exerciseDescription?.contains("AI-Generated") == true }
+            .sorted { ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) }
+            .prefix(limit)
+            .compactMap { $0.name }
+    }
+
     // MARK: - Player Profile Building
 
     private func buildPlayerProfile(for player: Player) -> [String: Any] {

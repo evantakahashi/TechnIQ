@@ -74,6 +74,17 @@ struct CustomDrillGeneratorView: View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.lg) {
                 headerSection
+
+                // Weakness suggestions (context-aware)
+                WeaknessSuggestionsCard(player: player) { weakness in
+                    if !request.selectedWeaknesses.contains(where: { $0.category == weakness.category && $0.specific == weakness.specific }) {
+                        request.selectedWeaknesses.append(weakness)
+                    }
+                }
+
+                // Two-tier weakness picker
+                weaknessPickerSection
+
                 skillDescriptionSection
                 categorySection
                 difficultySection
@@ -85,6 +96,12 @@ struct CustomDrillGeneratorView: View {
             .padding(.horizontal, DesignSystem.Spacing.md)
             .padding(.bottom, DesignSystem.Spacing.xxl)
         }
+    }
+
+    // MARK: - Weakness Picker Section
+
+    private var weaknessPickerSection: some View {
+        WeaknessPickerView(selectedWeaknesses: $request.selectedWeaknesses)
     }
     
     // MARK: - Header Section
@@ -117,7 +134,7 @@ struct CustomDrillGeneratorView: View {
     
     private var skillDescriptionSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("What do you want to work on?")
+            Text("Anything else? (optional)")
                 .font(DesignSystem.Typography.titleSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
             

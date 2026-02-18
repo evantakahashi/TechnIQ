@@ -9,6 +9,7 @@ struct CustomDrillRequest {
     var equipment: Set<Equipment>
     var numberOfPlayers: Int
     var fieldSize: FieldSize
+    var selectedWeaknesses: [SelectedWeakness] = []
 }
 
 enum DrillCategory: String, CaseIterable {
@@ -178,9 +179,17 @@ struct DiagramPath: Codable {
     let from: String
     let to: String
     let style: String  // "dribble", "run", "pass"
+    let step: Int?     // nil = show on all steps (backward compat)
 
     var pathStyle: DiagramPathStyle {
         DiagramPathStyle(rawValue: style) ?? .run
+    }
+
+    init(from: String, to: String, style: String, step: Int? = nil) {
+        self.from = from
+        self.to = to
+        self.style = style
+        self.step = step
     }
 }
 
@@ -223,13 +232,16 @@ extension CustomDrillRequest {
             difficulty: .intermediate,
             equipment: [.ball],
             numberOfPlayers: 1,
-            fieldSize: .medium
+            fieldSize: .medium,
+            selectedWeaknesses: []
         )
     }
 
     var isValid: Bool {
-        return !skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        let hasDescription = !skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                skillDescription.count >= 10
+        let hasWeaknesses = !selectedWeaknesses.isEmpty
+        return hasDescription || hasWeaknesses
     }
 
     var equipmentList: [String] {

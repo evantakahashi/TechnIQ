@@ -40,6 +40,11 @@ extension Exercise {
     @NSManaged public var communityAuthor: String?
     @NSManaged public var communityDrillID: String?
 
+    // AI training enhancement
+    @NSManaged public var estimatedDurationSeconds: Int16
+    @NSManaged public var variationsJSON: String?
+    @NSManaged public var weaknessCategories: String?
+
 }
 
 // MARK: Generated accessors for sessionExercises

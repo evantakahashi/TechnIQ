@@ -21,6 +21,9 @@
         <attribute name="videoDuration" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="videoThumbnailURL" optional="YES" attributeType="String"/>
         <attribute name="youtubeVideoID" optional="YES" attributeType="String"/>
+        <attribute name="estimatedDurationSeconds" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="variationsJSON" optional="YES" attributeType="String"/>
+        <attribute name="weaknessCategories" optional="YES" attributeType="String"/>
         <relationship name="sessionExercises" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SessionExercise" inverseName="exercise" inverseEntity="SessionExercise"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="exercises" inverseEntity="Player"/>
         <relationship name="planSessions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="PlanSession" inverseName="exercises" inverseEntity="PlanSession"/>
@@ -49,6 +52,7 @@
         <attribute name="streakFreezes" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="coins" optional="YES" attributeType="Integer 64" defaultValueString="100" usesScalarValueType="YES"/>
         <attribute name="totalCoinsEarned" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="weaknessProfileJSON" optional="YES" attributeType="String"/>
         <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TrainingSession" inverseName="player" inverseEntity="TrainingSession"/>
         <relationship name="avatarConfiguration" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="AvatarConfiguration" inverseName="player" inverseEntity="AvatarConfiguration"/>
         <relationship name="ownedAvatarItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="OwnedAvatarItem" inverseName="player" inverseEntity="OwnedAvatarItem"/>

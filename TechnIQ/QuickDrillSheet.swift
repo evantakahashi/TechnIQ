@@ -7,12 +7,13 @@ struct QuickDrillSheet: View {
 
     let player: Player
     let onGenerated: (Exercise) -> Void
+    var prefilledWeakness: SelectedWeakness? = nil
 
     @State private var skillDescription: String = ""
     @State private var errorMessage: String?
 
     private var isValid: Bool {
-        skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
+        skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10 || prefilledWeakness != nil
     }
 
     private var difficulty: DifficultyLevel {
@@ -94,13 +95,25 @@ struct QuickDrillSheet: View {
     private func generateDrill() {
         errorMessage = nil
 
+        // Auto-map category from weakness if available
+        let category: DrillCategory = {
+            guard let weakness = prefilledWeakness else { return .technical }
+            switch weakness.category {
+            case "Defending": return .tactical
+            case "Speed & Agility", "Stamina": return .physical
+            case "Positioning": return .tactical
+            default: return .technical
+            }
+        }()
+
         let request = CustomDrillRequest(
             skillDescription: skillDescription.trimmingCharacters(in: .whitespacesAndNewlines),
-            category: .technical,
+            category: category,
             difficulty: difficulty,
             equipment: [.ball],
             numberOfPlayers: 1,
-            fieldSize: .medium
+            fieldSize: .medium,
+            selectedWeaknesses: prefilledWeakness.map { [$0] } ?? []
         )
 
         Task {
