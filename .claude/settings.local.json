@@ -4,31 +4,50 @@
       "mcp__XcodeBuildMCP__get_app_bundle_id",
       "mcp__XcodeBuildMCP__get_sim_app_path_id_proj",
       "mcp__XcodeBuildMCP__build_sim_name_proj",
-      "Bash(xcodebuild:*)",
-      "Bash(grep:*)",
       "mcp__XcodeBuildMCP__build_mac_ws",
       "mcp__XcodeBuildMCP__build_mac_proj",
       "mcp__XcodeBuildMCP__clean_proj",
       "mcp__XcodeBuildMCP__list_schems_proj",
-      "Bash(swiftc:*)",
-      "Bash(ls:*)",
-      "Bash(source:*)",
-      "Bash(firebase deploy:*)",
-      "Bash(python3.12:*)",
-      "Bash(rm:*)",
-      "Bash(pip install:*)",
-      "Bash(curl:*)",
-      "Bash(-H \"Content-Type: application/json\")",
-      "Read(//Users/evantakahashi/Desktop/**)",
-      "Bash(git checkout:*)",
-      "Bash(ruby:*)",
-      "Bash(tee:*)",
-      "Bash(chmod:*)",
-      "Bash(git add:*)",
-      "Bash(cat:*)",
-      "Bash(xcrun simctl boot:*)",
-      "Bash(open:*)"
+      "Bash(xcodebuild *)",
+      "Bash(git *)",
+      "Bash(firebase *)",
+      "Bash(swift *)",
+      "Bash(swiftc *)",
+      "Bash(python3* *)",
+      "Bash(pip *)",
+      "Bash(ruby *)",
+      "Bash(open *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(chmod *)",
+      "Bash(curl *)",
+      "Bash(xcrun *)",
+      "Bash(source *)",
+      "Bash(tee *)",
+      "Bash(cat *)",
+      "Bash(rm *)",
+      "Read(**)",
+      "Edit(**)",
+      "Write(**)"
     ],
-    "deny": []
+    "deny": [
+      "Bash(rm -rf /)*",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude needs your attention\" with title \"TechnIQ\"'"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -1,123 +1,106 @@
 # TechnIQ Development Guidelines
 
 ## About TechnIQ
-TechnIQ is an AI-powered soccer training app for iOS that helps players improve their skills through:
-- **AI-Generated Training Plans**: Personalized multi-week programs using Vertex AI/Gemini
-- **Smart Exercise Library**: 45+ pre-built exercises with YouTube integration
-- **Session Tracking**: Record training sessions with notes, ratings, and progress analytics
-- **Custom Drill Creator**: Manual and AI-powered drill generation
-- **Cloud Sync**: Firebase-backed profile and data synchronization
-- **Analytics Dashboard**: Skill trends, session history, and performance insights
+AI-powered soccer training app for iOS. Personalized programs, smart drills, progress analytics.
 
-**Tech Stack**: SwiftUI, Core Data, Firebase (Auth, Firestore, Functions), Google Sign-In, Vertex AI
+**Tech Stack:** SwiftUI, Core Data, Firebase (Auth, Firestore, Functions), Google Sign-In, Vertex AI, YouTube Data API v3
+**Targets:** iOS 17.0+, iPhone & iPad, arm64
 
 ---
+
+## Quick Commands
+- **Build:** `xcodebuild -scheme TechnIQ -sdk iphonesimulator -destination 'id=197B259E-335F-47CF-855E-B5CE0FC385A1' build`
+- **Deploy functions:** `cd functions && firebase deploy --only functions`
+- **Commit:** `/commit`
+- **Build skill:** `/build`
+- **Deploy skill:** `/deploy`
+
+## SourceKit False Positives
+Core Data types (Player, Exercise, etc.) and Firebase modules show "Cannot find in scope" in IDE but build fine. Ignore these.
+
+---
+
+## Architecture
+
+### Core Data Entities (17)
+```
+Player (root)
+├── exercises [Exercise]
+├── sessions [TrainingSession] → exercises [SessionExercise]
+├── trainingPlans [TrainingPlan] → weeks [PlanWeek] → days [PlanDay] → sessions [PlanSession]
+├── avatarConfiguration [AvatarConfiguration]
+├── ownedAvatarItems [OwnedAvatarItem]
+├── stats [PlayerStats], playerProfile [PlayerProfile], playerGoals [PlayerGoal]
+├── matches [Match] → season [Season]
+├── recommendationFeedback [RecommendationFeedback]
+└── seasons [Season]
+
+Independent: CloudSyncStatus, MLRecommendation
+```
+
+### Services (all singletons via `.shared`)
+| Service | @MainActor | Responsibility |
+|---------|------------|----------------|
+| CoreDataManager | No | Core Data stack, persistent store, migrations |
+| AuthenticationManager | No | Firebase Auth (email, Google, anonymous) |
+| CloudMLService | Yes | ML recommendations, YouTube recs via Firebase Functions |
+| CloudDataService | Yes | Firestore sync, network monitoring (NWPathMonitor) |
+| CloudSyncManager | Yes | Bi-directional Core Data ↔ Firestore, 5-min auto-sync |
+| CloudRestoreService | Yes | Cloud data restoration on startup |
+| TrainingPlanService | No | Plan CRUD, AI generation, completion-based progression |
+| CustomDrillService | Yes | AI drill generation via Firebase Functions |
+| YouTubeAPIService | No | YouTube Data API v3, rate limited (100 req/100s) |
+| XPService | No | XP calc, level system (1-50), 10-tier career path |
+| CoinService | No | Coin economy, earning events, transactions |
+| AchievementService | No | 30 achievements, unlock checking, XP rewards |
+| AvatarService | No | Avatar configuration, item inventory |
+| MatchService | No | Match CRUD, season management |
+| ActiveSessionManager | No | Live training session state machine |
+| InsightsEngine | No | Analytics calculations, trend analysis |
+| AppLogger | No | OSLog-based logging with 6 categories |
+
+### Firebase Functions (functions/main.py)
+4 endpoints: `get_youtube_recommendations`, `generate_custom_drill`, `get_advanced_recommendations`, `generate_training_plan`
+All require Firebase Auth in production.
+
+---
+
+## Key Files
+| File | Purpose |
+|------|---------|
+| `TechnIQApp.swift` | App entry, Firebase/Google Sign-In init |
+| `ContentView.swift` | Root nav, auth routing, cloud restore |
+| `DesignSystem.swift` | Design tokens (colors, typography, spacing) |
+| `ModernComponents.swift` | Reusable UI (ModernCard, ModernButton, etc.) |
+| `CoreDataManager.swift` | Core Data stack, `persistentStoreError` for graceful failure |
+| `TemplateExerciseLibrary.swift` | 45+ exercise templates with fuzzy matching |
+| `TrainingPlanModels.swift` | UI models, SessionType enum (incl. warmup/cooldown) |
 
 ## Development Workflow
 
-### 1. Plan First
-- Read relevant files to understand current implementation
-- Create a detailed plan in `tasks/todo.md` with:
-  - Clear, actionable todo items
-  - Build/test verification steps
-  - Notes about files that will be modified
-- **Wait for approval before proceeding**
+1. **Plan first** — read relevant files, create plan in `tasks/todo.md`, wait for approval
+2. **Implement** — one task at a time, build after each change, minimal targeted changes
+3. **Code quality** — see `.claude/rules/` for Swift, Core Data, Firebase rules
+4. **Build** — `/build` to build and check errors
+5. **Git** — `/commit` to commit & push. Stage specific files only.
 
-### 2. Incremental Implementation
-- Use the **TodoWrite** tool to track progress throughout implementation
-- Mark tasks as `in_progress` before starting, `completed` when done
-- Only work on ONE task at a time
-- Build and test after each significant change
+## View Structure (55 views)
+| Area | Key Views |
+|------|-----------|
+| Auth | AuthenticationView, EnhancedOnboardingView |
+| Dashboard | DashboardView, TrainHubView, PlayerProgressView |
+| Training Plans | AITrainingPlanGeneratorView, ActivePlanView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
+| Sessions | TodaysTrainingView, ActiveTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
+| Exercises | ExerciseLibraryView, ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView, QuickDrillSheet |
+| Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
+| Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
+| Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |
+| Settings | SettingsView, EditProfileView, SharePlanView |
 
-### 3. Communication
-- Provide **high-level explanations** of changes (not line-by-line details)
-- Reference code locations with `file_path:line_number` format
-- Example: "Added AI generation in CloudMLService.swift:363"
-
-### 4. Simplicity First
-- Make minimal, targeted changes
-- Avoid refactoring existing code unless necessary
-- Prefer editing existing files over creating new ones
-- Keep each change isolated to as few files as possible
-
-### 5. Documentation
-- Add a **Review** section to `tasks/todo.md` when done with:
-  - Summary of changes
-  - Files modified/created
-  - Testing notes
-  - Any outstanding issues or next steps
-
----
-
-## TechnIQ-Specific Guidelines
-
-### Code Quality
-- **Never commit**:
-  - API keys, credentials, or secrets (use Info.plist with env vars)
-  - Debug print statements in production code
-  - Backup files (*.backup, *.backup2)
-  - Build artifacts or logs
-- **Always use**:
-  - `#if DEBUG` guards for debug print statements
-  - AppLogger.shared for production logging
-  - DesignSystem constants for colors, spacing, typography
-  - Modern SwiftUI patterns (@StateObject, @Environment, async/await)
-
-### Architecture Patterns
-- **Core Data**: All persistent data (Player, Session, Exercise, TrainingPlan)
-- **Firebase**: Authentication, cloud sync, AI Functions
-- **Services**: CloudMLService, TrainingPlanService, CustomDrillService, YouTubeAPIService
-- **Views**: Follow existing ModernCard, ModernButton, DesignSystem patterns
-
-### Build & Testing
-- **Always build** after making changes: `xcodebuild -scheme TechnIQ -sdk iphonesimulator`
-- Test on **simulator first**, then physical device when needed
-- Fix all compiler errors and warnings before committing
-- Verify Core Data schema changes don't break existing data
-
-### Firebase Integration
-- AI Functions deployed to: `https://us-central1-techniq-b9a27.cloudfunctions.net/`
-- Always check authentication state before Firebase calls
-- Handle offline scenarios gracefully
-- Use proper error messages for user-facing failures
-
-### Git Commits
-- Use descriptive commit messages
-- Include Claude Code footer (automatically added by `/commit` command)
-- Stage only relevant files (exclude backups, logs, user settings)
-- Push to `main` branch after successful builds
-
----
-
-## Quick Reference
-
-### Key Files
-- **App Entry**: `TechnIQApp.swift`
-- **Main View**: `ContentView.swift`
-- **Core Data**: `CoreDataManager.swift`, `DataModel.xcdatamodeld`
-- **Services**: `CloudMLService.swift`, `TrainingPlanService.swift`, `CustomDrillService.swift`
-- **Design System**: `DesignSystem.swift`
-- **Exercise Library**: `TemplateExerciseLibrary.swift` (45+ exercises)
-
-### Common Tasks
-- **Commit & Push**: Use `/commit` slash command
-- **Check Todo List**: Read `tasks/todo.md`
-- **Build App**: `xcodebuild -scheme TechnIQ -sdk iphonesimulator`
-- **View Git Status**: `git status`
-
-### Testing Checklist
-- [ ] App builds without errors or warnings
-- [ ] Feature works on iOS simulator
-- [ ] Core Data changes don't corrupt existing data
-- [ ] Firebase calls handle auth failures gracefully
-- [ ] UI follows DesignSystem patterns
-- [ ] No debug print statements in committed code
-
----
-
-## Remember
-- **Plan → Approve → Implement → Test → Review**
-- Keep changes simple and minimal
-- Use TodoWrite tool to track progress
-- Build frequently to catch errors early
-- Ask before making architectural changes
+## Deferred / Outstanding
+- Sign in with Apple (entitlement added, implementation pending)
+- App icon (needs design assets)
+- API key rotation (keys in functions/.env.yaml need revoking)
+- Accessibility labels (zero currently)
+- Localization (English only)
+- Incremental sync (currently full-sync on each cycle)
