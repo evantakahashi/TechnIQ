@@ -122,6 +122,7 @@ struct DashboardView: View {
             ActiveTrainingView(exercises: quickStartExercises)
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(authManager)
+                .environmentObject(subscriptionManager)
         }
         .onChange(of: isOnboardingComplete) { completed in
             if completed {

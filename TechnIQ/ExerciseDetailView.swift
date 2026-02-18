@@ -283,6 +283,7 @@ struct ExerciseDetailView: View {
         .fullScreenCover(isPresented: $showingActiveTraining) {
             ActiveTrainingView(exercises: [exercise])
                 .environment(\.managedObjectContext, CoreDataManager.shared.context)
+                .environmentObject(SubscriptionManager.shared)
         }
         .sheet(isPresented: $showingShareSheet) {
             if let player = exercise.player {

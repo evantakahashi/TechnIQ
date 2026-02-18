@@ -80,12 +80,15 @@ struct PaywallView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: .constant(subscriptionManager.errorMessage != nil)) {
+            .alert("Error", isPresented: Binding(
+                get: { subscriptionManager.errorMessage != nil },
+                set: { if !$0 { subscriptionManager.errorMessage = nil } }
+            )) {
                 Button("OK") { subscriptionManager.errorMessage = nil }
             } message: {
                 Text(subscriptionManager.errorMessage ?? "")
             }
-            .onChange(of: subscriptionManager.isPro) { isPro in
+            .onChange(of: subscriptionManager.isPro) { _, isPro in
                 if isPro { dismiss() }
             }
         }

@@ -58,6 +58,7 @@ struct TodaysTrainingView: View {
         .fullScreenCover(isPresented: $showingActiveTraining) {
             ActiveTrainingView(exercises: activeTrainingExercises)
                 .environment(\.managedObjectContext, viewContext)
+                .environmentObject(SubscriptionManager.shared)
         }
     }
 
