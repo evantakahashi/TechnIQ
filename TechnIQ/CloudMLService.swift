@@ -19,6 +19,10 @@ class CloudMLService: ObservableObject {
     private var cachedRecommendations: [MLDrillRecommendation] = []
     private var lastRecommendationFetch: Date?
     private let cacheExpirationTime: TimeInterval = 30 * 60 // 30 minutes
+
+    // Rate limiting
+    private var lastRequestTimes: [String: Date] = [:]
+    private let requestCooldown: TimeInterval = 30
     
     enum RecommendationStatus {
         case idle
@@ -29,16 +33,26 @@ class CloudMLService: ObservableObject {
     }
     
     private init() {}
+
+    private func checkRateLimit(for endpoint: String) throws {
+        if let lastTime = lastRequestTimes[endpoint],
+           Date().timeIntervalSince(lastTime) < requestCooldown {
+            let remaining = Int(requestCooldown - Date().timeIntervalSince(lastTime))
+            throw MLError.rateLimited(retryAfter: remaining)
+        }
+        lastRequestTimes[endpoint] = Date()
+    }
     
     // MARK: - Main Recommendation Functions
     
     func getYouTubeRecommendations(for player: Player, limit: Int = 1) async throws -> [YouTubeVideoRecommendation] {
+        try checkRateLimit(for: "get_youtube_recommendations")
         #if DEBUG
         print("🎥 CloudMLService: Fetching single YouTube recommendation for \(player.name ?? "Unknown")")
         #endif
         #if DEBUG
         print("🔍 CloudMLService: Checking prerequisites...")
-        
+
         #endif
         recommendationStatus = .loading
         
@@ -145,9 +159,10 @@ class CloudMLService: ObservableObject {
     }
     
     func getCloudRecommendations(for player: Player, limit: Int = 5) async throws -> [MLDrillRecommendation] {
+        try checkRateLimit(for: "get_advanced_recommendations")
         #if DEBUG
         print("🤖 CloudMLService: Fetching ML-powered recommendations for \(player.name ?? "Unknown")")
-        
+
         #endif
         // Check cache first
         if let cachedRecs = getCachedRecommendations(limit: limit) {
@@ -427,6 +442,7 @@ class CloudMLService: ObservableObject {
         preferredDays: [String] = [],
         restDays: [String] = []
     ) async throws -> GeneratedPlanStructure {
+        try checkRateLimit(for: "generate_training_plan")
         #if DEBUG
         print("🤖 CloudMLService: Generating AI training plan for \(player.name ?? "Unknown")")
         print("📋 Parameters: \(duration) weeks, \(difficulty), \(category), role: \(targetRole ?? "none")")
@@ -1104,7 +1120,8 @@ enum MLError: LocalizedError {
     case networkError
     case modelNotAvailable
     case insufficientData
-    
+    case rateLimited(retryAfter: Int)
+
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
@@ -1115,6 +1132,8 @@ enum MLError: LocalizedError {
             return "ML model not available"
         case .insufficientData:
             return "Insufficient data for recommendations"
+        case .rateLimited(let seconds):
+            return "Please wait \(seconds) seconds before trying again"
         }
     }
 }
