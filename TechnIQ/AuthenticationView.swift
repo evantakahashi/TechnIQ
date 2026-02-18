@@ -190,8 +190,30 @@ struct ModernSignInView: View {
                     }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.bottom, DesignSystem.Spacing.xl)
                 .a11y(label: "Create an account", hint: "Double tap to switch to the sign up form")
+
+                // Legal Links
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Button("Terms of Service") {
+                        if let url = URL(string: "https://techniq-b9a27.web.app/terms-of-service.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                    Text("·")
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                    Button("Privacy Policy") {
+                        if let url = URL(string: "https://techniq-b9a27.web.app/privacy-policy.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
         }
     }
