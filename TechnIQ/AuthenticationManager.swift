@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseAuth
+import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
 
@@ -31,6 +32,7 @@ class AuthenticationManager: ObservableObject {
                 self?.currentUser = user
                 self?.isAuthenticated = user != nil
                 self?.clearError()
+                Crashlytics.crashlytics().setUserID(user?.uid ?? "")
             }
         }
     }

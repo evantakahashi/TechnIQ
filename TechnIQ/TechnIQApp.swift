@@ -11,6 +11,7 @@ import FirebaseCore
 import FirebaseAuth
 import GoogleSignIn
 import FirebaseFirestore
+import FirebaseCrashlytics
 
 @main
 struct TechnIQApp: App {
@@ -21,6 +22,7 @@ struct TechnIQApp: App {
     init() {
         // Configure Firebase FIRST before accessing any Firebase services
         FirebaseApp.configure()
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
 
         // Configure Firestore with simulator-friendly settings
         let db = Firestore.firestore()
