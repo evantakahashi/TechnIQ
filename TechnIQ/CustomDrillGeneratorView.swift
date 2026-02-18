@@ -358,6 +358,7 @@ struct CustomDrillGeneratorView: View {
                 )
 
                 generatedExercise = exercise
+                SubscriptionManager.shared.markCustomDrillUsed()
 
                 // Check for validation warnings from the generation state
                 if case .success(let response) = drillService.generationState {

@@ -107,6 +107,7 @@ struct QuickDrillSheet: View {
             do {
                 let exercise = try await drillService.generateCustomDrill(request: request, for: player)
                 await MainActor.run {
+                    SubscriptionManager.shared.markQuickDrillUsed()
                     onGenerated(exercise)
                 }
             } catch {

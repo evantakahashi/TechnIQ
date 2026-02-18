@@ -4,9 +4,11 @@ import CoreData
 struct TrainingPlansListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @StateObject private var planService = TrainingPlanService.shared
 
     @State private var selectedTab: PlanTab = .prebuilt
+    @State private var showingPaywall = false
     @State private var selectedPlan: TrainingPlanModel?
     @State private var showingPlanDetail = false
     @State private var showingCustomBuilder = false
@@ -80,6 +82,9 @@ struct TrainingPlansListView: View {
             if let plan = planToShare {
                 SharePlanView(plan: plan)
             }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(feature: .trainingPlan)
         }
         .onChange(of: showingAIGenerator) { newValue in
             // Reload plans when AI generator is dismissed
@@ -173,7 +178,11 @@ struct TrainingPlansListView: View {
         VStack(spacing: DesignSystem.Spacing.md) {
             // AI Generation Button
             ModernButton("Generate with AI", icon: "sparkles", style: .primary) {
-                showingAIGenerator = true
+                if subscriptionManager.isPro {
+                    showingAIGenerator = true
+                } else {
+                    showingPaywall = true
+                }
             }
             .padding(.horizontal, DesignSystem.Spacing.md)
 

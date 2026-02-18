@@ -14,6 +14,9 @@ struct ExerciseLibraryView: View {
     @State private var isLoadingYouTubeContent = false
     @State private var showingCustomDrillGenerator = false
     @State private var showingManualDrillCreator = false
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showingDrillPaywall = false
+    @State private var showingYouTubePaywall = false
 
     // Favorites and Recently Used
     @State private var favoriteExercises: [Exercise] = []
@@ -272,6 +275,12 @@ struct ExerciseLibraryView: View {
                         loadExercises()
                     }
             }
+            .sheet(isPresented: $showingDrillPaywall) {
+                PaywallView(feature: .customDrill)
+            }
+            .sheet(isPresented: $showingYouTubePaywall) {
+                PaywallView(feature: .youtubeRecs)
+            }
             .sheet(isPresented: $showingFilterSheet) {
                 ExerciseFilterView(
                     filterState: $filterState,
@@ -362,7 +371,11 @@ struct ExerciseLibraryView: View {
                 icon: "brain.head.profile",
                 color: DesignSystem.Colors.primaryGreen
             ) {
-                showingCustomDrillGenerator = true
+                if subscriptionManager.canUseCustomDrill() {
+                    showingCustomDrillGenerator = true
+                } else {
+                    showingDrillPaywall = true
+                }
             }
 
             // Manual Drill
@@ -380,7 +393,11 @@ struct ExerciseLibraryView: View {
                 icon: "play.rectangle.fill",
                 color: DesignSystem.Colors.error
             ) {
-                loadYouTubeContent()
+                if subscriptionManager.isPro {
+                    loadYouTubeContent()
+                } else {
+                    showingYouTubePaywall = true
+                }
             }
             .disabled(isLoadingYouTubeContent)
         }

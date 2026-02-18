@@ -167,6 +167,9 @@ struct SettingsView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(feature: .trainingPlan)
+            }
             .alert("Delete Account?", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Continue", role: .destructive) {
