@@ -154,7 +154,15 @@ struct ModernSignInView: View {
                                 }
                             }
                             .disabled(authManager.isLoading)
-                            
+
+                            // Apple Sign-In Button
+                            ModernButton("CONTINUE WITH APPLE", icon: "apple.logo", style: .secondary) {
+                                Task {
+                                    await authManager.signInWithApple()
+                                }
+                            }
+                            .disabled(authManager.isLoading)
+
                             // Forgot Password
                             Button("Forgot password?") {
                                 if !email.isEmpty {
@@ -335,6 +343,27 @@ struct ModernSignUpView: View {
                 }
             }
             .disabled(!fieldsAreValid || authManager.isLoading)
+
+            // Divider
+            HStack {
+                Rectangle()
+                    .fill(DesignSystem.Colors.neutral300)
+                    .frame(height: 1)
+                Text("or")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                Rectangle()
+                    .fill(DesignSystem.Colors.neutral300)
+                    .frame(height: 1)
+            }
+
+            // Apple Sign-In Button
+            ModernButton("SIGN UP WITH APPLE", icon: "apple.logo", style: .secondary) {
+                Task {
+                    await authManager.signInWithApple()
+                }
+            }
+            .disabled(authManager.isLoading)
 
             // Legal Links
             HStack(spacing: DesignSystem.Spacing.md) {
