@@ -117,7 +117,15 @@ struct ActiveTrainingView: View {
             preparingView
 
         case .exerciseActive:
-            ExerciseStepView(manager: manager)
+            if let exercise = manager.currentExercise, exercise.diagramJSON != nil {
+                DrillWalkthroughView(exercise: exercise) { rating, difficulty, notes in
+                    manager.completeExercise()
+                    manager.rateExercise(rating, notes: notes)
+                    manager.nextExercise()
+                }
+            } else {
+                ExerciseStepView(manager: manager)
+            }
 
         case .exerciseComplete:
             exerciseCompleteView
@@ -237,7 +245,9 @@ struct ActiveTrainingView: View {
                     newLevel: newLevel,
                     achievements: unlockedAchievements,
                     player: player,
-                    onDismiss: { dismiss() }
+                    onDismiss: { dismiss() },
+                    exercises: manager.exercises,
+                    totalTime: manager.totalElapsedTime
                 )
             } else {
                 // Process results and show

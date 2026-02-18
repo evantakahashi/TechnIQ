@@ -9,6 +9,11 @@ struct SessionCompleteView: View {
     let player: Player
     let onDismiss: () -> Void
 
+    // Task 7: Training summary data
+    var exercises: [Exercise] = []
+    var totalTime: TimeInterval = 0
+    var onGenerateAnotherDrill: (() -> Void)? = nil
+
     @State private var animateXP = false
     @State private var animateLevel = false
     @State private var animateAchievements = false
@@ -52,6 +57,11 @@ struct SessionCompleteView: View {
                     // Header with Mascot
                     headerSection
 
+                    // Training Summary Card
+                    if !exercises.isEmpty {
+                        trainingSummaryCard
+                    }
+
                     // XP Breakdown Card
                     if let breakdown = xpBreakdown {
                         xpBreakdownCard(breakdown)
@@ -78,6 +88,11 @@ struct SessionCompleteView: View {
                             ProLockedCardView(feature: .weeklyAdaptation)
                                 .padding(.horizontal, DesignSystem.Spacing.md)
                         }
+                    }
+
+                    // Generate Another Drill shortcut
+                    if let onGenerate = onGenerateAnotherDrill {
+                        generateAnotherDrillButton(action: onGenerate)
                     }
 
                     // Continue Button
@@ -408,6 +423,117 @@ struct SessionCompleteView: View {
                 .stroke(DesignSystem.Colors.accentYellow.opacity(0.3), lineWidth: 1.5)
         )
         .scaleEffect(animateAchievements ? 1 : 0.9)
+        .opacity(animateAchievements ? 1 : 0)
+    }
+
+    // MARK: - Training Summary Card
+
+    private var trainingSummaryCard: some View {
+        ModernCard(padding: DesignSystem.Spacing.lg) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Image(systemName: "figure.run")
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    Text("Training Summary")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Spacer()
+                }
+
+                HStack(spacing: DesignSystem.Spacing.xl) {
+                    // Drills completed
+                    VStack(spacing: 4) {
+                        Text("\(exercises.count)")
+                            .font(DesignSystem.Typography.headlineMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        Text("Drills")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    // Total time
+                    VStack(spacing: 4) {
+                        Text(formattedTotalTime)
+                            .font(DesignSystem.Typography.headlineMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                        Text("Duration")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Spacer()
+                }
+
+                // "You worked on:" weakness categories
+                let categories = exerciseWeaknessCategories
+                if !categories.isEmpty {
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("You worked on:")
+                            .font(DesignSystem.Typography.labelMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                        FlowLayout(spacing: DesignSystem.Spacing.xs) {
+                            ForEach(categories, id: \.self) { category in
+                                Text(category)
+                                    .font(DesignSystem.Typography.labelSmall)
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                                    .padding(.vertical, DesignSystem.Spacing.xs)
+                                    .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
+                                    .cornerRadius(DesignSystem.CornerRadius.sm)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .scaleEffect(animateXP ? 1 : 0.9)
+        .opacity(animateXP ? 1 : 0)
+    }
+
+    private var formattedTotalTime: String {
+        let minutes = Int(totalTime) / 60
+        let seconds = Int(totalTime) % 60
+        if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        }
+        return "\(seconds)s"
+    }
+
+    private var exerciseWeaknessCategories: [String] {
+        var categories: Set<String> = []
+        for exercise in exercises {
+            if let weaknesses = exercise.weaknessCategories, !weaknesses.isEmpty {
+                let parts = weaknesses.components(separatedBy: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                categories.formUnion(parts)
+            }
+        }
+        return Array(categories).sorted()
+    }
+
+    // MARK: - Generate Another Drill Button
+
+    private func generateAnotherDrillButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Image(systemName: "sparkles")
+                    .foregroundColor(DesignSystem.Colors.accentYellow)
+                Text("Generate Another Drill")
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(DesignSystem.Colors.accentYellow.opacity(0.12))
+            .cornerRadius(DesignSystem.CornerRadius.button)
+        }
         .opacity(animateAchievements ? 1 : 0)
     }
 

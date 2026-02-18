@@ -14,6 +14,10 @@ struct ExerciseDetailView: View {
     @State private var isEditingNotes = false
     @State private var showingActiveTraining = false
 
+    // Animated diagram step controls
+    @State private var diagramStep: Int? = nil
+    @State private var isDiagramAutoPlaying: Bool = false
+
     // Drill feedback state (for AI-generated drills)
     @State private var feedbackRating: Int = 0
     @State private var difficultyFeedback: String = ""
@@ -162,8 +166,13 @@ struct ExerciseDetailView: View {
                                     .foregroundColor(DesignSystem.Colors.primaryDark)
                             }
 
-                            DrillDiagramView(diagram: diagram)
-                                .frame(height: 220)
+                            AnimatedDrillDiagramView(
+                                diagram: diagram,
+                                instructions: parsedSteps,
+                                currentStep: $diagramStep,
+                                isAutoPlaying: $isDiagramAutoPlaying
+                            )
+                            .frame(height: 350)
                         }
                         .padding()
                         .background(
@@ -328,6 +337,17 @@ struct ExerciseDetailView: View {
 
         let decoder = JSONDecoder()
         return try? decoder.decode(DrillDiagram.self, from: data)
+    }
+
+    private var parsedSteps: [String] {
+        guard let instructions = exercise.instructions else { return [] }
+        return instructions.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { line in
+                let pattern = /^\d+\./
+                return line.contains(pattern)
+            }
+            .map { $0.replacingOccurrences(of: #"^\d+\.\s*"#, with: "", options: .regularExpression) }
     }
 
     private func cleanDescription(_ description: String) -> String {

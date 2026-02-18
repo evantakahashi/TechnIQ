@@ -304,27 +304,45 @@ struct PlanSessionCard: View {
                 if let exercises = session.exercises?.allObjects as? [Exercise], !exercises.isEmpty {
                     Divider()
 
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Exercises (\(exercises.count))")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        ForEach(exercises.prefix(3), id: \.id) { exercise in
-                            HStack(spacing: DesignSystem.Spacing.xs) {
-                                Image(systemName: "soccerball")
-                                    .font(.caption2)
-                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                                Text(exercise.name ?? "Exercise")
-                                    .font(DesignSystem.Typography.bodySmall)
-                                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                            }
+                    HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+                        // Mini diagram thumbnail for first exercise with diagram
+                        if let diagramExercise = exercises.first(where: { $0.diagramJSON != nil }),
+                           let json = diagramExercise.diagramJSON,
+                           let data = json.data(using: .utf8),
+                           let diagram = try? JSONDecoder().decode(DrillDiagram.self, from: data) {
+                            AnimatedDrillDiagramView(
+                                diagram: diagram,
+                                instructions: [],
+                                currentStep: .constant(nil),
+                                isAutoPlaying: .constant(false)
+                            )
+                            .frame(width: 80, height: 60)
+                            .cornerRadius(DesignSystem.CornerRadius.sm)
+                            .allowsHitTesting(false)
                         }
 
-                        if exercises.count > 3 {
-                            Text("+\(exercises.count - 3) more")
-                                .font(DesignSystem.Typography.labelSmall)
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            Text("Exercises (\(exercises.count))")
+                                .font(DesignSystem.Typography.labelMedium)
                                 .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                            ForEach(exercises.prefix(3), id: \.id) { exercise in
+                                HStack(spacing: DesignSystem.Spacing.xs) {
+                                    Image(systemName: "soccerball")
+                                        .font(.caption2)
+                                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+
+                                    Text(exercise.name ?? "Exercise")
+                                        .font(DesignSystem.Typography.bodySmall)
+                                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                                }
+                            }
+
+                            if exercises.count > 3 {
+                                Text("+\(exercises.count - 3) more")
+                                    .font(DesignSystem.Typography.labelSmall)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                            }
                         }
                     }
                 }
