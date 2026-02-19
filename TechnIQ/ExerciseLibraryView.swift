@@ -143,8 +143,7 @@ struct ExerciseLibraryView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
+        ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
 
@@ -152,8 +151,11 @@ struct ExerciseLibraryView: View {
                     // Main content with sections
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: DesignSystem.Spacing.xl) {
-                            // Simple Header
-                            simpleHeader
+                            // Hero AI Drill Card
+                            heroAIDrillCard
+
+                            // Filter toolbar (exercise count + view toggle + filter)
+                            filterToolbar
 
                             // Search Bar
                             searchBar
@@ -246,74 +248,63 @@ struct ExerciseLibraryView: View {
                     LoadingOverlay()
                 }
             }
-            .navigationTitle("Exercises")
-            .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showingExerciseDetail) {
-                if let exercise = selectedExercise {
-                    ExerciseDetailView(
-                        exercise: exercise,
-                        onFavoriteChanged: {
-                            loadExercises()
-                        },
-                        onExerciseDeleted: {
-                            loadExercises()
-                        }
-                    )
-                }
-            }
-            .sheet(isPresented: $showingCustomDrillGenerator) {
-                CustomDrillGeneratorView(player: player)
-                    .environment(\.managedObjectContext, viewContext)
-                    .onDisappear {
+        .sheet(isPresented: $showingExerciseDetail) {
+            if let exercise = selectedExercise {
+                ExerciseDetailView(
+                    exercise: exercise,
+                    onFavoriteChanged: {
+                        loadExercises()
+                    },
+                    onExerciseDeleted: {
                         loadExercises()
                     }
-            }
-            .sheet(isPresented: $showingManualDrillCreator) {
-                ManualDrillCreatorView(player: player)
-                    .environment(\.managedObjectContext, viewContext)
-                    .onDisappear {
-                        loadExercises()
-                    }
-            }
-            .sheet(isPresented: $showingDrillPaywall) {
-                PaywallView(feature: .customDrill)
-            }
-            .sheet(isPresented: $showingYouTubePaywall) {
-                PaywallView(feature: .youtubeRecs)
-            }
-            .sheet(isPresented: $showingFilterSheet) {
-                ExerciseFilterView(
-                    filterState: $filterState,
-                    availableSkills: availableSkills,
-                    onApply: { }
                 )
             }
-            .onAppear {
-                loadExercises()
-                loadRecommendations()
-            }
+        }
+        .sheet(isPresented: $showingCustomDrillGenerator) {
+            CustomDrillGeneratorView(player: player)
+                .environment(\.managedObjectContext, viewContext)
+                .onDisappear {
+                    loadExercises()
+                }
+        }
+        .sheet(isPresented: $showingManualDrillCreator) {
+            ManualDrillCreatorView(player: player)
+                .environment(\.managedObjectContext, viewContext)
+                .onDisappear {
+                    loadExercises()
+                }
+        }
+        .sheet(isPresented: $showingDrillPaywall) {
+            PaywallView(feature: .customDrill)
+        }
+        .sheet(isPresented: $showingYouTubePaywall) {
+            PaywallView(feature: .youtubeRecs)
+        }
+        .sheet(isPresented: $showingFilterSheet) {
+            ExerciseFilterView(
+                filterState: $filterState,
+                availableSkills: availableSkills,
+                onApply: { }
+            )
+        }
+        .onAppear {
+            loadExercises()
+            loadRecommendations()
         }
     }
 
     // MARK: - View Components
 
-    private var simpleHeader: some View {
+    private var filterToolbar: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Exercise Library")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text("\(allExercises.count) exercises available")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
+            Text("\(allExercises.count) exercises")
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
 
             Spacer()
 
             HStack(spacing: DesignSystem.Spacing.sm) {
-                // View Toggle Button
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         viewMode = isGridView ? "list" : "grid"
@@ -324,7 +315,6 @@ struct ExerciseLibraryView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
 
-                // Filter Button
                 Button {
                     showingFilterSheet = true
                 } label: {
@@ -361,6 +351,49 @@ struct ExerciseLibraryView: View {
         .background(DesignSystem.Colors.cardBackground)
         .cornerRadius(DesignSystem.CornerRadius.card)
         .customShadow(DesignSystem.Shadow.small)
+    }
+
+    private var heroAIDrillCard: some View {
+        ModernCard(
+            accentEdge: .leading,
+            accentColor: DesignSystem.Colors.primaryGreen
+        ) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "sparkles")
+                        .font(.title2)
+                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+
+                    Text("Create AI Drill")
+                        .font(DesignSystem.Typography.titleLarge)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                }
+
+                Text("Get a personalized drill tailored to your weaknesses")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                ModernButton("Generate Drill", icon: "arrow.right.circle.fill", style: .primary) {
+                    if subscriptionManager.canUseCustomDrill() {
+                        showingCustomDrillGenerator = true
+                    } else {
+                        showingDrillPaywall = true
+                    }
+                }
+            }
+        }
+        .background(
+            LinearGradient(
+                colors: [
+                    DesignSystem.Colors.primaryGreen.opacity(0.15),
+                    DesignSystem.Colors.primaryGreen.opacity(0.05)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .cornerRadius(DesignSystem.CornerRadius.card)
+        )
     }
 
     private var actionButtons: some View {
