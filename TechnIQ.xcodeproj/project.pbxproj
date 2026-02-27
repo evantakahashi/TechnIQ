@@ -425,6 +425,7 @@
 			isa = PBXGroup;
 			children = (
 				9171F938AAB96199970C75DA /* FeatureHighlightView.swift */,
+				C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */,
 			);
 			name = Onboarding;
 			path = Onboarding;
@@ -965,6 +966,7 @@ COACH00000000000000000002 /* CoachMarkOverlay.swift in Sources */,
 				48EC7FAEB2DB9EF56FB7C221 /* DrillWalkthroughView.swift in Sources */,
 				2557CA8268DE54DF1338A586 /* SmartDrillRecommendationsView.swift in Sources */,
 				A5B6B6D853FCEC22948709CF /* FeatureHighlightView.swift in Sources */,
+				B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
