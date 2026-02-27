@@ -9,7 +9,7 @@ struct UnifiedOnboardingView: View {
 
     // Step state
     @State private var currentStep = 0
-    private let totalSteps = 5
+    private let totalSteps = 9
 
     // Step 2: Goal
     @State private var selectedGoal = "Improve Skills"
@@ -91,7 +91,7 @@ struct UnifiedOnboardingView: View {
 
     private var onboardingHeader: some View {
         HStack {
-            if currentStep > 0 && currentStep < totalSteps - 1 {
+            if currentStep > 0 && currentStep < 7 {
                 Button(action: {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         currentStep -= 1
@@ -119,10 +119,10 @@ struct UnifiedOnboardingView: View {
             Spacer()
 
             // Skip button (only on welcome and goal steps)
-            if currentStep < 2 {
+            if currentStep < 4 {
                 Button("Skip") {
                     withAnimation {
-                        currentStep = 2 // Skip to profile creation
+                        currentStep = 4 // Skip to profile creation
                     }
                 }
                 .font(DesignSystem.Typography.labelMedium)
@@ -140,10 +140,12 @@ struct UnifiedOnboardingView: View {
     private var stepTitle: String {
         switch currentStep {
         case 0: return "Welcome"
-        case 1: return "Your Goal"
-        case 2: return "About You"
-        case 3: return "Your Style"
-        case 4: return "Your Plan"
+        case 1, 2, 3: return "TechnIQ"
+        case 4: return "Your Goal"
+        case 5: return "About You"
+        case 6: return "Your Style"
+        case 7: return "Your Plan"
+        case 8: return "Go Pro"
         default: return ""
         }
     }
@@ -176,14 +178,24 @@ struct UnifiedOnboardingView: View {
             switch currentStep {
             case 0:
                 welcomeStep
-            case 1:
-                goalStep
-            case 2:
-                basicInfoStep
-            case 3:
-                positionStyleStep
+            case 1, 2, 3:
+                FeatureHighlightPage(
+                    highlight: FeatureHighlight.onboardingHighlights[currentStep - 1]
+                )
             case 4:
+                goalStep
+            case 5:
+                basicInfoStep
+            case 6:
+                positionStyleStep
+            case 7:
                 planGenerationStep
+            case 8:
+                OnboardingPaywallView(
+                    planName: selectedGoal,
+                    onContinueFree: { isOnboardingComplete = true },
+                    onPurchaseComplete: { isOnboardingComplete = true }
+                )
             default:
                 EmptyView()
             }
@@ -198,11 +210,11 @@ struct UnifiedOnboardingView: View {
 
     private var continueButton: some View {
         Group {
-            if currentStep < totalSteps - 1 {
+            if currentStep < 7 {
                 Button(action: {
                     HapticManager.shared.mediumTap()
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        if currentStep == 3 {
+                        if currentStep == 6 {
                             // End of soccer profile — create player, then advance to plan gen
                             createPlayer()
                             currentStep += 1
@@ -238,14 +250,15 @@ struct UnifiedOnboardingView: View {
     private var buttonTitle: String {
         switch currentStep {
         case 0: return "GET STARTED"
-        case 3: return "START TRAINING"
+        case 3: return "LET'S SET UP YOUR PROFILE"
+        case 6: return "GENERATE MY PLAN"
         default: return "CONTINUE"
         }
     }
 
     private var canContinue: Bool {
         switch currentStep {
-        case 2:
+        case 5:
             return !playerName.isEmpty
         default:
             return true
@@ -629,7 +642,9 @@ struct UnifiedOnboardingView: View {
                     }
 
                     Button("Skip for Now") {
-                        isOnboardingComplete = true
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            currentStep = 8
+                        }
                     }
                     .font(DesignSystem.Typography.labelMedium)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
@@ -766,7 +781,9 @@ struct UnifiedOnboardingView: View {
 
                     // Auto-navigate after brief celebration
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        isOnboardingComplete = true
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            currentStep = 8
+                        }
                     }
                 }
             } catch {

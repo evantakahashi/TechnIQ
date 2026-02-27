@@ -118,9 +118,12 @@ enum MascotState: String, CaseIterable, Identifiable {
     static func forOnboarding(screenIndex: Int) -> MascotState {
         switch screenIndex {
         case 0: return .waving
-        case 1: return .coaching
-        case 2...4: return .encouraging
-        case 5: return .proud
+        case 1...3: return .coaching
+        case 4: return .coaching
+        case 5: return .encouraging
+        case 6: return .coaching
+        case 7: return .thinking
+        case 8: return .excited
         default: return .happy
         }
     }
