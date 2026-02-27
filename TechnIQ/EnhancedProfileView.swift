@@ -51,6 +51,7 @@ struct EnhancedProfileView: View {
 
                         // Quick Stats Row
                         quickStatsRow(player: player)
+                            .coachMark(.progress)
 
                         // Menu Sections
                         trainingSection(player: player)

@@ -51,6 +51,7 @@ struct TrainingPlansListView: View {
                 .padding(.bottom, DesignSystem.Spacing.xl)
             }
         }
+        .coachMark(.plans)
         .navigationTitle("Training Plans")
         .navigationBarTitleDisplayMode(.large)
         .onAppear {

@@ -27,6 +27,7 @@ struct TrainHubView: View {
                 ProgressView("Loading...")
             }
         }
+        .coachMark(.train)
         .navigationTitle("Train")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

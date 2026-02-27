@@ -81,6 +81,7 @@ struct DashboardView: View {
                             showingQuickDrill = true
                         }
                         continuePlanCard(player: player)
+                            .coachMark(.dashboard)
                         modernQuickActions(player: player)
                         modernRecentActivity
                         modernMatchesSection(player: player)
