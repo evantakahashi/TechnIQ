@@ -53,6 +53,7 @@
 		9BC1906A0F785D059B49F57C /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */; };
 		9D06AEC93234B277CCC67AE7 /* AICoachModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31C301512D7EBA8397649E2 /* AICoachModels.swift */; };
 		A5B6B6D853FCEC22948709CF /* FeatureHighlightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9171F938AAB96199970C75DA /* FeatureHighlightView.swift */; };
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */; };
 		A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F31304560398E5F65665084 /* DayEditorView.swift */; };
 		AAEA4FBDE9B0A7FC7A86EF50 /* ExerciseEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */; };
 		AB1234567890ABCD12340001 /* Match+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */; };
@@ -186,6 +187,7 @@
 		FEBD025843E71BC1691763A3 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CF39D90503597CBA6BE3E7 /* CommunityView.swift */; };
 		QDS00001AAAA00000000AAAA /* QuickDrillSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */; };
 		TRAINHUB01234567890ABCD01 /* TrainHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRAINHUB01234567890ABCDEF /* TrainHubView.swift */; };
+		COACH00000000000000000002 /* CoachMarkOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = COACH00000000000000000001 /* CoachMarkOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +252,7 @@
 		892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotView.swift; sourceTree = "<group>"; };
 		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
 		9171F938AAB96199970C75DA /* FeatureHighlightView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureHighlightView.swift; sourceTree = "<group>"; };
+		C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPaywallView.swift; sourceTree = "<group>"; };
 		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
 		9BA65D744B2E4860334C7B5D /* MascotState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotState.swift; sourceTree = "<group>"; };
 		A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessModels.swift; sourceTree = "<group>"; };
@@ -372,6 +375,7 @@
 		FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillTrendChartView.swift; sourceTree = "<group>"; };
 		QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickDrillSheet.swift; sourceTree = "<group>"; };
 		TRAINHUB01234567890ABCDEF /* TrainHubView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrainHubView.swift; sourceTree = "<group>"; };
+		COACH00000000000000000001 /* CoachMarkOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachMarkOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -602,7 +606,8 @@
 				27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */,
 				2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */,
 				3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */,
-				D5F734158CD9E7B39E3C6990 /* Onboarding */,
+COACH00000000000000000003 /* Components */,
+								D5F734158CD9E7B39E3C6990 /* Onboarding */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -645,6 +650,14 @@
 			);
 			name = TestHelpers;
 			path = TestHelpers;
+			sourceTree = "<group>";
+		};
+		COACH00000000000000000003 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				COACH00000000000000000001 /* CoachMarkOverlay.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -805,7 +818,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */,
-				DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */,
+COACH00000000000000000002 /* CoachMarkOverlay.swift in Sources */,
+								DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */,
 				DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */,
 				DF5CB2F82E3054FB0085F3ED /* CloudSyncManager.swift in Sources */,
 				DF48B9E52ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift in Sources */,
