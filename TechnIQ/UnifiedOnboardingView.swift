@@ -405,7 +405,7 @@ struct UnifiedOnboardingView: View {
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
                     .transition(.opacity)
-                    .animation(DesignSystem.Animations.smooth, value: selectedGoal)
+                    .animation(DesignSystem.Animation.smooth, value: selectedGoal)
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
