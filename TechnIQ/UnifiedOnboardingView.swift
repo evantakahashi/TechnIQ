@@ -17,7 +17,7 @@ struct UnifiedOnboardingView: View {
 
     // Step 3: About You
     @State private var playerName = ""
-    @State private var playerAge = 16
+    @State private var playerAge = 13
     @State private var selectedExperienceLevel = "Beginner"
     @State private var yearsPlaying: Int = 2
 
@@ -375,6 +375,14 @@ struct UnifiedOnboardingView: View {
                     .padding(.horizontal, DesignSystem.Spacing.md)
                 }
             }
+
+            if !selectedGoal.isEmpty {
+                Text("We'll tailor your drills to \(selectedGoal.lowercased())")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    .transition(.opacity)
+                    .animation(DesignSystem.Animations.smooth, value: selectedGoal)
+            }
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
     }
@@ -426,24 +434,20 @@ struct UnifiedOnboardingView: View {
                             .cornerRadius(DesignSystem.CornerRadius.md)
                     }
 
-                    // Age Slider
+                    // Age Picker
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        HStack {
-                            Text("Age")
-                                .font(DesignSystem.Typography.labelMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            Spacer()
-                            Text("\(playerAge) years")
-                                .font(DesignSystem.Typography.labelLarge)
-                                .fontWeight(.medium)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
+                        Text("Age")
+                            .font(DesignSystem.Typography.labelMedium)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
 
-                        Slider(value: Binding(
-                            get: { Double(playerAge) },
-                            set: { playerAge = Int($0) }
-                        ), in: 10...75, step: 1)
-                        .tint(DesignSystem.Colors.primaryGreen)
+                        Picker("Age", selection: $playerAge) {
+                            ForEach(8...25, id: \.self) { age in
+                                Text("\(age) years").tag(age)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 120)
+                        .clipped()
                     }
 
                     // Experience Level
@@ -458,13 +462,18 @@ struct UnifiedOnboardingView: View {
                                     selectedExperienceLevel = level
                                     HapticManager.shared.selectionChanged()
                                 } label: {
-                                    Text(level)
-                                        .font(DesignSystem.Typography.labelMedium)
-                                        .foregroundColor(selectedExperienceLevel == level ? .white : DesignSystem.Colors.textPrimary)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, DesignSystem.Spacing.md)
-                                        .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
-                                        .cornerRadius(DesignSystem.CornerRadius.sm)
+                                    VStack(spacing: 2) {
+                                        Text(level)
+                                            .font(DesignSystem.Typography.labelMedium)
+                                            .fontWeight(.medium)
+                                        Text(experienceDescription(level))
+                                            .font(DesignSystem.Typography.labelSmall)
+                                    }
+                                    .foregroundColor(selectedExperienceLevel == level ? .white : DesignSystem.Colors.textPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, DesignSystem.Spacing.md)
+                                    .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                                    .cornerRadius(DesignSystem.CornerRadius.sm)
                                 }
                             }
                         }
@@ -548,12 +557,22 @@ struct UnifiedOnboardingView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: DesignSystem.Spacing.sm) {
                                 ForEach(playingStyles, id: \.self) { style in
-                                    FrequencyChip(
-                                        title: style,
-                                        isSelected: selectedPlayingStyle == style
-                                    ) {
+                                    Button {
                                         selectedPlayingStyle = style
                                         HapticManager.shared.selectionChanged()
+                                    } label: {
+                                        VStack(spacing: 2) {
+                                            Text(style)
+                                                .font(DesignSystem.Typography.labelMedium)
+                                                .fontWeight(.medium)
+                                            Text(styleDescriptor(style))
+                                                .font(DesignSystem.Typography.labelSmall)
+                                        }
+                                        .foregroundColor(selectedPlayingStyle == style ? .white : DesignSystem.Colors.textPrimary)
+                                        .padding(.horizontal, DesignSystem.Spacing.md)
+                                        .padding(.vertical, DesignSystem.Spacing.sm)
+                                        .background(selectedPlayingStyle == style ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                                        .cornerRadius(DesignSystem.CornerRadius.pill)
                                     }
                                 }
                             }
@@ -588,6 +607,27 @@ struct UnifiedOnboardingView: View {
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
             .padding(.bottom, DesignSystem.Spacing.xl)
+        }
+    }
+
+    private func experienceDescription(_ level: String) -> String {
+        switch level {
+        case "Beginner": return "Just starting out"
+        case "Intermediate": return "Play regularly"
+        case "Advanced": return "Club/travel team"
+        case "Professional": return "Academy level"
+        default: return ""
+        }
+    }
+
+    private func styleDescriptor(_ style: String) -> String {
+        switch style {
+        case "Aggressive": return "Press high"
+        case "Defensive": return "Stay back"
+        case "Balanced": return "All-around"
+        case "Creative": return "Flair moves"
+        case "Fast": return "Quick counter"
+        default: return ""
         }
     }
 
