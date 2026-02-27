@@ -9,6 +9,7 @@ struct UnifiedOnboardingView: View {
 
     // Step state
     @State private var currentStep = 0
+    @State private var dragOffset: CGFloat = 0
     private let totalSteps = 9
 
     // Step 2: Goal
@@ -72,6 +73,29 @@ struct UnifiedOnboardingView: View {
 
                 // Step Content
                 stepContent
+                    .offset(x: currentStep <= 3 ? dragOffset : 0)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                guard currentStep <= 3 else { return }
+                                dragOffset = value.translation.width
+                            }
+                            .onEnded { value in
+                                guard currentStep <= 3 else {
+                                    dragOffset = 0
+                                    return
+                                }
+                                let threshold: CGFloat = 50
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    if value.translation.width < -threshold && currentStep < 3 {
+                                        currentStep += 1
+                                    } else if value.translation.width > threshold && currentStep > 0 {
+                                        currentStep -= 1
+                                    }
+                                    dragOffset = 0
+                                }
+                            }
+                    )
 
                 Spacer()
 
