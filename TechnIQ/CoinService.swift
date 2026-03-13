@@ -141,10 +141,8 @@ final class CoinService: ObservableObject {
     }
 
     /// Get current coin balance
-    /// - Parameter context: Core Data context (uses main if not provided)
     /// - Returns: Current coin balance
-    func getBalance(context: NSManagedObjectContext? = nil) -> Int {
-        let ctx = context ?? coreDataManager.context
+    func getBalance() -> Int {
         guard let player = coreDataManager.getCurrentPlayer() else {
             return 0
         }
@@ -152,10 +150,8 @@ final class CoinService: ObservableObject {
     }
 
     /// Get total coins ever earned
-    /// - Parameter context: Core Data context (uses main if not provided)
     /// - Returns: Total coins earned all-time
-    func getTotalEarned(context: NSManagedObjectContext? = nil) -> Int {
-        let ctx = context ?? coreDataManager.context
+    func getTotalEarned() -> Int {
         guard let player = coreDataManager.getCurrentPlayer() else {
             return 0
         }
