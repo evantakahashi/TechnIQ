@@ -95,17 +95,13 @@ class CloudDataService: ObservableObject {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
-        let batch = db.batch()
-        
-        for goal in goals {
-            let goalData = try createPlayerGoalDocument(goal: goal)
-            let docRef = db.collection("users").document(userUID)
+
+        try await commitInChunks(goals) { batch, goal in
+            let goalData = try self.createPlayerGoalDocument(goal: goal)
+            let docRef = self.db.collection("users").document(userUID)
                 .collection("playerGoals").document(goal.id?.uuidString ?? UUID().uuidString)
             batch.setData(goalData, forDocument: docRef, merge: true)
         }
-        
-        try await batch.commit()
     }
     
     // MARK: - Training Session Sync
@@ -133,16 +129,12 @@ class CloudDataService: ObservableObject {
             throw CloudDataError.notAuthenticated
         }
 
-        let batch = db.batch()
-
-        for feedbackItem in feedback {
-            let feedbackData = try createRecommendationFeedbackDocument(feedback: feedbackItem)
-            let docRef = db.collection("users").document(userUID)
+        try await commitInChunks(feedback) { batch, feedbackItem in
+            let feedbackData = try self.createRecommendationFeedbackDocument(feedback: feedbackItem)
+            let docRef = self.db.collection("users").document(userUID)
                 .collection("recommendationFeedback").document(feedbackItem.id?.uuidString ?? UUID().uuidString)
             batch.setData(feedbackData, forDocument: docRef, merge: true)
         }
-
-        try await batch.commit()
     }
 
     // MARK: - Avatar Configuration Sync
@@ -168,16 +160,12 @@ class CloudDataService: ObservableObject {
             throw CloudDataError.notAuthenticated
         }
 
-        let batch = db.batch()
-
-        for item in items {
-            let itemData = createOwnedAvatarItemDocument(item: item)
-            let docRef = db.collection("users").document(userUID)
+        try await commitInChunks(items) { batch, item in
+            let itemData = self.createOwnedAvatarItemDocument(item: item)
+            let docRef = self.db.collection("users").document(userUID)
                 .collection("ownedAvatarItems").document(item.id?.uuidString ?? UUID().uuidString)
             batch.setData(itemData, forDocument: docRef, merge: true)
         }
-
-        try await batch.commit()
     }
 
     // MARK: - Custom Exercises (Drills) Sync
@@ -187,16 +175,12 @@ class CloudDataService: ObservableObject {
             throw CloudDataError.notAuthenticated
         }
 
-        let batch = db.batch()
-
-        for exercise in exercises {
-            let exerciseData = createCustomExerciseDocument(exercise: exercise)
-            let docRef = db.collection("users").document(userUID)
+        try await commitInChunks(exercises) { batch, exercise in
+            let exerciseData = self.createCustomExerciseDocument(exercise: exercise)
+            let docRef = self.db.collection("users").document(userUID)
                 .collection("customExercises").document(exercise.id?.uuidString ?? UUID().uuidString)
             batch.setData(exerciseData, forDocument: docRef, merge: true)
         }
-
-        try await batch.commit()
     }
 
     // MARK: - Training Plans Sync
@@ -334,6 +318,26 @@ class CloudDataService: ObservableObject {
         #if DEBUG
         print("✅ Successfully shared plan '\(plan.name)' to community")
         #endif
+    }
+
+    // MARK: - Batch Chunking
+
+    /// Commits items in batches of 450 to stay under Firestore's 500-operation limit.
+    private func commitInChunks<T>(
+        _ items: [T],
+        using buildBatch: (WriteBatch, T) throws -> Void
+    ) async throws {
+        let chunkSize = 450
+        for startIndex in stride(from: 0, to: items.count, by: chunkSize) {
+            let endIndex = min(startIndex + chunkSize, items.count)
+            let chunk = Array(items[startIndex..<endIndex])
+
+            let batch = db.batch()
+            for item in chunk {
+                try buildBatch(batch, item)
+            }
+            try await batch.commit()
+        }
     }
 }
 
