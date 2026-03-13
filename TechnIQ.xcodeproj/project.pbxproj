@@ -66,6 +66,7 @@
 		AB1234567890ABCD12340008 /* MatchHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340018 /* MatchHistoryView.swift */; };
 		AB1234567890ABCD12340009 /* SeasonManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340019 /* SeasonManagementView.swift */; };
 		AB1234567890ABCD1234000A /* MatchStatsComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */; };
+		AF80E380774AEB62A33122F3 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08B8B634101079B3C2823BD /* AppLogger.swift */; };
 		B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */; };
 		B27D510330BD10FBFB2A3278 /* WeaknessAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */; };
 		B9E40B1CD6CD65CAD6E52C01 /* OwnedAvatarItem+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */; };
@@ -362,6 +363,7 @@
 		DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeAPIService.swift; sourceTree = "<group>"; };
 		DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CalendarComponents.swift; sourceTree = "<group>"; };
+		E08B8B634101079B3C2823BD /* AppLogger.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		E33ED23ACAF341275B7DC8DC /* CoinServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoinServiceTests.swift; sourceTree = "<group>"; };
 		E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoinService.swift; sourceTree = "<group>"; };
 		E993CCC222121E16CC2F0587 /* TransitionSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransitionSystem.swift; sourceTree = "<group>"; };
@@ -421,10 +423,241 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		059F4E8BECCF46C98F160FEF /* Avatar */ = {
+			isa = PBXGroup;
+			children = (
+				30C5A24059E85EF44972B5D9 /* AvatarView.swift */,
+				53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */,
+				09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */,
+				FDD1AC457D0F69F00356A18C /* ShopView.swift */,
+			);
+			name = Avatar;
+			path = Avatar;
+			sourceTree = "<group>";
+		};
+		42A816E591DDB23C72348434 /* Training */ = {
+			isa = PBXGroup;
+			children = (
+				DF48B9D02ED5241A00F7AC05 /* ActivePlanView.swift */,
+				DF48B9D22ED5242700F7AC05 /* CustomPlanBuilderView.swift */,
+				DF48B9D42ED5243700F7AC05 /* TrainingPlanDetailView.swift */,
+				DF48B9DA2ED5249200F7AC05 /* TrainingPlansListView.swift */,
+				DF16362C2E133100001E8CF9 /* NewSessionView.swift */,
+				DF1636322E133100001E8CF9 /* SessionDetailView.swift */,
+				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
+				DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */,
+				89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */,
+				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
+				18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */,
+				E9AD26664A9C012346D58B4E /* PlanEditorView.swift */,
+				DB606D20EB0F9A45D449238F /* WeekEditorView.swift */,
+				1F31304560398E5F65665084 /* DayEditorView.swift */,
+				2465CE756CC3395B14507526 /* SessionEditorView.swift */,
+				D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */,
+				TRAINHUB01234567890ABCDEF /* TrainHubView.swift */,
+				0AA18311F41B034E3F4EA29A /* ActiveTrainingView.swift */,
+				7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */,
+			);
+			name = Training;
+			path = Training;
+			sourceTree = "<group>";
+		};
+		55F3D8B4F56A99400734EF40 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DF48B9D62ED5244200F7AC05 /* TrainingPlanModels.swift */,
+				DF48B9E12ED524A600F7AC05 /* PlanDay+CoreDataClass.swift */,
+				DF48B9DD2ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift */,
+				DF48B9DC2ED524A600F7AC05 /* PlanSession+CoreDataClass.swift */,
+				DF48B9DF2ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift */,
+				DF48B9E02ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift */,
+				DF48B9E92ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift */,
+				DF48B9E82ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift */,
+				DF48B9DE2ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift */,
+				DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */,
+				DF5CB2F92E30550B0085F3ED /* FirestoreDataModels.swift */,
+				DF5CB2F32E3054E20085F3ED /* MLProfileModels.swift */,
+				DF5CB30B2E30586D0085F3ED /* CloudSyncStatus+CoreDataClass.swift */,
+				DF5CB3092E30585E0085F3ED /* MLRecommendation+CoreDataProperties.swift */,
+				DF5CB30D2E3058730085F3ED /* CloudSyncStatus+CoreDataProperties.swift */,
+				DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */,
+				DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */,
+				DF5CB3072E3058590085F3ED /* MLRecommendation+CoreDataClass.swift */,
+				DF5CB2FF2E3058210085F3ED /* PlayerGoal+CoreDataClass.swift */,
+				DF5CB3032E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift */,
+				DF5CB3052E3058480085F3ED /* RecommendationFeedback+CoreDataProperties.swift */,
+				DF5CB3012E30582B0085F3ED /* PlayerGoal+CoreDataProperties.swift */,
+				DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */,
+				DF5CB2FB2E3058090085F3ED /* PlayerProfile+CoreDataClass.swift */,
+				DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */,
+				DF16363C2E133200001E8CF9 /* Exercise+CoreDataClass.swift */,
+				DF5CB2FD2E3058110085F3ED /* PlayerProfile+CoreDataProperties.swift */,
+				DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */,
+				DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */,
+				AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */,
+				AB1234567890ABCD12340012 /* Match+CoreDataProperties.swift */,
+				AB1234567890ABCD12340013 /* Season+CoreDataClass.swift */,
+				AB1234567890ABCD12340014 /* Season+CoreDataProperties.swift */,
+				DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */,
+				DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */,
+				DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */,
+				DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */,
+				DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */,
+				9BA65D744B2E4860334C7B5D /* MascotState.swift */,
+				1986206B3B3D0F8C77240541 /* AvatarModels.swift */,
+				B85457B8B3C0C17681E48D02 /* AvatarConfiguration+CoreDataClass.swift */,
+				402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */,
+				F7927AF10E032D5DE23A1409 /* OwnedAvatarItem+CoreDataClass.swift */,
+				BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */,
+				C31C301512D7EBA8397649E2 /* AICoachModels.swift */,
+				A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */,
+			);
+			name = Models;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		576CE0BB49918CAFB40070A4 /* Community */ = {
+			isa = PBXGroup;
+			children = (
+				C4CF39D90503597CBA6BE3E7 /* CommunityView.swift */,
+				154400BACA8D3E9E085DAF70 /* CommunityFeedView.swift */,
+				512D16A323E417A69261E316 /* CreatePostView.swift */,
+				48CC34B60C3065E96B57FD0B /* PostDetailView.swift */,
+				C0D94F0335FDF068598A32FC /* PublicProfileView.swift */,
+				8242D125539C2ECF4723E3EB /* DrillMarketplaceView.swift */,
+				B60E3C013A7BBDEAD77D0C72 /* LeaderboardView.swift */,
+				F6F9F8DE69207E865A055833 /* ShareToCommunitySheet.swift */,
+			);
+			name = Community;
+			path = Community;
+			sourceTree = "<group>";
+		};
+		6A39B54228BF4B82B462BE23 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DF48B9D82ED5244800F7AC05 /* TrainingPlanService.swift */,
+				DF1636242E133100001E8CF9 /* CoreDataManager.swift */,
+				DF5CB3182E4826020085F3ED /* CustomDrillService.swift */,
+				DF5CB2F72E3054FB0085F3ED /* CloudSyncManager.swift */,
+				DF5CB2F52E3054F00085F3ED /* CloudDataService.swift */,
+				DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */,
+				DF5CB30F2E3058800085F3ED /* CloudMLService.swift */,
+				AB1234567890ABCD12340015 /* MatchService.swift */,
+				DF16364E2E133400001E8CF9 /* AuthenticationManager.swift */,
+				75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */,
+				B26B160D4D25B47C1EDD7846 /* XPService.swift */,
+				ED5BF99AFAF840151BFA38E4 /* AchievementService.swift */,
+				E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */,
+				8676FB258A5AF6EC1244EC96 /* AvatarService.swift */,
+				B848208BF146FDC5628BE0B1 /* CloudRestoreService.swift */,
+				AF56ACF65466BE2837D6786F /* ActiveSessionManager.swift */,
+				0DD37D4FDA3200EBA08F2F61 /* CommunityService.swift */,
+				719959B63C1C45A18B3C6BD5 /* AICoachService.swift */,
+				07FE3E9147AD4F0CFD63A186 /* SubscriptionManager.swift */,
+				27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */,
+			);
+			name = Services;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		6FF00E2AC2025CF6CDD3D8C4 /* Matches */ = {
+			isa = PBXGroup;
+			children = (
+				AB1234567890ABCD12340016 /* MatchLogView.swift */,
+				AB1234567890ABCD12340017 /* CreateSeasonView.swift */,
+				AB1234567890ABCD12340018 /* MatchHistoryView.swift */,
+				AB1234567890ABCD12340019 /* SeasonManagementView.swift */,
+				AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */,
+			);
+			name = Matches;
+			path = Matches;
+			sourceTree = "<group>";
+		};
+		740A940264A43F596EF032A8 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				DF16364C2E133300001E8CF9 /* AuthenticationView.swift */,
+				11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */,
+				D5F734158CD9E7B39E3C6990 /* Onboarding */,
+			);
+			name = Auth;
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		7D52B89ADA8D47BB8ABBC155 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */,
+				0A6796ED72F183046E40ED28 /* HapticManager.swift */,
+				E08B8B634101079B3C2823BD /* AppLogger.swift */,
+			);
+			name = Utilities;
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		8E6D0294828C4F81880F15DE /* App */ = {
+			isa = PBXGroup;
+			children = (
+				DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */,
+				DF1635FD2E133001001E8CF9 /* ContentView.swift */,
+			);
+			name = App;
+			path = App;
+			sourceTree = "<group>";
+		};
+		937577D80E9F4A3AD3B2B4DF /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				DF1636262E133100001E8CF9 /* DashboardView.swift */,
+			);
+			name = Dashboard;
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		9EC720A6BA7EA44B7524F411 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A6A7270009AB3BCA48E0D444 /* Analytics */,
+				740A940264A43F596EF032A8 /* Auth */,
+				059F4E8BECCF46C98F160FEF /* Avatar */,
+				576CE0BB49918CAFB40070A4 /* Community */,
+				937577D80E9F4A3AD3B2B4DF /* Dashboard */,
+				D81170B2F655C51CFE14E172 /* Exercises */,
+				6FF00E2AC2025CF6CDD3D8C4 /* Matches */,
+				DF555E3F5EFACD2D8B4532EE /* Settings */,
+				42A816E591DDB23C72348434 /* Training */,
+			);
+			name = Views;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A6A7270009AB3BCA48E0D444 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */,
+				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
+				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
+				0AB3DE834286D73E6899C750 /* WeaknessPickerView.swift */,
+			);
+			name = Analytics;
+			path = Analytics;
+			sourceTree = "<group>";
+		};
 		COACH00000000000000000003 /* Components */ = {
 			isa = PBXGroup;
 			children = (
 				COACH00000000000000000001 /* CoachMarkOverlay.swift */,
+				DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */,
+				DF1636522E133500001E8CF9 /* DesignSystem.swift */,
+				DF1636542E133500001E8CF9 /* ModernComponents.swift */,
+				78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */,
+				892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */,
+				54E2888C57A13F11DDCBE113 /* EmptyStateView.swift */,
+				5B68C1149036359889CAE238 /* CoinDisplayView.swift */,
+				78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */,
+				E993CCC222121E16CC2F0587 /* TransitionSystem.swift */,
+				A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */,
+				EB3690DAD8AD126F299A1FEC /* ProLockedCardView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -437,6 +670,28 @@
 			);
 			name = Onboarding;
 			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		D81170B2F655C51CFE14E172 /* Exercises */ = {
+			isa = PBXGroup;
+			children = (
+				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
+				DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */,
+				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
+				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
+				DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */,
+				92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */,
+				6108F5095BA39CE37DA7BB5D /* ExerciseFilterView.swift */,
+				6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */,
+				EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */,
+				QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */,
+				AC23E8C800BADD0EB0E4EDDF /* ExerciseStepView.swift */,
+				B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */,
+				2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */,
+				3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */,
+			);
+			name = Exercises;
+			path = Exercises;
 			sourceTree = "<group>";
 		};
 		DF1635EF2E133001001E8CF9 = {
@@ -462,160 +717,19 @@
 		DF1635FA2E133001001E8CF9 /* TechnIQ */ = {
 			isa = PBXGroup;
 			children = (
-				DF48B9D02ED5241A00F7AC05 /* ActivePlanView.swift */,
-				DF48B9D22ED5242700F7AC05 /* CustomPlanBuilderView.swift */,
-				DF48B9D42ED5243700F7AC05 /* TrainingPlanDetailView.swift */,
-				DF48B9D82ED5244800F7AC05 /* TrainingPlanService.swift */,
-				DF48B9D62ED5244200F7AC05 /* TrainingPlanModels.swift */,
-				DF48B9DA2ED5249200F7AC05 /* TrainingPlansListView.swift */,
-				DF48B9E12ED524A600F7AC05 /* PlanDay+CoreDataClass.swift */,
-				DF48B9DD2ED524A600F7AC05 /* PlanDay+CoreDataProperties.swift */,
-				DF48B9DC2ED524A600F7AC05 /* PlanSession+CoreDataClass.swift */,
-				DF48B9DF2ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift */,
-				DF48B9E02ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift */,
-				DF48B9E92ED524B800F7AC05 /* TrainingPlan+CoreDataClass.swift */,
-				DF48B9E82ED524B800F7AC05 /* TrainingPlan+CoreDataProperties.swift */,
-				DF48B9DE2ED524A600F7AC05 /* PlanWeek+CoreDataProperties.swift */,
-				DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */,
-				DF1635FD2E133001001E8CF9 /* ContentView.swift */,
-				DF1636242E133100001E8CF9 /* CoreDataManager.swift */,
-				DF48B9EC2ED5798500F7AC05 /* SharePlanView.swift */,
-				DF1636262E133100001E8CF9 /* DashboardView.swift */,
-				DF1636282E133100001E8CF9 /* EditProfileView.swift */,
-				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
-				DF16362C2E133100001E8CF9 /* NewSessionView.swift */,
-				DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */,
-				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
-				DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */,
-				DF5CB3182E4826020085F3ED /* CustomDrillService.swift */,
-				DF5CB2F72E3054FB0085F3ED /* CloudSyncManager.swift */,
-				DF5CB2F92E30550B0085F3ED /* FirestoreDataModels.swift */,
-				DF5CB2F52E3054F00085F3ED /* CloudDataService.swift */,
-				DF5CB2F32E3054E20085F3ED /* MLProfileModels.swift */,
-				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
-				DF1636302E133100001E8CF9 /* PlayerProfileView.swift */,
-				DFE9F3052EAD90A5007BBFFA /* CalendarComponents.swift */,
-				DF1636322E133100001E8CF9 /* SessionDetailView.swift */,
-				DF5CB30B2E30586D0085F3ED /* CloudSyncStatus+CoreDataClass.swift */,
-				DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */,
-				DF5CB3092E30585E0085F3ED /* MLRecommendation+CoreDataProperties.swift */,
-				DFE9F3012EAD9092007BBFFA /* NetworkManager.swift */,
-				DF5CB30D2E3058730085F3ED /* CloudSyncStatus+CoreDataProperties.swift */,
-				DFE9F2F72EAD9083007BBFFA /* YouTubeAPIService.swift */,
-				DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */,
-				DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */,
-				DF5CB30F2E3058800085F3ED /* CloudMLService.swift */,
-				DF5CB3072E3058590085F3ED /* MLRecommendation+CoreDataClass.swift */,
-				DF5CB2FF2E3058210085F3ED /* PlayerGoal+CoreDataClass.swift */,
-				DF5CB3032E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift */,
-				DF5CB3052E3058480085F3ED /* RecommendationFeedback+CoreDataProperties.swift */,
-				DF5CB3012E30582B0085F3ED /* PlayerGoal+CoreDataProperties.swift */,
-				DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */,
-				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
-				DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */,
-				DF1636382E133200001E8CF9 /* Player+CoreDataClass.swift */,
-				DF5CB2FB2E3058090085F3ED /* PlayerProfile+CoreDataClass.swift */,
-				DF16363A2E133200001E8CF9 /* Player+CoreDataProperties.swift */,
 				DF1636362E133100001E8CF9 /* DataModel.xcdatamodeld */,
-				DF16363C2E133200001E8CF9 /* Exercise+CoreDataClass.swift */,
-				DF5CB2FD2E3058110085F3ED /* PlayerProfile+CoreDataProperties.swift */,
-				DF16363E2E133200001E8CF9 /* Exercise+CoreDataProperties.swift */,
-				DF1636402E133200001E8CF9 /* TrainingSession+CoreDataClass.swift */,
-				AB1234567890ABCD12340011 /* Match+CoreDataClass.swift */,
-				AB1234567890ABCD12340012 /* Match+CoreDataProperties.swift */,
-				AB1234567890ABCD12340013 /* Season+CoreDataClass.swift */,
-				AB1234567890ABCD12340014 /* Season+CoreDataProperties.swift */,
-				AB1234567890ABCD12340015 /* MatchService.swift */,
-				AB1234567890ABCD12340016 /* MatchLogView.swift */,
-				AB1234567890ABCD12340017 /* CreateSeasonView.swift */,
-				AB1234567890ABCD12340018 /* MatchHistoryView.swift */,
-				AB1234567890ABCD12340019 /* SeasonManagementView.swift */,
-				AB1234567890ABCD1234001A /* MatchStatsComparisonView.swift */,
-				DF1636422E133200001E8CF9 /* TrainingSession+CoreDataProperties.swift */,
-				DF1636442E133200001E8CF9 /* SessionExercise+CoreDataClass.swift */,
-				DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */,
-				DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */,
-				DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */,
-				DF16364C2E133300001E8CF9 /* AuthenticationView.swift */,
-				DF16364E2E133400001E8CF9 /* AuthenticationManager.swift */,
-				DF1636522E133500001E8CF9 /* DesignSystem.swift */,
-				DF1636542E133500001E8CF9 /* ModernComponents.swift */,
 				DF1636502E133400001E8CF9 /* GoogleService-Info.plist */,
 				DF16365A2E133400001E8CF9 /* Info.plist */,
 				DF1635FF2E133003001E8CF9 /* Assets.xcassets */,
 				DF1636012E133003001E8CF9 /* Preview Content */,
-				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
-				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
-				75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */,
-				89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */,
-				92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */,
-				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
-				18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */,
-				E9AD26664A9C012346D58B4E /* PlanEditorView.swift */,
-				DB606D20EB0F9A45D449238F /* WeekEditorView.swift */,
-				1F31304560398E5F65665084 /* DayEditorView.swift */,
-				2465CE756CC3395B14507526 /* SessionEditorView.swift */,
-				6108F5095BA39CE37DA7BB5D /* ExerciseFilterView.swift */,
-				6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */,
-				B26B160D4D25B47C1EDD7846 /* XPService.swift */,
-				ED5BF99AFAF840151BFA38E4 /* AchievementService.swift */,
-				9BA65D744B2E4860334C7B5D /* MascotState.swift */,
-				D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */,
-				0A6796ED72F183046E40ED28 /* HapticManager.swift */,
-				78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */,
-				892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */,
-				54E2888C57A13F11DDCBE113 /* EmptyStateView.swift */,
-				1986206B3B3D0F8C77240541 /* AvatarModels.swift */,
-				E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */,
-				30C5A24059E85EF44972B5D9 /* AvatarView.swift */,
-				53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */,
-				8676FB258A5AF6EC1244EC96 /* AvatarService.swift */,
-				09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */,
-				FDD1AC457D0F69F00356A18C /* ShopView.swift */,
-				5B68C1149036359889CAE238 /* CoinDisplayView.swift */,
-				B85457B8B3C0C17681E48D02 /* AvatarConfiguration+CoreDataClass.swift */,
-				402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */,
-				F7927AF10E032D5DE23A1409 /* OwnedAvatarItem+CoreDataClass.swift */,
-				BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */,
-				856A6FF7600118F39E05CA74 /* SettingsView.swift */,
-				EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */,
-				TRAINHUB01234567890ABCDEF /* TrainHubView.swift */,
-				ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */,
-				C4CF39D90503597CBA6BE3E7 /* CommunityView.swift */,
-				B848208BF146FDC5628BE0B1 /* CloudRestoreService.swift */,
-				AF56ACF65466BE2837D6786F /* ActiveSessionManager.swift */,
-				0AA18311F41B034E3F4EA29A /* ActiveTrainingView.swift */,
-				QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */,
-				AC23E8C800BADD0EB0E4EDDF /* ExerciseStepView.swift */,
 				404FDED0C603AACD8A21910F /* PrivacyInfo.xcprivacy */,
 				B14EE6D3FC475E1BCFF95520 /* TechnIQ.entitlements */,
-				0DD37D4FDA3200EBA08F2F61 /* CommunityService.swift */,
-				154400BACA8D3E9E085DAF70 /* CommunityFeedView.swift */,
-				512D16A323E417A69261E316 /* CreatePostView.swift */,
-				48CC34B60C3065E96B57FD0B /* PostDetailView.swift */,
-				C0D94F0335FDF068598A32FC /* PublicProfileView.swift */,
-				78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */,
-				E993CCC222121E16CC2F0587 /* TransitionSystem.swift */,
-				C31C301512D7EBA8397649E2 /* AICoachModels.swift */,
-				719959B63C1C45A18B3C6BD5 /* AICoachService.swift */,
-				A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */,
-				7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */,
-				8242D125539C2ECF4723E3EB /* DrillMarketplaceView.swift */,
-				B60E3C013A7BBDEAD77D0C72 /* LeaderboardView.swift */,
-				F6F9F8DE69207E865A055833 /* ShareToCommunitySheet.swift */,
-				B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */,
-				11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */,
-				07FE3E9147AD4F0CFD63A186 /* SubscriptionManager.swift */,
-				7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */,
-				EB3690DAD8AD126F299A1FEC /* ProLockedCardView.swift */,
-				A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */,
-				0AB3DE834286D73E6899C750 /* WeaknessPickerView.swift */,
-				D554749C241C3F97C0662040 /* WeaknessSuggestionsCard.swift */,
-				27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */,
-				2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */,
-				3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */,
 				COACH00000000000000000003 /* Components */,
-				D5F734158CD9E7B39E3C6990 /* Onboarding */,
+				8E6D0294828C4F81880F15DE /* App */,
+				55F3D8B4F56A99400734EF40 /* Models */,
+				6A39B54228BF4B82B462BE23 /* Services */,
+				7D52B89ADA8D47BB8ABBC155 /* Utilities */,
+				9EC720A6BA7EA44B7524F411 /* Views */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -650,6 +764,21 @@
 				DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */,
 			);
 			path = TechnIQUITests;
+			sourceTree = "<group>";
+		};
+		DF555E3F5EFACD2D8B4532EE /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				DF48B9EC2ED5798500F7AC05 /* SharePlanView.swift */,
+				DF1636282E133100001E8CF9 /* EditProfileView.swift */,
+				DF1636302E133100001E8CF9 /* PlayerProfileView.swift */,
+				856A6FF7600118F39E05CA74 /* SettingsView.swift */,
+				ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */,
+				7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */,
+				D554749C241C3F97C0662040 /* WeaknessSuggestionsCard.swift */,
+			);
+			name = Settings;
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		E910640DC7A71E14CEA09265 /* TestHelpers */ = {
@@ -966,6 +1095,7 @@
 				2557CA8268DE54DF1338A586 /* SmartDrillRecommendationsView.swift in Sources */,
 				A5B6B6D853FCEC22948709CF /* FeatureHighlightView.swift in Sources */,
 				B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */,
+				AF80E380774AEB62A33122F3 /* AppLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
