@@ -465,12 +465,13 @@ class TrainingPlanService: ObservableObject {
 
         case "add_session":
             if let day = days.first(where: { $0.dayNumber == Int16(adaptation.day) }),
-               let drill = adaptation.drill {
+               let drill = adaptation.drill,
+               let player = plan.player {
                 let sessionType = SessionType(rawValue: drill.category.capitalized) ?? .technical
                 let exercises = matchExercisesFromLibrary(
                     suggestedNames: [drill.name],
                     sessionType: sessionType,
-                    for: plan.player!
+                    for: player
                 )
                 _ = addSessionToDay(
                     day,

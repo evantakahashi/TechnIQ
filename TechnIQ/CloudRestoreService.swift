@@ -432,8 +432,7 @@ class CloudRestoreService: ObservableObject {
     }
 
     private func calculateLevel(from xp: Int64) -> Int {
-        // Simple level calculation: level = sqrt(xp / 100) + 1
-        return max(1, Int(sqrt(Double(xp) / 100.0)) + 1)
+        return XPService.shared.levelForXP(xp)
     }
 }
 

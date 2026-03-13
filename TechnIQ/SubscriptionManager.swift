@@ -38,10 +38,6 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Entitlement Check
 
     func checkEntitlement() async {
-        // TODO: Remove before production — force Pro for testing
-        isPro = true
-        return
-
         var hasEntitlement = false
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result,
