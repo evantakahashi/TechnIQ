@@ -296,7 +296,8 @@ final class XPService {
     func processSessionCompletion(
         session: TrainingSession,
         player: Player,
-        context: NSManagedObjectContext
+        context: NSManagedObjectContext,
+        allExercisesCompleted: Bool = true
     ) -> (xp: SessionXPBreakdown, levelUp: Int?) {
 
         // Check if first session of day
@@ -310,7 +311,7 @@ final class XPService {
         let breakdown = calculateSessionXP(
             intensity: session.intensity,
             exerciseCount: exerciseCount,
-            allExercisesCompleted: exerciseCount > 0,
+            allExercisesCompleted: allExercisesCompleted,
             hasRating: session.overallRating > 0,
             hasNotes: !(session.notes?.isEmpty ?? true),
             isFirstSessionOfDay: isFirstSession,

@@ -132,22 +132,9 @@ class ActiveSessionManager: ObservableObject {
         let (breakdown, levelUp) = XPService.shared.processSessionCompletion(
             session: session,
             player: player,
-            context: context
+            context: context,
+            allExercisesCompleted: isFullCompletion
         )
-
-        // For partial sessions, create modified breakdown without completion bonus
-        var finalBreakdown = breakdown
-        if !isFullCompletion {
-            finalBreakdown = XPService.SessionXPBreakdown(
-                baseXP: breakdown.baseXP,
-                intensityBonus: breakdown.intensityBonus,
-                firstSessionBonus: breakdown.firstSessionBonus,
-                completionBonus: 0,
-                ratingBonus: breakdown.ratingBonus,
-                notesBonus: breakdown.notesBonus,
-                streakBonus: breakdown.streakBonus
-            )
-        }
 
         // Check achievements
         let achievements = AchievementService.shared.checkAndUnlockAchievements(
@@ -155,7 +142,7 @@ class ActiveSessionManager: ObservableObject {
             in: context
         )
 
-        return (finalBreakdown, levelUp, achievements)
+        return (breakdown, levelUp, achievements)
     }
 
     // MARK: - Helpers
