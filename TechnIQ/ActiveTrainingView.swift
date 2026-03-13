@@ -13,8 +13,6 @@ struct ActiveTrainingView: View {
     @State private var newLevel: Int?
     @State private var unlockedAchievements: [Achievement] = []
 
-    // Pause overlay
-    @State private var showingPauseMenu = false
     @State private var showingEndConfirm = false
 
     // Rating state (for exerciseComplete phase)
@@ -39,29 +37,22 @@ struct ActiveTrainingView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top bar (hidden during preparing and sessionComplete)
-                if manager.phase != .preparing && manager.phase != .sessionComplete {
+                // Top bar (hidden during sessionComplete)
+                if manager.phase != .sessionComplete {
                     topBar
                 }
 
                 // Phase content
                 phaseContent
             }
-
-            // Pause overlay
-            if showingPauseMenu {
-                pauseOverlay
-            }
         }
         .interactiveDismissDisabled()
-        .statusBarHidden(manager.phase == .preparing)
         .onAppear {
             manager.start()
         }
         .alert("End Session Early?", isPresented: $showingEndConfirm) {
             Button("End Session", role: .destructive) {
                 manager.endSessionEarly()
-                showingPauseMenu = false
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -73,36 +64,19 @@ struct ActiveTrainingView: View {
 
     private var topBar: some View {
         HStack {
-            // Total time
-            HStack(spacing: 4) {
-                Image(systemName: "clock")
-                    .font(.caption)
-                Text(manager.formattedTime(manager.totalElapsedTime))
-                    .font(DesignSystem.Typography.numberSmall)
-            }
-            .foregroundColor(DesignSystem.Colors.textSecondary)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Session time: \(manager.formattedTime(manager.totalElapsedTime))")
-
-            Spacer()
-
-            // Exercise counter
             Text("\(manager.currentExerciseIndex + 1) of \(manager.exercises.count)")
                 .font(DesignSystem.Typography.titleSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
 
             Spacer()
 
-            // Pause button
             Button {
-                manager.pause()
-                showingPauseMenu = true
+                showingEndConfirm = true
             } label: {
-                Image(systemName: "pause.circle.fill")
+                Image(systemName: "xmark.circle.fill")
                     .font(.title2)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
             }
-            .a11y(label: "Pause session", hint: "Double tap to pause your training")
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
         .padding(.vertical, DesignSystem.Spacing.sm)
@@ -113,10 +87,7 @@ struct ActiveTrainingView: View {
     @ViewBuilder
     private var phaseContent: some View {
         switch manager.phase {
-        case .preparing:
-            preparingView
-
-        case .exerciseActive:
+        case .exercise:
             if let exercise = manager.currentExercise, exercise.diagramJSON != nil {
                 DrillWalkthroughView(exercise: exercise) { rating, difficulty, notes in
                     manager.completeExercise()
@@ -127,40 +98,11 @@ struct ActiveTrainingView: View {
                 ExerciseStepView(manager: manager)
             }
 
-        case .exerciseComplete:
+        case .rating:
             exerciseCompleteView
-
-        case .rest:
-            RestCountdownView(manager: manager)
 
         case .sessionComplete:
             sessionCompleteContent
-        }
-    }
-
-    // MARK: - Preparing (3-2-1)
-
-    private var preparingView: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            Spacer()
-
-            Text("Get Ready")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            Text("\(manager.preparingCountdown)")
-                .font(.system(size: 120, weight: .bold, design: .rounded))
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                .scaleEffect(1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: manager.preparingCountdown)
-
-            if let exercise = manager.currentExercise {
-                Text(exercise.name ?? "")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            Spacer()
         }
     }
 
@@ -178,11 +120,6 @@ struct ActiveTrainingView: View {
             Text("Exercise Complete!")
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            // Duration display
-            Text(manager.formattedTime(manager.exerciseDurations[manager.currentExerciseIndex]))
-                .font(DesignSystem.Typography.numberMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
 
             // Star rating
             VStack(spacing: DesignSystem.Spacing.sm) {
@@ -246,8 +183,7 @@ struct ActiveTrainingView: View {
                     achievements: unlockedAchievements,
                     player: player,
                     onDismiss: { dismiss() },
-                    exercises: manager.exercises,
-                    totalTime: manager.totalElapsedTime
+                    exercises: manager.exercises
                 )
             } else {
                 // Process results and show
@@ -277,61 +213,4 @@ struct ActiveTrainingView: View {
         }
     }
 
-    // MARK: - Pause Overlay
-
-    private var pauseOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.6)
-                .ignoresSafeArea()
-                .onTapGesture {} // prevent pass-through
-
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Text("Paused")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(.white)
-
-                // Total time while paused
-                Text(manager.formattedTime(manager.totalElapsedTime))
-                    .font(DesignSystem.Typography.numberLarge)
-                    .foregroundColor(.white.opacity(0.7))
-
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    // Resume
-                    Button {
-                        manager.resume()
-                        showingPauseMenu = false
-                    } label: {
-                        HStack {
-                            Image(systemName: "play.fill")
-                            Text("Resume")
-                                .fontWeight(.bold)
-                        }
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(DesignSystem.Colors.primaryGreen)
-                        .cornerRadius(DesignSystem.CornerRadius.button)
-                    }
-
-                    // End session early
-                    Button {
-                        showingEndConfirm = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "stop.circle")
-                            Text("End Session")
-                        }
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(DesignSystem.Colors.error)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(DesignSystem.CornerRadius.button)
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-            }
-        }
-    }
 }
