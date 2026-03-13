@@ -7,7 +7,7 @@ struct ExerciseLibraryView: View {
     let player: Player
 
     @State private var allExercises: [Exercise] = []
-    @State private var recommendations: [CoreDataManager.DrillRecommendation] = []
+    @State private var recommendations: [YouTubeDataService.DrillRecommendation] = []
     @State private var searchText = ""
     @State private var selectedExercise: Exercise?
     @State private var showingExerciseDetail = false
@@ -858,7 +858,7 @@ struct ExerciseLibraryView: View {
     }
 
     private func loadRecommendations() {
-        recommendations = CoreDataManager.shared.getSmartRecommendations(for: player, limit: 3)
+        recommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: 3)
     }
 
     private func loadYouTubeContent() {
@@ -883,7 +883,7 @@ struct ExerciseLibraryView: View {
                 // Convert YouTube recommendations to exercises
                 await MainActor.run {
                     for recommendation in youtubeRecommendations {
-                        _ = CoreDataManager.shared.createExerciseFromYouTubeVideo(
+                        _ = YouTubeDataService.shared.createExerciseFromYouTubeVideo(
                             for: player,
                             videoId: recommendation.videoId,
                             title: recommendation.title,
@@ -900,7 +900,7 @@ struct ExerciseLibraryView: View {
 
             } catch {
                 // Fallback to local YouTube search
-                try await CoreDataManager.shared.loadYouTubeDrillsFromAPI(
+                try await YouTubeDataService.shared.loadYouTubeDrillsFromAPI(
                     for: player,
                     category: nil,
                     maxResults: 3,

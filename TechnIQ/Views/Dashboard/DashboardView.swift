@@ -39,7 +39,7 @@ struct DashboardView: View {
     @State private var showingProfileCreation = false
     @State private var showingMatchLog = false
     @State private var isOnboardingComplete = false
-    @State private var smartRecommendations: [CoreDataManager.DrillRecommendation] = []
+    @State private var smartRecommendations: [YouTubeDataService.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
     @StateObject private var cloudMLService = CloudMLService.shared
     @StateObject private var aiCoachService = AICoachService.shared
@@ -870,17 +870,17 @@ struct DashboardView: View {
     private func loadSmartRecommendations(for player: Player) {
         Task {
             // Clean up any duplicate exercises first
-            CoreDataManager.shared.removeDuplicateExercises(for: player)
+            YouTubeDataService.shared.removeDuplicateExercises(for: player)
             
             do {
                 let mlRecs = try await cloudMLService.getCloudRecommendations(for: player, limit: 3)
                 await MainActor.run {
                     mlRecommendations = mlRecs
-                    let recommendations = CoreDataManager.shared.getSmartRecommendations(for: player, limit: 3)
+                    let recommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: 3)
                     smartRecommendations = recommendations
                 }
             } catch {
-                let recommendations = CoreDataManager.shared.getSmartRecommendations(for: player, limit: 3)
+                let recommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: 3)
                 await MainActor.run {
                     smartRecommendations = recommendations
                 }
@@ -891,7 +891,7 @@ struct DashboardView: View {
     private func cleanDuplicateExercises() {
         guard let player = currentPlayer else { return }
         Task {
-            CoreDataManager.shared.removeDuplicateExercises(for: player)
+            YouTubeDataService.shared.removeDuplicateExercises(for: player)
         }
     }
     
@@ -1093,7 +1093,7 @@ struct ModernRecommendationRow: View {
 }
 
 struct SmartRecommendationRow: View {
-    let recommendation: CoreDataManager.DrillRecommendation
+    let recommendation: YouTubeDataService.DrillRecommendation
     @State private var showingPhysicalDetails = false
     
     var body: some View {
