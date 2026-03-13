@@ -6,6 +6,17 @@ import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
 
+enum AuthError: LocalizedError {
+    case nonceGenerationFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .nonceGenerationFailed:
+            return "Unable to generate secure nonce. Please try again."
+        }
+    }
+}
+
 class AuthenticationManager: ObservableObject {
     @Published var isAuthenticated = false
     @Published var currentUser: User? = nil
@@ -217,7 +228,16 @@ class AuthenticationManager: ObservableObject {
             clearError()
         }
 
-        let nonce = randomNonceString()
+        let nonce: String
+        do {
+            nonce = try randomNonceString()
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+                isLoading = false
+            }
+            return
+        }
         currentNonce = nonce
 
         let provider = ASAuthorizationAppleIDProvider()
@@ -288,12 +308,12 @@ class AuthenticationManager: ObservableObject {
         }
     }
 
-    private func randomNonceString(length: Int = 32) -> String {
+    private func randomNonceString(length: Int = 32) throws -> String {
         precondition(length > 0)
         var randomBytes = [UInt8](repeating: 0, count: length)
         let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
-        if errorCode != errSecSuccess {
-            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+        guard errorCode == errSecSuccess else {
+            throw AuthError.nonceGenerationFailed
         }
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
         return String(randomBytes.map { charset[Int($0) % charset.count] })
