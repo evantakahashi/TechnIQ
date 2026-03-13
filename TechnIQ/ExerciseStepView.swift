@@ -23,9 +23,6 @@ struct ExerciseStepView: View {
                 // Exercise header
                 exerciseHeader
 
-                // Count-up timer
-                timerSection
-
                 // Drill diagram
                 if let diagram = parseDiagram() {
                     diagramSection(diagram)
@@ -68,23 +65,6 @@ struct ExerciseStepView: View {
                     DifficultyStars(difficulty: Int(difficulty))
                 }
             }
-        }
-    }
-
-    // MARK: - Timer
-
-    private var timerSection: some View {
-        ModernCard {
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                Text("Time")
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                Text(manager.formattedTime(manager.exerciseElapsedTime))
-                    .font(.system(size: 48, weight: .bold, design: .monospaced))
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            }
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -169,7 +149,7 @@ struct ExerciseStepView: View {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title3)
-                Text("Done")
+                Text("I've completed this drill")
                     .font(DesignSystem.Typography.titleMedium)
                     .fontWeight(.bold)
             }
