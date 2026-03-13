@@ -20,7 +20,7 @@ final class CoinService: ObservableObject {
     private let coreDataManager = CoreDataManager.shared
     private var cancellables = Set<AnyCancellable>()
 
-    private init() {
+    init() {
         // Load initial balance on startup
         loadCurrentBalance()
     }

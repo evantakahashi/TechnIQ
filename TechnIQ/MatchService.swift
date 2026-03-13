@@ -7,8 +7,12 @@ final class MatchService {
 
     private let context: NSManagedObjectContext
 
-    private init() {
+    init() {
         context = CoreDataManager.shared.context
+    }
+
+    init(context: NSManagedObjectContext) {
+        self.context = context
     }
 
     // MARK: - Match CRUD

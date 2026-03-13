@@ -5,7 +5,7 @@ import CoreData
 final class XPService {
     static let shared = XPService()
 
-    private init() {}
+    init() {}
 
     // MARK: - XP Constants
 

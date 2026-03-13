@@ -1,0 +1,134 @@
+import CoreData
+@testable import TechnIQ
+
+/// In-memory Core Data stack for testing. Each test gets a fresh context.
+class TestCoreDataStack {
+    let container: NSPersistentContainer
+    var context: NSManagedObjectContext { container.viewContext }
+
+    init() {
+        container = NSPersistentContainer(name: "DataModel")
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        container.persistentStoreDescriptions = [description]
+        container.loadPersistentStores { _, error in
+            if let error { fatalError("Test store failed: \(error)") }
+        }
+        container.viewContext.automaticallyMergesChangesFromParent = true
+    }
+
+    // MARK: - Entity Factories
+
+    @discardableResult
+    func makePlayer(
+        name: String = "Test Player",
+        level: Int16 = 1,
+        xp: Int64 = 0,
+        coins: Int64 = 100,
+        streak: Int16 = 0,
+        longestStreak: Int16 = 0,
+        streakFreezes: Int16 = 0
+    ) -> Player {
+        let player = Player(context: context)
+        player.id = UUID()
+        player.name = name
+        player.currentLevel = level
+        player.totalXP = xp
+        player.coins = coins
+        player.currentStreak = streak
+        player.longestStreak = longestStreak
+        player.streakFreezes = streakFreezes
+        player.createdAt = Date()
+        try? context.save()
+        return player
+    }
+
+    @discardableResult
+    func makeSession(
+        player: Player,
+        date: Date = Date(),
+        duration: Double = 30,
+        intensity: Int16 = 3,
+        exerciseCount: Int = 3,
+        rating: Int16 = 0,
+        notes: String? = nil
+    ) -> TrainingSession {
+        let session = TrainingSession(context: context)
+        session.id = UUID()
+        session.player = player
+        session.date = date
+        session.duration = duration
+        session.intensity = intensity
+        session.overallRating = rating
+        session.notes = notes
+
+        for i in 0..<exerciseCount {
+            let exercise = makeExercise(player: player, name: "Exercise \(i)")
+            let se = SessionExercise(context: context)
+            se.id = UUID()
+            se.session = session
+            se.exercise = exercise
+            se.duration = 10
+        }
+
+        try? context.save()
+        return session
+    }
+
+    @discardableResult
+    func makeExercise(
+        player: Player,
+        name: String = "Test Exercise",
+        category: String = "Technical"
+    ) -> Exercise {
+        let exercise = Exercise(context: context)
+        exercise.id = UUID()
+        exercise.name = name
+        exercise.category = category
+        exercise.player = player
+        return exercise
+    }
+
+    @discardableResult
+    func makeMatch(
+        player: Player,
+        date: Date = Date(),
+        goals: Int16 = 0,
+        assists: Int16 = 0,
+        minutesPlayed: Int16 = 90,
+        result: String? = nil,
+        season: Season? = nil
+    ) -> Match {
+        let match = Match(context: context)
+        match.id = UUID()
+        match.player = player
+        match.date = date
+        match.goals = goals
+        match.assists = assists
+        match.minutesPlayed = minutesPlayed
+        match.result = result
+        match.rating = 3
+        match.season = season
+        match.createdAt = Date()
+        try? context.save()
+        return match
+    }
+
+    @discardableResult
+    func makeSeason(
+        player: Player,
+        name: String = "2025-26",
+        isActive: Bool = false
+    ) -> Season {
+        let season = Season(context: context)
+        season.id = UUID()
+        season.name = name
+        season.player = player
+        season.isActive = isActive
+        season.startDate = Date()
+        season.endDate = Calendar.current.date(byAdding: .month, value: 10, to: Date())
+        season.createdAt = Date()
+        try? context.save()
+        return season
+    }
+}

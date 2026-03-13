@@ -45,7 +45,7 @@ enum AchievementRequirement {
 final class AchievementService {
     static let shared = AchievementService()
 
-    private init() {}
+    init() {}
 
     // MARK: - All 30 Achievements
 

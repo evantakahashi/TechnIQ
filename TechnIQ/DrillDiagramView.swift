@@ -121,6 +121,14 @@ struct AnimatedDrillDiagramView: View {
                 stopAutoPlay()
             }
         }
+        .onAppear {
+            if isAutoPlaying {
+                startAutoPlay()
+            }
+            if currentStep != nil {
+                restartPathAnimation()
+            }
+        }
         .onDisappear {
             stopAutoPlay()
         }
