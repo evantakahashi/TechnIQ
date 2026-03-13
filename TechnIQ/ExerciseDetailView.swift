@@ -131,9 +131,11 @@ struct ExerciseDetailView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             // YouTube Link
-                            Link("Open in YouTube", destination: URL(string: "https://youtube.com/watch?v=\(youtubeVideoId)")!)
-                                .font(.caption)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            if let youtubeURL = URL(string: "https://youtube.com/watch?v=\(youtubeVideoId)") {
+                                Link("Open in YouTube", destination: youtubeURL)
+                                    .font(.caption)
+                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+                            }
                         }
                         .padding()
                         .background(
