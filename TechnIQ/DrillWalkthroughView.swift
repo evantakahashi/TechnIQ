@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 // MARK: - Drill Walkthrough View
 
@@ -15,9 +14,6 @@ struct DrillWalkthroughView: View {
     @State private var currentStep: Int? = 1
     @State private var isAutoPlaying: Bool = true
     @State private var playbackSpeed: Double = 1.0
-    @State private var elapsedSeconds: Int = 0
-    @State private var timer: Timer?
-    @State private var allStepsCompleted: Bool = false
 
     // Rating state
     @State private var difficultyFeedback: String = "just_right"
@@ -49,12 +45,6 @@ struct DrillWalkthroughView: View {
             }
     }
 
-    private var formattedTime: String {
-        let minutes = elapsedSeconds / 60
-        let seconds = elapsedSeconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-
     // MARK: - Body
 
     var body: some View {
@@ -72,10 +62,6 @@ struct DrillWalkthroughView: View {
             }
         }
         .animation(DesignSystem.Animation.smooth, value: phase)
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
-        }
     }
 
     // MARK: - Preview Phase
@@ -136,26 +122,12 @@ struct DrillWalkthroughView: View {
 
     private var performPhase: some View {
         VStack(spacing: 0) {
-            // Top bar with timer
-            HStack {
-                Text(exercise.name ?? "Drill")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Spacer()
-
-                // Timer
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: "clock")
-                        .font(DesignSystem.Typography.labelMedium)
-                    Text(formattedTime)
-                        .font(DesignSystem.Typography.numberMedium)
-                }
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-            .padding(.horizontal, DesignSystem.Spacing.lg)
-            .padding(.top, DesignSystem.Spacing.md)
-            .padding(.bottom, DesignSystem.Spacing.sm)
+            Text(exercise.name ?? "Drill")
+                .font(DesignSystem.Typography.headlineSmall)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.top, DesignSystem.Spacing.md)
+                .padding(.bottom, DesignSystem.Spacing.sm)
 
             // Diagram in training mode
             if let diagram = parsedDiagram {
@@ -165,13 +137,7 @@ struct DrillWalkthroughView: View {
                     currentStep: $currentStep,
                     isAutoPlaying: $isAutoPlaying,
                     playbackSpeed: playbackSpeed,
-                    isTrainingMode: true,
-                    onStepCompleted: { step in
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        if step >= parsedInstructions.count {
-                            allStepsCompleted = true
-                        }
-                    }
+                    isTrainingMode: true
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, DesignSystem.Spacing.md)
@@ -179,23 +145,20 @@ struct DrillWalkthroughView: View {
                 Spacer()
             }
 
-            // Complete button (shown when all steps done)
-            if allStepsCompleted {
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    transitionToRate()
-                } label: {
-                    Text("Complete Drill")
-                        .font(DesignSystem.Typography.labelLarge)
-                        .foregroundColor(DesignSystem.Colors.textOnAccent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(DesignSystem.Colors.primaryGreen)
-                        .cornerRadius(DesignSystem.CornerRadius.md)
-                }
-                .padding(.horizontal, DesignSystem.Spacing.lg)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+            // Complete button
+            Button {
+                HapticManager.shared.lightTap()
+                transitionToRate()
+            } label: {
+                Text("I've completed this drill")
+                    .font(DesignSystem.Typography.labelLarge)
+                    .foregroundColor(DesignSystem.Colors.textOnAccent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.primaryGreen)
+                    .cornerRadius(DesignSystem.CornerRadius.md)
             }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
 
             Spacer().frame(height: DesignSystem.Spacing.lg)
         }
@@ -211,20 +174,6 @@ struct DrillWalkthroughView: View {
                     .font(DesignSystem.Typography.headlineLarge)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
                     .padding(.top, DesignSystem.Spacing.xl)
-
-                // Elapsed time
-                VStack(spacing: DesignSystem.Spacing.xs) {
-                    Text("Time")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                    Text(formattedTime)
-                        .font(DesignSystem.Typography.numberMedium)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .padding(DesignSystem.Spacing.md)
-                .frame(maxWidth: .infinity)
-                .background(DesignSystem.Colors.surfaceRaised)
-                .cornerRadius(DesignSystem.CornerRadius.md)
 
                 // Difficulty picker
                 VStack(spacing: DesignSystem.Spacing.sm) {
@@ -354,28 +303,10 @@ struct DrillWalkthroughView: View {
     private func transitionToPerform() {
         currentStep = 1
         isAutoPlaying = false
-        elapsedSeconds = 0
-        allStepsCompleted = false
         phase = .perform
-        startTimer()
     }
 
     private func transitionToRate() {
-        stopTimer()
         phase = .rate
-    }
-
-    // MARK: - Timer
-
-    private func startTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            elapsedSeconds += 1
-        }
-    }
-
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
     }
 }
