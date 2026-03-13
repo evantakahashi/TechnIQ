@@ -50,6 +50,7 @@ Independent: CloudSyncStatus, MLRecommendation
 | TrainingPlanService | No | Plan CRUD, AI generation, completion-based progression |
 | CustomDrillService | Yes | AI drill generation via Firebase Functions |
 | YouTubeAPIService | No | YouTube Data API v3, rate limited (100 req/100s) |
+| YouTubeDataService | No | YouTube video data, caching, smart recommendations |
 | XPService | No | XP calc, level system (1-50), 10-tier career path |
 | CoinService | No | Coin economy, earning events, transactions |
 | AchievementService | No | 30 achievements, unlock checking, XP rewards |
@@ -65,16 +66,31 @@ All require Firebase Auth in production.
 
 ---
 
+## Folder Structure
+```
+TechnIQ/
+├── App/           (TechnIQApp, ContentView)
+├── Models/        (CoreData classes/properties, value types, config)
+├── Services/      (all service singletons)
+├── Views/
+│   ├── Auth/      Dashboard/ Training/ Exercises/ Matches/
+│   ├── Avatar/    Analytics/ Community/ Settings/
+├── Components/    (DesignSystem, ModernComponents, CoachMarkOverlay, etc.)
+└── Utilities/     (AppLogger, HapticManager, NetworkManager)
+```
+
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `TechnIQApp.swift` | App entry, Firebase/Google Sign-In init |
-| `ContentView.swift` | Root nav, auth routing, cloud restore |
-| `DesignSystem.swift` | Design tokens (colors, typography, spacing) |
-| `ModernComponents.swift` | Reusable UI (ModernCard, ModernButton, etc.) |
-| `CoreDataManager.swift` | Core Data stack, `persistentStoreError` for graceful failure |
-| `TemplateExerciseLibrary.swift` | 45+ exercise templates with fuzzy matching |
-| `TrainingPlanModels.swift` | UI models, SessionType enum (incl. warmup/cooldown) |
+| `App/TechnIQApp.swift` | App entry, Firebase/Google Sign-In init |
+| `App/ContentView.swift` | Root nav, auth routing, cloud restore |
+| `Components/DesignSystem.swift` | Design tokens (colors, typography, spacing) |
+| `Components/ModernComponents.swift` | Reusable UI (ModernCard, ModernButton, etc.) |
+| `Services/CoreDataManager.swift` | Core Data stack, exercise CRUD |
+| `Services/YouTubeDataService.swift` | YouTube video data, caching, smart recommendations |
+| `Services/CoreDataFetchRequests.swift` | Dynamic description generation helpers |
+| `Views/Exercises/TemplateExerciseLibrary.swift` | 45+ exercise templates with fuzzy matching |
+| `Models/TrainingPlanModels.swift` | UI models, SessionType enum (incl. warmup/cooldown) |
 
 ## Development Workflow
 
