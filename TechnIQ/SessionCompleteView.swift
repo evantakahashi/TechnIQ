@@ -11,7 +11,6 @@ struct SessionCompleteView: View {
 
     // Task 7: Training summary data
     var exercises: [Exercise] = []
-    var totalTime: TimeInterval = 0
     var onGenerateAnotherDrill: (() -> Void)? = nil
 
     @State private var animateXP = false
@@ -453,17 +452,6 @@ struct SessionCompleteView: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                     }
 
-                    // Total time
-                    VStack(spacing: 4) {
-                        Text(formattedTotalTime)
-                            .font(DesignSystem.Typography.headlineMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                        Text("Duration")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
                     Spacer()
                 }
 
@@ -494,15 +482,6 @@ struct SessionCompleteView: View {
         }
         .scaleEffect(animateXP ? 1 : 0.9)
         .opacity(animateXP ? 1 : 0)
-    }
-
-    private var formattedTotalTime: String {
-        let minutes = Int(totalTime) / 60
-        let seconds = Int(totalTime) % 60
-        if minutes > 0 {
-            return "\(minutes)m \(seconds)s"
-        }
-        return "\(seconds)s"
     }
 
     private var exerciseWeaknessCategories: [String] {
