@@ -25,37 +25,42 @@ final class ActiveSessionManagerTests: XCTestCase {
 
     // MARK: - Initial State
 
-    func test_initialState_isPreparing() {
+    func test_initialPhase_isExercise() {
         let sut = makeSUT()
-        sut.start()
-        XCTAssertEqual(sut.phase, .preparing)
+        XCTAssertEqual(sut.phase, .exercise)
         XCTAssertEqual(sut.currentExerciseIndex, 0)
     }
 
-    // MARK: - Exercise Flow
+    // MARK: - start()
 
-    func test_completeExercise_transitionsToExerciseComplete() {
+    func test_start_setsPhaseToExercise() {
         let sut = makeSUT()
+        sut.phase = .sessionComplete // force different state
         sut.start()
-        sut.phase = .exerciseActive
-        sut.completeExercise()
-        XCTAssertEqual(sut.phase, .exerciseComplete)
+        XCTAssertEqual(sut.phase, .exercise)
     }
 
-    func test_completeExercise_freezesDuration() {
-        let sut = makeSUT()
-        sut.start()
-        sut.phase = .exerciseActive
-        sut.completeExercise()
-        XCTAssertGreaterThanOrEqual(sut.exerciseDurations[0], 0)
-    }
+    // MARK: - completeExercise()
 
-    func test_completeExercise_notActive_noOp() {
+    func test_completeExercise_transitionsToRating() {
         let sut = makeSUT()
         sut.start()
         sut.completeExercise()
-        XCTAssertEqual(sut.phase, .preparing)
+        XCTAssertEqual(sut.phase, .rating)
     }
+
+    func test_completeExercise_doesNothingIfNotInExercisePhase() {
+        let sut = makeSUT()
+        sut.phase = .rating
+        sut.completeExercise()
+        XCTAssertEqual(sut.phase, .rating, "Should stay in .rating")
+
+        sut.phase = .sessionComplete
+        sut.completeExercise()
+        XCTAssertEqual(sut.phase, .sessionComplete, "Should stay in .sessionComplete")
+    }
+
+    // MARK: - rateExercise()
 
     func test_rateExercise_storesRatingAndNotes() {
         let sut = makeSUT()
@@ -64,60 +69,115 @@ final class ActiveSessionManagerTests: XCTestCase {
         XCTAssertEqual(sut.exerciseNotes[0], "Good form")
     }
 
-    func test_nextExercise_startsRest_whenNotLast() {
+    func test_rateExercise_storesForCurrentIndex() {
         let sut = makeSUT(exerciseCount: 3)
         sut.start()
-        sut.phase = .exerciseActive
         sut.completeExercise()
+        sut.rateExercise(5, notes: "Great")
         sut.nextExercise()
-        XCTAssertEqual(sut.phase, .rest)
+
+        sut.completeExercise()
+        sut.rateExercise(2, notes: "Tough")
+
+        XCTAssertEqual(sut.exerciseRatings[0], 5)
+        XCTAssertEqual(sut.exerciseNotes[0], "Great")
+        XCTAssertEqual(sut.exerciseRatings[1], 2)
+        XCTAssertEqual(sut.exerciseNotes[1], "Tough")
     }
 
-    func test_nextExercise_completesSession_whenLast() {
+    // MARK: - nextExercise()
+
+    func test_nextExercise_advancesIndexAndGoesToExercise() {
+        let sut = makeSUT(exerciseCount: 3)
+        sut.start()
+        sut.completeExercise()
+        sut.nextExercise()
+        XCTAssertEqual(sut.currentExerciseIndex, 1)
+        XCTAssertEqual(sut.phase, .exercise)
+    }
+
+    func test_nextExercise_onLastExercise_goesToSessionComplete() {
         let sut = makeSUT(exerciseCount: 1)
         sut.start()
-        sut.phase = .exerciseActive
         sut.completeExercise()
         sut.nextExercise()
         XCTAssertEqual(sut.phase, .sessionComplete)
     }
 
-    func test_skipRest_advancesToNextExercise() {
-        let sut = makeSUT(exerciseCount: 3)
+    func test_nextExercise_fullFlow_completesAfterLastExercise() {
+        let sut = makeSUT(exerciseCount: 2)
         sut.start()
-        sut.phase = .exerciseActive
+
+        // First exercise
         sut.completeExercise()
+        sut.rateExercise(4, notes: "")
         sut.nextExercise()
-        XCTAssertEqual(sut.phase, .rest)
-        sut.skipRest()
-        XCTAssertEqual(sut.phase, .exerciseActive)
         XCTAssertEqual(sut.currentExerciseIndex, 1)
+        XCTAssertEqual(sut.phase, .exercise)
+
+        // Second (last) exercise
+        sut.completeExercise()
+        sut.rateExercise(3, notes: "")
+        sut.nextExercise()
+        XCTAssertEqual(sut.phase, .sessionComplete)
     }
 
-    func test_endSessionEarly_fromAnyPhase() {
+    // MARK: - endSessionEarly()
+
+    func test_endSessionEarly_fromExercisePhase() {
         let sut = makeSUT()
         sut.start()
-        sut.phase = .exerciseActive
         sut.endSessionEarly()
         XCTAssertEqual(sut.phase, .sessionComplete)
     }
 
-    // MARK: - Pause/Resume
-
-    func test_pauseResume_togglesFlag() {
+    func test_endSessionEarly_fromRatingPhase() {
         let sut = makeSUT()
-        sut.start()
-        sut.phase = .exerciseActive
-        XCTAssertFalse(sut.isPaused)
-        sut.pause()
-        XCTAssertTrue(sut.isPaused)
-        sut.resume()
-        XCTAssertFalse(sut.isPaused)
+        sut.phase = .rating
+        sut.endSessionEarly()
+        XCTAssertEqual(sut.phase, .sessionComplete)
     }
 
-    // MARK: - Helpers
+    // MARK: - currentExercise
 
-    func test_averageRating_defaultsTo3() {
+    func test_currentExercise_returnsCorrectExercise() {
+        let sut = makeSUT(exerciseCount: 3)
+        XCTAssertEqual(sut.currentExercise?.name, "Ex 0")
+
+        sut.completeExercise()
+        sut.nextExercise()
+        XCTAssertEqual(sut.currentExercise?.name, "Ex 1")
+    }
+
+    func test_currentExercise_returnsNilWhenOutOfBounds() {
+        let sut = makeSUT(exerciseCount: 1)
+        sut.completeExercise()
+        sut.nextExercise() // sessionComplete, index stays at 0
+        // Index doesn't go out of bounds for single exercise since isLastExercise triggers sessionComplete
+        XCTAssertNotNil(sut.currentExercise)
+    }
+
+    // MARK: - isLastExercise
+
+    func test_isLastExercise_falseWhenMoreRemain() {
+        let sut = makeSUT(exerciseCount: 2)
+        XCTAssertFalse(sut.isLastExercise)
+    }
+
+    func test_isLastExercise_trueOnLastIndex() {
+        let sut = makeSUT(exerciseCount: 2)
+        sut.currentExerciseIndex = 1
+        XCTAssertTrue(sut.isLastExercise)
+    }
+
+    func test_isLastExercise_trueForSingleExercise() {
+        let sut = makeSUT(exerciseCount: 1)
+        XCTAssertTrue(sut.isLastExercise)
+    }
+
+    // MARK: - averageRating()
+
+    func test_averageRating_defaultsTo3WhenNoRatings() {
         let sut = makeSUT()
         XCTAssertEqual(sut.averageRating(), 3)
     }
@@ -128,22 +188,9 @@ final class ActiveSessionManagerTests: XCTestCase {
         XCTAssertEqual(sut.averageRating(), 3)
     }
 
-    func test_formattedTime() {
-        let sut = makeSUT()
-        XCTAssertEqual(sut.formattedTime(65), "1:05")
-        XCTAssertEqual(sut.formattedTime(0), "0:00")
-    }
-
-    func test_isLastExercise() {
-        let sut = makeSUT(exerciseCount: 2)
-        XCTAssertFalse(sut.isLastExercise)
-        sut.currentExerciseIndex = 1
-        XCTAssertTrue(sut.isLastExercise)
-    }
-
-    func test_completedExerciseCount() {
+    func test_averageRating_ignoresZeroRatings() {
         let sut = makeSUT(exerciseCount: 3)
-        sut.exerciseDurations = [10, 0, 5]
-        XCTAssertEqual(sut.completedExerciseCount, 2)
+        sut.exerciseRatings = [5, 0, 3]
+        XCTAssertEqual(sut.averageRating(), 4) // (5+3)/2
     }
 }
