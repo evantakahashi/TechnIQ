@@ -42,7 +42,7 @@ enum AchievementRequirement {
 }
 
 /// Service responsible for tracking and awarding achievements
-final class AchievementService {
+final class AchievementService: AchievementServiceProtocol {
     static let shared = AchievementService()
 
     init() {}

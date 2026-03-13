@@ -3,7 +3,7 @@ import SwiftUI
 /// View displayed after completing a training session
 /// Shows XP earned, level ups, achievements, and streak updates
 struct SessionCompleteView: View {
-    let xpBreakdown: XPService.SessionXPBreakdown?
+    let xpBreakdown: SessionXPBreakdown?
     let newLevel: Int?
     let achievements: [Achievement]
     let player: Player
@@ -213,7 +213,7 @@ struct SessionCompleteView: View {
 
     // MARK: - XP Breakdown Card
 
-    private func xpBreakdownCard(_ breakdown: XPService.SessionXPBreakdown) -> some View {
+    private func xpBreakdownCard(_ breakdown: SessionXPBreakdown) -> some View {
         ModernCard(padding: DesignSystem.Spacing.lg) {
             VStack(spacing: DesignSystem.Spacing.md) {
                 HStack {

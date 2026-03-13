@@ -10,7 +10,7 @@ enum APIError: Error {
     case networkError
 }
 
-class CoreDataManager: ObservableObject {
+class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
     static let shared = CoreDataManager()
 
     /// Published error state so UI can react to Core Data failures

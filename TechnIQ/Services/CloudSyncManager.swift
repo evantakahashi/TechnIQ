@@ -8,7 +8,7 @@ import UIKit
 // Handles synchronization between Core Data and Firebase Firestore for ML features
 
 @MainActor
-class CloudSyncManager: ObservableObject {
+class CloudSyncManager: ObservableObject, CloudSyncManagerProtocol {
     static let shared = CloudSyncManager()
     
     private let cloudDataService = CloudDataService.shared

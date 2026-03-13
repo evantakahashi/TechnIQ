@@ -4,7 +4,7 @@ import Combine
 
 /// Service for managing player coin economy
 /// Handles awarding, deducting, and tracking coins
-final class CoinService: ObservableObject {
+final class CoinService: ObservableObject, CoinServiceProtocol {
     static let shared = CoinService()
 
     // MARK: - Published Properties
@@ -17,11 +17,17 @@ final class CoinService: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let coreDataManager = CoreDataManager.shared
+    private let coreDataManager: CoreDataManagerProtocol
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        // Load initial balance on startup
+    private init() {
+        self.coreDataManager = CoreDataManager.shared
+        loadCurrentBalance()
+    }
+
+    /// For testing
+    init(coreDataManager: CoreDataManagerProtocol) {
+        self.coreDataManager = coreDataManager
         loadCurrentBalance()
     }
 

@@ -2,39 +2,12 @@ import Foundation
 import CoreData
 
 /// Service responsible for XP calculations, level progression, and streak management
-final class XPService {
+final class XPService: XPServiceProtocol {
     static let shared = XPService()
 
     init() {}
 
-    // MARK: - XP Constants
-
-    struct XPRewards {
-        static let sessionBase: Int32 = 50
-        static let intensityBonus: Int32 = 10  // Per intensity level
-        static let firstSessionOfDay: Int32 = 25
-        static let allExercisesCompleted: Int32 = 20
-        static let sessionRated: Int32 = 5
-        static let sessionNotes: Int32 = 5
-        static let weeklyGoalCompleted: Int32 = 100
-        static let streak7Day: Int32 = 150
-        static let streak14Day: Int32 = 200
-        static let streak30Day: Int32 = 500
-        static let streak60Day: Int32 = 750
-        static let streak100Day: Int32 = 1000
-        static let streak365Day: Int32 = 5000
-    }
-
     // MARK: - Level System
-
-    struct LevelTier: Identifiable {
-        let id = UUID()
-        let minLevel: Int
-        let maxLevel: Int
-        let title: String
-        let description: String
-        let icon: String
-    }
 
     /// Soccer Career Path - 10 tiers representing the journey from grassroots to legend
     static let levelTiers: [LevelTier] = [
@@ -96,20 +69,6 @@ final class XPService {
     }
 
     // MARK: - XP Calculation for Sessions
-
-    struct SessionXPBreakdown {
-        let baseXP: Int32
-        let intensityBonus: Int32
-        let firstSessionBonus: Int32
-        let completionBonus: Int32
-        let ratingBonus: Int32
-        let notesBonus: Int32
-        let streakBonus: Int32
-
-        var total: Int32 {
-            baseXP + intensityBonus + firstSessionBonus + completionBonus + ratingBonus + notesBonus + streakBonus
-        }
-    }
 
     /// Calculate XP earned from a training session
     func calculateSessionXP(

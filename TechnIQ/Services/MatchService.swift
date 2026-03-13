@@ -2,12 +2,12 @@ import Foundation
 import CoreData
 
 /// Service for managing matches and seasons
-final class MatchService {
+final class MatchService: MatchServiceProtocol {
     static let shared = MatchService()
 
     private let context: NSManagedObjectContext
 
-    init() {
+    private init() {
         context = CoreDataManager.shared.context
     }
 

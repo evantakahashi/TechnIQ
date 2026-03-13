@@ -9,7 +9,7 @@ struct ActiveTrainingView: View {
     @StateObject private var manager: ActiveSessionManager
 
     // Session complete state
-    @State private var xpBreakdown: XPService.SessionXPBreakdown?
+    @State private var xpBreakdown: SessionXPBreakdown?
     @State private var newLevel: Int?
     @State private var unlockedAchievements: [Achievement] = []
 

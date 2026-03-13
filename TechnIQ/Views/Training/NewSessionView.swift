@@ -24,7 +24,7 @@ struct NewSessionView: View {
 
     // XP and Celebration states
     @State private var showSessionComplete = false
-    @State private var xpBreakdown: XPService.SessionXPBreakdown?
+    @State private var xpBreakdown: SessionXPBreakdown?
     @State private var newLevel: Int?
     @State private var unlockedAchievements: [Achievement] = []
     

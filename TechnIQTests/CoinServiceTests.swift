@@ -51,7 +51,7 @@ final class CoinServiceTests: XCTestCase {
     // MARK: - canAfford
 
     func test_canAfford_basic() {
-        let service = CoinService()
+        let service = CoinService(coreDataManager: MockCoreDataManager())
         XCTAssertFalse(service.canAfford(100))
         XCTAssertTrue(service.canAfford(0))
     }

@@ -6,7 +6,7 @@ import Network
 // MARK: - Cloud Data Service for Firebase Firestore Integration
 
 @MainActor
-class CloudDataService: ObservableObject {
+class CloudDataService: ObservableObject, CloudDataServiceProtocol {
     static let shared = CloudDataService()
     
     let db = Firestore.firestore()

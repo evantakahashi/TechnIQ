@@ -11,7 +11,7 @@ enum TrainingPhase: Equatable {
 
 // MARK: - Active Session Manager
 
-class ActiveSessionManager: ObservableObject {
+class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
     // MARK: State
 
@@ -94,7 +94,7 @@ class ActiveSessionManager: ObservableObject {
     func finishSession(
         player: Player,
         context: NSManagedObjectContext
-    ) -> (xpBreakdown: XPService.SessionXPBreakdown?, newLevel: Int?, achievements: [Achievement]) {
+    ) -> (xpBreakdown: SessionXPBreakdown?, newLevel: Int?, achievements: [Achievement]) {
 
         let completedCount = exerciseRatings.filter { $0 > 0 }.count
         let isFullCompletion = completedCount == exercises.count

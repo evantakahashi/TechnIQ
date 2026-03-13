@@ -7,7 +7,7 @@ import FirebaseFirestore
 // Handles restoration of user data from Firebase when logging in on new/reset device
 
 @MainActor
-class CloudRestoreService: ObservableObject {
+class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
     static let shared = CloudRestoreService()
 
     private let cloudDataService = CloudDataService.shared

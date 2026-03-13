@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Training Plan Service
 // Handles business logic for creating, managing, and generating training plans
 
-class TrainingPlanService: ObservableObject {
+class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
     static let shared = TrainingPlanService()
 
     private let coreDataManager = CoreDataManager.shared

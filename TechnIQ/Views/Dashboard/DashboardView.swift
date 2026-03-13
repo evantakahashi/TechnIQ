@@ -1495,7 +1495,7 @@ struct CompactPlayerStats: View {
     let player: Player
     @StateObject private var coinVM = CoinBalanceViewModel()
 
-    private var tier: XPService.LevelTier? {
+    private var tier: LevelTier? {
         XPService.shared.tierForLevel(Int(player.currentLevel))
     }
 
