@@ -259,20 +259,20 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         logger.info(f"📊 Session context: {len(session_context.get('recent_exercises', []))} recent exercises")
         logger.info(f"📊 Drill feedback: {len(drill_feedback)} previous drill ratings")
 
-        # Get OpenAI API key from environment variables
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        # Get Anthropic API key from environment variables
+        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
 
-        if not openai_api_key:
-            return https_fn.Response("OpenAI API key not configured", status=500)
+        if not anthropic_api_key:
+            return https_fn.Response("Anthropic API key not configured", status=500)
 
         # Generate drill using 4-phase agentic pipeline
-        drill_data = generate_drill_pipeline(player_profile, requirements, session_context, drill_feedback, field_size, openai_api_key)
+        drill_data = generate_drill_pipeline(player_profile, requirements, session_context, drill_feedback, field_size, anthropic_api_key)
         
         # Format response
         response_data = {
             "user_id": user_id,
             "drill": drill_data,
-            "algorithm": "openai_custom_drill_generation",
+            "algorithm": "claude_custom_drill_generation",
             "generated_at": datetime.now().isoformat(),
             "model_version": "1.0.0",
             "requirements": requirements
@@ -323,10 +323,10 @@ def parse_llm_json(content: str) -> Dict:
     return json.loads(content.strip())
 
 
-def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, field_size: str, openai_api_key: str) -> Dict:
+def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, field_size: str, anthropic_api_key: str) -> Dict:
     """4-phase agentic drill generation: Scout → Coach → Writer ⇄ Referee"""
-    from openai import OpenAI
-    client = OpenAI(api_key=openai_api_key)
+    from anthropic import Anthropic
+    client = Anthropic(api_key=anthropic_api_key)
 
     field_dims = get_field_dimensions(field_size)
 
@@ -468,16 +468,16 @@ Return JSON:
 {{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a creative, specific drill archetype. Prioritize structured weakness selections, then explicit requests, then match data, then session ratings. Be inventive — avoid generic drills.",
             messages=[
-                {"role": "system", "content": "You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a creative, specific drill archetype. Prioritize structured weakness selections, then explicit requests, then match data, then session ratings. Be inventive — avoid generic drills."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
             temperature=0.3
         )
-        return parse_llm_json(response.choices[0].message.content)
+        return parse_llm_json(response.content[0].text)
     except Exception as e:
         logger.warning(f"⚠️ Scout phase parse error: {e}, using defaults")
         primary = selected_weaknesses[0].get('specific', 'general technique') if selected_weaknesses else requirements.get('skill_description', 'general technique')
@@ -531,16 +531,16 @@ Additional pattern guidance:
 - wall_pass_sequence: stations arranged for wall-pass combinations (give-and-go patterns)"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are a soccer drill architect. Design practical spatial layouts that directly address the identified weakness. Only use equipment the player has. Keep coordinates within field dimensions.",
             messages=[
-                {"role": "system", "content": "You are a soccer drill architect. Design practical spatial layouts that directly address the identified weakness. Only use equipment the player has. Keep coordinates within field dimensions."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=600,
             temperature=0.4
         )
-        return parse_llm_json(response.choices[0].message.content)
+        return parse_llm_json(response.content[0].text)
     except Exception as e:
         logger.warning(f"⚠️ Coach phase parse error: {e}, using minimal plan")
         return {
@@ -605,19 +605,27 @@ VARIATIONS RULES:
 - Return "variations" as a structured JSON array with objects: {{"name": "...", "description": "...", "modification": "..."}}
 - Include at least 2 variations (1 easier, 1 harder)
 
+PHYSICAL REALISM RULES (CRITICAL):
+- Players can ONLY pass to other players, NEVER to cones, markers, or empty space
+- Every piece of equipment in the equipment list MUST appear as an element in the diagram
+- If "wall" is in equipment, it MUST appear as a diagram element with type "wall"
+- Movement paths must have a clear soccer purpose — no random or unnecessary runs
+- Cones mark positions/gates, they do NOT receive passes or act as players
+- If the drill requires multiple players, assign clear roles (attacker, defender, server)
+
 Return ONLY valid JSON:
 {{"name": "Short name (max 40 chars)", "description": "One sentence purpose.", "setup": "Dimensions. Equipment. Player start.", "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"], "diagram": {{"field": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}], "paths": [{{"from": "A", "to": "B", "style": "dribble", "step": 1}}]}}, "progressions": ["Easier: ...", "Harder: ..."], "coachingPoints": ["Point 1", "Point 2", "Point 3"], "estimatedDuration": 15, "difficulty": "{difficulty}", "category": "{category}", "targetSkills": ["skill1", "skill2"], "equipment": {json.dumps(equipment)}, "safetyNotes": "Brief safety note", "variations": [{{"name": "Easier variation", "description": "...", "modification": "..."}}, {{"name": "Harder variation", "description": "...", "modification": "..."}}]}}"""
 
-    response = client.chat.completions.create(
-        model="gpt-4-turbo",
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        system="You are an expert soccer coach. Write complete, creative, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within field dimensions. Every diagram path MUST include a step integer linking to its instruction. Be inventive and specific — avoid generic drills.",
         messages=[
-            {"role": "system", "content": "You are an expert soccer coach. Write complete, creative, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within field dimensions. Every diagram path MUST include a step integer linking to its instruction. Be inventive and specific — avoid generic drills."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=1500,
         temperature=0.7
     )
-    return parse_llm_json(response.choices[0].message.content)
+    return parse_llm_json(response.content[0].text)
 
 
 def programmatic_validate(drill: Dict, field_dims: Dict, requirements: Dict) -> List[Dict]:
@@ -690,6 +698,7 @@ Validate:
 5. SAFETY: Appropriate for the difficulty level?
 6. REALISM: Would a real coach assign this?
 7. SCHEMA: All required fields present with correct types?
+8. REALISM: Are players passing to other players (not cones/markers)? Does every equipment item appear in the diagram? Do movement paths make physical and tactical sense?
 
 Return JSON:
 {{"verdict": "VALID or ERRORS", "errors": [{{"check": "category", "issue": "description", "fix": "suggestion"}}], "score": 0-100}}
@@ -697,16 +706,16 @@ Return JSON:
 If everything passes, return {{"verdict": "VALID", "errors": [], "score": 85-100}}"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are a soccer drill safety and logic checker. Be strict but fair. Only flag genuine issues that would make the drill confusing, unsafe, or ineffective. Score 85+ means production-ready.",
             messages=[
-                {"role": "system", "content": "You are a soccer drill safety and logic checker. Be strict but fair. Only flag genuine issues that would make the drill confusing, unsafe, or ineffective. Score 85+ means production-ready."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=800,
             temperature=0.1
         )
-        result = parse_llm_json(response.choices[0].message.content)
+        result = parse_llm_json(response.content[0].text)
         # Ensure proper structure
         if "verdict" not in result:
             result["verdict"] = "VALID" if not result.get("errors") else "ERRORS"
