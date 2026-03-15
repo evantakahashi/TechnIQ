@@ -1694,12 +1694,12 @@ def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
 
         logger.info(f"📊 Generating plan adaptation for week {week_number}")
 
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
-        if not openai_api_key:
-            return https_fn.Response(json.dumps({"error": "OpenAI API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if not anthropic_api_key:
+            return https_fn.Response(json.dumps({"error": "Anthropic API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
 
-        from openai import OpenAI
-        client = OpenAI(api_key=openai_api_key)
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_api_key)
 
         # Build context
         week_summary = ""
@@ -1745,17 +1745,17 @@ Instructions:
 Return ONLY valid JSON:
 {{"summary": "Week summary...", "adaptations": [{{"type": "modify_difficulty", "day": 2, "session_index": 0, "description": "Bump dribbling difficulty from 3 to 4", "old_difficulty": 3, "new_difficulty": 4, "drill": null}}, {{"type": "add_session", "day": 3, "session_index": null, "description": "Add passing drill", "old_difficulty": null, "new_difficulty": null, "drill": {{"name": "Wall Pass Combos", "description": "...", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1"], "equipment": ["ball", "wall"], "target_skills": ["passing"], "is_from_library": false, "library_exercise_id": null}}}}]}}"""
 
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are a soccer training plan analyst. Review weekly performance data and propose minimal, data-driven adaptations. Be conservative — only change what the data clearly supports.",
             messages=[
-                {"role": "system", "content": "You are a soccer training plan analyst. Review weekly performance data and propose minimal, data-driven adaptations. Be conservative — only change what the data clearly supports."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1000,
             temperature=0.3
         )
 
-        result = parse_llm_json(response.choices[0].message.content)
+        result = parse_llm_json(response.content[0].text)
 
         logger.info(f"✅ Plan adaptation generated: {len(result.get('adaptations', []))} changes proposed")
         return https_fn.Response(
