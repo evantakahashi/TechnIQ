@@ -9,22 +9,22 @@ import json
 logger = logging.getLogger(__name__)
 
 class LLMQueryGenerator:
-    """Generate personalized YouTube search queries using OpenAI's LLM"""
-    
-    def __init__(self, openai_api_key: Optional[str] = None):
+    """Generate personalized YouTube search queries using Anthropic's Claude"""
+
+    def __init__(self, anthropic_api_key: Optional[str] = None):
         self.client = None
-        
-        if openai_api_key:
+
+        if anthropic_api_key:
             try:
-                import openai
-                self.client = openai.OpenAI(api_key=openai_api_key)
-                logger.info("🤖 LLM Query Generator initialized with OpenAI")
+                from anthropic import Anthropic
+                self.client = Anthropic(api_key=anthropic_api_key)
+                logger.info("🤖 LLM Query Generator initialized with Anthropic")
             except ImportError:
-                logger.warning("⚠️ OpenAI library not available")
+                logger.warning("⚠️ Anthropic library not available")
             except Exception as e:
-                logger.warning(f"⚠️ Failed to initialize OpenAI client: {e}")
+                logger.warning(f"⚠️ Failed to initialize Anthropic client: {e}")
         else:
-            logger.info("🔄 LLM Query Generator running without OpenAI (fallback mode)")
+            logger.info("🔄 LLM Query Generator running without Anthropic (fallback mode)")
     
     def generate_search_queries(self, player_profile: Dict, limit: int = 5) -> List[str]:
         """Generate personalized YouTube search queries using LLM"""
@@ -38,25 +38,22 @@ class LLMQueryGenerator:
             # Build prompt for LLM
             prompt = self._build_search_query_prompt(player_profile, limit)
             
-            # Call OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Fast and cost-effective
+            # Call Anthropic API
+            response = self.client.messages.create(
+                model="claude-sonnet-4-6",
+                system="You are an expert soccer coach and YouTube content strategist. Generate highly specific, effective YouTube search queries that will find the best training videos for soccer players.",
                 messages=[
                     {
-                        "role": "system",
-                        "content": "You are an expert soccer coach and YouTube content strategist. Generate highly specific, effective YouTube search queries that will find the best training videos for soccer players."
-                    },
-                    {
-                        "role": "user", 
+                        "role": "user",
                         "content": prompt
                     }
                 ],
-                temperature=0.7,  # Some creativity but not too random
+                temperature=0.7,
                 max_tokens=300
             )
-            
+
             # Parse response
-            content = response.choices[0].message.content.strip()
+            content = response.content[0].text.strip()
             queries = self._parse_llm_response(content, limit)
             
             logger.info(f"✅ Generated {len(queries)} LLM queries: {queries}")

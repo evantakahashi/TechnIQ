@@ -121,10 +121,10 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
         
         # Get API keys from environment variables
         youtube_api_key = os.environ.get('YOUTUBE_API_KEY')
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
-        
+        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+
         logger.info(f"🔑 YouTube API key available: {bool(youtube_api_key)}")
-        logger.info(f"🔑 OpenAI API key available: {bool(openai_api_key)}")
+        logger.info(f"🔑 Anthropic API key available: {bool(anthropic_api_key)}")
         
         if not youtube_api_key or youtube_api_key == 'YOUR_YOUTUBE_API_KEY_HERE':
             return https_fn.Response("YouTube API key not configured", status=500)
@@ -133,7 +133,7 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
         existing_exercises = get_existing_exercises(user_id)
         
         # Create YouTube ML engine with LLM query generation
-        youtube_engine = create_youtube_ml_engine(youtube_api_key, openai_api_key)
+        youtube_engine = create_youtube_ml_engine(youtube_api_key, anthropic_api_key)
         
         # Get user's training history for collaborative filtering
         user_history = get_user_training_history(user_id)

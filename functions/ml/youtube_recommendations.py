@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 class YouTubeMLEngine:
     """YouTube recommendation engine with collaborative filtering and LLM-powered queries"""
     
-    def __init__(self, youtube_api_key: str, openai_api_key: Optional[str] = None):
+    def __init__(self, youtube_api_key: str, anthropic_api_key: Optional[str] = None):
         self.youtube_api_key = youtube_api_key
-        self.query_generator = LLMQueryGenerator(openai_api_key)
+        self.query_generator = LLMQueryGenerator(anthropic_api_key)
         
         # Initialize YouTube API client
         try:
@@ -502,6 +502,6 @@ class YouTubeMLEngine:
             logger.warning(f"⚠️ Error comparing titles: {e}")
             return False
 
-def create_youtube_ml_engine(youtube_api_key: str, openai_api_key: Optional[str] = None) -> YouTubeMLEngine:
+def create_youtube_ml_engine(youtube_api_key: str, anthropic_api_key: Optional[str] = None) -> YouTubeMLEngine:
     """Factory function to create YouTube ML engine"""
-    return YouTubeMLEngine(youtube_api_key, openai_api_key)
+    return YouTubeMLEngine(youtube_api_key, anthropic_api_key)
