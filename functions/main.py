@@ -1571,12 +1571,12 @@ def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
 
         logger.info(f"🎯 Generating daily coaching for user with {len(recent_sessions)} recent sessions")
 
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
-        if not openai_api_key:
-            return https_fn.Response(json.dumps({"error": "OpenAI API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if not anthropic_api_key:
+            return https_fn.Response(json.dumps({"error": "Anthropic API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
 
-        from openai import OpenAI
-        client = OpenAI(api_key=openai_api_key)
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_api_key)
 
         # Build session summary for prompt
         session_text = ""
@@ -1618,17 +1618,17 @@ Instructions:
 Return ONLY valid JSON:
 {{"focus_area": "Passing", "reasoning": "Your passing ratings...", "recommended_drill": {{"name": "Short name", "description": "One sentence", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1", "Step 2"], "equipment": ["ball", "cones"], "target_skills": ["passing", "first touch"], "is_from_library": false, "library_exercise_id": null}}, "additional_tips": ["Tip 1"], "streak_message": "5 days strong!", "insights": [{{"title": "Title", "description": "Description with data", "type": "celebration|recommendation|warning|pattern", "priority": 9, "actionable": "Optional action"}}]}}"""
 
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are an expert soccer coach providing daily personalized training guidance. Be concise, data-driven, and actionable. Focus on the most impactful improvement area.",
             messages=[
-                {"role": "system", "content": "You are an expert soccer coach providing daily personalized training guidance. Be concise, data-driven, and actionable. Focus on the most impactful improvement area."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1200,
             temperature=0.4
         )
 
-        result = parse_llm_json(response.choices[0].message.content)
+        result = parse_llm_json(response.content[0].text)
 
         logger.info(f"✅ Daily coaching generated: focus={result.get('focus_area', '?')}")
         return https_fn.Response(
