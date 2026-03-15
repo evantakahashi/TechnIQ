@@ -1449,13 +1449,12 @@ IMPORTANT REQUIREMENTS:
 {f'- PRIORITIZE training sessions on these days: {", ".join(preferred_days)}' if preferred_days else ''}
 - Return ONLY the JSON object, no extra text"""
 
-        # Use OpenAI as fallback (more reliable setup)
-        # Get OpenAI API key from environment
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        # Get Anthropic API key from environment
+        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
 
-        if not openai_api_key:
+        if not anthropic_api_key:
             return https_fn.Response(
-                json.dumps({"error": "OpenAI API key not configured"}),
+                json.dumps({"error": "Anthropic API key not configured"}),
                 status=500,
                 headers={
                     'Content-Type': 'application/json',
@@ -1463,22 +1462,22 @@ IMPORTANT REQUIREMENTS:
                 }
             )
 
-        # Call OpenAI GPT-4
-        from openai import OpenAI
-        client = OpenAI(api_key=openai_api_key)
+        # Call Claude Sonnet
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_api_key)
 
-        logger.info("🤖 Calling OpenAI GPT-4...")
-        response = client.chat.completions.create(
-            model="gpt-4",
+        logger.info("🤖 Calling Claude Sonnet...")
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            system="You are an expert soccer coach specializing in personalized training plans. Return ONLY valid JSON, no markdown formatting.",
             messages=[
-                {"role": "system", "content": "You are an expert soccer coach specializing in personalized training plans. Return ONLY valid JSON, no markdown formatting."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
             temperature=0.7
         )
 
-        response_text = response.choices[0].message.content
+        response_text = response.content[0].text
 
         logger.info(f"📄 AI Response length: {len(response_text)} characters")
 
