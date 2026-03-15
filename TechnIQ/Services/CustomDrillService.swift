@@ -237,7 +237,7 @@ class CustomDrillService: ObservableObject {
             print("❌ Firebase Function error: \(httpResponse.statusCode) - \(errorMessage)")
 
             #endif
-            // Check for OpenAI quota error
+            // Check for API quota error
             if httpResponse.statusCode == 500 && errorMessage.contains("insufficient_quota") {
                 throw CustomDrillError.quotaExceeded
             }
