@@ -196,13 +196,13 @@ struct AnimatedDrillDiagramView: View {
             case .player:
                 playerElementView(label: element.label, isActive: isActive)
             case .defender:
-                playerElementView(label: element.label, isActive: isActive)
+                defenderElementView(label: element.label, isActive: isActive)
             case .server:
-                playerElementView(label: element.label, isActive: isActive)
+                serverElementView(label: element.label, isActive: isActive)
             case .mannequin:
-                coneElementView(label: element.label)
+                mannequinElementView(label: element.label)
             case .wall:
-                coneElementView(label: element.label)
+                wallElementView(label: element.label)
             case .cone:
                 coneElementView(label: element.label)
             case .goal:
@@ -246,6 +246,98 @@ struct AnimatedDrillDiagramView: View {
             Text(displayText)
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.white)
+        }
+    }
+
+    private func defenderElementView(label: String, isActive: Bool) -> some View {
+        let displayText = String(label.prefix(2))
+
+        return ZStack {
+            if isActive {
+                Circle()
+                    .fill(Color.red.opacity(0.3))
+                    .frame(width: playerSize + 14, height: playerSize + 14)
+                    .scaleEffect(pulseScale)
+                    .onAppear {
+                        withAnimation(
+                            .easeInOut(duration: 1.0)
+                            .repeatForever(autoreverses: true)
+                        ) {
+                            pulseScale = 1.25
+                        }
+                    }
+            }
+
+            Circle()
+                .fill(Color.red)
+                .frame(width: playerSize, height: playerSize)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+
+            Text(displayText)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.white)
+        }
+    }
+
+    private func serverElementView(label: String, isActive: Bool) -> some View {
+        let displayText = String(label.prefix(2))
+
+        return ZStack {
+            if isActive {
+                Circle()
+                    .fill(DesignSystem.Colors.secondaryBlue.opacity(0.3))
+                    .frame(width: playerSize + 14, height: playerSize + 14)
+                    .scaleEffect(pulseScale)
+                    .onAppear {
+                        withAnimation(
+                            .easeInOut(duration: 1.0)
+                            .repeatForever(autoreverses: true)
+                        ) {
+                            pulseScale = 1.25
+                        }
+                    }
+            }
+
+            Circle()
+                .fill(DesignSystem.Colors.secondaryBlue)
+                .frame(width: playerSize, height: playerSize)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+
+            Text(displayText)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.white)
+        }
+    }
+
+    private func mannequinElementView(label: String) -> some View {
+        VStack(spacing: 2) {
+            ZStack {
+                Circle()
+                    .fill(DesignSystem.Colors.textTertiary)
+                    .frame(width: playerSize, height: playerSize)
+                    .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+
+                Text("X")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+            }
+
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+        }
+    }
+
+    private func wallElementView(label: String) -> some View {
+        VStack(spacing: 2) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DesignSystem.Colors.textTertiary)
+                .frame(width: 40, height: 12)
+                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(DesignSystem.Colors.textSecondary)
         }
     }
 
