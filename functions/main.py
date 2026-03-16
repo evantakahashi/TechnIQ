@@ -455,6 +455,37 @@ def phase_scout(client, player_profile: Dict, session_context: Dict, drill_feedb
             if specific in archetype_hints:
                 archetype_hint += f"\nFor '{specific}', consider: {archetype_hints[specific]}"
 
+    # Archetype filtering by experience level
+    exp_level = player_profile.get('experienceLevel', 'intermediate')
+    age = player_profile.get('age', 14)
+    position = player_profile.get('position', 'midfielder')
+    playing_style = player_profile.get('playingStyle', '')
+
+    archetype_by_level = {
+        "beginner": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot",
+        "intermediate": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot, relay_shuttle, server_executor, triangle_passing",
+        "advanced": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot, relay_shuttle, server_executor, triangle_passing, 1v1_plus_server, rondo"
+    }
+    available_archetypes = archetype_by_level.get(exp_level, archetype_by_level["intermediate"])
+
+    # Age-based spacing context
+    if age <= 8:
+        spacing_context = "Age U8: cone spacing 1-2m, passing distance 5-7m, drill duration 3-5 min"
+    elif age <= 12:
+        spacing_context = "Age U12: cone spacing 2-3m, passing distance 8-10m, drill duration 8-12 min"
+    else:
+        spacing_context = "Age U13+: cone spacing 3-5m, passing distance 10-15m, drill duration 10-15 min"
+
+    # Position-based archetype weighting
+    position_hints = {
+        "winger": "Prefer 1v1 dribbling, change of direction, crossing drills",
+        "midfielder": "Prefer passing patterns, possession, transition drills",
+        "striker": "Prefer finishing, first touch, 1v1 vs keeper drills",
+        "defender": "Prefer 1v1 defending, clearance, recovery run drills",
+        "goalkeeper": "Prefer shot-stopping, distribution, positioning drills"
+    }
+    position_hint = position_hints.get(position.lower(), "")
+
     prompt = f"""Analyze this soccer player and identify their #1 weakness to target.
 
 Player: {player_profile.get('name', 'Player')}, Age {player_profile.get('age', 'Unknown')}, {player_profile.get('position', 'Unknown')}, {player_profile.get('experienceLevel', 'intermediate')} level
@@ -475,6 +506,13 @@ Previous drill feedback:
 
 Priority order: 1) Structured weaknesses if provided, 2) User's text description, 3) Match weaknesses, 4) Session ratings.
 Be CREATIVE and SPECIFIC with drill archetypes. Avoid generic drills.
+
+Available archetypes for {exp_level} level: {available_archetypes}
+{spacing_context}
+{position_hint}
+Playing style: {playing_style}
+
+You MUST pick a drill_archetype from the available archetypes list above.
 
 Return JSON:
 {{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
