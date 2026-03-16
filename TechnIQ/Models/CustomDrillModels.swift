@@ -163,7 +163,7 @@ struct DiagramField: Codable {
 }
 
 struct DiagramElement: Codable, Identifiable {
-    let type: String  // "cone", "player", "target", "goal", "ball"
+    let type: String  // See DiagramElementType for valid values
     let x: Double
     let y: Double
     let label: String
