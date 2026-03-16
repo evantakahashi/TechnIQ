@@ -255,7 +255,7 @@ struct AnimatedDrillDiagramView: View {
         return ZStack {
             if isActive {
                 Circle()
-                    .fill(Color.red.opacity(0.3))
+                    .fill(DesignSystem.Colors.error.opacity(0.3))
                     .frame(width: playerSize + 14, height: playerSize + 14)
                     .scaleEffect(pulseScale)
                     .onAppear {
@@ -269,7 +269,7 @@ struct AnimatedDrillDiagramView: View {
             }
 
             Circle()
-                .fill(Color.red)
+                .fill(DesignSystem.Colors.error)
                 .frame(width: playerSize, height: playerSize)
                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
@@ -279,13 +279,15 @@ struct AnimatedDrillDiagramView: View {
         }
     }
 
+    private static let serverBlue = Color(red: 0.13, green: 0.59, blue: 0.95)
+
     private func serverElementView(label: String, isActive: Bool) -> some View {
         let displayText = String(label.prefix(2))
 
         return ZStack {
             if isActive {
                 Circle()
-                    .fill(DesignSystem.Colors.secondaryBlue.opacity(0.3))
+                    .fill(Self.serverBlue.opacity(0.3))
                     .frame(width: playerSize + 14, height: playerSize + 14)
                     .scaleEffect(pulseScale)
                     .onAppear {
@@ -299,7 +301,7 @@ struct AnimatedDrillDiagramView: View {
             }
 
             Circle()
-                .fill(DesignSystem.Colors.secondaryBlue)
+                .fill(Self.serverBlue)
                 .frame(width: playerSize, height: playerSize)
                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
