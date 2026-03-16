@@ -348,7 +348,7 @@ def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_co
 
     for attempt in range(3):
         logger.info(f"✍️ Phase 3: Writer - Attempt {attempt + 1}/3...")
-        drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors)
+        drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors, player_profile)
 
         # === Post-Process ===
         logger.info("🔧 Post-processing diagram...")
@@ -603,12 +603,47 @@ Additional pattern guidance:
         }
 
 
-def phase_writer(client, skeletal_plan: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, revision_errors: list) -> Dict:
+def phase_writer(client, skeletal_plan: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, revision_errors: list, player_profile: Dict = None) -> Dict:
     """Phase 3: Create full CustomDrillResponse JSON"""
     equipment = requirements.get('equipment', [])
     difficulty = requirements.get('difficulty', 'intermediate')
     category = requirements.get('category', 'technical')
     num_players = requirements.get('number_of_players', 1)
+
+    # Player-tailored context
+    player_context = ""
+    if player_profile:
+        age = player_profile.get('age', 14)
+        exp_level = player_profile.get('experienceLevel', 'intermediate')
+        position = player_profile.get('position', '')
+        playing_style = player_profile.get('playingStyle', '')
+        weaknesses = player_profile.get('weaknesses', [])
+        skill_goals = player_profile.get('skillGoals', [])
+
+        if age <= 8:
+            spacing_rule = "Cone spacing: 1-2m. Passing distance: 5-7m. Duration: 3-5 min. Keep instructions very simple."
+        elif age <= 12:
+            spacing_rule = "Cone spacing: 2-3m. Passing distance: 8-10m. Duration: 8-12 min."
+        else:
+            spacing_rule = "Cone spacing: 3-5m. Passing distance: 10-15m. Duration: 10-15 min."
+
+        success_criteria = {
+            "beginner": "Include a measurable goal like 'complete 10 passes without losing control'",
+            "intermediate": "Include a measurable goal like 'complete 15 passes in 45 seconds'",
+            "advanced": "Include a measurable challenge like 'complete 20 weak-foot passes in 30 seconds'"
+        }
+
+        player_context = f"""
+PLAYER CONTEXT (tailor drill to this player):
+- Age: {age}, Level: {exp_level}, Position: {position}, Style: {playing_style}
+- Weaknesses: {', '.join(weaknesses) if weaknesses else 'none specified'}
+- Skill goals: {', '.join(skill_goals) if skill_goals else 'none specified'}
+- {spacing_rule}
+- {success_criteria.get(exp_level, success_criteria['intermediate'])}
+- Coaching points must be body-mechanic specific (e.g., "lock ankle", "chest over ball", "check shoulder") — NOT generic ("practice more")
+- Movement after passing is mandatory — passer must move to a new position
+- Multi-player drills must assign clear roles with rotation instructions
+"""
 
     revision_text = ""
     if revision_errors:
@@ -637,6 +672,7 @@ Difficulty: {difficulty}
 Category: {category}
 Equipment available: {', '.join(equipment) if equipment else 'minimal'}
 {revision_text}{wall_guidance}
+{player_context}
 INSTRUCTION RULES:
 - Each instruction = ONE action, imperative verb, 15-25 words
 - Use: Dribble, Pass, Sprint, Control, Shoot, Turn, Set up, Place
@@ -646,7 +682,9 @@ INSTRUCTION RULES:
 DIAGRAM RULES:
 - All element x values must be 0 to {field_dims['width']}
 - All element y values must be 0 to {field_dims['length']}
-- element types: "cone", "player", "target", "goal", "ball"
+- element types: "cone", "player", "defender", "server", "wall", "mannequin", "target", "goal", "ball"
+- Use "defender" for opposition players, "server" for feeders/passers, "mannequin" for passive obstacles, "wall" for rebound walls
+- Use "player" only for the main player or generic attackers
 - path styles: "dribble", "run", "pass"
 - EVERY path MUST include a "step" integer (1-indexed) linking it to the corresponding instruction
 - Example: instruction 1 = "Dribble from cone A to cone B" → path {{"from": "A", "to": "B", "style": "dribble", "step": 1}}
