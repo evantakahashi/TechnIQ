@@ -747,8 +747,9 @@ Validate:
 7. SCHEMA: All required fields present with correct types?
 8. REALISM: Are players passing to other players (not cones/markers)? Does every equipment item appear in the diagram? Do movement paths make physical and tactical sense?
 9. PLAYER-FIT: Are distances age-appropriate? Is difficulty matched to experience level? Does the drill target the identified weakness specifically (not generically)?
-10. ROLES: If multi-player, does every player have a clear role and rotation?
-11. SUCCESS CRITERIA: Is there a measurable outcome (e.g., "complete X passes in Y seconds")?
+10. ARCHETYPE-LAYOUT: Does the spatial layout match the drill archetype '{focus_strategy.get('drill_archetype', '')}'? (e.g., triangle_passing should use triangular element placement)
+11. ROLES: If multi-player, does every player have a clear role and rotation?
+12. SUCCESS CRITERIA: Is there a measurable outcome (e.g., "complete X passes in Y seconds")?
 
 Return JSON:
 {{"verdict": "VALID or ERRORS", "errors": [{{"check": "category", "issue": "description", "fix": "suggestion"}}], "score": 0-100}}
