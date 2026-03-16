@@ -94,8 +94,9 @@ class TestPathValidation:
             elements=[make_el("player", 5, 5, "P1"), make_el("cone", 10, 10, "C1")],
             paths=[make_path("P1", "C1", "pass", 1)]
         )
-        _, warnings = post_process_drill(drill, player_age=14)
+        result, warnings = post_process_drill(drill, player_age=14)
         assert any("pass" in w.lower() and "cone" in w.lower() for w in warnings)
+        assert len(result["diagram"]["paths"]) == 0  # invalid pass path removed
 
     def test_pass_to_player_valid(self):
         drill = make_drill(
@@ -215,16 +216,18 @@ class TestPassTargetRejection:
             elements=[make_el("player", 5, 5, "P1"), make_el("mannequin", 10, 10, "M1")],
             paths=[make_path("P1", "M1", "pass", 1)]
         )
-        _, warnings = post_process_drill(drill, player_age=14)
+        result, warnings = post_process_drill(drill, player_age=14)
         assert any("pass" in w.lower() and "mannequin" in w.lower() for w in warnings)
+        assert len(result["diagram"]["paths"]) == 0
 
     def test_pass_to_ball_flagged(self):
         drill = make_drill(
             elements=[make_el("player", 5, 5, "P1"), make_el("ball", 8, 8, "B1")],
             paths=[make_path("P1", "B1", "pass", 1)]
         )
-        _, warnings = post_process_drill(drill, player_age=14)
+        result, warnings = post_process_drill(drill, player_age=14)
         assert any("invalid pass target" in w.lower() for w in warnings)
+        assert len(result["diagram"]["paths"]) == 0
 
 
 # --- Duplicate Path Removal ---
@@ -298,3 +301,11 @@ class TestArchetypeDetection:
     def test_rondo_circle_maps_to_rondo(self):
         from drill_post_processor import map_pattern_to_archetype
         assert map_pattern_to_archetype("rondo_circle") == "rondo"
+
+    def test_channel_pattern_maps_to_server_executor(self):
+        from drill_post_processor import map_pattern_to_archetype
+        assert map_pattern_to_archetype("channel") == "server_executor"
+
+    def test_overlap_run_pattern_maps_to_server_executor(self):
+        from drill_post_processor import map_pattern_to_archetype
+        assert map_pattern_to_archetype("overlap_run") == "server_executor"

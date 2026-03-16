@@ -188,7 +188,7 @@ def _validate_paths(
             warnings.append(f"Removed path: label(s) {', '.join(missing)} not found in elements")
             continue
 
-        # Check pass targets
+        # Check pass targets — invalid targets are removed
         if path.get("style") == "pass":
             target_type = label_to_type.get(to_label, "")
             if target_type not in VALID_PASS_TARGETS:
@@ -196,6 +196,7 @@ def _validate_paths(
                     f"Invalid pass target: pass to {target_type} '{to_label}' — "
                     f"passes can only target player, server, defender, wall, or goal"
                 )
+                continue
 
         valid_paths.append(path)
 
