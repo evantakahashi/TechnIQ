@@ -346,14 +346,23 @@ def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_co
     best_score = 0
     revision_errors = []
 
+    player_age = player_profile.get('age', 14)
+
     for attempt in range(3):
         logger.info(f"✍️ Phase 3: Writer - Attempt {attempt + 1}/3...")
         drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors, player_profile)
 
         # === Post-Process ===
         logger.info("🔧 Post-processing diagram...")
-        player_age = player_profile.get('age', 14)
-        drill, pp_warnings = post_process_drill(drill, player_age=player_age)
+        # Override LLM-authored field dims with authoritative values
+        if "diagram" in drill:
+            drill["diagram"]["field"] = {"width": field_dims["width"], "length": field_dims["length"]}
+        pp_warnings = []
+        try:
+            drill, pp_warnings = post_process_drill(drill, player_age=player_age)
+        except Exception as e:
+            logger.warning(f"⚠️ Post-processor failed: {e}")
+            pp_warnings = [f"Post-processor error: {e}"]
         if pp_warnings:
             logger.info(f"⚠️ Post-processor warnings: {pp_warnings}")
 
@@ -512,7 +521,7 @@ Available archetypes for {exp_level} level: {available_archetypes}
 {position_hint}
 Playing style: {playing_style}
 
-You MUST pick a drill_archetype from the available archetypes list above.
+You MUST pick a drill_archetype from the available archetypes list above. If archetype hints above suggest something not in the list, pick the closest canonical match.
 
 Return JSON:
 {{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
