@@ -196,6 +196,10 @@ struct DiagramPath: Codable {
 enum DiagramElementType: String {
     case cone = "cone"
     case player = "player"
+    case defender = "defender"
+    case server = "server"
+    case wall = "wall"
+    case mannequin = "mannequin"
     case target = "target"
     case goal = "goal"
     case ball = "ball"

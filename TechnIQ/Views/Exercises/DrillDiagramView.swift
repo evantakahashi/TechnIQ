@@ -195,6 +195,14 @@ struct AnimatedDrillDiagramView: View {
             switch element.elementType {
             case .player:
                 playerElementView(label: element.label, isActive: isActive)
+            case .defender:
+                playerElementView(label: element.label, isActive: isActive)
+            case .server:
+                playerElementView(label: element.label, isActive: isActive)
+            case .mannequin:
+                coneElementView(label: element.label)
+            case .wall:
+                coneElementView(label: element.label)
             case .cone:
                 coneElementView(label: element.label)
             case .goal:
