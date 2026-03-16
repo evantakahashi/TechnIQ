@@ -69,8 +69,15 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
 
     Returns:
         Tuple of (fixed_drill_dict, list_of_warning_strings)
+
+    Note: The input drill dict is mutated in place. The returned dict is the same object.
     """
     warnings: List[str] = []
+
+    if not isinstance(player_age, int) or player_age <= 0:
+        warnings.append(f"Invalid player_age '{player_age}' — defaulting to 14")
+        player_age = 14
+
     diagram = drill.get("diagram", {})
     field = diagram.get("field", {"width": 20, "length": 15})
     elements = diagram.get("elements", [])
@@ -89,7 +96,8 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
     elements = _clamp_bounds(elements, width, length)
 
     # 2. Overlap resolution
-    elements = _resolve_overlaps(elements, width, length)
+    elements, overlap_warnings = _resolve_overlaps(elements, width, length)
+    warnings.extend(overlap_warnings)
 
     # 3. Path validation (includes duplicate removal)
     paths, path_warnings = _validate_paths(paths, elements, instructions)
@@ -127,9 +135,11 @@ def _clamp_bounds(elements: List[Dict], width: float, length: float) -> List[Dic
     return elements
 
 
-def _resolve_overlaps(elements: List[Dict], width: float, length: float) -> List[Dict]:
+def _resolve_overlaps(elements: List[Dict], width: float, length: float) -> Tuple[List[Dict], List[str]]:
     """Nudge overlapping elements apart until all have >= MIN_SPACING."""
+    warnings = []
     max_iterations = 50
+    moved = False
     for _ in range(max_iterations):
         moved = False
         for i in range(len(elements)):
@@ -156,7 +166,12 @@ def _resolve_overlaps(elements: List[Dict], width: float, length: float) -> List
                     moved = True
         if not moved:
             break
-    return elements
+    if moved:
+        warnings.append(
+            f"Overlap resolution did not converge after {max_iterations} iterations — "
+            f"field may be too small for {len(elements)} elements"
+        )
+    return elements, warnings
 
 
 def _validate_paths(
@@ -201,9 +216,11 @@ def _validate_paths(
         valid_paths.append(path)
 
     # Check step-instruction alignment
+    # Un-stepped paths (step=None) show on all steps, so they cover every instruction
+    has_unstep_paths = any(p.get("step") is None for p in valid_paths)
     steps_with_paths = {p.get("step") for p in valid_paths if p.get("step") is not None}
     for i in range(1, len(instructions) + 1):
-        if steps_with_paths and i not in steps_with_paths:
+        if steps_with_paths and i not in steps_with_paths and not has_unstep_paths:
             warnings.append(f"Instruction step {i} has no matching diagram path")
 
     # Check for orphan steps (path step > number of instructions)
