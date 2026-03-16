@@ -324,8 +324,9 @@ def parse_llm_json(content: str) -> Dict:
 
 
 def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, field_size: str, anthropic_api_key: str) -> Dict:
-    """4-phase agentic drill generation: Scout → Coach → Writer ⇄ Referee"""
+    """4-phase agentic drill generation: Scout → Coach → Writer → PostProcess → Referee"""
     from anthropic import Anthropic
+    from drill_post_processor import post_process_drill
     client = Anthropic(api_key=anthropic_api_key)
 
     field_dims = get_field_dimensions(field_size)
@@ -349,8 +350,15 @@ def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_co
         logger.info(f"✍️ Phase 3: Writer - Attempt {attempt + 1}/3...")
         drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors)
 
+        # === Post-Process ===
+        logger.info("🔧 Post-processing diagram...")
+        player_age = player_profile.get('age', 14)
+        drill, pp_warnings = post_process_drill(drill, player_age=player_age)
+        if pp_warnings:
+            logger.info(f"⚠️ Post-processor warnings: {pp_warnings}")
+
         logger.info(f"⚖️ Phase 4: Referee - Validating...")
-        validation = phase_referee(client, drill, focus_strategy, requirements, field_dims)
+        validation = phase_referee(client, drill, focus_strategy, requirements, field_dims, pp_warnings)
 
         score = validation.get("score", 0)
         if score > best_score:
@@ -359,11 +367,15 @@ def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_co
 
         if validation.get("verdict") == "VALID":
             logger.info(f"✅ Drill validated on attempt {attempt + 1} (score={score})")
+            if pp_warnings:
+                drill["validationWarnings"] = pp_warnings
             return drill
 
         # Collect errors for next attempt
         errors = validation.get("errors", [])
         revision_errors = [f"{e['check']}: {e['issue']}. Fix: {e['fix']}" for e in errors]
+        if pp_warnings:
+            revision_errors.extend([f"post_process: {w}" for w in pp_warnings])
         logger.info(f"⚠️ Referee found {len(errors)} errors, retrying...")
 
     # After 3 failures: return best attempt with warnings
@@ -628,55 +640,14 @@ Return ONLY valid JSON:
     return parse_llm_json(response.content[0].text)
 
 
-def programmatic_validate(drill: Dict, field_dims: Dict, requirements: Dict) -> List[Dict]:
-    """Run programmatic checks before LLM referee"""
-    errors = []
 
-    # Schema completeness
-    required_fields = ["name", "description", "setup", "instructions", "diagram", "difficulty", "category", "targetSkills", "equipment"]
-    for field in required_fields:
-        if field not in drill:
-            errors.append({"check": "schema", "issue": f"Missing required field: {field}", "fix": f"Add '{field}' to response"})
-
-    # Coordinate bounds
-    diagram = drill.get("diagram", {})
-    elements = diagram.get("elements", [])
-    width = field_dims["width"]
-    length = field_dims["length"]
-    for el in elements:
-        x = el.get("x", 0)
-        y = el.get("y", 0)
-        if x < 0 or x > width:
-            errors.append({"check": "spatial", "issue": f"Element '{el.get('label', '?')}' x={x} exceeds width={width}", "fix": f"Set x to max {width}"})
-        if y < 0 or y > length:
-            errors.append({"check": "spatial", "issue": f"Element '{el.get('label', '?')}' y={y} exceeds length={length}", "fix": f"Set y to max {length}"})
-
-    # Equipment match
-    available = set(requirements.get('equipment', []))
-    if available:
-        drill_equipment = set(drill.get("equipment", []))
-        extra = drill_equipment - available - {"none"}
-        if extra:
-            errors.append({"check": "equipment", "issue": f"Uses unavailable equipment: {', '.join(extra)}", "fix": f"Only use: {', '.join(available)}"})
-
-    # Step-path consistency: every instruction step should have at least one matching path
-    instructions = drill.get("instructions", [])
-    paths = diagram.get("paths", [])
-    if instructions and paths:
-        steps_with_paths = {p.get("step") for p in paths if p.get("step") is not None}
-        for i in range(1, len(instructions) + 1):
-            if steps_with_paths and i not in steps_with_paths:
-                errors.append({"check": "step_path", "issue": f"Instruction step {i} has no matching diagram path", "fix": f"Add a path with 'step': {i}"})
-
-    return errors
-
-
-def phase_referee(client, drill: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict) -> Dict:
-    """Phase 4: Validate drill quality (hybrid: programmatic + LLM)"""
-    # Run programmatic checks first
-    prog_errors = programmatic_validate(drill, field_dims, requirements)
-    if prog_errors:
-        return {"verdict": "ERRORS", "errors": prog_errors, "score": 30}
+def phase_referee(client, drill: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, post_process_warnings: list = None) -> Dict:
+    """Phase 4: Validate drill quality (LLM-only, programmatic checks moved to post-processor)"""
+    pp_context = ""
+    if post_process_warnings:
+        pp_context = "\nPost-processor warnings (already applied fixes where possible):\n"
+        for w in post_process_warnings:
+            pp_context += f"- {w}\n"
 
     # LLM validation
     prompt = f"""Review this soccer drill for quality and correctness.
@@ -689,7 +660,7 @@ Context:
 - Field size: {field_dims['width']}m x {field_dims['length']}m
 - Available equipment: {', '.join(requirements.get('equipment', []))}
 - Difficulty: {requirements.get('difficulty', 'intermediate')}
-
+{pp_context}
 Validate:
 1. SPATIAL: All coordinates within {field_dims['width']}x{field_dims['length']}m?
 2. EQUIPMENT: Only uses available equipment?
