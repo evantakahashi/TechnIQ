@@ -6,8 +6,8 @@ import CoreData
 // MARK: - Cloud ML Service for Advanced Recommendations
 
 @MainActor
-class CloudMLService: ObservableObject {
-    static let shared = CloudMLService()
+class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol {
+    static let shared = AIRecommendationService()
     
     private let db = Firestore.firestore()
     private let auth = Auth.auth()
@@ -713,7 +713,7 @@ class CloudMLService: ObservableObject {
         
         #endif
         // Use the existing CoreDataManager logic but enhance it with ML concepts
-        let coreRecommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: limit * 2)
+        let coreRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: limit * 2)
         
         // Convert to ML format and add ML-specific scoring
         var mlRecommendations: [MLDrillRecommendation] = []
@@ -752,7 +752,7 @@ class CloudMLService: ObservableObject {
         // This simulates what the cloud ML function would return
         // In reality, this would be collaborative filtering + content-based recommendations
         
-        let baseRecommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: limit * 2)
+        let baseRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: limit * 2)
         var mlRecommendations: [MLDrillRecommendation] = []
         
         for (index, rec) in baseRecommendations.enumerated() {
@@ -829,7 +829,7 @@ class CloudMLService: ObservableObject {
         lastRecommendationFetch = Date()
     }
     
-    private func calculateEnhancedConfidence(for rec: YouTubeDataService.DrillRecommendation, player: Player) -> Double {
+    private func calculateEnhancedConfidence(for rec: YouTubeService.DrillRecommendation, player: Player) -> Double {
         // Enhanced confidence calculation that mimics ML scoring
         var confidence = rec.confidenceScore
         
@@ -847,7 +847,7 @@ class CloudMLService: ObservableObject {
         return min(confidence, 1.0)
     }
     
-    private func simulateMLConfidenceScore(for rec: YouTubeDataService.DrillRecommendation, context: UserMLContext) -> Double {
+    private func simulateMLConfidenceScore(for rec: YouTubeService.DrillRecommendation, context: UserMLContext) -> Double {
         // Simulate more sophisticated ML confidence scoring
         var score = rec.confidenceScore
         
@@ -866,7 +866,7 @@ class CloudMLService: ObservableObject {
         return "\(mlInsight): \(originalReasoning)"
     }
     
-    private func extractTargetSkills(from rec: YouTubeDataService.DrillRecommendation) -> [String] {
+    private func extractTargetSkills(from rec: YouTubeService.DrillRecommendation) -> [String] {
         // Extract skills from the recommendation category and description
         var skills: [String] = []
         
@@ -887,7 +887,7 @@ class CloudMLService: ObservableObject {
         return skills
     }
     
-    private func generatePersonalizedInstructions(for rec: YouTubeDataService.DrillRecommendation, player: Player) -> String {
+    private func generatePersonalizedInstructions(for rec: YouTubeService.DrillRecommendation, player: Player) -> String {
         let baseInstructions = "Complete this exercise focusing on proper technique."
         let playerLevel = player.experienceLevel ?? "Beginner"
         
@@ -903,7 +903,7 @@ class CloudMLService: ObservableObject {
         }
     }
     
-    private func estimateImprovement(for rec: YouTubeDataService.DrillRecommendation, player: Player) -> Double {
+    private func estimateImprovement(for rec: YouTubeService.DrillRecommendation, player: Player) -> Double {
         // Estimate expected skill improvement (0.0 - 1.0)
         let baseImprovement = 0.1
         let playerDifficulty = mapExperienceLevelToNumber(player.experienceLevel ?? "Beginner")
@@ -994,7 +994,7 @@ class CloudMLService: ObservableObject {
     
     // MARK: - Helper Functions for Type Conversion
     
-    private func categoryToString(_ category: YouTubeDataService.RecommendationCategory) -> String {
+    private func categoryToString(_ category: YouTubeService.RecommendationCategory) -> String {
         switch category {
         case .skillGap:
             return "Technical"

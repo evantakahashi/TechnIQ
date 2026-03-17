@@ -3,38 +3,25 @@ import CoreData
 import FirebaseAuth
 import FirebaseFirestore
 
-// MARK: - Cloud Restore Service
-// Handles restoration of user data from Firebase when logging in on new/reset device
+// MARK: - CloudService Restore (formerly CloudRestoreService)
 
-@MainActor
-class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
-    static let shared = CloudRestoreService()
-
-    private let cloudDataService = CloudDataService.shared
-    private let coreDataManager = CoreDataManager.shared
-
-    @Published var isRestoring = false
-    @Published var restoreProgress: Double = 0.0
-    @Published var restoreError: String?
-
-    private init() {}
+extension CloudService {
 
     // MARK: - Public Interface
 
     /// Check if cloud data exists for the current authenticated user
-    func hasCloudData() async -> Bool {
+    func hasCloudDataForRestore() async -> Bool {
         do {
-            return try await cloudDataService.hasCloudData()
+            return try await hasCloudData()
         } catch {
             #if DEBUG
-            print("CloudRestoreService: Error checking cloud data - \(error)")
+            print("CloudService: Error checking cloud data - \(error)")
             #endif
             return false
         }
     }
 
     /// Restore all user data from cloud into Core Data
-    /// Returns the restored Player entity or nil if restoration failed
     func restoreFromCloud() async throws -> Player? {
         let context = CoreDataManager.shared.context
         guard Auth.auth().currentUser != nil else {
@@ -51,71 +38,60 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
 
         do {
             #if DEBUG
-            print("CloudRestoreService: Starting cloud restore...")
+            print("CloudService: Starting cloud restore...")
             #endif
 
-            // Fetch all cloud data
             restoreProgress = 0.1
-            let cloudData = try await cloudDataService.fetchAllUserData()
+            let cloudData = try await fetchAllUserData()
 
             guard let profileData = cloudData.playerProfiles.first else {
                 throw CloudRestoreError.noDataFound
             }
 
-            // Create Player entity
             restoreProgress = 0.2
             let player = try createPlayer(from: profileData, in: context)
 
-            // Restore PlayerProfile
             restoreProgress = 0.3
             try restorePlayerProfile(from: profileData, for: player, in: context)
 
-            // Restore gamification data
             restoreProgress = 0.4
             restoreGamificationData(from: profileData, to: player)
 
-            // Restore avatar configuration
             restoreProgress = 0.5
             if let avatarData = cloudData.avatarConfiguration {
                 try restoreAvatarConfiguration(from: avatarData, for: player, in: context)
             }
 
-            // Restore owned avatar items
             restoreProgress = 0.55
             for itemData in cloudData.ownedAvatarItems {
                 try restoreOwnedAvatarItem(from: itemData, for: player, in: context)
             }
 
-            // Restore player goals
             restoreProgress = 0.6
             for goalData in cloudData.playerGoals {
                 try restorePlayerGoal(from: goalData, for: player, in: context)
             }
 
-            // Restore custom exercises
             restoreProgress = 0.7
             for exerciseData in cloudData.customExercises {
                 try restoreCustomExercise(from: exerciseData, for: player, in: context)
             }
 
-            // Restore training sessions
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions {
                 try restoreTrainingSession(from: sessionData, for: player, in: context)
             }
 
-            // Restore training plans
             restoreProgress = 0.9
             for planData in cloudData.trainingPlans {
                 try restoreTrainingPlan(from: planData, for: player, in: context)
             }
 
-            // Save context
             restoreProgress = 1.0
             try context.save()
 
             #if DEBUG
-            print("CloudRestoreService: Restore completed successfully")
+            print("CloudService: Restore completed successfully")
             #endif
 
             return player
@@ -123,7 +99,7 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
         } catch {
             restoreError = error.localizedDescription
             #if DEBUG
-            print("CloudRestoreService: Restore failed - \(error)")
+            print("CloudService: Restore failed - \(error)")
             #endif
             throw error
         }
@@ -270,7 +246,6 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
         session.player = player
         player.addToSessions(session)
 
-        // Restore session exercises
         if let exercisesData = data["exercises"] as? [[String: Any]] {
             for exerciseData in exercisesData {
                 let sessionExercise = SessionExercise(context: context)
@@ -311,7 +286,6 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
         plan.player = player
         player.addToTrainingPlans(plan)
 
-        // Restore weeks
         if let weeksData = data["weeks"] as? [[String: Any]] {
             for weekData in weeksData {
                 try restorePlanWeek(from: weekData, for: plan, in: context)
@@ -334,7 +308,6 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
         week.plan = plan
         plan.addToWeeks(week)
 
-        // Restore days
         if let daysData = data["days"] as? [[String: Any]] {
             for dayData in daysData {
                 try restorePlanDay(from: dayData, for: week, in: context)
@@ -359,7 +332,6 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
         day.week = week
         week.addToDays(day)
 
-        // Restore sessions
         if let sessionsData = data["sessions"] as? [[String: Any]] {
             for sessionData in sessionsData {
                 try restorePlanSession(from: sessionData, for: day, in: context)
@@ -389,9 +361,7 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
 
     // MARK: - Conflict Resolution
 
-    /// Merge local and cloud data, resolving conflicts according to strategy
     func mergeWithConflictResolution(local: Player, cloudData: [String: Any]) {
-        // XP/Coins: Take higher value
         let cloudXP = Int64(cloudData["totalXP"] as? Int ?? 0)
         if cloudXP > local.totalXP {
             local.totalXP = cloudXP
@@ -407,10 +377,8 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
             local.totalCoinsEarned = cloudTotalCoins
         }
 
-        // Level: Recalculate from XP
-        local.currentLevel = Int16(calculateLevel(from: local.totalXP))
+        local.currentLevel = Int16(XPService.shared.levelForXP(local.totalXP))
 
-        // Streak: Take higher if cloud date recent
         let cloudStreak = Int16(cloudData["currentStreak"] as? Int ?? 0)
         let cloudLongestStreak = Int16(cloudData["longestStreak"] as? Int ?? 0)
 
@@ -425,32 +393,8 @@ class CloudRestoreService: ObservableObject, CloudRestoreServiceProtocol {
             local.longestStreak = cloudLongestStreak
         }
 
-        // Achievements: Union of both sets
         let localAchievements = Set(local.unlockedAchievements ?? [])
         let cloudAchievements = Set(cloudData["unlockedAchievements"] as? [String] ?? [])
         local.unlockedAchievements = Array(localAchievements.union(cloudAchievements))
-    }
-
-    private func calculateLevel(from xp: Int64) -> Int {
-        return XPService.shared.levelForXP(xp)
-    }
-}
-
-// MARK: - Errors
-
-enum CloudRestoreError: LocalizedError {
-    case notAuthenticated
-    case noDataFound
-    case restorationFailed(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "User not authenticated"
-        case .noDataFound:
-            return "No cloud data found for this account"
-        case .restorationFailed(let message):
-            return "Restoration failed: \(message)"
-        }
     }
 }

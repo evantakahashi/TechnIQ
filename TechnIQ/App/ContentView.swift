@@ -56,7 +56,7 @@ struct PlayerContentView: View {
 
     @FetchRequest var players: FetchedResults<Player>
 
-    @StateObject private var restoreService = CloudRestoreService.shared
+    @StateObject private var restoreService = CloudService.shared
     @State private var isCheckingCloud = false
     @State private var hasCheckedCloud = false
     @State private var restoreError: String?
@@ -133,7 +133,7 @@ struct PlayerContentView: View {
 
         Task {
             do {
-                let hasData = await restoreService.hasCloudData()
+                let hasData = await restoreService.hasCloudDataForRestore()
 
                 if hasData {
                     #if DEBUG

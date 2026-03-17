@@ -1,96 +1,42 @@
 import Foundation
-import FirebaseFirestore
 import FirebaseAuth
-import Network
+import FirebaseFirestore
 
-// MARK: - Cloud Data Service for Firebase Firestore Integration
+// MARK: - CloudService Upload (formerly CloudDataService)
 
-@MainActor
-class CloudDataService: ObservableObject, CloudDataServiceProtocol {
-    static let shared = CloudDataService()
-    
-    let db = Firestore.firestore()
-    private let auth = Auth.auth()
-    private let networkMonitor = NWPathMonitor()
-    private let networkQueue = DispatchQueue(label: "NetworkMonitor")
-    
-    @Published var syncStatus: CloudSyncStatus = .idle
-    @Published var lastSyncDate: Date?
-    @Published var isNetworkAvailable = true
-    
-    enum CloudSyncStatus {
-        case idle
-        case syncing
-        case success
-        case error(String)
-    }
-    
-    private init() {
-        setupFirestore()
-        startNetworkMonitoring()
-    }
-    
-    deinit {
-        networkMonitor.cancel()
-    }
-    
-    // MARK: - Firestore Configuration
-    
-    private func setupFirestore() {
-        let settings = FirestoreSettings()
-        // Use only supported settings - removed deprecated ones
-        settings.cacheSettings = MemoryCacheSettings()
-        db.settings = settings
-    }
-    
-    private func startNetworkMonitoring() {
-        networkMonitor.pathUpdateHandler = { [weak self] path in
-            let isAvailable = path.status == .satisfied
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                self.isNetworkAvailable = isAvailable
-                if !isAvailable {
-                    #if DEBUG
-                    print("🌐 Network connection lost - will skip cloud sync operations")
-                    #endif
-                }
-            }
-        }
-        networkMonitor.start(queue: networkQueue)
-    }
-    
+extension CloudService {
+
     // MARK: - Player Profile Sync
-    
+
     func syncPlayerProfile(_ player: Player, with profile: PlayerProfile) async throws {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
+
         guard isNetworkAvailable else {
             throw CloudDataError.networkError
         }
-        
+
         syncStatus = .syncing
-        
+
         do {
             let playerData = try createPlayerProfileDocument(player: player, profile: profile)
-            
+
             try await db.collection("users").document(userUID)
                 .collection("playerProfiles").document(player.id?.uuidString ?? UUID().uuidString)
                 .setData(playerData, merge: true)
-            
-            // Update local sync status
+
             player.lastCloudSync = Date()
-            
+
             syncStatus = .success
             lastSyncDate = Date()
-            
+
         } catch {
             syncStatus = .error(error.localizedDescription)
             throw error
         }
     }
-    
+
     func syncPlayerGoals(_ goals: [PlayerGoal], for player: Player) async throws {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
@@ -103,25 +49,25 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
             batch.setData(goalData, forDocument: docRef, merge: true)
         }
     }
-    
+
     // MARK: - Training Session Sync
-    
+
     func syncTrainingSession(_ session: TrainingSession) async throws {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
+
         guard isNetworkAvailable else {
             throw CloudDataError.networkError
         }
-        
+
         let sessionData = try createTrainingSessionDocument(session: session)
-        
+
         try await db.collection("users").document(userUID)
             .collection("trainingSessions").document(session.id?.uuidString ?? UUID().uuidString)
             .setData(sessionData, merge: true)
     }
-    
+
     // MARK: - Recommendation Feedback Sync
 
     func syncRecommendationFeedback(_ feedback: [RecommendationFeedback]) async throws {
@@ -168,7 +114,7 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
         }
     }
 
-    // MARK: - Custom Exercises (Drills) Sync
+    // MARK: - Custom Exercises Sync
 
     func syncCustomExercises(_ exercises: [Exercise], for player: Player) async throws {
         guard let userUID = auth.currentUser?.uid else {
@@ -200,20 +146,20 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
             .collection("trainingPlans").document(plan.id?.uuidString ?? UUID().uuidString)
             .setData(planData, merge: true)
     }
-    
+
     // MARK: - Data Retrieval
-    
+
     func fetchPlayerProfile(for playerID: String) async throws -> [String: Any]? {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }
-        
+
         let document = try await db.collection("users").document(userUID)
             .collection("playerProfiles").document(playerID).getDocument()
-        
+
         return document.data()
     }
-    
+
     func fetchAllUserData() async throws -> CloudUserData {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
@@ -221,7 +167,6 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
 
         let userRef = db.collection("users").document(userUID)
 
-        // Fetch all collections in parallel
         async let profilesSnapshot = userRef.collection("playerProfiles").getDocuments()
         async let goalsSnapshot = userRef.collection("playerGoals").getDocuments()
         async let sessionsSnapshot = userRef.collection("trainingSessions").getDocuments()
@@ -263,38 +208,30 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
 
         return !profilesSnapshot.documents.isEmpty
     }
-    
+
     // MARK: - Analytics and ML Data Collection
-    
+
     func submitMLAnalyticsData(_ data: MLAnalyticsData) async throws {
         let analyticsData = try createMLAnalyticsDocument(data: data)
-        
+
         try await db.collection("mlAnalytics").document(data.sessionId).setData(analyticsData, merge: true)
     }
-    
+
     func fetchSimilarPlayerProfiles(for playerProfile: PlayerProfile, limit: Int = 10) async throws -> [CloudPlayerProfile] {
-        // Query for players with similar skill goals and attributes
         let skillGoalsQuery = db.collection("aggregatedProfiles")
             .whereField("skillGoals", arrayContainsAny: playerProfile.skillGoals ?? [])
             .limit(to: limit)
-        
+
         let snapshot = try await skillGoalsQuery.getDocuments()
         return snapshot.documents.compactMap { document in
             try? createCloudPlayerProfile(from: document.data())
         }
     }
-    
+
     // MARK: - Offline Queue Management
 
     func syncOfflineChanges() async throws {
-        // Implement offline change queue sync
-        // This would sync any changes made while offline
         syncStatus = .syncing
-
-        // Fetch pending changes from Core Data
-        // Sync each change type in order
-        // Mark changes as synced
-
         syncStatus = .success
         lastSyncDate = Date()
     }
@@ -319,32 +256,12 @@ class CloudDataService: ObservableObject, CloudDataServiceProtocol {
         print("✅ Successfully shared plan '\(plan.name)' to community")
         #endif
     }
-
-    // MARK: - Batch Chunking
-
-    /// Commits items in batches of 450 to stay under Firestore's 500-operation limit.
-    private func commitInChunks<T>(
-        _ items: [T],
-        using buildBatch: (WriteBatch, T) throws -> Void
-    ) async throws {
-        let chunkSize = 450
-        for startIndex in stride(from: 0, to: items.count, by: chunkSize) {
-            let endIndex = min(startIndex + chunkSize, items.count)
-            let chunk = Array(items[startIndex..<endIndex])
-
-            let batch = db.batch()
-            for item in chunk {
-                try buildBatch(batch, item)
-            }
-            try await batch.commit()
-        }
-    }
 }
 
 // MARK: - Document Creation Helpers
 
-extension CloudDataService {
-    private func createPlayerProfileDocument(player: Player, profile: PlayerProfile) throws -> [String: Any] {
+extension CloudService {
+    func createPlayerProfileDocument(player: Player, profile: PlayerProfile) throws -> [String: Any] {
         return [
             "playerId": player.id?.uuidString ?? "",
             "firebaseUID": player.firebaseUID ?? "",
@@ -366,7 +283,6 @@ extension CloudDataService {
             "preferredDrillComplexity": profile.preferredDrillComplexity ?? "",
             "yearsPlaying": profile.yearsPlaying,
             "trainingBackground": profile.trainingBackground ?? "",
-            // Gamification data
             "totalXP": player.totalXP,
             "currentLevel": player.currentLevel,
             "currentStreak": player.currentStreak,
@@ -380,7 +296,7 @@ extension CloudDataService {
             "updatedAt": Date()
         ]
     }
-    
+
     private func createPlayerGoalDocument(goal: PlayerGoal) throws -> [String: Any] {
         return [
             "goalId": goal.id?.uuidString ?? "",
@@ -395,7 +311,7 @@ extension CloudDataService {
             "updatedAt": Date()
         ] as [String: Any]
     }
-    
+
     private func createTrainingSessionDocument(session: TrainingSession) throws -> [String: Any] {
         var exercisesData: [[String: Any]] = []
         if let exercises = session.exercises as? Set<SessionExercise> {
@@ -411,7 +327,7 @@ extension CloudDataService {
                 ]
             }
         }
-        
+
         return [
             "sessionId": session.id?.uuidString ?? "",
             "playerId": session.player?.id?.uuidString ?? "",
@@ -425,7 +341,7 @@ extension CloudDataService {
             "exercises": exercisesData
         ]
     }
-    
+
     private func createRecommendationFeedbackDocument(feedback: RecommendationFeedback) throws -> [String: Any] {
         return [
             "feedbackId": feedback.id?.uuidString ?? "",
@@ -442,7 +358,7 @@ extension CloudDataService {
             "createdAt": feedback.createdAt ?? Date()
         ]
     }
-    
+
     private func createMLAnalyticsDocument(data: MLAnalyticsData) throws -> [String: Any] {
         return [
             "sessionId": data.sessionId,
@@ -505,7 +421,6 @@ extension CloudDataService {
     }
 
     private func createTrainingPlanDocument(plan: TrainingPlan) -> [String: Any] {
-        // Serialize weeks with full progress state
         var weeksData: [[String: Any]] = []
         if let weeks = plan.weeks as? Set<PlanWeek> {
             weeksData = weeks.sorted { $0.weekNumber < $1.weekNumber }.map { week in
@@ -575,7 +490,7 @@ extension CloudDataService {
             "weeks": weeksData
         ] as [String: Any]
     }
-    
+
     private func createCloudPlayerProfile(from data: [String: Any]) throws -> CloudPlayerProfile {
         return CloudPlayerProfile(
             playerId: data["playerId"] as? String ?? "",
@@ -589,7 +504,6 @@ extension CloudDataService {
     }
 
     private func createSharedPlanDocument(plan: TrainingPlanModel, message: String, userUID: String) throws -> [String: Any] {
-        // Serialize weeks
         let weeksData = plan.weeks.map { week -> [String: Any] in
             let daysData = week.days.map { day -> [String: Any] in
                 let sessionsData = day.sessions.map { session -> [String: Any] in
@@ -635,71 +549,5 @@ extension CloudDataService {
             "upvotes": 0,
             "downloads": 0
         ] as [String: Any]
-    }
-}
-
-// MARK: - Data Models
-
-struct CloudUserData {
-    let playerProfiles: [[String: Any]]
-    let playerGoals: [[String: Any]]
-    let trainingSessions: [[String: Any]]
-    let recommendationFeedback: [[String: Any]]
-    let avatarConfiguration: [String: Any]?
-    let ownedAvatarItems: [[String: Any]]
-    let customExercises: [[String: Any]]
-    let trainingPlans: [[String: Any]]
-}
-
-struct CloudPlayerProfile {
-    let playerId: String
-    let skillGoals: [String]
-    let experienceLevel: String
-    let competitiveLevel: String
-    let position: String
-    let preferredIntensity: Int
-    let physicalFocusAreas: [String]
-}
-
-struct MLAnalyticsData {
-    let sessionId: String
-    let playerId: String
-    let timestamp: Date
-    let eventType: MLEventType
-    let exerciseId: String?
-    let userAction: String
-    let contextData: [String: Any]
-    let deviceInfo: [String: String]
-    
-    enum MLEventType: String, CaseIterable {
-        case sessionStart = "session_start"
-        case exerciseView = "exercise_view"
-        case exerciseComplete = "exercise_complete"
-        case feedbackSubmit = "feedback_submit"
-        case recommendationView = "recommendation_view"
-        case recommendationClick = "recommendation_click"
-        case sessionComplete = "session_complete"
-    }
-}
-
-// MARK: - Errors
-
-enum CloudDataError: LocalizedError {
-    case notAuthenticated
-    case invalidData
-    case networkError
-    case syncFailed(String)
-    
-    var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "User not authenticated"
-        case .invalidData:
-            return "Invalid data format"
-        case .networkError:
-            return "Network connection error"
-        case .syncFailed(let message):
-            return "Sync failed: \(message)"
-        }
     }
 }

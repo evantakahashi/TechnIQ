@@ -7,7 +7,7 @@ struct ExerciseLibraryView: View {
     let player: Player
 
     @State private var allExercises: [Exercise] = []
-    @State private var recommendations: [YouTubeDataService.DrillRecommendation] = []
+    @State private var recommendations: [YouTubeService.DrillRecommendation] = []
     @State private var searchText = ""
     @State private var selectedExercise: Exercise?
     @State private var showingExerciseDetail = false
@@ -859,10 +859,17 @@ struct ExerciseLibraryView: View {
         allExercises = CoreDataManager.shared.fetchExercises(for: player)
         favoriteExercises = CoreDataManager.shared.fetchFavoriteExercises(for: player)
         recentlyUsedExercises = CoreDataManager.shared.fetchRecentlyUsedExercises(for: player, limit: 5)
+        #if DEBUG
+        let aiCount = allExercises.filter { $0.isAIGenerated }.count
+        print("📋 loadExercises: \(allExercises.count) total, \(aiCount) AI-generated")
+        for ex in allExercises where ex.isAIGenerated {
+            print("  ✅ AI: \(ex.name ?? "nil") | desc prefix: \(String(ex.exerciseDescription?.prefix(50) ?? "nil"))")
+        }
+        #endif
     }
 
     private func loadRecommendations() {
-        recommendations = YouTubeDataService.shared.getSmartRecommendations(for: player, limit: 3)
+        recommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
     }
 
     private func loadYouTubeContent() {
@@ -877,9 +884,9 @@ struct ExerciseLibraryView: View {
 
     private func performYouTubeLoading() async {
         do {
-            // Try LLM-powered CloudMLService first
+            // Try LLM-powered AIRecommendationService first
             do {
-                let youtubeRecommendations = try await CloudMLService.shared.getYouTubeRecommendations(
+                let youtubeRecommendations = try await AIRecommendationService.shared.getYouTubeRecommendations(
                     for: player,
                     limit: 3
                 )
@@ -887,7 +894,7 @@ struct ExerciseLibraryView: View {
                 // Convert YouTube recommendations to exercises
                 await MainActor.run {
                     for recommendation in youtubeRecommendations {
-                        _ = YouTubeDataService.shared.createExerciseFromYouTubeVideo(
+                        _ = YouTubeService.shared.createExerciseFromYouTubeVideo(
                             for: player,
                             videoId: recommendation.videoId,
                             title: recommendation.title,
@@ -904,7 +911,7 @@ struct ExerciseLibraryView: View {
 
             } catch {
                 // Fallback to local YouTube search
-                try await YouTubeDataService.shared.loadYouTubeDrillsFromAPI(
+                try await YouTubeService.shared.loadYouTubeDrillsFromAPI(
                     for: player,
                     category: nil,
                     maxResults: 3,

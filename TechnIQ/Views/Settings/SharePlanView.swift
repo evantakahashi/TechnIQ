@@ -207,7 +207,7 @@ struct SharePlanView: View {
 
         Task {
             do {
-                try await CloudDataService.shared.shareTrainingPlan(plan, message: shareMessage)
+                try await CloudService.shared.shareTrainingPlan(plan, message: shareMessage)
 
                 await MainActor.run {
                     isSharing = false

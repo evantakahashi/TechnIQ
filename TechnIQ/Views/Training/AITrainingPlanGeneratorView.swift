@@ -582,7 +582,7 @@ struct AITrainingPlanGeneratorView: View {
                 let restDayStrings = restDays.sorted().map { $0.rawValue }
 
                 // Call AI generation service
-                let structure = try await CloudMLService.shared.generateTrainingPlan(
+                let structure = try await AIRecommendationService.shared.generateTrainingPlan(
                     for: player,
                     duration: duration,
                     difficulty: difficulty.rawValue,

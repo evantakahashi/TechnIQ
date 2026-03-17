@@ -346,7 +346,7 @@ struct FirestoreCollections {
 
 // MARK: - Firestore Query Helpers
 
-extension CloudDataService {
+extension CloudService {
     
     // Get recommendations for user
     func getRecommendationsQuery(for playerId: String, limit: Int = 10) -> Query {

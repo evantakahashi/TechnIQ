@@ -784,8 +784,8 @@ struct UnifiedOnboardingView: View {
 
         // Sync to Firebase/Cloud
         Task {
-            await CloudSyncManager.shared.performFullSync()
-            await CloudSyncManager.shared.trackUserEvent(.sessionStart, contextData: [
+            await CloudService.shared.performFullSync()
+            await CloudService.shared.trackUserEvent(.sessionStart, contextData: [
                 "onboarding_completed": true,
                 "player_name": playerName
             ])
@@ -824,7 +824,7 @@ struct UnifiedOnboardingView: View {
                 let preferredDays = mapFrequencyToDays(selectedFrequency)
                 let restDays = DayOfWeek.allCases.map(\.rawValue).filter { !preferredDays.contains($0) }
 
-                let structure = try await CloudMLService.shared.generateTrainingPlan(
+                let structure = try await AIRecommendationService.shared.generateTrainingPlan(
                     for: player,
                     duration: 4,
                     difficulty: difficulty,
