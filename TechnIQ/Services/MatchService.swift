@@ -3,8 +3,10 @@ import CoreData
 
 /// Service for managing matches and seasons
 @MainActor
-final class MatchService: MatchServiceProtocol {
+final class MatchService: ObservableObject, MatchServiceProtocol {
     static let shared = MatchService()
+
+    @Published private(set) var lastError: ServiceError?
 
     private let context: NSManagedObjectContext
 
@@ -80,9 +82,8 @@ final class MatchService: MatchServiceProtocol {
         do {
             return try context.fetch(request)
         } catch {
-            #if DEBUG
-            print("Error fetching matches: \(error)")
-            #endif
+            AppLogger.shared.error("Error fetching matches: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return []
         }
     }
@@ -99,9 +100,8 @@ final class MatchService: MatchServiceProtocol {
         do {
             return try context.fetch(request)
         } catch {
-            #if DEBUG
-            print("Error fetching matches by date: \(error)")
-            #endif
+            AppLogger.shared.error("Error fetching matches by date: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return []
         }
     }
@@ -145,9 +145,8 @@ final class MatchService: MatchServiceProtocol {
         do {
             return try context.fetch(request)
         } catch {
-            #if DEBUG
-            print("Error fetching seasons: \(error)")
-            #endif
+            AppLogger.shared.error("Error fetching seasons: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return []
         }
     }
@@ -161,9 +160,8 @@ final class MatchService: MatchServiceProtocol {
         do {
             return try context.fetch(request).first
         } catch {
-            #if DEBUG
-            print("Error fetching active season: \(error)")
-            #endif
+            AppLogger.shared.error("Error fetching active season: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return nil
         }
     }
@@ -296,9 +294,8 @@ final class MatchService: MatchServiceProtocol {
         do {
             try context.save()
         } catch {
-            #if DEBUG
-            print("Error saving match context: \(error)")
-            #endif
+            AppLogger.shared.error("Error saving match context: \(error)")
+            lastError = .coreData(error.localizedDescription)
         }
     }
 }
