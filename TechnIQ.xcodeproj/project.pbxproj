@@ -119,6 +119,7 @@
 		DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */; };
 		DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636242E133100001E8CF9 /* CoreDataManager.swift */; };
 		DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636262E133100001E8CF9 /* DashboardView.swift */; };
+		DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */; };
 		DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636282E133100001E8CF9 /* EditProfileView.swift */; };
 		DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */; };
 		DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362C2E133100001E8CF9 /* NewSessionView.swift */; };
@@ -351,6 +352,7 @@
 		DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		DF1636242E133100001E8CF9 /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
 		DF1636262E133100001E8CF9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardComponents.swift; sourceTree = "<group>"; };
 		DF1636282E133100001E8CF9 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryView.swift; sourceTree = "<group>"; };
 		DF16362C2E133100001E8CF9 /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
@@ -693,6 +695,7 @@
 			isa = PBXGroup;
 			children = (
 				DF1636262E133100001E8CF9 /* DashboardView.swift */,
+				DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */,
 			);
 			name = Dashboard;
 			path = Dashboard;
@@ -1067,6 +1070,7 @@
 				DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */,
 				DF48B9E52ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift in Sources */,
 				DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */,
+				DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */,
 				DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */,
 				DFE9F2FB2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
 				DF48B9D72ED5244200F7AC05 /* TrainingPlanModels.swift in Sources */,
