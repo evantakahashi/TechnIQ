@@ -1,6 +1,7 @@
 import XCTest
 @testable import TechnIQ
 
+@MainActor
 final class ActiveSessionManagerTests: XCTestCase {
     var stack: TestCoreDataStack!
 

@@ -4,6 +4,7 @@ import Combine
 
 /// Service for managing player coin economy
 /// Handles awarding, deducting, and tracking coins
+@MainActor
 final class CoinService: ObservableObject, CoinServiceProtocol {
     static let shared = CoinService()
 
@@ -57,17 +58,15 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
             try ctx.save()
             let newBalance = Int(player.coins)
 
-            // Update published properties on main thread
-            DispatchQueue.main.async { [weak self] in
-                self?.currentBalance = newBalance
-                self?.lastTransaction = CoinTransaction(
-                    amount: amount,
-                    type: .earned,
-                    reason: reason.displayName,
-                    timestamp: Date(),
-                    balanceAfter: newBalance
-                )
-            }
+            // Already on main actor — update directly
+            currentBalance = newBalance
+            lastTransaction = CoinTransaction(
+                amount: amount,
+                type: .earned,
+                reason: reason.displayName,
+                timestamp: Date(),
+                balanceAfter: newBalance
+            )
 
             #if DEBUG
             print("[CoinService] Awarded \(amount) coins for: \(reason.displayName). Balance: \(previousBalance) -> \(newBalance)")
@@ -113,17 +112,15 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
             try ctx.save()
             let newBalance = Int(player.coins)
 
-            // Update published properties on main thread
-            DispatchQueue.main.async { [weak self] in
-                self?.currentBalance = newBalance
-                self?.lastTransaction = CoinTransaction(
-                    amount: amount,
-                    type: .spent,
-                    reason: reason,
-                    timestamp: Date(),
-                    balanceAfter: newBalance
-                )
-            }
+            // Already on main actor — update directly
+            currentBalance = newBalance
+            lastTransaction = CoinTransaction(
+                amount: amount,
+                type: .spent,
+                reason: reason,
+                timestamp: Date(),
+                balanceAfter: newBalance
+            )
 
             #if DEBUG
             print("[CoinService] Deducted \(amount) coins for: \(reason). Balance: \(currentCoins) -> \(newBalance)")
@@ -166,15 +163,13 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
 
     /// Refresh the current balance from Core Data
     func loadCurrentBalance() {
-        let balance = getBalance()
-        DispatchQueue.main.async { [weak self] in
-            self?.currentBalance = balance
-        }
+        currentBalance = getBalance()
     }
 
     // MARK: - Convenience Methods for Common Events
 
     /// Award coins for completing a training session
+    /// Accumulates all bonuses and performs a single Core Data save.
     /// - Parameters:
     ///   - duration: Session duration in minutes
     ///   - isFirstOfDay: Whether this is the first session today
@@ -190,42 +185,68 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
         streakDay: Int,
         context: NSManagedObjectContext? = nil
     ) -> Int {
-        var totalCoins = 0
+        let ctx = context ?? coreDataManager.context
+        guard let player = coreDataManager.getCurrentPlayer() else {
+            #if DEBUG
+            print("[CoinService] No player found for session coins")
+            #endif
+            return 0
+        }
 
-        // Base session completion coins
+        var totalCoins = 0
+        let lastReason: CoinEarningEvent
+
+        // Base session completion
         let sessionCoins = CoinEarningEvent.sessionCompleted(duration: duration).coins
-        awardCoins(sessionCoins, for: .sessionCompleted(duration: duration), context: context)
         totalCoins += sessionCoins
+        lastReason = .sessionCompleted(duration: duration)
 
         // First session of day bonus
         if isFirstOfDay {
-            let bonus = CoinEarningEvent.firstSessionOfDay.coins
-            awardCoins(bonus, for: .firstSessionOfDay, context: context)
-            totalCoins += bonus
+            totalCoins += CoinEarningEvent.firstSessionOfDay.coins
         }
 
         // Perfect rating bonus
-        if let rating = rating, rating == 5 {
-            let bonus = CoinEarningEvent.fiveStarRating.coins
-            awardCoins(bonus, for: .fiveStarRating, context: context)
-            totalCoins += bonus
+        if let r = rating, r == 5 {
+            totalCoins += CoinEarningEvent.fiveStarRating.coins
         }
 
         // Streak bonus
         if streakDay > 0 {
-            let streakBonus = CoinEarningEvent.dailyStreakBonus(streakDay: streakDay).coins
-            awardCoins(streakBonus, for: .dailyStreakBonus(streakDay: streakDay), context: context)
-            totalCoins += streakBonus
-
-            // Weekly milestone (every 7 days)
+            totalCoins += CoinEarningEvent.dailyStreakBonus(streakDay: streakDay).coins
             if streakDay % 7 == 0 {
-                let weeklyBonus = CoinEarningEvent.weeklyStreakMilestone.coins
-                awardCoins(weeklyBonus, for: .weeklyStreakMilestone, context: context)
-                totalCoins += weeklyBonus
+                totalCoins += CoinEarningEvent.weeklyStreakMilestone.coins
             }
         }
 
-        return totalCoins
+        guard totalCoins > 0 else { return 0 }
+
+        let previousBalance = Int(player.coins)
+        player.coins += Int64(totalCoins)
+        player.totalCoinsEarned += Int64(totalCoins)
+
+        do {
+            try ctx.save()
+            let newBalance = Int(player.coins)
+            currentBalance = newBalance
+            lastTransaction = CoinTransaction(
+                amount: totalCoins,
+                type: .earned,
+                reason: lastReason.displayName,
+                timestamp: Date(),
+                balanceAfter: newBalance
+            )
+            #if DEBUG
+            print("[CoinService] Session coins: +\(totalCoins). Balance: \(previousBalance) -> \(newBalance)")
+            #endif
+            return totalCoins
+        } catch {
+            #if DEBUG
+            print("[CoinService] Failed to save session coins: \(error)")
+            #endif
+            ctx.rollback()
+            return 0
+        }
     }
 
     /// Award coins for leveling up
@@ -271,6 +292,7 @@ struct CoinTransaction: Identifiable {
 // MARK: - Coin Balance View Model
 
 /// Observable view model for coin display components
+@MainActor
 final class CoinBalanceViewModel: ObservableObject {
     @Published var balance: Int = 0
     @Published var animatingAmount: Int?
@@ -281,7 +303,6 @@ final class CoinBalanceViewModel: ObservableObject {
     init() {
         // Subscribe to balance updates
         coinService.$currentBalance
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] newBalance in
                 self?.balance = newBalance
             }
@@ -289,7 +310,6 @@ final class CoinBalanceViewModel: ObservableObject {
 
         // Subscribe to transactions for animations
         coinService.$lastTransaction
-            .receive(on: DispatchQueue.main)
             .compactMap { $0 }
             .sink { [weak self] transaction in
                 self?.animatingAmount = transaction.type == .earned ? transaction.amount : -transaction.amount
@@ -301,7 +321,7 @@ final class CoinBalanceViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // Load initial balance
-        balance = coinService.getBalance()
+        balance = coinService.currentBalance
     }
 
     func refresh() {

@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol TrainingPlanServiceProtocol: AnyObject {
     var activePlan: TrainingPlanModel? { get }
     var availablePlans: [TrainingPlanModel] { get }

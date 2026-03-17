@@ -1,6 +1,7 @@
 import XCTest
 @testable import TechnIQ
 
+@MainActor
 final class CoinServiceTests: XCTestCase {
 
     // MARK: - CoinEarningEvent Calculations

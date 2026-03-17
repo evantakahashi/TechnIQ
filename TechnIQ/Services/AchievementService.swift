@@ -42,6 +42,7 @@ enum AchievementRequirement {
 }
 
 /// Service responsible for tracking and awarding achievements
+@MainActor
 final class AchievementService: AchievementServiceProtocol {
     static let shared = AchievementService()
 

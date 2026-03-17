@@ -454,18 +454,11 @@ class CloudSyncManager: ObservableObject, CloudSyncManagerProtocol {
 
 extension CloudSyncManager {
     func setupSyncNotifications() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleCoreDataChange),
-            name: .NSManagedObjectContextDidSave,
-            object: coreDataManager.context
-        )
-    }
-    
-    @objc private func handleCoreDataChange(_ notification: Notification) {
-        // Trigger sync when Core Data changes occur
-        Task {
-            await performIncrementalSync()
+        Task { [weak self] in
+            let notifications = NotificationCenter.default.notifications(named: .NSManagedObjectContextDidSave)
+            for await _ in notifications {
+                await self?.performIncrementalSync()
+            }
         }
     }
 }

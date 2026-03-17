@@ -1,6 +1,7 @@
 import XCTest
 @testable import TechnIQ
 
+@MainActor
 final class XPServiceTests: XCTestCase {
     var sut: XPService!
     var stack: TestCoreDataStack!

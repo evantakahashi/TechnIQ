@@ -3,6 +3,7 @@ import CoreData
 import Combine
 
 /// Service for managing player avatar configuration and inventory
+@MainActor
 final class AvatarService: ObservableObject {
     static let shared = AvatarService()
 
@@ -39,10 +40,7 @@ final class AvatarService: ObservableObject {
             createDefaultAvatarConfiguration(for: player, context: context)
         }
 
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.currentAvatarState = self.avatarState(from: player.avatarConfiguration)
-        }
+        currentAvatarState = avatarState(from: player.avatarConfiguration)
     }
 
     /// Get avatar state for current player
@@ -93,9 +91,7 @@ final class AvatarService: ObservableObject {
         do {
             try ctx.save()
 
-            DispatchQueue.main.async { [weak self] in
-                self?.currentAvatarState = avatarState
-            }
+            currentAvatarState = avatarState
 
             #if DEBUG
             print("[AvatarService] Avatar configuration saved successfully")
@@ -178,9 +174,7 @@ final class AvatarService: ObservableObject {
             }
         }
 
-        DispatchQueue.main.async { [weak self] in
-            self?.ownedItemIds = items
-        }
+        ownedItemIds = items
     }
 
     /// Check if player owns an item
@@ -225,9 +219,7 @@ final class AvatarService: ObservableObject {
         do {
             try ctx.save()
 
-            DispatchQueue.main.async { [weak self] in
-                self?.ownedItemIds.insert(itemId)
-            }
+            ownedItemIds.insert(itemId)
 
             #if DEBUG
             print("[AvatarService] Item added to inventory: \(itemId)")

@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol MatchServiceProtocol: AnyObject {
     func createMatch(for player: Player, date: Date, opponent: String?, competition: String?, minutesPlayed: Int16, goals: Int16, assists: Int16, positionPlayed: String?, isHomeGame: Bool, result: String?, notes: String?, rating: Int16, season: Season?, strengths: String?, weaknesses: String?) -> Match
     func fetchMatches(for player: Player, season: Season?) -> [Match]

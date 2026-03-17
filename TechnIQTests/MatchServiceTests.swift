@@ -2,6 +2,7 @@ import XCTest
 import CoreData
 @testable import TechnIQ
 
+@MainActor
 final class MatchServiceTests: XCTestCase {
     var sut: MatchService!
     var stack: TestCoreDataStack!

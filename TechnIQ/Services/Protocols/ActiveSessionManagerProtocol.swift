@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol ActiveSessionManagerProtocol: AnyObject {
     var phase: TrainingPhase { get }
     var currentExerciseIndex: Int { get }

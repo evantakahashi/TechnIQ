@@ -11,6 +11,7 @@ enum TrainingPhase: Equatable {
 
 // MARK: - Active Session Manager
 
+@MainActor
 class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
     // MARK: State

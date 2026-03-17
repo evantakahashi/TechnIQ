@@ -3,6 +3,7 @@ import CoreData
 
 // MARK: - WeaknessAnalysisService
 
+@MainActor
 class WeaknessAnalysisService {
     static let shared = WeaknessAnalysisService()
 

@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol AchievementServiceProtocol: AnyObject {
     func getUnlockedAchievements(for player: Player) -> [Achievement]
     func getLockedAchievements(for player: Player) -> [Achievement]

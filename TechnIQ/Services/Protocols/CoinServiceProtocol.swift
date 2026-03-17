@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol CoinServiceProtocol: AnyObject {
     var currentBalance: Int { get }
     var lastTransaction: CoinTransaction? { get }

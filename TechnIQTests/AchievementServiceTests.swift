@@ -2,6 +2,7 @@ import XCTest
 import CoreData
 @testable import TechnIQ
 
+@MainActor
 final class AchievementServiceTests: XCTestCase {
     var sut: AchievementService!
     var stack: TestCoreDataStack!

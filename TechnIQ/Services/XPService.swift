@@ -2,6 +2,7 @@ import Foundation
 import CoreData
 
 /// Service responsible for XP calculations, level progression, and streak management
+@MainActor
 final class XPService: XPServiceProtocol {
     static let shared = XPService()
 

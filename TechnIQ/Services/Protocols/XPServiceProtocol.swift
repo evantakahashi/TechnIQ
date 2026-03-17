@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol XPServiceProtocol: AnyObject {
     func xpRequiredForLevel(_ level: Int) -> Int64
     func levelForXP(_ xp: Int64) -> Int

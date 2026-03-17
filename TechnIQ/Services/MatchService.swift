@@ -2,6 +2,7 @@ import Foundation
 import CoreData
 
 /// Service for managing matches and seasons
+@MainActor
 final class MatchService: MatchServiceProtocol {
     static let shared = MatchService()
 
