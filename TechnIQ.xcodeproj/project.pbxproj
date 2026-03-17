@@ -13,6 +13,8 @@
 		0EF77C4BE52FE3A8A97B91C4 /* CommunityFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154400BACA8D3E9E085DAF70 /* CommunityFeedView.swift */; };
 		0FAF548DE5426321139D97FC /* YouTubeServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2571A249D29AEB4FCFCFA4 /* YouTubeServiceProtocol.swift */; };
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
+		AA01BB02CC03DD04EE05FF06 /* ProgressComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */; };
+		AA01BB02CC03DD04EE05FF08 /* ProgressModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF09 /* ProgressModels.swift */; };
 		109F89D7BEF29A6F59A7BAB1 /* UnifiedOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* OnboardingComponents.swift */; };
 		160D02F401EFE2B03102B61B /* XPServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 579AFDA04D75D7275409C2DA /* XPServiceTests.swift */; };
@@ -409,6 +411,8 @@
 		WKDAY001234567890ABCDEF /* WeeklyDayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyDayView.swift; sourceTree = "<group>"; };
 		SESCARD01234567890ABCDEF /* SessionCalendarCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionCalendarCard.swift; sourceTree = "<group>"; };
 		DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerProgressView.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressComponents.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE05FF09 /* ProgressModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressModels.swift; sourceTree = "<group>"; };
 		DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDrillCreatorView.swift; sourceTree = "<group>"; };
 		DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeModels.swift; sourceTree = "<group>"; };
 		DFE9F2F62EAD9083007BBFFA /* YouTubeConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeConfig.swift; sourceTree = "<group>"; };
@@ -715,6 +719,8 @@
 			isa = PBXGroup;
 			children = (
 				DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */,
+				AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */,
+				AA01BB02CC03DD04EE05FF09 /* ProgressModels.swift */,
 				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
 				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
 				0AB3DE834286D73E6899C750 /* WeaknessPickerView.swift */,
@@ -1077,6 +1083,8 @@
 				DF5CB2FA2E30550C0085F3ED /* FirestoreDataModels.swift in Sources */,
 				DF5CB3192E4826020085F3ED /* CustomDrillService.swift in Sources */,
 				DFD74E6C2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */,
+				AA01BB02CC03DD04EE05FF06 /* ProgressComponents.swift in Sources */,
+				AA01BB02CC03DD04EE05FF08 /* ProgressModels.swift in Sources */,
 				DF5CB3042E30583C0085F3ED /* RecommendationFeedback+CoreDataClass.swift in Sources */,
 				DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */,
 				DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */,
