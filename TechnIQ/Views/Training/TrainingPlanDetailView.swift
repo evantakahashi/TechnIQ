@@ -3,7 +3,7 @@ import CoreData
 
 struct TrainingPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var planService = TrainingPlanService.shared
+    @ObservedObject private var planService = TrainingPlanService.shared
 
     let initialPlan: TrainingPlanModel
     let player: Player

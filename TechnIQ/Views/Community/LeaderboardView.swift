@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LeaderboardView: View {
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
     @FetchRequest(sortDescriptors: [])
     private var players: FetchedResults<Player>
 

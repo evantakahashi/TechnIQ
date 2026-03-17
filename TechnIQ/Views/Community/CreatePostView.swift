@@ -3,7 +3,7 @@ import SwiftUI
 struct CreatePostView: View {
     let player: Player
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
 
     @State private var content = ""
     @State private var selectedType: CommunityPostType = .general

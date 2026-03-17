@@ -3,7 +3,7 @@ import SwiftUI
 struct CustomDrillGeneratorView: View {
     let player: Player
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var drillService = CustomDrillService.shared
+    @ObservedObject private var drillService = CustomDrillService.shared
     
     @State private var request = CustomDrillRequest.empty
     @State private var showingSuccessMessage = false

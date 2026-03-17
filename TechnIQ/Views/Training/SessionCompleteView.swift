@@ -17,7 +17,7 @@ struct SessionCompleteView: View {
     @State private var animateLevel = false
     @State private var animateAchievements = false
     @State private var showConfetti = false
-    @StateObject private var aiCoachService = AICoachService.shared
+    @ObservedObject private var aiCoachService = AICoachService.shared
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var showingWeeklyCheckIn = false
     @State private var showingShareSheet = false

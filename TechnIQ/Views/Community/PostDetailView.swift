@@ -4,7 +4,7 @@ struct PostDetailView: View {
     let post: CommunityPost
     let currentPlayer: Player
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
 
     @State private var comments: [CommunityComment] = []
     @State private var newCommentText = ""

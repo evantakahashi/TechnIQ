@@ -6,7 +6,7 @@ struct OnboardingPaywallView: View {
     let onContinueFree: () -> Void
     let onPurchaseComplete: () -> Void
 
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var showFreeConfirmation = false
 
     var body: some View {

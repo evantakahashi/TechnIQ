@@ -4,7 +4,7 @@ import CoreData
 struct CommunityFeedView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @Environment(\.managedObjectContext) private var viewContext
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
     @FetchRequest var players: FetchedResults<Player>
 
     @State private var showingCreatePost = false

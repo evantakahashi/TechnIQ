@@ -41,8 +41,8 @@ struct DashboardView: View {
     @State private var isOnboardingComplete = false
     @State private var smartRecommendations: [YouTubeService.DrillRecommendation] = []
     @State private var mlRecommendations: [MLDrillRecommendation] = []
-    @StateObject private var cloudMLService = AIRecommendationService.shared
-    @StateObject private var aiCoachService = AICoachService.shared
+    @ObservedObject private var cloudMLService = AIRecommendationService.shared
+    @ObservedObject private var aiCoachService = AICoachService.shared
 
     // Welcome back detection
     @State private var showWelcomeBack = false

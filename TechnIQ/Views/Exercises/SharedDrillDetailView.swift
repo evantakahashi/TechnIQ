@@ -3,7 +3,7 @@ import SwiftUI
 struct SharedDrillDetailView: View {
     let drill: SharedDrill
 
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
     @Environment(\.managedObjectContext) private var context
     @Environment(\.dismiss) private var dismiss
 

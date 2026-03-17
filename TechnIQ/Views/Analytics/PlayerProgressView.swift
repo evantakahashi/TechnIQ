@@ -12,7 +12,7 @@ struct PlayerProgressView: View {
     @State private var recentAchievements: [ProgressAchievement] = []
     @State private var trainingInsights: [TrainingInsight] = []
     @State private var trainingSessions: [TrainingSession] = []
-    @StateObject private var aiCoachService = AICoachService.shared
+    @ObservedObject private var aiCoachService = AICoachService.shared
 
     var body: some View {
         ScrollView {

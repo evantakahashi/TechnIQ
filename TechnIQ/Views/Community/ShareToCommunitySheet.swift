@@ -5,7 +5,7 @@ struct ShareToCommunitySheet: View {
     let player: Player
     let onDismiss: () -> Void
 
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
     @State private var additionalText = ""
     @State private var isSharing = false
     @State private var shareError: String?

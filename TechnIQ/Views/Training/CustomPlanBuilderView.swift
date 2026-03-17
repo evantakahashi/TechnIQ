@@ -4,7 +4,7 @@ import CoreData
 struct CustomPlanBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var viewContext
-    @StateObject private var planService = TrainingPlanService.shared
+    @ObservedObject private var planService = TrainingPlanService.shared
 
     let player: Player
 

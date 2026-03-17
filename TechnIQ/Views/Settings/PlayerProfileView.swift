@@ -4,7 +4,7 @@ import CoreData
 struct PlayerProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
-    @StateObject private var avatarService = AvatarService.shared
+    @ObservedObject private var avatarService = AvatarService.shared
     @FetchRequest var players: FetchedResults<Player>
     
     init() {

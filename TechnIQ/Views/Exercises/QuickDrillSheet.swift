@@ -3,7 +3,7 @@ import CoreData
 
 struct QuickDrillSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var drillService = CustomDrillService.shared
+    @ObservedObject private var drillService = CustomDrillService.shared
 
     let player: Player
     let onGenerated: (Exercise) -> Void

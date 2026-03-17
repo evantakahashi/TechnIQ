@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DrillMarketplaceView: View {
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
     @State private var searchText = ""
     @State private var selectedCategory: String? = nil
     @State private var selectedDrill: SharedDrill?

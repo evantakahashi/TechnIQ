@@ -4,7 +4,7 @@ import CoreData
 struct ActivePlanView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
-    @StateObject private var planService = TrainingPlanService.shared
+    @ObservedObject private var planService = TrainingPlanService.shared
 
     @State private var activePlan: TrainingPlanModel?
     @State private var currentDayID: UUID?

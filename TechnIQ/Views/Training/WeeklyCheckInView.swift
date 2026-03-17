@@ -3,7 +3,7 @@ import SwiftUI
 struct WeeklyCheckInView: View {
     let weekNumber: Int
     let player: Player
-    @StateObject private var aiCoachService = AICoachService.shared
+    @ObservedObject private var aiCoachService = AICoachService.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

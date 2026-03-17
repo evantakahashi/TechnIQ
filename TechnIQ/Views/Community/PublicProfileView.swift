@@ -3,7 +3,7 @@ import SwiftUI
 struct PublicProfileView: View {
     let userID: String
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var communityService = CommunityService.shared
+    @ObservedObject private var communityService = CommunityService.shared
 
     @State private var profileName = ""
     @State private var profileLevel = 1
