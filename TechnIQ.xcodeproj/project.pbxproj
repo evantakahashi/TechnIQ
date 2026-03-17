@@ -14,6 +14,7 @@
 		0FAF548DE5426321139D97FC /* YouTubeServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2571A249D29AEB4FCFCFA4 /* YouTubeServiceProtocol.swift */; };
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
 		109F89D7BEF29A6F59A7BAB1 /* UnifiedOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* OnboardingComponents.swift */; };
 		160D02F401EFE2B03102B61B /* XPServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 579AFDA04D75D7275409C2DA /* XPServiceTests.swift */; };
 		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
 		1D260639F7D8DD64C384A52E /* AuthenticationManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC37478C9ACC5B48220D01B9 /* AuthenticationManagerProtocol.swift */; };
@@ -244,6 +245,7 @@
 		0DD37D4FDA3200EBA08F2F61 /* CommunityService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommunityService.swift; sourceTree = "<group>"; };
 		0F179B8B167033349F82B723 /* AchievementServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AchievementServiceTests.swift; sourceTree = "<group>"; };
 		11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnifiedOnboardingView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* OnboardingComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingComponents.swift; sourceTree = "<group>"; };
 		13BE91B80C5ECBA36E7EB7F7 /* CloudService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudService.swift; sourceTree = "<group>"; };
 		154400BACA8D3E9E085DAF70 /* CommunityFeedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommunityFeedView.swift; sourceTree = "<group>"; };
 		18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanPreviewView.swift; sourceTree = "<group>"; };
@@ -655,6 +657,7 @@
 			children = (
 				DF16364C2E133300001E8CF9 /* AuthenticationView.swift */,
 				11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* OnboardingComponents.swift */,
 				D5F734158CD9E7B39E3C6990 /* Onboarding */,
 			);
 			name = Auth;
@@ -1187,6 +1190,7 @@
 				403C1185978C4C8A50D15539 /* ShareToCommunitySheet.swift in Sources */,
 				2FE54F5ED7E490F1CE01593F /* SharedDrillDetailView.swift in Sources */,
 				109F89D7BEF29A6F59A7BAB1 /* UnifiedOnboardingView.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* OnboardingComponents.swift in Sources */,
 				1E51099D06ED50F6DC5D351E /* SubscriptionManager.swift in Sources */,
 				9BC1906A0F785D059B49F57C /* PaywallView.swift in Sources */,
 				92491E0AE41FCBD8A6196424 /* ProLockedCardView.swift in Sources */,
