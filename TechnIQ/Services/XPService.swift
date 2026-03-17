@@ -3,8 +3,10 @@ import CoreData
 
 /// Service responsible for XP calculations, level progression, and streak management
 @MainActor
-final class XPService: XPServiceProtocol {
+final class XPService: ObservableObject, XPServiceProtocol {
     static let shared = XPService()
+
+    @Published private(set) var lastError: ServiceError?
 
     init() {}
 
@@ -141,9 +143,7 @@ final class XPService: XPServiceProtocol {
                     // Use streak freeze
                     player.streakFreezes -= 1
                     player.currentStreak += 1
-                    #if DEBUG
-                    print("Used streak freeze. Remaining: \(player.streakFreezes)")
-                    #endif
+                    AppLogger.shared.info("Used streak freeze. Remaining: \(player.streakFreezes)")
                 } else {
                     // Reset streak
                     player.currentStreak = 1
@@ -216,9 +216,8 @@ final class XPService: XPServiceProtocol {
 
             return streak
         } catch {
-            #if DEBUG
-            print("Error calculating streak from history: \(error)")
-            #endif
+            AppLogger.shared.error("Error calculating streak from history: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return 0
         }
     }
@@ -236,9 +235,7 @@ final class XPService: XPServiceProtocol {
         player.currentLevel = Int16(newLevel)
 
         if newLevel > oldLevel {
-            #if DEBUG
-            print("Level up! \(oldLevel) -> \(newLevel)")
-            #endif
+            AppLogger.shared.info("Level up! \(oldLevel) -> \(newLevel)")
             return newLevel
         }
 
@@ -288,9 +285,8 @@ final class XPService: XPServiceProtocol {
         do {
             try context.save()
         } catch {
-            #if DEBUG
-            print("Error saving XP: \(error)")
-            #endif
+            AppLogger.shared.error("Error saving XP: \(error)")
+            lastError = .coreData(error.localizedDescription)
         }
 
         return (breakdown, levelUp)
@@ -311,9 +307,8 @@ final class XPService: XPServiceProtocol {
             try context.save()
             return true
         } catch {
-            #if DEBUG
-            print("Error purchasing streak freeze: \(error)")
-            #endif
+            AppLogger.shared.error("Error purchasing streak freeze: \(error)")
+            lastError = .coreData(error.localizedDescription)
             return false
         }
     }

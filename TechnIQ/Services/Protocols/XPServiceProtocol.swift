@@ -3,6 +3,7 @@ import CoreData
 
 @MainActor
 protocol XPServiceProtocol: AnyObject {
+    var lastError: ServiceError? { get }
     func xpRequiredForLevel(_ level: Int) -> Int64
     func levelForXP(_ xp: Int64) -> Int
     func progressToNextLevel(totalXP: Int64, currentLevel: Int) -> Double
