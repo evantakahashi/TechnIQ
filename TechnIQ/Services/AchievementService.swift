@@ -43,8 +43,10 @@ enum AchievementRequirement {
 
 /// Service responsible for tracking and awarding achievements
 @MainActor
-final class AchievementService: AchievementServiceProtocol {
+final class AchievementService: ObservableObject, AchievementServiceProtocol {
     static let shared = AchievementService()
+
+    @Published private(set) var lastError: ServiceError?
 
     init() {}
 
@@ -368,9 +370,7 @@ final class AchievementService: AchievementServiceProtocol {
                 // Award XP for achievement
                 XPService.shared.awardXP(to: player, amount: achievement.xpReward)
 
-                #if DEBUG
-                print("Achievement unlocked: \(achievement.name) (+\(achievement.xpReward) XP)")
-                #endif
+                AppLogger.shared.info("Achievement unlocked: \(achievement.name) (+\(achievement.xpReward) XP)")
             }
         }
 
@@ -381,9 +381,8 @@ final class AchievementService: AchievementServiceProtocol {
             do {
                 try context.save()
             } catch {
-                #if DEBUG
-                print("Error saving unlocked achievements: \(error)")
-                #endif
+                AppLogger.shared.error("Error saving unlocked achievements: \(error)")
+                lastError = .coreData(error.localizedDescription)
             }
         }
 
