@@ -315,9 +315,9 @@ struct AnimatedDrillDiagramView: View {
         VStack(spacing: 2) {
             ZStack {
                 Circle()
-                    .fill(DesignSystem.Colors.textTertiary)
+                    .fill(Self.wallGray)
                     .frame(width: playerSize, height: playerSize)
-                    .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
                 Text("X")
                     .font(.system(size: 12, weight: .bold))
@@ -330,12 +330,18 @@ struct AnimatedDrillDiagramView: View {
         }
     }
 
+    private static let wallGray = Color(red: 0.55, green: 0.55, blue: 0.58)
+
     private func wallElementView(label: String) -> some View {
         VStack(spacing: 2) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(DesignSystem.Colors.textTertiary)
+                .fill(Self.wallGray)
                 .frame(width: 40, height: 12)
-                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                )
 
             Text(label)
                 .font(.system(size: 9, weight: .medium))
