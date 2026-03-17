@@ -16,6 +16,9 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     /// Recent coin transaction for animation purposes
     @Published private(set) var lastTransaction: CoinTransaction?
 
+    /// Last error encountered
+    @Published private(set) var lastError: ServiceError?
+
     // MARK: - Private Properties
 
     private let coreDataManager: CoreDataManagerProtocol
@@ -44,9 +47,8 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     func awardCoins(_ amount: Int, for reason: CoinEarningEvent, context: NSManagedObjectContext? = nil) -> Int {
         let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
-            #if DEBUG
-            print("[CoinService] No player found to award coins")
-            #endif
+            AppLogger.shared.error("[CoinService] No player found to award coins")
+            lastError = .notFound("Player")
             return 0
         }
 
@@ -68,15 +70,12 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
                 balanceAfter: newBalance
             )
 
-            #if DEBUG
-            print("[CoinService] Awarded \(amount) coins for: \(reason.displayName). Balance: \(previousBalance) -> \(newBalance)")
-            #endif
+            AppLogger.shared.debug("[CoinService] Awarded \(amount) coins for: \(reason.displayName). Balance: \(previousBalance) -> \(newBalance)")
 
             return newBalance
         } catch {
-            #if DEBUG
-            print("[CoinService] Failed to save coin award: \(error)")
-            #endif
+            AppLogger.shared.error("[CoinService] Failed to save coin award: \(error)")
+            lastError = .coreData(error.localizedDescription)
             ctx.rollback()
             return previousBalance
         }
@@ -92,17 +91,15 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     func deductCoins(_ amount: Int, for reason: String, context: NSManagedObjectContext? = nil) -> Bool {
         let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
-            #if DEBUG
-            print("[CoinService] No player found to deduct coins")
-            #endif
+            AppLogger.shared.error("[CoinService] No player found to deduct coins")
+            lastError = .notFound("Player")
             return false
         }
 
         let currentCoins = Int(player.coins)
         guard currentCoins >= amount else {
-            #if DEBUG
-            print("[CoinService] Insufficient funds. Have: \(currentCoins), Need: \(amount)")
-            #endif
+            AppLogger.shared.warning("[CoinService] Insufficient funds. Have: \(currentCoins), Need: \(amount)")
+            lastError = .validation("Insufficient funds")
             return false
         }
 
@@ -122,15 +119,12 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
                 balanceAfter: newBalance
             )
 
-            #if DEBUG
-            print("[CoinService] Deducted \(amount) coins for: \(reason). Balance: \(currentCoins) -> \(newBalance)")
-            #endif
+            AppLogger.shared.debug("[CoinService] Deducted \(amount) coins for: \(reason). Balance: \(currentCoins) -> \(newBalance)")
 
             return true
         } catch {
-            #if DEBUG
-            print("[CoinService] Failed to save coin deduction: \(error)")
-            #endif
+            AppLogger.shared.error("[CoinService] Failed to save coin deduction: \(error)")
+            lastError = .coreData(error.localizedDescription)
             ctx.rollback()
             return false
         }
@@ -187,9 +181,8 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     ) -> Int {
         let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
-            #if DEBUG
-            print("[CoinService] No player found for session coins")
-            #endif
+            AppLogger.shared.error("[CoinService] No player found for session coins")
+            lastError = .notFound("Player")
             return 0
         }
 
@@ -236,14 +229,11 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
                 timestamp: Date(),
                 balanceAfter: newBalance
             )
-            #if DEBUG
-            print("[CoinService] Session coins: +\(totalCoins). Balance: \(previousBalance) -> \(newBalance)")
-            #endif
+            AppLogger.shared.debug("[CoinService] Session coins: +\(totalCoins). Balance: \(previousBalance) -> \(newBalance)")
             return totalCoins
         } catch {
-            #if DEBUG
-            print("[CoinService] Failed to save session coins: \(error)")
-            #endif
+            AppLogger.shared.error("[CoinService] Failed to save session coins: \(error)")
+            lastError = .coreData(error.localizedDescription)
             ctx.rollback()
             return 0
         }

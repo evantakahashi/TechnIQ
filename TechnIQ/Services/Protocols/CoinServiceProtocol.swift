@@ -5,6 +5,7 @@ import CoreData
 protocol CoinServiceProtocol: AnyObject {
     var currentBalance: Int { get }
     var lastTransaction: CoinTransaction? { get }
+    var lastError: ServiceError? { get }
     @discardableResult func awardCoins(_ amount: Int, for reason: CoinEarningEvent, context: NSManagedObjectContext?) -> Int
     @discardableResult func deductCoins(_ amount: Int, for reason: String, context: NSManagedObjectContext?) -> Bool
     func canAfford(_ amount: Int) -> Bool
