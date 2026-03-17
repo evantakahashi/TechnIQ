@@ -122,6 +122,7 @@
 		DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */; };
 		DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636282E133100001E8CF9 /* EditProfileView.swift */; };
 		DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */; };
+		EL00001B2E133100001E8CF9 /* ExerciseLibraryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */; };
 		DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF16362C2E133100001E8CF9 /* NewSessionView.swift */; };
 		DF1636312E133100001E8CF9 /* PlayerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636302E133100001E8CF9 /* PlayerProfileView.swift */; };
 		DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1636322E133100001E8CF9 /* SessionDetailView.swift */; };
@@ -355,6 +356,7 @@
 		DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardComponents.swift; sourceTree = "<group>"; };
 		DF1636282E133100001E8CF9 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryView.swift; sourceTree = "<group>"; };
+		EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryComponents.swift; sourceTree = "<group>"; };
 		DF16362C2E133100001E8CF9 /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
 		DF1636302E133100001E8CF9 /* PlayerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfileView.swift; sourceTree = "<group>"; };
 		DF1636322E133100001E8CF9 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
@@ -765,6 +767,7 @@
 			isa = PBXGroup;
 			children = (
 				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
+				EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */,
 				DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */,
 				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
 				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
@@ -1080,6 +1083,7 @@
 				DF48B9E62ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift in Sources */,
 				DF48B9E22ED524A600F7AC05 /* PlanSession+CoreDataClass.swift in Sources */,
 				DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */,
+				EL00001B2E133100001E8CF9 /* ExerciseLibraryComponents.swift in Sources */,
 				DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */,
 				DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
 				DF5CB3172E4825FC0085F3ED /* CustomDrillModels.swift in Sources */,
