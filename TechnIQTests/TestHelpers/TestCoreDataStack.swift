@@ -163,6 +163,54 @@ class TestCoreDataStack: CoreDataManagerProtocol {
     // MARK: - Entity Factories
 
     @discardableResult
+    func makeTrainingPlan(
+        player: Player,
+        name: String = "Test Plan",
+        isActive: Bool = false,
+        durationWeeks: Int16 = 4
+    ) -> TrainingPlan {
+        let plan = TrainingPlan(context: context)
+        plan.id = UUID()
+        plan.name = name
+        plan.player = player
+        plan.isActive = isActive
+        plan.durationWeeks = durationWeeks
+        plan.createdAt = Date()
+        try? context.save()
+        return plan
+    }
+
+    @discardableResult
+    func makePlanWeek(
+        plan: TrainingPlan,
+        weekNumber: Int16 = 1,
+        focusArea: String = "Technical"
+    ) -> PlanWeek {
+        let week = PlanWeek(context: context)
+        week.id = UUID()
+        week.weekNumber = weekNumber
+        week.focusArea = focusArea
+        week.plan = plan
+        try? context.save()
+        return week
+    }
+
+    @discardableResult
+    func makePlanDay(
+        week: PlanWeek,
+        dayNumber: Int16 = 1,
+        isRestDay: Bool = false
+    ) -> PlanDay {
+        let day = PlanDay(context: context)
+        day.id = UUID()
+        day.dayNumber = dayNumber
+        day.isRestDay = isRestDay
+        day.week = week
+        try? context.save()
+        return day
+    }
+
+    @discardableResult
     func makeSeason(
         player: Player,
         name: String = "2025-26",
