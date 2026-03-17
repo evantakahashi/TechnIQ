@@ -189,6 +189,9 @@
 		DF6618E72E1357A400C6899B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E62E1357A400C6899B /* GoogleSignIn */; };
 		DF6618E92E1357A400C6899B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF6618E82E1357A400C6899B /* GoogleSignInSwift */; };
 		DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */; };
+		CALDAY001234567890ABCD01 /* CalendarDayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CALDAY001234567890ABCDEF /* CalendarDayView.swift */; };
+		WKDAY001234567890ABCD01 /* WeeklyDayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WKDAY001234567890ABCDEF /* WeeklyDayView.swift */; };
+		SESCARD01234567890ABCD01 /* SessionCalendarCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = SESCARD01234567890ABCDEF /* SessionCalendarCard.swift */; };
 		DFD74E6C2E9F4BBA00FABA2E /* PlayerProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */; };
 		DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */; };
 		DFE9F2F82EAD9083007BBFFA /* YouTubeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */; };
@@ -400,6 +403,9 @@
 		DF5CB3162E4825FC0085F3ED /* CustomDrillModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillModels.swift; sourceTree = "<group>"; };
 		DF5CB3182E4826020085F3ED /* CustomDrillService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomDrillService.swift; sourceTree = "<group>"; };
 		DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SessionCalendarView.swift; sourceTree = "<group>"; };
+		CALDAY001234567890ABCDEF /* CalendarDayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarDayView.swift; sourceTree = "<group>"; };
+		WKDAY001234567890ABCDEF /* WeeklyDayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyDayView.swift; sourceTree = "<group>"; };
+		SESCARD01234567890ABCDEF /* SessionCalendarCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionCalendarCard.swift; sourceTree = "<group>"; };
 		DFD74E6B2E9F4BBA00FABA2E /* PlayerProgressView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerProgressView.swift; sourceTree = "<group>"; };
 		DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDrillCreatorView.swift; sourceTree = "<group>"; };
 		DFE9F2F52EAD9083007BBFFA /* YouTubeModels.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YouTubeModels.swift; sourceTree = "<group>"; };
@@ -504,6 +510,9 @@
 				DF1636322E133100001E8CF9 /* SessionDetailView.swift */,
 				DF1636342E133100001E8CF9 /* SessionHistoryView.swift */,
 				DF7A34C0CCDBFB4467AE9DCE /* SessionCalendarView.swift */,
+				CALDAY001234567890ABCDEF /* CalendarDayView.swift */,
+				WKDAY001234567890ABCDEF /* WeeklyDayView.swift */,
+				SESCARD01234567890ABCDEF /* SessionCalendarCard.swift */,
 				89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */,
 				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
 				18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */,
@@ -1069,6 +1078,9 @@
 				DF1636332E133100001E8CF9 /* SessionDetailView.swift in Sources */,
 				DF1636352E133100001E8CF9 /* SessionHistoryView.swift in Sources */,
 				DF6ACA345C26604E0DAD83AA /* SessionCalendarView.swift in Sources */,
+				CALDAY001234567890ABCD01 /* CalendarDayView.swift in Sources */,
+				WKDAY001234567890ABCD01 /* WeeklyDayView.swift in Sources */,
+				SESCARD01234567890ABCD01 /* SessionCalendarCard.swift in Sources */,
 				DF1636392E133200001E8CF9 /* Player+CoreDataClass.swift in Sources */,
 				DF5CB3152E4825F60085F3ED /* CustomDrillGeneratorView.swift in Sources */,
 				DF48B9E72ED524A600F7AC05 /* PlanDay+CoreDataClass.swift in Sources */,
