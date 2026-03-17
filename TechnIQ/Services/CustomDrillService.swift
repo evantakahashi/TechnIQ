@@ -6,7 +6,7 @@ import CoreData
 // MARK: - Custom Drill Generation Service
 
 @MainActor
-class CustomDrillService: ObservableObject {
+class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
     static let shared = CustomDrillService()
     
     private let auth = Auth.auth()
@@ -83,9 +83,10 @@ class CustomDrillService: ObservableObject {
             }
             
             #if DEBUG
-            
-            print("✅ CustomDrillService: Successfully generated custom drill: \(drillResponse.name)")
-            
+            print("✅ CustomDrillService: Generated drill: \(drillResponse.name)")
+            print("✅ Exercise saved: id=\(exercise.id?.uuidString ?? "nil"), name=\(exercise.name ?? "nil")")
+            print("✅ Exercise desc prefix: \(String(exercise.exerciseDescription?.prefix(60) ?? "nil"))")
+            print("✅ Exercise player: \(exercise.value(forKey: "player") != nil ? "SET" : "NIL")")
             #endif
             return exercise
             

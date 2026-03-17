@@ -17,7 +17,7 @@ enum AuthError: LocalizedError {
     }
 }
 
-class AuthenticationManager: ObservableObject {
+class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     @Published var isAuthenticated = false
     @Published var currentUser: User? = nil
     @Published var isLoading = false

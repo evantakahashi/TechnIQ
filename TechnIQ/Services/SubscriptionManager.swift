@@ -2,10 +2,14 @@ import StoreKit
 import SwiftUI
 
 @MainActor
-class SubscriptionManager: ObservableObject {
+class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
     static let shared = SubscriptionManager()
 
+    #if DEBUG
+    @Published var isPro: Bool = true
+    #else
     @Published var isPro: Bool = false
+    #endif
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -47,7 +51,11 @@ class SubscriptionManager: ObservableObject {
                 break
             }
         }
+        #if DEBUG
+        isPro = true
+        #else
         isPro = hasEntitlement
+        #endif
     }
 
     // MARK: - Load Product

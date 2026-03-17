@@ -120,7 +120,7 @@ struct LeaderboardEntry: Identifiable {
 // MARK: - Community Service
 
 @MainActor
-class CommunityService: ObservableObject {
+class CommunityService: ObservableObject, CommunityServiceProtocol {
     static let shared = CommunityService()
 
     private let db = Firestore.firestore()

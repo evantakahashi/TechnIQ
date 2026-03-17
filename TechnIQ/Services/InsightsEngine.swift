@@ -25,7 +25,7 @@ enum InsightType: String {
 // MARK: - Insights Engine
 
 @MainActor
-class InsightsEngine {
+class InsightsEngine: InsightsEngineProtocol {
     static let shared = InsightsEngine()
     private init() {}
 

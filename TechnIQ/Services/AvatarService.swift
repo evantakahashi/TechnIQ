@@ -4,7 +4,7 @@ import Combine
 
 /// Service for managing player avatar configuration and inventory
 @MainActor
-final class AvatarService: ObservableObject {
+final class AvatarService: ObservableObject, AvatarServiceProtocol {
     static let shared = AvatarService()
 
     // MARK: - Published Properties

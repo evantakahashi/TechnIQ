@@ -4,7 +4,7 @@ import CoreData
 // MARK: - WeaknessAnalysisService
 
 @MainActor
-class WeaknessAnalysisService {
+class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
     static let shared = WeaknessAnalysisService()
 
     private let cacheStaleInterval: TimeInterval = 24 * 60 * 60 // 24 hours

@@ -3,7 +3,7 @@ import FirebaseAuth
 import CoreData
 
 @MainActor
-class AICoachService: ObservableObject {
+class AICoachService: ObservableObject, AICoachServiceProtocol {
     static let shared = AICoachService()
 
     @Published var dailyCoaching: DailyCoaching?
