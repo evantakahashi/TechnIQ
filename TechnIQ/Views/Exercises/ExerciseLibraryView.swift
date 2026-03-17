@@ -264,16 +264,20 @@ struct ExerciseLibraryView: View {
         .sheet(isPresented: $showingCustomDrillGenerator) {
             CustomDrillGeneratorView(player: player)
                 .environment(\.managedObjectContext, viewContext)
-                .onDisappear {
-                    loadExercises()
-                }
+        }
+        .onChange(of: showingCustomDrillGenerator) { _, isShowing in
+            if !isShowing {
+                loadExercises()
+            }
         }
         .sheet(isPresented: $showingManualDrillCreator) {
             ManualDrillCreatorView(player: player)
                 .environment(\.managedObjectContext, viewContext)
-                .onDisappear {
-                    loadExercises()
-                }
+        }
+        .onChange(of: showingManualDrillCreator) { _, isShowing in
+            if !isShowing {
+                loadExercises()
+            }
         }
         .sheet(isPresented: $showingDrillPaywall) {
             PaywallView(feature: .customDrill)
