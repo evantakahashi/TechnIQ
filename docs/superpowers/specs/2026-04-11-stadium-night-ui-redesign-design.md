@@ -22,6 +22,7 @@ The current TechnIQ UI is polished but visually generic — emerald green + gold
 - No custom fonts that require licensing — use SF Pro variants only.
 - No light mode. Dark-only.
 - No complex custom illustrations (jersey numbers as backgrounds, tactical arrow shapes, etc.).
+- No mascot. The existing Kicko mascot system is removed entirely in this redesign.
 
 ## Direction: "Stadium Night"
 
@@ -95,11 +96,23 @@ No tactical arrows, no jersey numbers, no kit stripes. If the above three don't 
 - `CornerBracketShape` + `.heroCard()` view modifier — wraps content in a `ModernCard` with one chalk-white L-bracket.
 - `TurfBackground` — root-level `ZStack` background with subtle noise. Applied once in `ContentView`.
 
+### Mascot Removal
+
+The Kicko mascot system (`MascotView`) is removed. It clashes with the new aesthetic and is not worth the effort of redrawing. State views that currently depend on it get a new treatment:
+
+- `EmptyStateView`, `CompactEmptyStateView`, `LoadingStateView`, `ErrorStateView`, `WelcomeBackView` — rebuilt around a large chalk-white SF Symbol (80–120pt) plus massive compressed uppercase typography.
+- Suggested SF Symbol mapping:
+  - Empty: `soccerball` or `figure.soccer`
+  - Loading: `soccerball` in a rotation animation
+  - Error: `exclamationmark.triangle` or `sportscourt`
+  - Welcome back: `figure.soccer`
+- All `MascotView` call sites are replaced. `MascotView.swift` is deleted in Phase 5 cleanup.
+
 ### What explicitly stays the same
 
 - All 55+ views, their navigation, and their content structure.
 - `AnimatedTabBar` structure (5 tabs: Home, Train, Plans, Community, Profile).
-- Mascot system (Kicko) — same character, same states. Particle effects (confetti, sparkle, coin burst) stay but palette-swap to the new accent colors.
+- Particle effects (confetti, sparkle, coin burst) — palette-swap to new accent colors, behavior unchanged.
 - Haptic feedback patterns.
 - Accessibility reduce-motion behavior.
 - Rarity color system for shop items.
@@ -126,14 +139,20 @@ Update `ModernComponents.swift`:
 
 **Verification:** Build succeeds. User checks Dashboard, Training Hub, Profile — most screens should now feel redesigned from component updates alone.
 
-### Phase 3 — Hero Surfaces
+### Phase 3 — Hero Surfaces & State Views
 Apply `TurfBackground` to `ContentView`. Apply `.heroCard()` and `PitchDivider` where they have the most impact:
 - `DashboardView` hero stats section
 - `TrainHubView` top card
 - `ActiveTrainingView` session header
 - `PlayerProgressView` XP/level hero
 
-**Verification:** User checks each of these four screens specifically.
+Rebuild state views without the mascot:
+- `EmptyStateView` / `CompactEmptyStateView` — SF Symbol + uppercase compressed display text + CTA button
+- `LoadingStateView` — rotating `soccerball` symbol + "LOADING" label
+- `ErrorStateView` — triangle warning symbol + "SOMETHING BROKE" + retry button
+- `WelcomeBackView` — `figure.soccer` symbol + personalized greeting in display typography
+
+**Verification:** User checks the four hero screens + at least one empty state, one loading state, one error state.
 
 ### Phase 4 — Typography Pass
 Go through high-visibility screens and upgrade headers to the new display typography:
@@ -149,7 +168,8 @@ This is a targeted pass — not every screen, just the ones where the massive ty
 
 ### Phase 5 — Polish & Cleanup
 - Remove dead token definitions from `DesignSystem.swift`.
-- Audit for any views still referencing removed tokens.
+- Delete `MascotView.swift` and any mascot-related assets.
+- Audit for any views still referencing removed tokens or `MascotView`.
 - Palette-swap particle effects in `ConfettiView` to new colors.
 - Run a final build.
 - Fix anything the user flagged during earlier phases that we deferred.
@@ -169,6 +189,5 @@ This is a targeted pass — not every screen, just the ones where the massive ty
 
 ## Open Questions
 
-- Should the mascot (Kicko) get a Stadium-Night recolor in Phase 5 or stay as-is?
 - Phase 4 typography — apply to every screen or only hero screens?
 - Keep `ConfettiView` as-is (just recolored) or tone down particle count?
