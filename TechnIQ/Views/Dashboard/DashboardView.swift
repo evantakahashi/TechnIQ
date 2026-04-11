@@ -408,10 +408,12 @@ struct DashboardView: View {
 
     private func modernStatsOverview(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+            PitchDivider(horizontalPadding: 0)
+
             Text("Your Progress")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.bold)
+                .font(DesignSystem.Typography.displaySmall)
+                .textCase(.uppercase)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),

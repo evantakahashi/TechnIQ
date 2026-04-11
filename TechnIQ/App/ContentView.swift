@@ -288,29 +288,32 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            AnimatedTabContent(selectedTab: $selectedTab) { tab in
-                Group {
-                    switch tab {
-                    case 0:
-                        NavigationView { DashboardView(selectedTab: $selectedTab) }
-                    case 1:
-                        NavigationView { TrainHubView() }
-                    case 2:
-                        NavigationView { TrainingPlansListView() }
-                    case 3:
-                        NavigationView { CommunityView() }
-                    case 4:
-                        NavigationView { EnhancedProfileView() }
-                    default:
-                        EmptyView()
+        ZStack {
+            TurfBackground()
+            VStack(spacing: 0) {
+                AnimatedTabContent(selectedTab: $selectedTab) { tab in
+                    Group {
+                        switch tab {
+                        case 0:
+                            NavigationView { DashboardView(selectedTab: $selectedTab) }
+                        case 1:
+                            NavigationView { TrainHubView() }
+                        case 2:
+                            NavigationView { TrainingPlansListView() }
+                        case 3:
+                            NavigationView { CommunityView() }
+                        case 4:
+                            NavigationView { EnhancedProfileView() }
+                        default:
+                            EmptyView()
+                        }
                     }
+                    .environment(\.managedObjectContext, viewContext)
+                    .environmentObject(authManager)
                 }
-                .environment(\.managedObjectContext, viewContext)
-                .environmentObject(authManager)
-            }
 
-            AnimatedTabBar(selectedTab: $selectedTab)
+                AnimatedTabBar(selectedTab: $selectedTab)
+            }
         }
         .ignoresSafeArea(.keyboard)
     }

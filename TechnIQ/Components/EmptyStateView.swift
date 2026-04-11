@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Reusable empty state component with mascot and encouraging messaging
-/// Used throughout the app when there's no data to display
+/// Reusable empty state component with bold SF Symbol + compressed display typography.
 struct EmptyStateView: View {
     let context: EmptyStateContext
     let actionTitle: String?
@@ -19,50 +18,45 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            // Mascot
-            MascotView(
-                state: MascotState.forEmptyState(context: context),
-                size: .large,
-                showSpeechBubble: true,
-                speechText: speechBubbleText
-            )
+            Image(systemName: symbolName)
+                .font(.system(size: 96, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite.opacity(0.85))
 
-            // Title
+            PitchDivider(horizontalPadding: 48)
+
             Text(title)
-                .font(DesignSystem.Typography.titleLarge)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .font(DesignSystem.Typography.displayMedium)
+                .textCase(.uppercase)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
                 .multilineTextAlignment(.center)
 
-            // Description
             Text(description)
                 .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DesignSystem.Spacing.lg)
 
-            // Action button (if provided)
             if let title = actionTitle, let action = action {
-                Button(action: action) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Image(systemName: actionIcon)
-                        Text(title)
-                    }
-                    .font(DesignSystem.Typography.labelLarge)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
-                    .padding(.vertical, DesignSystem.Spacing.md)
-                    .background(DesignSystem.Colors.primaryGreen)
-                    .cornerRadius(DesignSystem.CornerRadius.button)
-                }
-                .padding(.top, DesignSystem.Spacing.sm)
+                ModernButton(title, icon: actionIcon, style: .primary, action: action)
+                    .padding(.top, DesignSystem.Spacing.sm)
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
             }
         }
         .padding(DesignSystem.Spacing.xl)
     }
 
     // MARK: - Content Properties
+
+    private var symbolName: String {
+        switch context {
+        case .noSessions: return "soccerball"
+        case .noFavorites: return "heart"
+        case .noAchievements: return "trophy"
+        case .noProgress: return "chart.line.uptrend.xyaxis"
+        case .noPlans: return "calendar"
+        case .noPosts: return "bubble.left.and.bubble.right"
+        }
+    }
 
     private var title: String {
         switch context {
@@ -98,23 +92,6 @@ struct EmptyStateView: View {
         }
     }
 
-    private var speechBubbleText: String {
-        switch context {
-        case .noSessions:
-            return "Let's go!"
-        case .noFavorites:
-            return "Find your favorites!"
-        case .noAchievements:
-            return "You can do it!"
-        case .noProgress:
-            return "Every pro started here!"
-        case .noPlans:
-            return "Plan to succeed!"
-        case .noPosts:
-            return "Say hello!"
-        }
-    }
-
     private var actionIcon: String {
         switch context {
         case .noSessions:
@@ -138,36 +115,44 @@ struct EmptyStateView: View {
 /// A more compact empty state for use in cards or smaller areas
 struct CompactEmptyStateView: View {
     let context: EmptyStateContext
-    let showMascot: Bool
 
-    init(context: EmptyStateContext, showMascot: Bool = true) {
+    init(context: EmptyStateContext) {
         self.context = context
-        self.showMascot = showMascot
     }
 
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
-            if showMascot {
-                MascotView(
-                    state: MascotState.forEmptyState(context: context),
-                    size: .small
-                )
-            }
+            Image(systemName: symbolName)
+                .font(.system(size: 32, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite.opacity(0.7))
+                .frame(width: 40)
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(title)
-                    .font(DesignSystem.Typography.titleSmall)
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .font(DesignSystem.Typography.labelLarge)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
 
                 Text(subtitle)
                     .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .foregroundColor(DesignSystem.Colors.mutedIvory)
             }
 
             Spacer()
         }
         .padding(DesignSystem.Spacing.md)
+    }
+
+    private var symbolName: String {
+        switch context {
+        case .noSessions: return "soccerball"
+        case .noFavorites: return "heart"
+        case .noAchievements: return "trophy"
+        case .noProgress: return "chart.line.uptrend.xyaxis"
+        case .noPlans: return "calendar"
+        case .noPosts: return "bubble.left.and.bubble.right"
+        }
     }
 
     private var title: String {
@@ -207,7 +192,7 @@ struct CompactEmptyStateView: View {
 
 // MARK: - Loading State
 
-/// Loading state view with thinking mascot
+/// Loading state view with a rotating soccer ball icon.
 struct LoadingStateView: View {
     let message: String
 
@@ -217,14 +202,13 @@ struct LoadingStateView: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            MascotView(state: .thinking, size: .medium)
+            SoccerBallSpinner()
+                .scaleEffect(2.0)
 
             Text(message)
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            ProgressView()
-                .tint(DesignSystem.Colors.primaryGreen)
+                .font(DesignSystem.Typography.displaySmall)
+                .textCase(.uppercase)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
         }
         .padding(DesignSystem.Spacing.xl)
     }
@@ -232,7 +216,7 @@ struct LoadingStateView: View {
 
 // MARK: - Error State
 
-/// Error state view with disappointed mascot
+/// Error state view with warning icon and retry action.
 struct ErrorStateView: View {
     let title: String
     let message: String
@@ -250,35 +234,28 @@ struct ErrorStateView: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            MascotView(state: .disappointed, size: .large)
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 96, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.bloodOrange)
+
+            PitchDivider(horizontalPadding: 48)
 
             Text(title)
-                .font(DesignSystem.Typography.titleLarge)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .font(DesignSystem.Typography.displayMedium)
+                .textCase(.uppercase)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
                 .multilineTextAlignment(.center)
 
             Text(message)
                 .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DesignSystem.Spacing.lg)
 
             if let retry = retryAction {
-                Button(action: retry) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Try Again")
-                    }
-                    .font(DesignSystem.Typography.labelLarge)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
-                    .padding(.vertical, DesignSystem.Spacing.md)
-                    .background(DesignSystem.Colors.primaryGreen)
-                    .cornerRadius(DesignSystem.CornerRadius.button)
-                }
-                .padding(.top, DesignSystem.Spacing.sm)
+                ModernButton("Try Again", icon: "arrow.clockwise", style: .primary, action: retry)
+                    .padding(.top, DesignSystem.Spacing.sm)
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
             }
         }
         .padding(DesignSystem.Spacing.xl)
@@ -294,50 +271,27 @@ struct WelcomeBackView: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            MascotView(
-                state: MascotState.forWelcomeBack(daysInactive: daysInactive),
-                size: .xlarge,
-                showSpeechBubble: true,
-                speechText: welcomeMessage
-            )
+            Image(systemName: "figure.soccer")
+                .font(.system(size: 120, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
 
-            Text("Welcome Back!")
-                .font(DesignSystem.Typography.headlineMedium)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
+            PitchDivider(horizontalPadding: 48)
+
+            Text("WELCOME BACK")
+                .font(DesignSystem.Typography.displayLarge)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
 
             Text(motivationalMessage)
                 .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DesignSystem.Spacing.lg)
 
-            Button(action: onStartTraining) {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    Image(systemName: "play.fill")
-                    Text("Start Training")
-                }
-                .font(DesignSystem.Typography.labelLarge)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
+            ModernButton("Start Training", icon: "play.fill", style: .primary, action: onStartTraining)
+                .padding(.top, DesignSystem.Spacing.md)
                 .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.vertical, DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.primaryGreen)
-                .cornerRadius(DesignSystem.CornerRadius.button)
-            }
-            .padding(.top, DesignSystem.Spacing.md)
         }
         .padding(DesignSystem.Spacing.xl)
-    }
-
-    private var welcomeMessage: String {
-        if daysInactive >= 7 {
-            return "I missed you!"
-        } else if daysInactive >= 3 {
-            return "Ready to train?"
-        } else {
-            return "Hey there!"
-        }
     }
 
     private var motivationalMessage: String {

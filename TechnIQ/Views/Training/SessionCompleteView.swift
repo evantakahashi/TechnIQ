@@ -27,17 +27,6 @@ struct SessionCompleteView: View {
         newLevel != nil || !achievements.isEmpty
     }
 
-    /// Mascot state based on celebration type
-    private var mascotState: MascotState {
-        if newLevel != nil {
-            return .proud
-        } else if !achievements.isEmpty {
-            return .excited
-        } else {
-            return .happy
-        }
-    }
-
     var body: some View {
         ZStack {
             // Background gradient
@@ -170,18 +159,10 @@ struct SessionCompleteView: View {
 
     private var headerSection: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
-            // Mascot
-            MascotView(state: mascotState, size: .large)
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 120, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.accentLime)
                 .scaleEffect(animateXP ? 1 : 0.5)
-                .opacity(animateXP ? 1 : 0)
-
-            // Checkmark badge overlay
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 32))
-                .foregroundColor(DesignSystem.Colors.successGreen)
-                .background(Circle().fill(Color.white).frame(width: 36, height: 36))
-                .offset(x: 40, y: -30)
-                .scaleEffect(animateXP ? 1 : 0)
                 .opacity(animateXP ? 1 : 0)
 
             Text("Session Complete!")

@@ -13,8 +13,6 @@ struct FeatureHighlight: Identifiable {
     let id = UUID()
     let headline: String
     let body: String
-    let mascotState: MascotState
-    let speechText: String
     let iconContent: FeatureIconContent
 }
 
@@ -25,33 +23,27 @@ extension FeatureHighlight {
         FeatureHighlight(
             headline: "Smart Drills, Built for You",
             body: "AI generates personalized drills based on your position, skill level, and weaknesses",
-            mascotState: .coaching,
-            speechText: "Let's train smarter!",
             iconContent: .sfSymbol(
                 name: "brain.head.profile",
-                color: DesignSystem.Colors.primaryGreen
+                color: DesignSystem.Colors.accentLime
             )
         ),
         FeatureHighlight(
             headline: "Level Up Your Game",
             body: "Earn XP, build streaks, unlock achievements. 50 levels from Grassroots to Living Legend",
-            mascotState: .excited,
-            speechText: "Every session counts!",
             iconContent: .multiIcon(icons: [
-                ("star.fill", DesignSystem.Colors.xpGold),
-                ("flame.fill", DesignSystem.Colors.streakOrange),
-                ("trophy.fill", DesignSystem.Colors.accentGold)
+                ("star.fill", DesignSystem.Colors.accentLime),
+                ("flame.fill", DesignSystem.Colors.bloodOrange),
+                ("trophy.fill", DesignSystem.Colors.accentLime)
             ])
         ),
         FeatureHighlight(
             headline: "Make It Yours",
             body: "Customize your player avatar. Earn coins from training to unlock gear",
-            mascotState: .happy,
-            speechText: "Looking good!",
             iconContent: .multiIcon(icons: [
-                ("person.crop.circle.fill", DesignSystem.Colors.primaryGreen),
-                ("tshirt.fill", DesignSystem.Colors.secondaryBlue),
-                ("shoe.fill", DesignSystem.Colors.accentOrange)
+                ("person.crop.circle.fill", DesignSystem.Colors.accentLime),
+                ("tshirt.fill", DesignSystem.Colors.chalkWhite),
+                ("shoe.fill", DesignSystem.Colors.bloodOrange)
             ])
         )
     ]
@@ -65,14 +57,6 @@ struct FeatureHighlightPage: View {
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             Spacer()
-
-            // Mascot
-            MascotView(
-                state: highlight.mascotState,
-                size: .large,
-                showSpeechBubble: true,
-                speechText: highlight.speechText
-            )
 
             // Icon visual
             iconView

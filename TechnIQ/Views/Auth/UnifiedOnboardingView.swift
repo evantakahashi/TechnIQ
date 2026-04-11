@@ -43,11 +43,6 @@ struct UnifiedOnboardingView: View {
     let dominantFeet = ["Left", "Right", "Both"]
     let experienceLevels = ["Beginner", "Intermediate", "Advanced", "Professional"]
 
-    /// Get mascot state for current step
-    private var mascotState: MascotState {
-        MascotState.forOnboarding(screenIndex: currentStep)
-    }
-
     var body: some View {
         ZStack {
             // Background gradient
@@ -293,13 +288,9 @@ struct UnifiedOnboardingView: View {
 
     private var welcomeStep: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
-            // Mascot with speech bubble
-            MascotView(
-                state: .waving,
-                size: .xlarge,
-                showSpeechBubble: true,
-                speechText: "Welcome!"
-            )
+            Image(systemName: "figure.soccer")
+                .font(.system(size: 120, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
 
             VStack(spacing: DesignSystem.Spacing.md) {
                 Text("Welcome to TechnIQ")
@@ -343,13 +334,9 @@ struct UnifiedOnboardingView: View {
 
     private var goalStep: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
-            // Mascot
-            MascotView(
-                state: .coaching,
-                size: .large,
-                showSpeechBubble: true,
-                speechText: "What's your goal?"
-            )
+            Image(systemName: "target")
+                .font(.system(size: 96, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.accentLime)
 
             VStack(spacing: DesignSystem.Spacing.sm) {
                 Text("What's Your Training Goal?")
@@ -425,13 +412,9 @@ struct UnifiedOnboardingView: View {
     private var basicInfoStep: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: DesignSystem.Spacing.lg) {
-                // Mascot
-                MascotView(
-                    state: .encouraging,
-                    size: .medium,
-                    showSpeechBubble: true,
-                    speechText: "Tell me about you!"
-                )
+                Image(systemName: "person.fill")
+                    .font(.system(size: 80, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.accentLime)
 
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Text("Create Your Profile")
@@ -532,13 +515,9 @@ struct UnifiedOnboardingView: View {
     private var positionStyleStep: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: DesignSystem.Spacing.lg) {
-                // Mascot
-                MascotView(
-                    state: .coaching,
-                    size: .medium,
-                    showSpeechBubble: true,
-                    speechText: "How do you play?"
-                )
+                Image(systemName: "sportscourt")
+                    .font(.system(size: 80, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.accentLime)
 
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Text("Your Playing Style")
@@ -673,7 +652,9 @@ struct UnifiedOnboardingView: View {
 
             if planGenerationComplete {
                 // Celebration state
-                MascotView(state: .excited, size: .xlarge, showSpeechBubble: true, speechText: "Let's go!")
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 120, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.accentLime)
 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Text("You're All Set!")
@@ -687,7 +668,9 @@ struct UnifiedOnboardingView: View {
                 }
             } else if planGenerationFailed {
                 // Error state
-                MascotView(state: .thinking, size: .large, showSpeechBubble: true, speechText: "Hmm...")
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 96, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.bloodOrange)
 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Text("Couldn't Generate Plan")
@@ -715,7 +698,8 @@ struct UnifiedOnboardingView: View {
                 }
             } else {
                 // Loading state
-                MascotView(state: .coaching, size: .large, showSpeechBubble: true, speechText: loadingPhase.title)
+                SoccerBallSpinner()
+                    .scaleEffect(3.0)
 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Text("Building Your Plan")
