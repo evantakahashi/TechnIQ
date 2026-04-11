@@ -1,207 +1,149 @@
 import SwiftUI
-import UIKit
 
 // MARK: - Design System
 struct DesignSystem {
     
-    // MARK: - Colors
+    // MARK: - Colors (Stadium Night)
     struct Colors {
-        // Primary brand colors - Emerald
-        static let primaryGreen = Color(red: 0.0, green: 0.902, blue: 0.463) // #00E676
-        static let primaryGreenLight = Color(red: 0.2, green: 0.945, blue: 0.565) // Lighter emerald
-        static let primaryGreenDark = Color(red: 0.0, green: 0.72, blue: 0.37) // Darker emerald
+        // Surfaces (dark-only)
+        static let surfaceBase = Color(red: 0.051, green: 0.059, blue: 0.055)      // #0D0F0E
+        static let surfaceRaised = Color(red: 0.082, green: 0.098, blue: 0.090)    // #151917
+        static let surfaceOverlay = Color(red: 0.118, green: 0.137, blue: 0.125)   // #1E2320
+        static let surfaceHighlight = Color(red: 0.165, green: 0.184, blue: 0.173) // #2A2F2C
 
-        // Secondary colors - Gold (repurposed)
-        static let secondaryBlue = Color(red: 1.0, green: 0.843, blue: 0.251) // #FFD740 Gold
-        static let secondaryBlueLight = Color(red: 1.0, green: 0.894, blue: 0.463) // Lighter gold
+        // Accents
+        static let accentLime = Color(red: 0.800, green: 1.000, blue: 0.000)       // #CCFF00
+        static let accentLimeDim = Color(red: 0.561, green: 0.702, blue: 0.000)    // #8FB300
+        static let bloodOrange = Color(red: 1.000, green: 0.294, blue: 0.122)      // #FF4B1F
 
-        // Gold accent alias
-        static let accentGold = secondaryBlue
+        // Text (chalk tones)
+        static let chalkWhite = Color(red: 0.949, green: 0.941, blue: 0.902)       // #F2F0E6
+        static let mutedIvory = Color(red: 0.659, green: 0.647, blue: 0.604)       // #A8A59A
+        static let dimIvory = Color(red: 0.420, green: 0.412, blue: 0.384)         // #6B6962
 
-        // Accent colors
-        static let accentOrange = Color(red: 1.0, green: 0.6, blue: 0.0) // #FF9800
-        static let accentYellow = Color(red: 1.0, green: 0.92, blue: 0.23) // #FFEB3B
+        // MARK: - Semantic aliases (legacy token names → Stadium Night)
 
-        // Celebration & Gamification colors
-        static let successGreen = Color(red: 0.0, green: 0.9, blue: 0.4)
-        static let streakOrange = Color(red: 1.0, green: 0.45, blue: 0.1)
-        static let xpGold = Color(red: 1.0, green: 0.84, blue: 0.0)
-        static let levelPurple = Color(red: 0.6, green: 0.4, blue: 0.9)
+        // Primary brand (was emerald green)
+        static let primaryGreen = accentLime
+        static let primaryGreenLight = accentLime
+        static let primaryGreenDark = accentLimeDim
 
-        // Coin currency color
-        static let coinGold = Color(red: 1.0, green: 0.76, blue: 0.03) // #FFC107
+        // Gold/secondary (collapsed to lime)
+        static let secondaryBlue = accentLime
+        static let secondaryBlueLight = accentLime
+        static let accentGold = accentLime
+        static let accentOrange = bloodOrange
+        static let accentYellow = accentLime
 
-        // Item Rarity colors
+        // Gamification
+        static let successGreen = accentLime
+        static let streakOrange = bloodOrange
+        static let xpGold = accentLime
+        static let levelPurple = accentLime
+        static let coinGold = accentLime
+
+        // Semantic
+        static let success = accentLime
+        static let warning = bloodOrange
+        static let error = bloodOrange
+        static let info = accentLime
+
+        // Text aliases
+        static let textPrimary = chalkWhite
+        static let textSecondary = mutedIvory
+        static let textTertiary = dimIvory
+        static let textOnAccent = surfaceBase
+        static let primaryDark = surfaceBase
+
+        // Background aliases
+        static let background = surfaceBase
+        static let backgroundSecondary = surfaceRaised
+        static let backgroundTertiary = surfaceOverlay
+        static let cardBackground = surfaceRaised
+        static let cardBorder = chalkWhite.opacity(0.08)
+        static let darkModeBackground = surfaceBase
+        static let cellBackground = surfaceRaised
+
+        // Preserved: rarity system (players recognize these)
         static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62)
         static let rarityUncommon = Color(red: 0.3, green: 0.69, blue: 0.31)
         static let rarityRare = Color(red: 0.13, green: 0.59, blue: 0.95)
         static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69)
         static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03)
 
-        // Confetti colors
+        // Legacy neutrals (aliases to chalk tones)
+        static let neutral100 = chalkWhite
+        static let neutral200 = chalkWhite.opacity(0.12)
+        static let neutral300 = chalkWhite.opacity(0.08)
+        static let neutral400 = mutedIvory
+        static let neutral500 = mutedIvory
+        static let neutral600 = dimIvory
+        static let neutral700 = dimIvory
+        static let neutral800 = surfaceHighlight
+        static let neutral900 = surfaceBase
+
+        // Confetti palette
         static let confettiColors: [Color] = [
-            primaryGreen,
-            accentGold,
-            accentOrange,
-            accentYellow,
-            Color(red: 0.9, green: 0.3, blue: 0.5), // Pink
-            Color(red: 0.6, green: 0.4, blue: 0.9), // Purple
-            Color(red: 0.2, green: 0.8, blue: 0.9)  // Cyan
+            accentLime,
+            bloodOrange,
+            chalkWhite,
+            accentLimeDim
         ]
 
-        // Semantic colors
-        static let success = primaryGreen
-        static let warning = Color(red: 1.0, green: 0.671, blue: 0.251) // #FFAB40
-        static let error = Color(red: 1.0, green: 0.231, blue: 0.361) // #FF3B5C
-        static let info = secondaryBlue
-
-        // Dark-first surface colors (adaptive)
-        static let surfaceBase = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.039, green: 0.039, blue: 0.047, alpha: 1)
-                : UIColor(red: 0.961, green: 0.961, blue: 0.969, alpha: 1)
-        })
-        static let surfaceRaised = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.086, green: 0.086, blue: 0.094, alpha: 1)
-                : UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1)
-        })
-        static let surfaceOverlay = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.118, green: 0.118, blue: 0.133, alpha: 1)
-                : UIColor(red: 0.941, green: 0.941, blue: 0.949, alpha: 1)
-        })
-        static let surfaceHighlight = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.165, green: 0.165, blue: 0.188, alpha: 1)
-                : UIColor(red: 0.910, green: 0.910, blue: 0.925, alpha: 1)
-        })
-
-        // Neutral colors
-        static let neutral100 = Color(red: 0.98, green: 0.98, blue: 0.98) // #FAFAFA
-        static let neutral200 = Color(red: 0.96, green: 0.96, blue: 0.96) // #F5F5F5
-        static let neutral300 = Color(red: 0.93, green: 0.93, blue: 0.93) // #EEEEEE
-        static let neutral400 = Color(red: 0.74, green: 0.74, blue: 0.74) // #BDBDBD
-        static let neutral500 = Color(red: 0.62, green: 0.62, blue: 0.62) // #9E9E9E
-        static let neutral600 = Color(red: 0.46, green: 0.46, blue: 0.46) // #757575
-        static let neutral700 = Color(red: 0.38, green: 0.38, blue: 0.38) // #616161
-        static let neutral800 = Color(red: 0.26, green: 0.26, blue: 0.26) // #424242
-        static let neutral900 = Color(red: 0.13, green: 0.13, blue: 0.13) // #212121
-
-        // Background colors (mapped to surface tokens)
-        static let background = surfaceBase
-        static let backgroundSecondary = surfaceRaised
-        static let backgroundTertiary = surfaceOverlay
-
-        // Text colors (adaptive dark-first)
-        static let textPrimary = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.95)
-                : UIColor.label
-        })
-        static let textSecondary = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.60)
-                : UIColor.secondaryLabel
-        })
-        static let textTertiary = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.38)
-                : UIColor.tertiaryLabel
-        })
-        static let textOnAccent = Color(red: 0.039, green: 0.039, blue: 0.047) // #0A0A0C
-        static let primaryDark = neutral900
-
-        // Card backgrounds (mapped to surface tokens)
-        static let cardBackground = surfaceRaised
-        static let cardBorder = neutral200
-
-        // Gradients
+        // Gradients (all collapsed to lime or blood orange)
         static let primaryGradient = LinearGradient(
-            colors: [primaryGreen, primaryGreenLight],
+            colors: [accentLime, accentLimeDim],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-
-        static let secondaryGradient = LinearGradient(
-            colors: [secondaryBlue, secondaryBlueLight],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+        static let secondaryGradient = primaryGradient
+        static let athleticGradient = primaryGradient
+        static let xpGradient = primaryGradient
+        static let levelUpGradient = primaryGradient
+        static let celebrationGradient = primaryGradient
+        static let streakGradient = LinearGradient(
+            colors: [bloodOrange, bloodOrange.opacity(0.7)],
+            startPoint: .bottom,
+            endPoint: .top
         )
-
         static let backgroundGradient = LinearGradient(
             colors: [surfaceBase, surfaceRaised],
             startPoint: .top,
             endPoint: .bottom
         )
-
-        // Athletic gradient (emerald → gold diagonal)
-        static let athleticGradient = LinearGradient(
-            colors: [primaryGreen, accentGold],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        // Celebration gradients
-        static let xpGradient = LinearGradient(
-            colors: [xpGold, accentOrange],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        static let levelUpGradient = LinearGradient(
-            colors: [primaryGreen, accentGold],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        static let streakGradient = LinearGradient(
-            colors: [streakOrange, accentYellow],
-            startPoint: .bottom,
-            endPoint: .top
-        )
-
-        static let celebrationGradient = LinearGradient(
-            colors: [primaryGreen, primaryGreenDark],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        // Dark mode backgrounds (mapped to surface tokens)
-        static let darkModeBackground = Color(red: 0.039, green: 0.039, blue: 0.047) // #0A0A0C
-        static let cellBackground = Color(red: 0.086, green: 0.086, blue: 0.094) // #161618
     }
     
-    // MARK: - Typography
+    // MARK: - Typography (Stadium Night: compressed, heavy, screaming)
     struct Typography {
-        // Display fonts (rounded for athletic feel)
-        static let displayLarge = Font.system(size: 48, weight: .black, design: .rounded)
-        static let displayMedium = Font.system(size: 36, weight: .bold, design: .rounded)
-        static let displaySmall = Font.system(size: 28, weight: .bold, design: .rounded)
+        // Display — compressed, black-weight SF Pro (Nike Training hero feel)
+        static let heroDisplay = Font.system(size: 72, weight: .black).width(.compressed)
+        static let displayLarge = Font.system(size: 56, weight: .black).width(.compressed)
+        static let displayMedium = Font.system(size: 42, weight: .heavy).width(.compressed)
+        static let displaySmall = Font.system(size: 32, weight: .heavy).width(.compressed)
 
-        // Headline fonts
-        static let headlineLarge = Font.system(size: 24, weight: .bold, design: .rounded)
-        static let headlineMedium = Font.system(size: 20, weight: .semibold, design: .rounded)
-        static let headlineSmall = Font.system(size: 17, weight: .semibold, design: .default)
+        // Headlines — restrained, readable
+        static let headlineLarge = Font.system(size: 24, weight: .bold)
+        static let headlineMedium = Font.system(size: 20, weight: .semibold)
+        static let headlineSmall = Font.system(size: 17, weight: .semibold)
 
-        // Title fonts
-        static let titleLarge = Font.system(size: 22, weight: .semibold, design: .default)
-        static let titleMedium = Font.system(size: 16, weight: .medium, design: .default)
-        static let titleSmall = Font.system(size: 14, weight: .medium, design: .default)
+        // Titles
+        static let titleLarge = Font.system(size: 22, weight: .semibold)
+        static let titleMedium = Font.system(size: 16, weight: .semibold)
+        static let titleSmall = Font.system(size: 14, weight: .medium)
 
-        // Label fonts
-        static let labelLarge = Font.system(size: 15, weight: .semibold, design: .default)
-        static let labelMedium = Font.system(size: 13, weight: .medium, design: .default)
-        static let labelSmall = Font.system(size: 11, weight: .medium, design: .default)
+        // Labels — compressed/heavy for buttons, tags, uppercase metadata
+        static let labelLarge = Font.system(size: 15, weight: .heavy).width(.compressed)
+        static let labelMedium = Font.system(size: 13, weight: .heavy).width(.compressed)
+        static let labelSmall = Font.system(size: 11, weight: .heavy).width(.compressed)
 
-        // Body fonts
-        static let bodyLarge = Font.system(size: 17, weight: .regular, design: .default)
-        static let bodyMedium = Font.system(size: 15, weight: .regular, design: .default)
-        static let bodySmall = Font.system(size: 13, weight: .regular, design: .default)
+        // Body — stays clean and readable
+        static let bodyLarge = Font.system(size: 17, weight: .regular)
+        static let bodyMedium = Font.system(size: 15, weight: .regular)
+        static let bodySmall = Font.system(size: 13, weight: .regular)
 
-        // Numbers (tabular for consistency in stats)
-        static let numberLarge = Font.system(size: 36, weight: .bold, design: .monospaced)
-        static let numberMedium = Font.system(size: 24, weight: .bold, design: .monospaced)
+        // Numbers — monospaced for stat alignment
+        static let numberLarge = Font.system(size: 36, weight: .black, design: .monospaced)
+        static let numberMedium = Font.system(size: 24, weight: .black, design: .monospaced)
         static let numberSmall = Font.system(size: 17, weight: .semibold, design: .monospaced)
     }
     
@@ -222,35 +164,35 @@ struct DesignSystem {
         static let textFieldPadding: EdgeInsets = EdgeInsets(top: md, leading: md, bottom: md, trailing: md)
     }
     
-    // MARK: - Corner Radius
+    // MARK: - Corner Radius (Stadium Night: sharper)
     struct CornerRadius {
-        static let xs: CGFloat = 4
-        static let sm: CGFloat = 8
-        static let md: CGFloat = 12
-        static let lg: CGFloat = 16
-        static let xl: CGFloat = 24
-        static let xxl: CGFloat = 32
-        
-        // Specific use cases
-        static let button: CGFloat = md
-        static let card: CGFloat = lg
-        static let textField: CGFloat = md
-        static let image: CGFloat = sm
-        static let pill: CGFloat = 50 // For pill-shaped buttons
-    }
-    
-    // MARK: - Shadows
-    struct Shadow {
-        static let small = (color: Colors.neutral900.opacity(0.05), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
-        static let medium = (color: Colors.neutral900.opacity(0.1), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2))
-        static let large = (color: Colors.neutral900.opacity(0.15), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4))
-        static let xl = (color: Colors.neutral900.opacity(0.2), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(8))
+        static let xs: CGFloat = 2
+        static let sm: CGFloat = 4
+        static let md: CGFloat = 6
+        static let lg: CGFloat = 8
+        static let xl: CGFloat = 12
+        static let xxl: CGFloat = 16
 
-        // Glow variants for dark mode
-        static let glowSmall = (color: Colors.primaryGreen.opacity(0.08), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(0))
-        static let glowMedium = (color: Colors.primaryGreen.opacity(0.12), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(0))
-        static let glowLarge = (color: Colors.primaryGreen.opacity(0.15), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(0))
-        static let glowGold = (color: Colors.accentGold.opacity(0.15), radius: CGFloat(12), x: CGFloat(0), y: CGFloat(0))
+        // Specific use cases
+        static let button: CGFloat = sm
+        static let card: CGFloat = lg
+        static let textField: CGFloat = sm
+        static let image: CGFloat = sm
+        static let pill: CGFloat = 999
+    }
+
+    // MARK: - Shadows (Stadium Night: flat, hard edges; glow aliases are dead)
+    struct Shadow {
+        static let small = (color: Color.black.opacity(0.3), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
+        static let medium = (color: Color.black.opacity(0.4), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2))
+        static let large = (color: Color.black.opacity(0.5), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4))
+        static let xl = (color: Color.black.opacity(0.6), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(8))
+
+        // Legacy glow aliases — flattened
+        static let glowSmall = small
+        static let glowMedium = medium
+        static let glowLarge = large
+        static let glowGold = medium
     }
 
     // MARK: - Animation

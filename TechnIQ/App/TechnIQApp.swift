@@ -61,7 +61,7 @@ struct TechnIQApp: App {
                 .environmentObject(coreDataManager)
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
-                .preferredColorScheme(appColorScheme.toColorScheme)
+                .preferredColorScheme(.dark)
         }
     }
 }
