@@ -37,25 +37,21 @@ struct ModernButton: View {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .font(DesignSystem.Typography.labelMedium)
+                        .font(.system(size: 14, weight: .heavy))
                 }
                 Text(title)
                     .font(DesignSystem.Typography.labelLarge)
-                    .fontWeight(.semibold)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
             }
             .padding(DesignSystem.Spacing.buttonPadding)
             .frame(maxWidth: .infinity)
             .background(backgroundForStyle)
             .foregroundColor(foregroundColorForStyle)
             .cornerRadius(DesignSystem.CornerRadius.button)
-            .overlay(
-                // Gradient sheen
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .fill(LinearGradient(colors: [.white.opacity(0.05), .clear], startPoint: .top, endPoint: .bottom))
-            )
             .overlay(borderForStyle)
             .customShadow(shadowForStyle)
-            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .scaleEffect(isPressed ? 0.97 : 1.0)
             .animation(DesignSystem.Animation.quick, value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
@@ -88,7 +84,7 @@ struct ModernButton: View {
         case .danger:
             return .white
         case .secondary:
-            return DesignSystem.Colors.primaryGreen
+            return DesignSystem.Colors.chalkWhite
         case .ghost:
             return DesignSystem.Colors.textPrimary
         }
@@ -99,7 +95,7 @@ struct ModernButton: View {
             switch style {
             case .secondary:
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .stroke(DesignSystem.Colors.primaryGreen, lineWidth: 1.5)
+                    .stroke(DesignSystem.Colors.chalkWhite, lineWidth: 1)
             default:
                 EmptyView()
             }
@@ -125,12 +121,11 @@ struct ModernCard<Content: View>: View {
     let onTap: (() -> Void)?
 
     @State private var isPressed = false
-    @Environment(\.colorScheme) private var colorScheme
 
     init(
         padding: CGFloat = DesignSystem.Spacing.cardPadding,
         accentEdge: Edge? = nil,
-        accentColor: Color = DesignSystem.Colors.primaryGreen,
+        accentColor: Color = DesignSystem.Colors.accentLime,
         onTap: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
@@ -150,11 +145,11 @@ struct ModernCard<Content: View>: View {
         .cornerRadius(DesignSystem.CornerRadius.card)
         .overlay(
             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(DesignSystem.Colors.chalkWhite.opacity(0.08), lineWidth: 1)
         )
         .overlay(accentBorder)
-        .customShadow(colorScheme == .dark ? DesignSystem.Shadow.glowMedium : DesignSystem.Shadow.medium)
-        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .customShadow(DesignSystem.Shadow.medium)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(DesignSystem.Animation.quick, value: isPressed)
 
         if let onTap {
@@ -260,7 +255,9 @@ struct ModernTextField: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text(title)
                 .font(DesignSystem.Typography.labelMedium)
-                .foregroundColor(isFocused ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
+                .textCase(.uppercase)
+                .tracking(0.8)
+                .foregroundColor(isFocused ? DesignSystem.Colors.accentLime : DesignSystem.Colors.textSecondary)
                 .animation(DesignSystem.Animation.quick, value: isFocused)
             
             HStack(spacing: DesignSystem.Spacing.sm) {
@@ -321,19 +318,15 @@ struct ProgressRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
+                .stroke(DesignSystem.Colors.chalkWhite.opacity(0.12), lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: CGFloat(progress))
                 .stroke(
-                    AngularGradient(
-                        colors: [DesignSystem.Colors.primaryGreen, DesignSystem.Colors.accentGold],
-                        center: .center
-                    ),
+                    DesignSystem.Colors.accentLime,
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .shadow(color: color.opacity(0.4), radius: 4)
                 .animation(DesignSystem.Animation.smooth, value: progress)
         }
         .frame(width: size, height: size)
@@ -465,18 +458,19 @@ struct PillSelector: View {
                         }) {
                             Text(option)
                                 .font(DesignSystem.Typography.labelMedium)
-                                .fontWeight(selectedIndex == index ? .semibold : .regular)
+                                .textCase(.uppercase)
+                                .tracking(0.8)
                                 .padding(.horizontal, DesignSystem.Spacing.md)
                                 .padding(.vertical, DesignSystem.Spacing.sm)
                                 .frame(minWidth: 60)
                                 .background(
                                     selectedIndex == index
-                                        ? DesignSystem.Colors.primaryGreen
+                                        ? DesignSystem.Colors.accentLime
                                         : DesignSystem.Colors.surfaceHighlight
                                 )
                                 .foregroundColor(
                                     selectedIndex == index
-                                        ? .white
+                                        ? DesignSystem.Colors.surfaceBase
                                         : DesignSystem.Colors.textSecondary
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.pill)
@@ -524,18 +518,19 @@ struct MultiSelectPillSelector: View {
                         }) {
                             Text(option)
                                 .font(DesignSystem.Typography.labelMedium)
-                                .fontWeight(selectedOptions.contains(option) ? .semibold : .regular)
+                                .textCase(.uppercase)
+                                .tracking(0.8)
                                 .padding(.horizontal, DesignSystem.Spacing.md)
                                 .padding(.vertical, DesignSystem.Spacing.sm)
                                 .frame(minWidth: 50)
                                 .background(
                                     selectedOptions.contains(option)
-                                        ? DesignSystem.Colors.primaryGreen
+                                        ? DesignSystem.Colors.accentLime
                                         : DesignSystem.Colors.surfaceHighlight
                                 )
                                 .foregroundColor(
                                     selectedOptions.contains(option)
-                                        ? .white
+                                        ? DesignSystem.Colors.surfaceBase
                                         : DesignSystem.Colors.textSecondary
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.pill)
@@ -650,11 +645,12 @@ struct ModernSegmentControl: View {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         if let icons = icons, index < icons.count {
                             Image(systemName: icons[index])
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 13, weight: .heavy))
                         }
                         Text(option)
                             .font(DesignSystem.Typography.labelMedium)
-                            .fontWeight(.semibold)
+                            .textCase(.uppercase)
+                            .tracking(0.8)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DesignSystem.Spacing.sm + 2)
@@ -662,14 +658,14 @@ struct ModernSegmentControl: View {
                         Group {
                             if selectedIndex == index {
                                 Capsule()
-                                    .fill(DesignSystem.Colors.primaryGreen)
+                                    .fill(DesignSystem.Colors.accentLime)
                                     .matchedGeometryEffect(id: "segment_bg", in: segmentAnimation)
                             }
                         }
                     )
                     .foregroundColor(
                         selectedIndex == index
-                            ? .white
+                            ? DesignSystem.Colors.surfaceBase
                             : DesignSystem.Colors.textSecondary
                     )
                 }
@@ -794,18 +790,20 @@ struct AnimatedTabBar: View {
                         ZStack {
                             if selectedTab == index {
                                 Capsule()
-                                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                                    .fill(DesignSystem.Colors.accentLime)
                                     .frame(width: 56, height: 32)
-                                    .shadow(color: DesignSystem.Colors.primaryGreen.opacity(0.3), radius: 8)
                                     .matchedGeometryEffect(id: "tab_bg", in: tabAnimation)
                             }
                             Image(systemName: tab.0)
-                                .font(.system(size: 20, weight: selectedTab == index ? .semibold : .regular))
+                                .font(.system(size: 18, weight: selectedTab == index ? .heavy : .semibold))
+                                .foregroundColor(selectedTab == index ? DesignSystem.Colors.surfaceBase : DesignSystem.Colors.mutedIvory)
                         }
                         Text(tab.1)
                             .font(DesignSystem.Typography.labelSmall)
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                            .foregroundColor(selectedTab == index ? DesignSystem.Colors.chalkWhite : DesignSystem.Colors.mutedIvory)
                     }
-                    .foregroundColor(selectedTab == index ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
@@ -813,7 +811,15 @@ struct AnimatedTabBar: View {
         }
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.sm)
-        .background(DesignSystem.Colors.surfaceRaised)
+        .background(
+            DesignSystem.Colors.surfaceRaised
+                .overlay(
+                    Rectangle()
+                        .fill(DesignSystem.Colors.chalkWhite.opacity(0.08))
+                        .frame(height: 1),
+                    alignment: .top
+                )
+        )
     }
 }
 
@@ -823,9 +829,7 @@ struct GlowBadge: View {
     let color: Color
     let icon: String?
 
-    @State private var appeared = false
-
-    init(_ text: String, color: Color = DesignSystem.Colors.primaryGreen, icon: String? = nil) {
+    init(_ text: String, color: Color = DesignSystem.Colors.accentLime, icon: String? = nil) {
         self.text = text
         self.color = color
         self.icon = icon
@@ -835,27 +839,18 @@ struct GlowBadge: View {
         HStack(spacing: DesignSystem.Spacing.xs) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 11, weight: .heavy))
             }
             Text(text)
                 .font(DesignSystem.Typography.labelSmall)
-                .fontWeight(.bold)
                 .textCase(.uppercase)
+                .tracking(0.8)
         }
-        .foregroundColor(color)
+        .foregroundColor(DesignSystem.Colors.surfaceBase)
         .padding(.horizontal, DesignSystem.Spacing.sm)
         .padding(.vertical, DesignSystem.Spacing.xs)
-        .background(color.opacity(0.15))
+        .background(color)
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(color.opacity(0.3), lineWidth: 1))
-        .shadow(color: color.opacity(appeared ? 0.3 : 0), radius: 8)
-        .scaleEffect(appeared ? 1.0 : 0.8)
-        .opacity(appeared ? 1.0 : 0)
-        .onAppear {
-            withAnimation(DesignSystem.Animation.springBouncy) {
-                appeared = true
-            }
-        }
     }
 }
 
@@ -882,16 +877,17 @@ struct ActionChip: View {
         }) {
             HStack(spacing: DesignSystem.Spacing.xs) {
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(color)
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundColor(DesignSystem.Colors.accentLime)
                 Text(title)
                     .font(DesignSystem.Typography.labelMedium)
-                    .fontWeight(.semibold)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
             }
             .padding(.vertical, DesignSystem.Spacing.sm)
             .padding(.horizontal, DesignSystem.Spacing.md)
-            .background(color.opacity(isPressed ? 0.2 : 0.1))
+            .background(isPressed ? DesignSystem.Colors.surfaceOverlay : DesignSystem.Colors.surfaceHighlight)
             .cornerRadius(DesignSystem.CornerRadius.sm)
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .animation(DesignSystem.Animation.quick, value: isPressed)
@@ -900,6 +896,106 @@ struct ActionChip: View {
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
         }, perform: {})
+    }
+}
+
+// MARK: - Pitch Line Divider
+
+/// A chalk-white horizontal line used to separate sections, evoking a pitch line.
+struct PitchDivider: View {
+    var opacity: Double = 0.4
+    var horizontalPadding: CGFloat = 0
+
+    var body: some View {
+        Rectangle()
+            .fill(DesignSystem.Colors.chalkWhite.opacity(opacity))
+            .frame(height: 1)
+            .padding(.horizontal, horizontalPadding)
+    }
+}
+
+// MARK: - Corner Bracket (pitch corner arc stylized as an L)
+
+/// An L-shaped bracket drawn in one corner, evoking a pitch corner arc.
+struct CornerBracketShape: Shape {
+    var length: CGFloat = 20
+    var thickness: CGFloat = 2
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(CGRect(x: rect.minX, y: rect.minY, width: length, height: thickness))
+        path.addRect(CGRect(x: rect.minX, y: rect.minY, width: thickness, height: length))
+        return path
+    }
+}
+
+// MARK: - Hero Card Modifier
+
+private struct HeroCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(DesignSystem.Spacing.cardPadding)
+            .background(DesignSystem.Colors.surfaceRaised)
+            .cornerRadius(DesignSystem.CornerRadius.card)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(DesignSystem.Colors.chalkWhite.opacity(0.08), lineWidth: 1)
+            )
+            .overlay(
+                CornerBracketShape(length: 20, thickness: 2)
+                    .fill(DesignSystem.Colors.chalkWhite.opacity(0.7))
+                    .frame(width: 20, height: 20)
+                    .padding(10),
+                alignment: .topLeading
+            )
+            .customShadow(DesignSystem.Shadow.medium)
+    }
+}
+
+extension View {
+    /// Wraps content in a Stadium Night hero card with a chalk corner bracket.
+    func heroCard() -> some View {
+        self.modifier(HeroCardModifier())
+    }
+}
+
+// MARK: - Turf Background
+
+/// Root-level background: surfaceBase with a subtle procedural grain overlay.
+struct TurfBackground: View {
+    var body: some View {
+        ZStack {
+            DesignSystem.Colors.surfaceBase
+            TurfGrainCanvas()
+                .opacity(0.05)
+                .allowsHitTesting(false)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+private struct TurfGrainCanvas: View {
+    var body: some View {
+        Canvas { context, size in
+            var generator = SeededRandomNumberGenerator(seed: 0xA11CE)
+            for _ in 0..<1800 {
+                let x = CGFloat.random(in: 0...size.width, using: &generator)
+                let y = CGFloat.random(in: 0...size.height, using: &generator)
+                let rect = CGRect(x: x, y: y, width: 1, height: 1)
+                context.fill(Path(rect), with: .color(DesignSystem.Colors.chalkWhite))
+            }
+        }
+    }
+}
+
+private struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: UInt64) { self.state = seed == 0 ? 0xdead_beef : seed }
+    mutating func next() -> UInt64 {
+        state ^= state << 13
+        state ^= state >> 7
+        state ^= state << 17
+        return state
     }
 }
 
