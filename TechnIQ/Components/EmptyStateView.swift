@@ -1,5 +1,18 @@
 import SwiftUI
 
+// MARK: - Empty State Context
+
+enum EmptyStateContext {
+    case noSessions
+    case noFavorites
+    case noAchievements
+    case noProgress
+    case noPlans
+    case noPosts
+}
+
+// MARK: - Empty State View
+
 /// Reusable empty state component with bold SF Symbol + compressed display typography.
 struct EmptyStateView: View {
     let context: EmptyStateContext

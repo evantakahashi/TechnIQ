@@ -103,7 +103,6 @@
 		D16806ACA3178455B92EA381 /* AchievementServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613C243BAC1BDA980F305E60 /* AchievementServiceProtocol.swift */; };
 		D29F7CA7496246BDB968E062 /* MockCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46BFAE362D84EE56A2328A8 /* MockCoreDataManager.swift */; };
 		D34B59801612065F91EE488E /* CoinService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */; };
-		D397007398A78689EE729DBD /* MascotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA65D744B2E4860334C7B5D /* MascotState.swift */; };
 		D3A14147BB9A8F7CDF15A8FC /* PublicProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D94F0335FDF068598A32FC /* PublicProfileView.swift */; };
 		D46F7C2F5DD956FE0C38B8FB /* SessionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2465CE756CC3395B14507526 /* SessionEditorView.swift */; };
 		D80B10729408A8596E6B0465 /* SubscriptionManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75A834C3935B479CF9C936C /* SubscriptionManagerProtocol.swift */; };
@@ -112,7 +111,6 @@
 		DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */; };
 		DD484A9B408252D569D21C7F /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */; };
 		DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */; };
-		DEAA5C802777F1D0E147B414 /* MascotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
 		DF1635FE2E133001001E8CF9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FD2E133001001E8CF9 /* ContentView.swift */; };
 		DF1636002E133003001E8CF9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF1635FF2E133003001E8CF9 /* Assets.xcassets */; };
@@ -302,12 +300,10 @@
 		840F67CB8B6C97962DADCE93 /* YouTubeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeService.swift; sourceTree = "<group>"; };
 		856A6FF7600118F39E05CA74 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8676FB258A5AF6EC1244EC96 /* AvatarService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarService.swift; sourceTree = "<group>"; };
-		892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotView.swift; sourceTree = "<group>"; };
 		89FC89BE0CACA8CBF03B3625 /* TodaysTrainingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysTrainingView.swift; sourceTree = "<group>"; };
 		8B3A08D4395AA5F75B656BF4 /* CustomDrillServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomDrillServiceProtocol.swift; sourceTree = "<group>"; };
 		9171F938AAB96199970C75DA /* FeatureHighlightView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureHighlightView.swift; sourceTree = "<group>"; };
 		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
-		9BA65D744B2E4860334C7B5D /* MascotState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MascotState.swift; sourceTree = "<group>"; };
 		A46BFAE362D84EE56A2328A8 /* MockCoreDataManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockCoreDataManager.swift; sourceTree = "<group>"; };
 		A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessModels.swift; sourceTree = "<group>"; };
 		A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysFocusCard.swift; sourceTree = "<group>"; };
@@ -594,7 +590,6 @@
 				DF1636462E133200001E8CF9 /* SessionExercise+CoreDataProperties.swift */,
 				DF1636482E133200001E8CF9 /* PlayerStats+CoreDataClass.swift */,
 				DF16364A2E133200001E8CF9 /* PlayerStats+CoreDataProperties.swift */,
-				9BA65D744B2E4860334C7B5D /* MascotState.swift */,
 				1986206B3B3D0F8C77240541 /* AvatarModels.swift */,
 				B85457B8B3C0C17681E48D02 /* AvatarConfiguration+CoreDataClass.swift */,
 				402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */,
@@ -748,7 +743,6 @@
 				DF1636522E133500001E8CF9 /* DesignSystem.swift */,
 				DF1636542E133500001E8CF9 /* ModernComponents.swift */,
 				78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */,
-				892FFEF756D0CC6B9ACFDAD0 /* MascotView.swift */,
 				54E2888C57A13F11DDCBE113 /* EmptyStateView.swift */,
 				5B68C1149036359889CAE238 /* CoinDisplayView.swift */,
 				78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */,
@@ -1170,11 +1164,9 @@
 				AAEA4FBDE9B0A7FC7A86EF50 /* ExerciseEditorView.swift in Sources */,
 				6035CBEC54184A5ED1D058C8 /* XPService.swift in Sources */,
 				63D86C44FCB11CEF497C3A2F /* AchievementService.swift in Sources */,
-				D397007398A78689EE729DBD /* MascotState.swift in Sources */,
 				2266C73DB002B2D82E540F0E /* SessionCompleteView.swift in Sources */,
 				4B87F1AD4E428A335D7AB99E /* HapticManager.swift in Sources */,
 				DD484A9B408252D569D21C7F /* ConfettiView.swift in Sources */,
-				DEAA5C802777F1D0E147B414 /* MascotView.swift in Sources */,
 				7B0F81A9A61CE7278E334FDC /* EmptyStateView.swift in Sources */,
 				0DA13903EEC0D6F969DC8CE7 /* AvatarModels.swift in Sources */,
 				D34B59801612065F91EE488E /* CoinService.swift in Sources */,
