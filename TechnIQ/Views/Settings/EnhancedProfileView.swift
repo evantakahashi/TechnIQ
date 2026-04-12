@@ -123,11 +123,11 @@ struct EnhancedProfileView: View {
 
                 // Info
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text(player.name ?? "Player")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Text((player.name ?? "Player").uppercased())
+                        .font(DesignSystem.Typography.displayLarge)
+                        .foregroundColor(DesignSystem.Colors.chalkWhite)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.6)
 
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         Label("Level \(player.currentLevel)", systemImage: "star.circle.fill")
@@ -336,18 +336,20 @@ struct QuickStatItem: View {
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.xs) {
+            Text(label.uppercased())
+                .font(DesignSystem.Typography.labelSmall)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 12))
+                    .font(.system(size: 14, weight: .heavy))
                     .foregroundColor(color)
                 Text(value)
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .font(DesignSystem.Typography.heroDisplay)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
             }
-            Text(label)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(DesignSystem.Spacing.md)

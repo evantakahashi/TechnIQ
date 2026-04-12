@@ -306,14 +306,15 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(getGreeting())
                         .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .textCase(.uppercase)
+                        .tracking(1.0)
+                        .foregroundColor(DesignSystem.Colors.mutedIvory)
 
-                    Text(player.name ?? "Player")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Text((player.name ?? "Player").uppercased())
+                        .font(DesignSystem.Typography.displayLarge)
+                        .foregroundColor(DesignSystem.Colors.chalkWhite)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.6)
                 }
 
                 Spacer(minLength: 8)
@@ -472,14 +473,14 @@ struct DashboardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         if let tier = tier {
-                            Text(tier.title)
+                            Text(tier.title.uppercased())
                                 .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                                .tracking(1.0)
+                                .foregroundColor(DesignSystem.Colors.mutedIvory)
                         }
                         Text("\(player.totalXP) XP")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .font(DesignSystem.Typography.displayMedium)
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
                     }
 
                     Spacer()
@@ -488,11 +489,10 @@ struct DashboardView: View {
                     if player.currentStreak > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "flame.fill")
-                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                                .foregroundColor(DesignSystem.Colors.bloodOrange)
                             Text("\(player.currentStreak)")
-                                .font(DesignSystem.Typography.labelLarge)
-                                .fontWeight(.semibold)
-                                .foregroundColor(DesignSystem.Colors.accentOrange)
+                                .font(DesignSystem.Typography.displaySmall)
+                                .foregroundColor(DesignSystem.Colors.bloodOrange)
                         }
                     }
                 }

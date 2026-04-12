@@ -52,9 +52,11 @@ struct ExerciseStepView: View {
 
     private var exerciseHeader: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text(exercise?.name ?? "Exercise")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
+            Text((exercise?.name ?? "Exercise").uppercased())
+                .font(DesignSystem.Typography.displayMedium)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
 
             HStack(spacing: DesignSystem.Spacing.sm) {
                 if let category = exercise?.category {
