@@ -12,21 +12,17 @@ final class FeatureHighlightTests: XCTestCase {
     func test_onboardingHighlights_firstIsAITraining() {
         let highlight = FeatureHighlight.onboardingHighlights[0]
         XCTAssertEqual(highlight.headline, "Smart Drills, Built for You")
-        XCTAssertEqual(highlight.mascotState, .coaching)
         XCTAssertFalse(highlight.body.isEmpty)
-        XCTAssertFalse(highlight.speechText.isEmpty)
     }
 
     func test_onboardingHighlights_secondIsProgressXP() {
         let highlight = FeatureHighlight.onboardingHighlights[1]
         XCTAssertEqual(highlight.headline, "Level Up Your Game")
-        XCTAssertEqual(highlight.mascotState, .excited)
     }
 
     func test_onboardingHighlights_thirdIsAvatar() {
         let highlight = FeatureHighlight.onboardingHighlights[2]
         XCTAssertEqual(highlight.headline, "Make It Yours")
-        XCTAssertEqual(highlight.mascotState, .happy)
     }
 
     func test_onboardingHighlights_allHaveUniqueIDs() {
@@ -60,12 +56,9 @@ final class FeatureHighlightTests: XCTestCase {
 // MARK: - Coach Mark Manager Tests
 
 final class CoachMarkManagerTests: XCTestCase {
-    private var suiteName: String!
-    private var defaults: UserDefaults!
 
     override func setUp() {
         super.setUp()
-        // Reset all coach marks before each test
         CoachMarkManager.shared.resetAll()
     }
 
@@ -145,45 +138,5 @@ final class CoachMarkInfoTests: XCTestCase {
         XCTAssertFalse(CoachMarkInfo.plans.text.isEmpty)
         XCTAssertFalse(CoachMarkInfo.progress.text.isEmpty)
         XCTAssertFalse(CoachMarkInfo.avatar.text.isEmpty)
-    }
-}
-
-// MARK: - Mascot State Onboarding Tests
-
-final class MascotStateOnboardingTests: XCTestCase {
-
-    func test_forOnboarding_step0_isWaving() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 0), .waving)
-    }
-
-    func test_forOnboarding_steps1to3_areCoaching() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 1), .coaching)
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 2), .coaching)
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 3), .coaching)
-    }
-
-    func test_forOnboarding_step4_isCoaching() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 4), .coaching)
-    }
-
-    func test_forOnboarding_step5_isEncouraging() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 5), .encouraging)
-    }
-
-    func test_forOnboarding_step6_isCoaching() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 6), .coaching)
-    }
-
-    func test_forOnboarding_step7_isThinking() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 7), .thinking)
-    }
-
-    func test_forOnboarding_step8_isExcited() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 8), .excited)
-    }
-
-    func test_forOnboarding_outOfBounds_isHappy() {
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 9), .happy)
-        XCTAssertEqual(MascotState.forOnboarding(screenIndex: 100), .happy)
     }
 }
