@@ -82,7 +82,21 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
         }
 
         do {
-            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            let result: AuthDataResult
+            if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
+                let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+                do {
+                    result = try await currentUser.link(with: credential)
+                } catch let error as NSError
+                    where error.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+                    #if DEBUG
+                    print("⚠️ Email already exists — falling back to createUser (anon data orphaned)")
+                    #endif
+                    result = try await Auth.auth().createUser(withEmail: email, password: password)
+                }
+            } else {
+                result = try await Auth.auth().createUser(withEmail: email, password: password)
+            }
             #if DEBUG
             print("User created: \(result.user.uid)")
             #endif
@@ -121,6 +135,27 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
         }
     }
     
+    // MARK: - Anonymous Linking
+
+    /// If the current user is anonymous, upgrade them to the given credential
+    /// instead of creating a new auth session. This preserves their UID so Firestore
+    /// data stays accessible.
+    private func linkOrSignIn(with credential: AuthCredential) async throws -> AuthDataResult {
+        if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
+            do {
+                return try await currentUser.link(with: credential)
+            } catch let error as NSError
+                where error.code == AuthErrorCode.credentialAlreadyInUse.rawValue
+                   || error.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+                #if DEBUG
+                print("⚠️ Anonymous link conflict — credential belongs to existing account. Falling back to sign-in (anon data will be orphaned).")
+                #endif
+                return try await Auth.auth().signIn(with: credential)
+            }
+        }
+        return try await Auth.auth().signIn(with: credential)
+    }
+
     // MARK: - Google Sign-In
 
     func signInWithGoogle() async {
@@ -177,7 +212,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
 
             // Sign in to Firebase
-            let authResult = try await Auth.auth().signIn(with: credential)
+            let authResult = try await linkOrSignIn(with: credential)
             #if DEBUG
             print("✅ Google Sign-In successful: \(authResult.user.uid)")
             #endif
@@ -279,7 +314,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
         )
 
         do {
-            let result = try await Auth.auth().signIn(with: firebaseCredential)
+            let result = try await linkOrSignIn(with: firebaseCredential)
 
             // Apple only provides name on first sign-in — save it
             if let fullName = credential.fullName {
