@@ -19,6 +19,7 @@ extension CloudService {
         do {
             try await syncPlayerData()
             try await syncTrainingHistory()
+            try await syncPlayerStatsData()
             try await syncAvatarData()
             try await syncCustomExercises()
             try await syncTrainingPlans()
@@ -96,6 +97,19 @@ extension CloudService {
 
         for session in sessions {
             try await syncTrainingSession(session)
+        }
+    }
+
+    private func syncPlayerStatsData() async throws {
+        let context = coreDataManager.context
+
+        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
+        let players = try context.fetch(playerRequest)
+
+        for player in players {
+            if let stats = player.stats?.allObjects as? [PlayerStats], !stats.isEmpty {
+                try await syncPlayerStats(stats, for: player)
+            }
         }
     }
 

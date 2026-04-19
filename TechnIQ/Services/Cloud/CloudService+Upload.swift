@@ -50,6 +50,19 @@ extension CloudService {
         }
     }
 
+    func syncPlayerStats(_ statsList: [PlayerStats], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        try await commitInChunks(statsList) { batch, stats in
+            let statsData = self.createPlayerStatsDocument(stats: stats)
+            let docRef = self.db.collection("users").document(userUID)
+                .collection("playerStats").document(stats.id?.uuidString ?? UUID().uuidString)
+            batch.setData(statsData, forDocument: docRef, merge: true)
+        }
+    }
+
     // MARK: - Training Session Sync
 
     func syncTrainingSession(_ session: TrainingSession) async throws {
@@ -175,10 +188,12 @@ extension CloudService {
         async let ownedItemsSnapshot = userRef.collection("ownedAvatarItems").getDocuments()
         async let customExercisesSnapshot = userRef.collection("customExercises").getDocuments()
         async let trainingPlansSnapshot = userRef.collection("trainingPlans").getDocuments()
+        async let statsSnapshot = userRef.collection("playerStats").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans) = try await (
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
-            avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot
+            avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
+            statsSnapshot
         )
 
         return CloudUserData(
@@ -189,7 +204,8 @@ extension CloudService {
             avatarConfiguration: avatar.documents.first?.data(),
             ownedAvatarItems: ownedItems.documents.compactMap { $0.data() },
             customExercises: exercises.documents.compactMap { $0.data() },
-            trainingPlans: plans.documents.compactMap { $0.data() }
+            trainingPlans: plans.documents.compactMap { $0.data() },
+            playerStats: stats.documents.compactMap { $0.data() }
         )
     }
 
@@ -394,6 +410,16 @@ extension CloudService {
             "itemId": item.itemId ?? "",
             "purchasedAt": item.purchasedAt ?? Date(),
             "equippedSlot": item.equippedSlot ?? ""
+        ]
+    }
+
+    func createPlayerStatsDocument(stats: PlayerStats) -> [String: Any] {
+        return [
+            "id": stats.id?.uuidString ?? "",
+            "date": stats.date ?? Date(),
+            "skillRatings": stats.skillRatings ?? [:],
+            "totalTrainingHours": stats.totalTrainingHours,
+            "totalSessions": stats.totalSessions
         ]
     }
 

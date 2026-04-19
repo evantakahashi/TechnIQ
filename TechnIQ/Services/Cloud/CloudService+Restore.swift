@@ -77,6 +77,11 @@ extension CloudService {
                 try restoreCustomExercise(from: exerciseData, for: player, in: context)
             }
 
+            restoreProgress = 0.75
+            for statsData in cloudData.playerStats {
+                try restorePlayerStats(from: statsData, for: player, in: context)
+            }
+
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions {
                 try restoreTrainingSession(from: sessionData, for: player, in: context)
@@ -203,6 +208,23 @@ extension CloudService {
 
         goal.player = player
         player.addToPlayerGoals(goal)
+    }
+
+    func restorePlayerStats(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+        let stats = PlayerStats(context: context)
+        stats.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
+        stats.date = (data["date"] as? Timestamp)?.dateValue() ?? (data["date"] as? Date) ?? Date()
+        stats.skillRatings = data["skillRatings"] as? [String: Double]
+        stats.totalTrainingHours = data["totalTrainingHours"] as? Double ?? 0
+        if let sessions = data["totalSessions"] as? Int {
+            stats.totalSessions = Int32(sessions)
+        } else if let sessions = data["totalSessions"] as? Int32 {
+            stats.totalSessions = sessions
+        } else if let sessions = data["totalSessions"] as? NSNumber {
+            stats.totalSessions = sessions.int32Value
+        }
+        stats.player = player
+        player.addToStats(stats)
     }
 
     private func restoreCustomExercise(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {

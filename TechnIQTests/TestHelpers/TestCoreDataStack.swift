@@ -227,4 +227,23 @@ class TestCoreDataStack: CoreDataManagerProtocol {
         try? context.save()
         return season
     }
+
+    @discardableResult
+    func makePlayerStats(
+        player: Player,
+        date: Date = Date(),
+        skillRatings: [String: Double] = ["passing": 4.0, "shooting": 3.5],
+        totalHours: Double = 12.5,
+        totalSessions: Int32 = 8
+    ) -> PlayerStats {
+        let stats = PlayerStats(context: context)
+        stats.id = UUID()
+        stats.player = player
+        stats.date = date
+        stats.skillRatings = skillRatings
+        stats.totalTrainingHours = totalHours
+        stats.totalSessions = totalSessions
+        try? context.save()
+        return stats
+    }
 }

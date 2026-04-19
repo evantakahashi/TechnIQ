@@ -132,6 +132,7 @@ struct CloudUserData {
     let ownedAvatarItems: [[String: Any]]
     let customExercises: [[String: Any]]
     let trainingPlans: [[String: Any]]
+    let playerStats: [[String: Any]]
 }
 
 struct CloudPlayerProfile {

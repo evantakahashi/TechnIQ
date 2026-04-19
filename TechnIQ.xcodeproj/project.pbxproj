@@ -25,6 +25,7 @@
 		2571006405C4CCD7CC915813 /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CC34B60C3065E96B57FD0B /* PostDetailView.swift */; };
 		27132693A915BEE378793F05 /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7834ABCD957BA5E4FD177585 /* OnboardingTests.swift */; };
 		2FE4921DF34388CE08A48234 /* TestCoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE580DDBB22F74CB2AB410 /* TestCoreDataStack.swift */; };
+		CDT341374BECA3DFB1821B87 /* CloudServicePersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDT01A0D59D4452739F8E7A1 /* CloudServicePersistenceTests.swift */; };
 		2FE54F5ED7E490F1CE01593F /* SharedDrillDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */; };
 		341D5D1C69FBB71B19569D6D /* OwnedAvatarItem+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7927AF10E032D5DE23A1409 /* OwnedAvatarItem+CoreDataClass.swift */; };
 		3608C5A8E1DBB9BC5090C686 /* CloudService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BE91B80C5ECBA36E7EB7F7 /* CloudService.swift */; };
@@ -257,6 +258,7 @@
 		1F31304560398E5F65665084 /* DayEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayEditorView.swift; sourceTree = "<group>"; };
 		2465CE756CC3395B14507526 /* SessionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionEditorView.swift; sourceTree = "<group>"; };
 		25BE580DDBB22F74CB2AB410 /* TestCoreDataStack.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestCoreDataStack.swift; sourceTree = "<group>"; };
+		CDT01A0D59D4452739F8E7A1 /* CloudServicePersistenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudServicePersistenceTests.swift; sourceTree = "<group>"; };
 		2659B9B57B37C71E458B41BA /* AICoachServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AICoachServiceProtocol.swift; sourceTree = "<group>"; };
 		27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessAnalysisService.swift; sourceTree = "<group>"; };
 		2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DrillWalkthroughView.swift; sourceTree = "<group>"; };
@@ -846,6 +848,7 @@
 				E33ED23ACAF341275B7DC8DC /* CoinServiceTests.swift */,
 				578008DFD2B6785E213935E7 /* ActiveSessionManagerTests.swift */,
 				7834ABCD957BA5E4FD177585 /* OnboardingTests.swift */,
+				CDT01A0D59D4452739F8E7A1 /* CloudServicePersistenceTests.swift */,
 				4BECDA7A5C71C43AF22C8C5F /* Mocks */,
 			);
 			path = TechnIQTests;
@@ -1261,6 +1264,7 @@
 				8786354D31AF29C2F9C0E9D0 /* CoinServiceTests.swift in Sources */,
 				9934789E1DE8B1E53BD4E257 /* ActiveSessionManagerTests.swift in Sources */,
 				27132693A915BEE378793F05 /* OnboardingTests.swift in Sources */,
+				CDT341374BECA3DFB1821B87 /* CloudServicePersistenceTests.swift in Sources */,
 				D29F7CA7496246BDB968E062 /* MockCoreDataManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
