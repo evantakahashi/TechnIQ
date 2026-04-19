@@ -28,7 +28,7 @@ struct ExerciseDetailView: View {
 
     // Check if this is an AI-generated drill
     private var isAIGeneratedDrill: Bool {
-        exercise.exerciseDescription?.contains("🤖 AI-Generated") == true
+        exercise.exerciseDescription?.contains("AI-Generated") == true
     }
 
     // Check if exercise is editable (not YouTube content)
@@ -191,7 +191,7 @@ struct ExerciseDetailView: View {
                                 .foregroundColor(DesignSystem.Colors.primaryDark)
 
                             // Use rich markdown display for AI-generated drills and structured manual drills
-                            if exercise.exerciseDescription?.contains("🤖 AI-Generated Custom Drill") == true ||
+                            if exercise.exerciseDescription?.contains("AI-Generated Custom Drill") == true ||
                                instructions.contains("**Setup:**") || instructions.contains("**Instructions:**") {
                                 DrillInstructionsView(instructions: instructions)
                             } else {
@@ -359,7 +359,7 @@ struct ExerciseDetailView: View {
 
         var skipNextLines = false
         for line in lines {
-            if line.contains("🎥 YouTube Video") {
+            if line.contains("YouTube Video") {
                 skipNextLines = true
                 continue
             }

@@ -93,7 +93,7 @@ class YouTubeService: YouTubeServiceProtocol {
         exercise.setValue(player, forKey: "player")
 
         // Store YouTube info in the description for now (until Core Data fields are available)
-        exercise.exerciseDescription = "\(description)\n\n🎥 YouTube Video\nChannel: \(channelTitle)\nVideo ID: \(videoId)"
+        exercise.exerciseDescription = "\(description)\n\n[YouTube Video]\nChannel: \(channelTitle)\nVideo ID: \(videoId)"
         exercise.instructions = "1. Watch the YouTube video at: https://youtube.com/watch?v=\(videoId)\n2. Practice the technique shown\n3. Focus on the key points demonstrated"
 
         CoreDataManager.shared.save()
@@ -331,7 +331,7 @@ class YouTubeService: YouTubeServiceProtocol {
             enhancedDescription += "\n\n"
         }
 
-        enhancedDescription += "🎯 Difficulty Analysis:\n"
+        enhancedDescription += "Difficulty Analysis:\n"
         enhancedDescription += "• Level: \(difficultyAnalysis.difficulty)/5 (\(difficultyAnalysis.targetAudience))\n"
         enhancedDescription += "• Confidence: \(Int(difficultyAnalysis.confidence * 100))%\n"
 
@@ -347,7 +347,7 @@ class YouTubeService: YouTubeServiceProtocol {
             enhancedDescription += "• Analysis: \(difficultyAnalysis.reasoning.joined(separator: "; "))\n"
         }
 
-        enhancedDescription += "\n🎥 YouTube Video\nChannel: \(channelTitle)\nDuration: \(formatDuration(duration))"
+        enhancedDescription += "\n[YouTube Video]\nChannel: \(channelTitle)\nDuration: \(formatDuration(duration))"
 
         exercise.exerciseDescription = enhancedDescription
 

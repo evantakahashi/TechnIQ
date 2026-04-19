@@ -9,7 +9,7 @@ struct ExerciseStepView: View {
     }
 
     private var isAIDrill: Bool {
-        exercise?.exerciseDescription?.contains("🤖 AI-Generated") == true
+        exercise?.exerciseDescription?.contains("AI-Generated") == true
     }
 
     private var hasStructuredInstructions: Bool {

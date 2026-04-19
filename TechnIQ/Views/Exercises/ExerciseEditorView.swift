@@ -214,9 +214,10 @@ struct ExerciseEditorView: View {
     }
 
     private func cleanDescription(_ description: String) -> String {
-        // Remove AI/YouTube markers for editing
+        // Remove AI/YouTube markers for editing (handle both new and legacy emoji markers)
         var cleaned = description
-        if cleaned.hasPrefix("🤖 AI-Generated Custom Drill") {
+        if cleaned.hasPrefix("[AI-Generated Custom Drill]") ||
+           cleaned.hasPrefix("🤖 AI-Generated Custom Drill") {
             if let range = cleaned.range(of: "\n\n") {
                 cleaned = String(cleaned[range.upperBound...])
             }
@@ -246,7 +247,7 @@ struct ExerciseEditorView: View {
 
         // Preserve AI marker if present
         if isAIGenerated {
-            exercise.exerciseDescription = "🤖 AI-Generated Custom Drill\n\n\(exerciseDescription)"
+            exercise.exerciseDescription = "[AI-Generated Custom Drill]\n\n\(exerciseDescription)"
         } else {
             exercise.exerciseDescription = exerciseDescription
         }

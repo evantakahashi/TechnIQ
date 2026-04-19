@@ -627,7 +627,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         let exercise = Exercise(context: context)
         exercise.id = UUID()
         exercise.name = drill.title
-        exercise.exerciseDescription = "🤖 AI-Generated Custom Drill\n\(drill.description)"
+        exercise.exerciseDescription = "[AI-Generated Custom Drill]\n\(drill.description)"
         exercise.category = drill.category
         exercise.difficulty = Int16(drill.difficulty)
         exercise.targetSkills = drill.targetSkills
