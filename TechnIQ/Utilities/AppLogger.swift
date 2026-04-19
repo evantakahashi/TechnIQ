@@ -34,14 +34,14 @@ class AppLogger {
         case ui
         case general
 
-        var emoji: String {
+        var tag: String {
             switch self {
-            case .auth: return "🔐"
-            case .data: return "💾"
-            case .network: return "🌐"
-            case .ml: return "🤖"
-            case .ui: return "🎨"
-            case .general: return "ℹ️"
+            case .auth: return "[AUTH]"
+            case .data: return "[DATA]"
+            case .network: return "[NET]"
+            case .ml: return "[ML]"
+            case .ui: return "[UI]"
+            case .general: return "[INFO]"
             }
         }
     }
@@ -93,7 +93,7 @@ class AppLogger {
     private func log(_ message: String, level: Level, category: Category, file: String, function: String, line: Int) {
         let logger = getLogger(for: category)
         let fileName = (file as NSString).lastPathComponent
-        let formattedMessage = "\(category.emoji) [\(fileName):\(line)] \(function) - \(message)"
+        let formattedMessage = "\(category.tag) [\(fileName):\(line)] \(function) - \(message)"
 
         os_log("%{public}@", log: logger, type: level.osLogType, formattedMessage)
     }

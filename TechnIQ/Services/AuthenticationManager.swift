@@ -90,7 +90,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
                 } catch let error as NSError
                     where error.code == AuthErrorCode.emailAlreadyInUse.rawValue {
                     #if DEBUG
-                    print("⚠️ Email already exists — falling back to createUser (anon data orphaned)")
+                    print("Email already exists — falling back to createUser (anon data orphaned)")
                     #endif
                     result = try await Auth.auth().createUser(withEmail: email, password: password)
                 }
@@ -148,7 +148,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
                 where error.code == AuthErrorCode.credentialAlreadyInUse.rawValue
                    || error.code == AuthErrorCode.emailAlreadyInUse.rawValue {
                 #if DEBUG
-                print("⚠️ Anonymous link conflict — credential belongs to existing account. Falling back to sign-in (anon data will be orphaned).")
+                print("Anonymous link conflict — credential belongs to existing account. Falling back to sign-in (anon data will be orphaned).")
                 #endif
                 return try await Auth.auth().signIn(with: credential)
             }
@@ -177,7 +177,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
 
             #if DEBUG
 
-            print("🔄 Starting Google Sign-In...")
+            print("Starting Google Sign-In...")
 
 
             #endif
@@ -186,7 +186,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
 
             #if DEBUG
 
-            print("✅ Google Sign-In UI completed")
+            print("Google Sign-In UI completed")
 
 
             #endif
@@ -204,7 +204,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
 
             #if DEBUG
 
-            print("🔄 Creating Firebase credential...")
+            print("Creating Firebase credential...")
 
 
             #endif
@@ -214,21 +214,21 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             // Sign in to Firebase
             let authResult = try await linkOrSignIn(with: credential)
             #if DEBUG
-            print("✅ Google Sign-In successful: \(authResult.user.uid)")
+            print("Google Sign-In successful: \(authResult.user.uid)")
             #endif
             #if DEBUG
-            print("📧 User email: \(authResult.user.email ?? "No email")")
+            print("User email: \(authResult.user.email ?? "No email")")
 
             #endif
         } catch let error as NSError {
             #if DEBUG
-            print("❌ Google Sign-In error: \(error.localizedDescription)")
+            print("Google Sign-In error: \(error.localizedDescription)")
             #endif
             #if DEBUG
-            print("❌ Error code: \(error.code)")
+            print("Error code: \(error.code)")
             #endif
             #if DEBUG
-            print("❌ Error domain: \(error.domain)")
+            print("Error domain: \(error.domain)")
 
             #endif
             // Handle specific Google Sign-In errors
@@ -330,7 +330,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             }
 
             #if DEBUG
-            print("✅ Apple Sign-In successful: \(result.user.uid)")
+            print("Apple Sign-In successful: \(result.user.uid)")
             #endif
         } catch {
             await MainActor.run {
@@ -367,7 +367,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             try Auth.auth().signOut()
             GIDSignIn.sharedInstance.signOut()
             #if DEBUG
-            print("✅ User signed out successfully")
+            print("User signed out successfully")
             #endif
         } catch {
             handleAuthError(error)
@@ -414,7 +414,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
 
                 if httpResponse.statusCode == 200 {
                     #if DEBUG
-                    print("✅ Account deletion confirmed by server for UID: \(uid)")
+                    print("Account deletion confirmed by server for UID: \(uid)")
                     #endif
 
                     await clearLocalData(uid: uid)
@@ -430,7 +430,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             } catch {
                 lastError = error
                 #if DEBUG
-                print("⚠️ Delete account attempt \(attempt + 1) failed: \(error.localizedDescription)")
+                print("Delete account attempt \(attempt + 1) failed: \(error.localizedDescription)")
                 #endif
             }
         }
@@ -451,7 +451,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             try? context.save()
         }
         #if DEBUG
-        print("✅ Cleared local Core Data for UID: \(uid)")
+        print("Cleared local Core Data for UID: \(uid)")
         #endif
     }
 
@@ -554,7 +554,7 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         #if DEBUG
-        print("❌ Apple Sign-In error: \(error.localizedDescription)")
+        print("Apple Sign-In error: \(error.localizedDescription)")
         #endif
         Task { @MainActor in
             authManager.isLoading = false

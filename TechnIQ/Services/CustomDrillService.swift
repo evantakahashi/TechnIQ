@@ -26,10 +26,10 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         for player: Player
     ) async throws -> Exercise {
         #if DEBUG
-        print("🤖 CustomDrillService: Starting custom drill generation")
+        print("CustomDrillService: Starting custom drill generation")
         #endif
         #if DEBUG
-        print("📝 Request: \(request.skillDescription)")
+        print("Request: \(request.skillDescription)")
         
         #endif
         generationState = .generating
@@ -83,10 +83,10 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
             }
             
             #if DEBUG
-            print("✅ CustomDrillService: Generated drill: \(drillResponse.name)")
-            print("✅ Exercise saved: id=\(exercise.id?.uuidString ?? "nil"), name=\(exercise.name ?? "nil")")
-            print("✅ Exercise desc prefix: \(String(exercise.exerciseDescription?.prefix(60) ?? "nil"))")
-            print("✅ Exercise player: \(exercise.value(forKey: "player") != nil ? "SET" : "NIL")")
+            print("CustomDrillService: Generated drill: \(drillResponse.name)")
+            print("Exercise saved: id=\(exercise.id?.uuidString ?? "nil"), name=\(exercise.name ?? "nil")")
+            print("Exercise desc prefix: \(String(exercise.exerciseDescription?.prefix(60) ?? "nil"))")
+            print("Exercise player: \(exercise.value(forKey: "player") != nil ? "SET" : "NIL")")
             #endif
             return exercise
             
@@ -98,7 +98,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
             
             #if DEBUG
             
-            print("❌ CustomDrillService: Failed to generate drill: \(error)")
+            print("CustomDrillService: Failed to generate drill: \(error)")
             
             #endif
             throw error
@@ -212,7 +212,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
                 urlRequest.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
             } catch {
                 #if DEBUG
-                print("⚠️ Could not get auth token: \(error.localizedDescription)")
+                print("Could not get auth token: \(error.localizedDescription)")
                 #endif
             }
         }
@@ -222,7 +222,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
 
         #if DEBUG
 
-        print("🌐 Calling Firebase Function for custom drill generation...")
+        print("Calling Firebase Function for custom drill generation...")
 
 
         #endif
@@ -235,7 +235,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
             #if DEBUG
-            print("❌ Firebase Function error: \(httpResponse.statusCode) - \(errorMessage)")
+            print("Firebase Function error: \(httpResponse.statusCode) - \(errorMessage)")
 
             #endif
             // Check for API quota error

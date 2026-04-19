@@ -112,7 +112,7 @@ struct CommunityFeedView: View {
                 try await communityService.toggleLike(for: post)
             } catch {
                 #if DEBUG
-                print("❌ Like error: \(error)")
+                print("Like error: \(error)")
                 #endif
             }
         }
@@ -124,7 +124,7 @@ struct CommunityFeedView: View {
                 try await communityService.reportPost(post, reason: "Inappropriate content")
             } catch {
                 #if DEBUG
-                print("❌ Report error: \(error)")
+                print("Report error: \(error)")
                 #endif
             }
         }
@@ -136,7 +136,7 @@ struct CommunityFeedView: View {
                 try await communityService.blockUser(userID)
             } catch {
                 #if DEBUG
-                print("❌ Block error: \(error)")
+                print("Block error: \(error)")
                 #endif
             }
         }
@@ -148,7 +148,7 @@ struct CommunityFeedView: View {
                 try await communityService.deletePost(post)
             } catch {
                 #if DEBUG
-                print("❌ Delete error: \(error)")
+                print("Delete error: \(error)")
                 #endif
             }
         }

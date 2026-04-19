@@ -107,7 +107,7 @@ struct PlayerProfileView: View {
         
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         #if DEBUG
-        print("🔍 Updated PlayerProfileView filter for user: \(authManager.userUID)")
+        print("Updated PlayerProfileView filter for user: \(authManager.userUID)")
         #endif
     }
     

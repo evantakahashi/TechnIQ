@@ -28,24 +28,24 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
             if let error = error as NSError? {
                 // If there's a migration error, delete the store and recreate
                 #if DEBUG
-                print("⚠️ Core Data error: \(error.localizedDescription)")
+                print("Core Data error: \(error.localizedDescription)")
                 #endif
                 #if DEBUG
-                print("🔄 Attempting to reset Core Data store...")
+                print("Attempting to reset Core Data store...")
 
                 #endif
                 if let storeURL = storeDescription.url {
                     do {
                         try FileManager.default.removeItem(at: storeURL)
                         #if DEBUG
-                        print("✅ Deleted corrupted store, will recreate")
+                        print("Deleted corrupted store, will recreate")
 
                         #endif
                         // Try loading again
                         container.loadPersistentStores { [weak self] _, retryError in
                             if let retryError = retryError {
                                 #if DEBUG
-                                print("❌ Failed to recreate Core Data store: \(retryError.localizedDescription)")
+                                print("Failed to recreate Core Data store: \(retryError.localizedDescription)")
                                 #endif
                                 self?.persistentStoreError = retryError
                             } else {
@@ -56,7 +56,7 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
                         }
                     } catch {
                         #if DEBUG
-                        print("❌ Failed to delete corrupted Core Data store: \(error.localizedDescription)")
+                        print("Failed to delete corrupted Core Data store: \(error.localizedDescription)")
                         #endif
                         self.persistentStoreError = error
                     }
@@ -104,7 +104,7 @@ extension CoreDataManager {
             return try context.fetch(request).first
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch current player: \(error)")
+            print("Failed to fetch current player: \(error)")
             #endif
             return nil
         }
@@ -113,7 +113,7 @@ extension CoreDataManager {
     func fetchTrainingSessions(for firebaseUID: String) -> [TrainingSession] {
         guard let player = getCurrentPlayer(for: firebaseUID) else {
             #if DEBUG
-            print("⚠️ No player found for Firebase UID: \(firebaseUID)")
+            print("No player found for Firebase UID: \(firebaseUID)")
             #endif
             return []
         }
@@ -125,12 +125,12 @@ extension CoreDataManager {
         do {
             let sessions = try context.fetch(request)
             #if DEBUG
-            print("📊 Found \(sessions.count) training sessions for user \(firebaseUID)")
+            print("Found \(sessions.count) training sessions for user \(firebaseUID)")
             #endif
             return sessions
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch training sessions: \(error)")
+            print("Failed to fetch training sessions: \(error)")
             #endif
             return []
         }
@@ -139,7 +139,7 @@ extension CoreDataManager {
     func fetchExercises(for firebaseUID: String) -> [Exercise] {
         guard let player = getCurrentPlayer(for: firebaseUID) else {
             #if DEBUG
-            print("⚠️ No player found for Firebase UID: \(firebaseUID)")
+            print("No player found for Firebase UID: \(firebaseUID)")
             #endif
             return []
         }
@@ -152,7 +152,7 @@ extension CoreDataManager {
         let existingExercises = fetchExercises(for: player)
         if !existingExercises.isEmpty {
             #if DEBUG
-            print("📚 Exercises already exist for player \(player.name ?? "Unknown"), skipping default creation")
+            print("Exercises already exist for player \(player.name ?? "Unknown"), skipping default creation")
             #endif
             return
         }
@@ -197,7 +197,7 @@ extension CoreDataManager {
             return count > 0
         } catch {
             #if DEBUG
-            print("❌ Failed to check exercise existence: \(error)")
+            print("Failed to check exercise existence: \(error)")
             #endif
             return false
         }
@@ -212,7 +212,7 @@ extension CoreDataManager {
             return try context.fetch(request)
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch exercises for player: \(error)")
+            print("Failed to fetch exercises for player: \(error)")
             #endif
             return []
         }
@@ -225,7 +225,7 @@ extension CoreDataManager {
         exercise.isFavorite.toggle()
         save()
         #if DEBUG
-        print("⭐ Exercise '\(exercise.name ?? "Unknown")' favorite status: \(exercise.isFavorite)")
+        print("Exercise '\(exercise.name ?? "Unknown")' favorite status: \(exercise.isFavorite)")
         #endif
     }
 
@@ -239,7 +239,7 @@ extension CoreDataManager {
             return try context.fetch(request)
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch favorite exercises: \(error)")
+            print("Failed to fetch favorite exercises: \(error)")
             #endif
             return []
         }
@@ -256,7 +256,7 @@ extension CoreDataManager {
             return try context.fetch(request)
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch recently used exercises: \(error)")
+            print("Failed to fetch recently used exercises: \(error)")
             #endif
             return []
         }
@@ -289,7 +289,7 @@ extension CoreDataManager {
 
         save()
         #if DEBUG
-        print("✏️ Updated exercise: \(exercise.name ?? "Unknown")")
+        print("Updated exercise: \(exercise.name ?? "Unknown")")
         #endif
     }
 
@@ -299,7 +299,7 @@ extension CoreDataManager {
         context.delete(exercise)
         save()
         #if DEBUG
-        print("🗑️ Deleted exercise: \(exerciseName)")
+        print("Deleted exercise: \(exerciseName)")
         #endif
     }
 
@@ -336,7 +336,7 @@ extension CoreDataManager {
 
         save()
         #if DEBUG
-        print("✅ Saved drill feedback: rating=\(rating), difficulty=\(difficultyFeedback)")
+        print("Saved drill feedback: rating=\(rating), difficulty=\(difficultyFeedback)")
         #endif
     }
 
@@ -350,7 +350,7 @@ extension CoreDataManager {
             return try context.fetch(request)
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch drill feedback: \(error)")
+            print("Failed to fetch drill feedback: \(error)")
             #endif
             return []
         }

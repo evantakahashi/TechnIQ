@@ -314,7 +314,7 @@ struct PostDetailView: View {
             } catch {
                 isLoadingComments = false
                 #if DEBUG
-                print("❌ Load comments error: \(error)")
+                print("Load comments error: \(error)")
                 #endif
             }
         }
@@ -335,7 +335,7 @@ struct PostDetailView: View {
             } catch {
                 isPostingComment = false
                 #if DEBUG
-                print("❌ Post comment error: \(error)")
+                print("Post comment error: \(error)")
                 #endif
             }
         }

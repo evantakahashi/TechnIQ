@@ -314,7 +314,7 @@ extension CloudService {
             .setData(planData, merge: false)
 
         #if DEBUG
-        print("✅ Successfully shared plan '\(plan.name)' to community")
+        print("Successfully shared plan '\(plan.name)' to community")
         #endif
     }
 }

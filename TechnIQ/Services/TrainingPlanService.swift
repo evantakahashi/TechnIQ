@@ -112,7 +112,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
     /// Creates a training plan from AI-generated structure
     func createPlanFromAIGeneration(_ generated: GeneratedPlanStructure, for player: Player) -> TrainingPlan? {
         #if DEBUG
-        print("🤖 TrainingPlanService: Creating plan from AI generation: \(generated.name)")
+        print("TrainingPlanService: Creating plan from AI generation: \(generated.name)")
         #endif
 
         // Create the base plan
@@ -176,12 +176,12 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         do {
             try context.save()
             #if DEBUG
-            print("✅ TrainingPlanService: Successfully created AI-generated plan with \(generated.weeks.count) weeks")
+            print("TrainingPlanService: Successfully created AI-generated plan with \(generated.weeks.count) weeks")
             #endif
             return plan
         } catch {
             #if DEBUG
-            print("❌ TrainingPlanService: Failed to save AI-generated plan: \(error)")
+            print("TrainingPlanService: Failed to save AI-generated plan: \(error)")
             #endif
             return nil
         }
@@ -204,7 +204,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                 }
             } catch {
                 #if DEBUG
-                print("⚠️ Error searching for exercise '\(suggestedName)': \(error)")
+                print("Error searching for exercise '\(suggestedName)': \(error)")
                 #endif
             }
 
@@ -216,7 +216,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                 }
             } else {
                 #if DEBUG
-                print("⚠️ No match found for exercise: '\(suggestedName)', using fallback")
+                print("No match found for exercise: '\(suggestedName)', using fallback")
                 #endif
 
                 // Fallback: Get random exercises from template library matching session type
@@ -502,7 +502,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             try context.save()
         } catch {
             #if DEBUG
-            print("❌ TrainingPlanService: Failed to apply adaptation: \(error)")
+            print("TrainingPlanService: Failed to apply adaptation: \(error)")
             #endif
         }
     }

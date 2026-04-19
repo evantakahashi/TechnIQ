@@ -563,12 +563,12 @@ struct NewSessionView: View {
         
         #if DEBUG
 
-        print("💾 Saving new session for player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
+        print("Saving new session for player: \(player.name ?? "Unknown") - UID: \(player.firebaseUID ?? "No UID")")
 
         #endif
         coreDataManager.save()
         #if DEBUG
-        print("✅ Session saved successfully")
+        print("Session saved successfully")
         #endif
 
         // Mark plan session as completed if this was from a training plan
@@ -579,7 +579,7 @@ struct NewSessionView: View {
                 actualIntensity: Int(intensity)
             )
             #if DEBUG
-            print("✅ Plan session marked as completed")
+            print("Plan session marked as completed")
             #endif
         }
 
@@ -593,9 +593,9 @@ struct NewSessionView: View {
         newLevel = levelUp
 
         #if DEBUG
-        print("🎮 XP earned: \(breakdown.total) (base: \(breakdown.baseXP), intensity: \(breakdown.intensityBonus), streak: \(breakdown.streakBonus))")
+        print("XP earned: \(breakdown.total) (base: \(breakdown.baseXP), intensity: \(breakdown.intensityBonus), streak: \(breakdown.streakBonus))")
         if let level = levelUp {
-            print("🎉 Level up! Now level \(level)")
+            print("Level up! Now level \(level)")
         }
         #endif
 
@@ -607,7 +607,7 @@ struct NewSessionView: View {
 
         #if DEBUG
         if !unlockedAchievements.isEmpty {
-            print("🏆 Unlocked \(unlockedAchievements.count) achievements!")
+            print("Unlocked \(unlockedAchievements.count) achievements!")
         }
         #endif
 

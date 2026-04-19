@@ -78,7 +78,7 @@ class CloudService: ObservableObject, CloudServiceProtocol {
                 self.isNetworkAvailable = isAvailable
                 if !isAvailable {
                     #if DEBUG
-                    print("🌐 Network connection lost - will skip cloud sync operations")
+                    print("Network connection lost - will skip cloud sync operations")
                     #endif
                 }
             }

@@ -240,7 +240,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
             self.error = error.localizedDescription
             isLoading = false
             #if DEBUG
-            print("❌ CommunityService.fetchPosts error: \(error)")
+            print("CommunityService.fetchPosts error: \(error)")
             #endif
         }
     }
@@ -555,7 +555,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         } catch {
             isLoadingDrills = false
             #if DEBUG
-            print("❌ CommunityService.fetchSharedDrills error: \(error)")
+            print("CommunityService.fetchSharedDrills error: \(error)")
             #endif
         }
     }
@@ -715,7 +715,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         } catch {
             isLoadingLeaderboard = false
             #if DEBUG
-            print("❌ CommunityService.fetchLeaderboard error: \(error)")
+            print("CommunityService.fetchLeaderboard error: \(error)")
             #endif
         }
     }
@@ -736,7 +736,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                 currentPlayerRank = entry.rank
             }
             #if DEBUG
-            print("❌ CommunityService.fetchCurrentPlayerRank error: \(error)")
+            print("CommunityService.fetchCurrentPlayerRank error: \(error)")
             #endif
         }
     }

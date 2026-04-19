@@ -60,7 +60,7 @@ extension CloudService {
             lastSyncDate = Date()
         } catch {
             #if DEBUG
-            print("⚠️ Incremental sync failed: \(error)")
+            print("Incremental sync failed: \(error)")
             #endif
         }
 
@@ -245,7 +245,7 @@ extension CloudService {
             try await submitMLAnalyticsData(analyticsData)
         } catch {
             #if DEBUG
-            print("⚠️ Failed to track user event: \(error)")
+            print("Failed to track user event: \(error)")
             #endif
         }
     }
@@ -257,7 +257,7 @@ extension CloudService {
             return try await fetchSimilarPlayerProfiles(for: profile, limit: 10)
         } catch {
             #if DEBUG
-            print("⚠️ Failed to fetch similar players: \(error)")
+            print("Failed to fetch similar players: \(error)")
             #endif
             return []
         }

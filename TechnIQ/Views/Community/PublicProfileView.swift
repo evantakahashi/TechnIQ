@@ -223,7 +223,7 @@ struct PublicProfileView: View {
             } catch {
                 isLoading = false
                 #if DEBUG
-                print("❌ Load profile error: \(error)")
+                print("Load profile error: \(error)")
                 #endif
             }
         }

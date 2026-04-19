@@ -11,7 +11,7 @@ struct YouTubeConfig {
               let key = plist["YOUTUBE_API_KEY"] as? String,
               key != "YOUR_YOUTUBE_API_KEY_HERE" else {
             #if DEBUG
-            print("⚠️ YouTube API key not configured. Please add your API key to Info.plist")
+            print("YouTube API key not configured. Please add your API key to Info.plist")
             #endif
             return ""
         }

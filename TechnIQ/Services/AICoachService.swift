@@ -37,7 +37,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             cacheCoaching(coaching)
         } catch {
             #if DEBUG
-            print("❌ AICoachService: Failed to fetch coaching: \(error)")
+            print("AICoachService: Failed to fetch coaching: \(error)")
             #endif
             self.error = error.localizedDescription
             // Keep showing yesterday's cached coaching if available
@@ -56,7 +56,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             aiInsights = coaching.insights.map { mapToTrainingInsight($0) }
         } catch {
             #if DEBUG
-            print("⚠️ AICoachService: Failed to decode cached coaching: \(error)")
+            print("AICoachService: Failed to decode cached coaching: \(error)")
             #endif
         }
     }
@@ -67,7 +67,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             UserDefaults.standard.set(data, forKey: cacheKey)
         } catch {
             #if DEBUG
-            print("⚠️ AICoachService: Failed to cache coaching: \(error)")
+            print("AICoachService: Failed to cache coaching: \(error)")
             #endif
         }
     }
@@ -98,7 +98,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             adaptationResponse = try await callPlanAdaptationFunction(for: player, plan: plan, weekNumber: weekNumber)
         } catch {
             #if DEBUG
-            print("❌ AICoachService: Failed to fetch plan adaptation: \(error)")
+            print("AICoachService: Failed to fetch plan adaptation: \(error)")
             #endif
             adaptationError = error.localizedDescription
         }

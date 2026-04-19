@@ -671,13 +671,13 @@ struct YouTubeWebView: UIViewRepresentable {
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             #if DEBUG
-            print("❌ WebView failed to load: \(error.localizedDescription)")
+            print("WebView failed to load: \(error.localizedDescription)")
             #endif
         }
         
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             #if DEBUG
-            print("❌ WebView failed provisional navigation: \(error.localizedDescription)")
+            print("WebView failed provisional navigation: \(error.localizedDescription)")
             #endif
         }
     }

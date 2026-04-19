@@ -48,10 +48,10 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     func getYouTubeRecommendations(for player: Player, limit: Int = 1) async throws -> [YouTubeVideoRecommendation] {
         try checkRateLimit(for: "get_youtube_recommendations")
         #if DEBUG
-        print("🎥 CloudMLService: Fetching single YouTube recommendation for \(player.name ?? "Unknown")")
+        print("CloudMLService: Fetching single YouTube recommendation for \(player.name ?? "Unknown")")
         #endif
         #if DEBUG
-        print("🔍 CloudMLService: Checking prerequisites...")
+        print("CloudMLService: Checking prerequisites...")
 
         #endif
         recommendationStatus = .loading
@@ -69,13 +69,13 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             let existingVideoIds = getExistingYouTubeVideoIds(for: player)
             seenVideoIds.formUnion(existingVideoIds)
             #if DEBUG
-            print("🚫 CloudMLService: Will avoid \(existingVideoIds.count) existing video IDs")
+            print("CloudMLService: Will avoid \(existingVideoIds.count) existing video IDs")
             
             #endif
             while attempts < maxAttempts {
                 attempts += 1
                 #if DEBUG
-                print("📞 CloudMLService: Attempt \(attempts)/\(maxAttempts) - calling fetchYouTubeRecommendations...")
+                print("CloudMLService: Attempt \(attempts)/\(maxAttempts) - calling fetchYouTubeRecommendations...")
                 
                 #endif
                 do {
@@ -89,7 +89,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                         
                         if seenVideoIds.contains(videoId) {
                             #if DEBUG
-                            print("🚫 CloudMLService: Skipping duplicate video ID: \(videoId) - '\(title)'")
+                            print("CloudMLService: Skipping duplicate video ID: \(videoId) - '\(title)'")
                             #endif
                             return false
                         }
@@ -101,13 +101,13 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                             let existingCount = try CoreDataManager.shared.context.count(for: request)
                             if existingCount > 0 {
                                 #if DEBUG
-                                print("🚫 CloudMLService: Exercise with video ID '\(videoId)' already exists in Core Data - '\(title)'")
+                                print("CloudMLService: Exercise with video ID '\(videoId)' already exists in Core Data - '\(title)'")
                                 #endif
                                 return false
                             }
                         } catch {
                             #if DEBUG
-                            print("⚠️ CloudMLService: Error checking for existing exercise: \(error)")
+                            print("CloudMLService: Error checking for existing exercise: \(error)")
                             #endif
                         }
                         
@@ -118,12 +118,12 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                     if !newRecommendations.isEmpty {
                         recommendationStatus = .success
                         #if DEBUG
-                        print("✅ CloudMLService: Successfully fetched \(newRecommendations.count) unique YouTube recommendation(s) on attempt \(attempts)")
+                        print("CloudMLService: Successfully fetched \(newRecommendations.count) unique YouTube recommendation(s) on attempt \(attempts)")
                         #endif
                         return newRecommendations
                     } else {
                         #if DEBUG
-                        print("⚠️ CloudMLService: All recommendations were duplicates on attempt \(attempts)")
+                        print("CloudMLService: All recommendations were duplicates on attempt \(attempts)")
                         #endif
                         if attempts < maxAttempts {
                             // Wait a bit before retrying to get different results
@@ -134,7 +134,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                     
                 } catch {
                     #if DEBUG
-                    print("⚠️ CloudMLService: YouTube recommendations failed on attempt \(attempts): \(error.localizedDescription)")
+                    print("CloudMLService: YouTube recommendations failed on attempt \(attempts): \(error.localizedDescription)")
                     #endif
                     if attempts >= maxAttempts {
                         recommendationStatus = .error("YouTube recommendations unavailable")
@@ -151,7 +151,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             
         } else {
             #if DEBUG
-            print("📝 CloudMLService: Firebase Function temporarily disabled, throwing error to trigger fallback")
+            print("CloudMLService: Firebase Function temporarily disabled, throwing error to trigger fallback")
             #endif
             recommendationStatus = .error("Firebase Function deployment pending")
             throw MLError.networkError // This will trigger the fallback to local search
@@ -161,13 +161,13 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     func getCloudRecommendations(for player: Player, limit: Int = 5) async throws -> [MLDrillRecommendation] {
         try checkRateLimit(for: "get_advanced_recommendations")
         #if DEBUG
-        print("🤖 CloudMLService: Fetching ML-powered recommendations for \(player.name ?? "Unknown")")
+        print("CloudMLService: Fetching ML-powered recommendations for \(player.name ?? "Unknown")")
 
         #endif
         // Check cache first
         if let cachedRecs = getCachedRecommendations(limit: limit) {
             #if DEBUG
-            print("📦 Returning cached recommendations")
+            print("Returning cached recommendations")
             #endif
             return cachedRecs
         }
@@ -184,14 +184,14 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             
             #if DEBUG
             
-            print("✅ CloudMLService: Successfully fetched \(cloudRecommendations.count) ML recommendations")
+            print("CloudMLService: Successfully fetched \(cloudRecommendations.count) ML recommendations")
             
             #endif
             return cloudRecommendations
             
         } catch {
             #if DEBUG
-            print("⚠️ CloudMLService: Cloud ML failed (\(error.localizedDescription)), falling back to enhanced rules")
+            print("CloudMLService: Cloud ML failed (\(error.localizedDescription)), falling back to enhanced rules")
             #endif
             recommendationStatus = .fallbackToRules
             
@@ -207,13 +207,13 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     
     private func fetchYouTubeRecommendations(player: Player, limit: Int) async throws -> [YouTubeVideoRecommendation] {
         #if DEBUG
-        print("🔐 CloudMLService: fetchYouTubeRecommendations called, checking authentication...")
+        print("CloudMLService: fetchYouTubeRecommendations called, checking authentication...")
         
         #endif
         // Try without authentication first (for testing Firebase Functions)
         let userUID = auth.currentUser?.uid ?? "test_user_\(UUID().uuidString.prefix(8))"
         #if DEBUG
-        print("✅ CloudMLService: Using user ID: \(userUID.prefix(8))... (may be unauthenticated for testing)")
+        print("CloudMLService: Using user ID: \(userUID.prefix(8))... (may be unauthenticated for testing)")
         
         #endif
         // Build player profile for ML analysis
@@ -248,16 +248,16 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                 let idToken = try await user.getIDToken()
                 request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
                 #if DEBUG
-                print("🔐 CloudMLService: Added Firebase Auth token to request")
+                print("CloudMLService: Added Firebase Auth token to request")
                 #endif
             } else {
                 #if DEBUG
-                print("📝 CloudMLService: No Firebase user authenticated, proceeding without token (testing mode)")
+                print("CloudMLService: No Firebase user authenticated, proceeding without token (testing mode)")
                 #endif
             }
         } catch {
             #if DEBUG
-            print("⚠️ CloudMLService: Could not get auth token (\(error.localizedDescription)), proceeding without authentication")
+            print("CloudMLService: Could not get auth token (\(error.localizedDescription)), proceeding without authentication")
             #endif
         }
         
@@ -265,44 +265,44 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         
         // Make the request
         #if DEBUG
-        print("🌐 CloudMLService: Calling Firebase Function at \(functionsURL)")
+        print("CloudMLService: Calling Firebase Function at \(functionsURL)")
         #endif
         let (data, response) = try await performRequestWithRetry(request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             #if DEBUG
-            print("❌ CloudMLService: Invalid HTTP response")
+            print("CloudMLService: Invalid HTTP response")
             #endif
             throw MLError.networkError
         }
 
         #if DEBUG
 
-        print("📡 CloudMLService: HTTP Status Code: \(httpResponse.statusCode)")
+        print("CloudMLService: HTTP Status Code: \(httpResponse.statusCode)")
 
 
         #endif
         if httpResponse.statusCode != 200 {
             let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
             #if DEBUG
-            print("❌ CloudMLService: Firebase Function error (\(httpResponse.statusCode)): \(errorBody)")
+            print("CloudMLService: Firebase Function error (\(httpResponse.statusCode)): \(errorBody)")
             
             #endif
             // Provide more specific error information
             if httpResponse.statusCode == 401 {
                 #if DEBUG
-                print("🔐 CloudMLService: 401 Unauthorized - This may indicate the Firebase Function is not deployed or authentication is required")
+                print("CloudMLService: 401 Unauthorized - This may indicate the Firebase Function is not deployed or authentication is required")
                 #endif
                 #if DEBUG
-                print("💡 CloudMLService: Try deploying the Firebase Functions first: firebase deploy --only functions")
+                print("CloudMLService: Try deploying the Firebase Functions first: firebase deploy --only functions")
                 #endif
             } else if httpResponse.statusCode == 404 {
                 #if DEBUG
-                print("🔍 CloudMLService: 404 Not Found - Firebase Function endpoint may not exist or be deployed")
+                print("CloudMLService: 404 Not Found - Firebase Function endpoint may not exist or be deployed")
                 #endif
             } else if httpResponse.statusCode >= 500 {
                 #if DEBUG
-                print("⚡ CloudMLService: Server error - Firebase Function may have crashed or have configuration issues")
+                print("CloudMLService: Server error - Firebase Function may have crashed or have configuration issues")
                 #endif
             }
             
@@ -322,7 +322,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             // Log the LLM-generated search query
             if let searchQuery = recData["search_query"] as? String {
                 #if DEBUG
-                print("🤖 LLM Query: \"\(searchQuery)\" → \(recData["title"] as? String ?? "Unknown")")
+                print("LLM Query: \"\(searchQuery)\" → \(recData["title"] as? String ?? "Unknown")")
                 #endif
             }
             
@@ -347,7 +347,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         
         #if DEBUG
         
-        print("✅ Received \(youtubeRecommendations.count) YouTube recommendation(s) from Firebase Functions")
+        print("Received \(youtubeRecommendations.count) YouTube recommendation(s) from Firebase Functions")
         
         #endif
         return youtubeRecommendations
@@ -444,10 +444,10 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     ) async throws -> GeneratedPlanStructure {
         try checkRateLimit(for: "generate_training_plan")
         #if DEBUG
-        print("🤖 CloudMLService: Generating AI training plan for \(player.name ?? "Unknown")")
-        print("📋 Parameters: \(duration) weeks, \(difficulty), \(category), role: \(targetRole ?? "none")")
-        if !preferredDays.isEmpty { print("📅 Preferred days: \(preferredDays.joined(separator: ", "))") }
-        if !restDays.isEmpty { print("😴 Rest days: \(restDays.joined(separator: ", "))") }
+        print("CloudMLService: Generating AI training plan for \(player.name ?? "Unknown")")
+        print("Parameters: \(duration) weeks, \(difficulty), \(category), role: \(targetRole ?? "none")")
+        if !preferredDays.isEmpty { print("Preferred days: \(preferredDays.joined(separator: ", "))") }
+        if !restDays.isEmpty { print("Rest days: \(restDays.joined(separator: ", "))") }
         #endif
 
         guard let userUID = auth.currentUser?.uid else {
@@ -522,14 +522,14 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             let idToken = try await user.getIDToken()
             request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
             #if DEBUG
-            print("🔐 CloudMLService: Added Firebase Auth token")
+            print("CloudMLService: Added Firebase Auth token")
             #endif
         }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
         #if DEBUG
-        print("🌐 CloudMLService: Calling AI plan generation at \(functionsURL)")
+        print("CloudMLService: Calling AI plan generation at \(functionsURL)")
         #endif
 
         let (data, response) = try await performRequestWithRetry(request)
@@ -539,13 +539,13 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         }
 
         #if DEBUG
-        print("📡 CloudMLService: HTTP Status Code: \(httpResponse.statusCode)")
+        print("CloudMLService: HTTP Status Code: \(httpResponse.statusCode)")
         #endif
 
         if httpResponse.statusCode != 200 {
             let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
             #if DEBUG
-            print("❌ CloudMLService: AI plan generation error (\(httpResponse.statusCode)): \(errorBody)")
+            print("CloudMLService: AI plan generation error (\(httpResponse.statusCode)): \(errorBody)")
             #endif
             throw MLError.networkError
         }
@@ -558,16 +558,16 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             let generatedPlan = try decoder.decode(GeneratedPlanStructure.self, from: data)
 
             #if DEBUG
-            print("✅ CloudMLService: Successfully generated plan '\(generatedPlan.name)' with \(generatedPlan.weeks.count) weeks")
+            print("CloudMLService: Successfully generated plan '\(generatedPlan.name)' with \(generatedPlan.weeks.count) weeks")
             #endif
 
             return generatedPlan
 
         } catch {
             #if DEBUG
-            print("❌ CloudMLService: JSON parsing error: \(error)")
+            print("CloudMLService: JSON parsing error: \(error)")
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("📄 Raw response: \(jsonString.prefix(500))")
+                print("Raw response: \(jsonString.prefix(500))")
             }
             #endif
             throw MLError.modelNotAvailable
@@ -611,7 +611,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             return try await callFirebaseFunctionRecommendations(userUID: userUID, context: userContext, limit: limit)
         } catch {
             #if DEBUG
-            print("🔄 Firebase Functions not available, using simulation: \(error.localizedDescription)")
+            print("Firebase Functions not available, using simulation: \(error.localizedDescription)")
             #endif
             return try await simulateCloudMLRecommendations(player: player, context: userContext, limit: limit)
         }
@@ -681,7 +681,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         
         #if DEBUG
         
-        print("✅ Received \(mlRecommendations.count) recommendations from Firebase Functions")
+        print("Received \(mlRecommendations.count) recommendations from Firebase Functions")
         
         #endif
         return mlRecommendations
@@ -709,7 +709,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     
     private func generateEnhancedRuleRecommendations(for player: Player, limit: Int) -> [MLDrillRecommendation] {
         #if DEBUG
-        print("🧠 Generating enhanced rule-based recommendations with ML insights")
+        print("Generating enhanced rule-based recommendations with ML insights")
         
         #endif
         // Use the existing CoreDataManager logic but enhance it with ML concepts
@@ -803,11 +803,11 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
                 }
             }
             #if DEBUG
-            print("📚 CloudMLService: Found \(videoIds.count) existing YouTube video IDs")
+            print("CloudMLService: Found \(videoIds.count) existing YouTube video IDs")
             #endif
         } catch {
             #if DEBUG
-            print("❌ CloudMLService: Error fetching existing YouTube exercises: \(error)")
+            print("CloudMLService: Error fetching existing YouTube exercises: \(error)")
             #endif
         }
         

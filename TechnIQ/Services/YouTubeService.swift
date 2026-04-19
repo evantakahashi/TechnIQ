@@ -69,7 +69,7 @@ class YouTubeService: YouTubeServiceProtocol {
         // Check if exercise with this title already exists for this player
         if exerciseExists(name: title, for: player) {
             #if DEBUG
-            print("📚 Exercise '\(title)' already exists for player \(player.name ?? "Unknown"), skipping creation")
+            print("Exercise '\(title)' already exists for player \(player.name ?? "Unknown"), skipping creation")
             #endif
             return fetchExerciseByName(title, for: player)
         }
@@ -77,7 +77,7 @@ class YouTubeService: YouTubeServiceProtocol {
         // Check if exercise with this YouTube video ID already exists for this player
         if youTubeExerciseExists(videoId: videoId, for: player) {
             #if DEBUG
-            print("📺 YouTube exercise with video ID '\(videoId)' already exists for player \(player.name ?? "Unknown"), skipping creation")
+            print("YouTube exercise with video ID '\(videoId)' already exists for player \(player.name ?? "Unknown"), skipping creation")
             #endif
             return fetchExerciseByVideoId(videoId, for: player)
         }
@@ -109,7 +109,7 @@ class YouTubeService: YouTubeServiceProtocol {
             return count > 0
         } catch {
             #if DEBUG
-            print("❌ Failed to check YouTube exercise existence: \(error)")
+            print("Failed to check YouTube exercise existence: \(error)")
             #endif
             return false
         }
@@ -124,7 +124,7 @@ class YouTubeService: YouTubeServiceProtocol {
             return count > 0
         } catch {
             #if DEBUG
-            print("❌ Failed to check exercise existence: \(error)")
+            print("Failed to check exercise existence: \(error)")
             #endif
             return false
         }
@@ -139,7 +139,7 @@ class YouTubeService: YouTubeServiceProtocol {
             return try context.fetch(request).first
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch exercise by name: \(error)")
+            print("Failed to fetch exercise by name: \(error)")
             #endif
             return nil
         }
@@ -154,7 +154,7 @@ class YouTubeService: YouTubeServiceProtocol {
             return try context.fetch(request).first
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch exercise by video ID: \(error)")
+            print("Failed to fetch exercise by video ID: \(error)")
             #endif
             return nil
         }
@@ -167,10 +167,10 @@ class YouTubeService: YouTubeServiceProtocol {
         progressCallback: (@Sendable @MainActor (Double, String) -> Void)? = nil
     ) async throws {
         #if DEBUG
-        print("🚀 Starting YouTube drill analysis with enhanced difficulty detection")
+        print("Starting YouTube drill analysis with enhanced difficulty detection")
         #endif
         #if DEBUG
-        print("📋 Category: \(category ?? "All"), Max Results: \(maxResults)")
+        print("Category: \(category ?? "All"), Max Results: \(maxResults)")
 
         #endif
         // Use the same method as YouTubeConfig for consistency
@@ -180,7 +180,7 @@ class YouTubeService: YouTubeServiceProtocol {
               !apiKey.isEmpty,
               apiKey != "YOUR_YOUTUBE_API_KEY_HERE" else {
             #if DEBUG
-            print("⚠️ YouTube API key not found or not configured in Info.plist")
+            print("YouTube API key not found or not configured in Info.plist")
             #endif
             await progressCallback?(0.0, "API key not configured")
             throw APIError.apiKeyNotConfigured
@@ -192,10 +192,10 @@ class YouTubeService: YouTubeServiceProtocol {
 
                 let searchQuery = category ?? "soccer training drills"
                 #if DEBUG
-                print("🔍 Performing enhanced YouTube search for: \(searchQuery)")
+                print("Performing enhanced YouTube search for: \(searchQuery)")
                 #endif
                 #if DEBUG
-                print("📝 Note: Transcript analysis will be attempted but may not be available for all videos due to privacy restrictions")
+                print("Note: Transcript analysis will be attempted but may not be available for all videos due to privacy restrictions")
 
                 #endif
                 // Use enhanced search with transcript analysis, fallback to basic search if needed
@@ -210,7 +210,7 @@ class YouTubeService: YouTubeServiceProtocol {
                     )
                 } catch {
                     #if DEBUG
-                    print("⚠️ Enhanced search failed, falling back to basic search: \(error)")
+                    print("Enhanced search failed, falling back to basic search: \(error)")
                     #endif
                     await progressCallback?(0.3, "Using basic search...")
 
@@ -250,27 +250,27 @@ class YouTubeService: YouTubeServiceProtocol {
 
                         #if DEBUG
 
-                        print("📊 Video Analysis for '\(video.title.prefix(50))...':")
+                        print("Video Analysis for '\(video.title.prefix(50))...':")
 
                         #endif
                         #if DEBUG
-                        print("   Difficulty: \(video.difficultyAnalysis.difficulty)/5")
+                        print("Difficulty: \(video.difficultyAnalysis.difficulty)/5")
                         #endif
                         #if DEBUG
-                        print("   Confidence: \(String(format: "%.1f", video.difficultyAnalysis.confidence * 100))%")
+                        print("Confidence: \(String(format: "%.1f", video.difficultyAnalysis.confidence * 100))%")
                         #endif
                         #if DEBUG
-                        print("   Target: \(video.difficultyAnalysis.targetAudience)")
+                        print("Target: \(video.difficultyAnalysis.targetAudience)")
                         #endif
                         #if DEBUG
-                        print("   Skills: \(video.difficultyAnalysis.keySkills.joined(separator: ", "))")
+                        print("Skills: \(video.difficultyAnalysis.keySkills.joined(separator: ", "))")
                         #endif
                         #if DEBUG
-                        print("   Transcript: \(video.transcript != nil ? "✅ Available" : "❌ Not available")")
+                        print("Transcript: \(video.transcript != nil ? "Available" : "Not available")")
                         #endif
                         if !video.difficultyAnalysis.reasoning.isEmpty {
                             #if DEBUG
-                            print("   Reasoning: \(video.difficultyAnalysis.reasoning.prefix(3).joined(separator: "; "))")
+                            print("Reasoning: \(video.difficultyAnalysis.reasoning.prefix(3).joined(separator: "; "))")
                             #endif
                         }
 
@@ -756,7 +756,7 @@ class YouTubeService: YouTubeServiceProtocol {
             // Find English caption track (prefer auto-generated for better availability)
             guard let captionTrack = findBestCaptionTrack(tracks: captionTracks) else {
                 #if DEBUG
-                print("📝 No suitable caption track found for video: \(videoId) (this is normal - most videos don't have public captions)")
+                print("No suitable caption track found for video: \(videoId) (this is normal - most videos don't have public captions)")
                 #endif
                 return nil
             }
@@ -776,16 +776,16 @@ class YouTubeService: YouTubeServiceProtocol {
                 switch httpError {
                 case .networkError:
                     #if DEBUG
-                    print("📝 Captions not accessible for video \(videoId) (privacy/auth restrictions)")
+                    print("Captions not accessible for video \(videoId) (privacy/auth restrictions)")
                     #endif
                 default:
                     #if DEBUG
-                    print("📝 Caption fetch failed for video \(videoId): \(error.localizedDescription)")
+                    print("Caption fetch failed for video \(videoId): \(error.localizedDescription)")
                     #endif
                 }
             } else {
                 #if DEBUG
-                print("📝 Caption fetch failed for video \(videoId): \(error)")
+                print("Caption fetch failed for video \(videoId): \(error)")
                 #endif
             }
             return nil
@@ -817,15 +817,15 @@ class YouTubeService: YouTubeServiceProtocol {
             switch httpResponse.statusCode {
             case 403:
                 #if DEBUG
-                print("⚠️ Captions API: Permission denied (403) - video \(videoId) may have restricted captions")
+                print("Captions API: Permission denied (403) - video \(videoId) may have restricted captions")
                 #endif
             case 404:
                 #if DEBUG
-                print("⚠️ Captions API: Video \(videoId) not found (404)")
+                print("Captions API: Video \(videoId) not found (404)")
                 #endif
             default:
                 #if DEBUG
-                print("⚠️ Captions API: HTTP error \(httpResponse.statusCode) for video \(videoId)")
+                print("Captions API: HTTP error \(httpResponse.statusCode) for video \(videoId)")
                 #endif
             }
             throw SimpleAPIError.networkError
@@ -951,7 +951,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         #if DEBUG
 
-        print("🚀 Processing \(basicVideos.count) videos concurrently for enhanced analysis...")
+        print("Processing \(basicVideos.count) videos concurrently for enhanced analysis...")
 
 
         #endif
@@ -964,7 +964,7 @@ class YouTubeService: YouTubeServiceProtocol {
                         return await self.processVideoEnhanced(video: video, apiKey: apiKey)
                     } catch {
                         #if DEBUG
-                        print("⚠️ TaskGroup error for video \(video.title.prefix(30)): \(error)")
+                        print("TaskGroup error for video \(video.title.prefix(30)): \(error)")
                         #endif
                         return nil
                     }
@@ -980,7 +980,7 @@ class YouTubeService: YouTubeServiceProtocol {
                 for try await enhancedVideo in group {
                     completedCount += 1
                     #if DEBUG
-                    print("📊 Progress: \(completedCount)/\(totalCount) videos processed")
+                    print("Progress: \(completedCount)/\(totalCount) videos processed")
 
                     #endif
                     if let video = enhancedVideo {
@@ -989,7 +989,7 @@ class YouTubeService: YouTubeServiceProtocol {
                 }
             } catch {
                 #if DEBUG
-                print("⚠️ TaskGroup collection error: \(error)")
+                print("TaskGroup collection error: \(error)")
                 #endif
                 // Continue with whatever results we have
             }
@@ -999,7 +999,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         #if DEBUG
 
-        print("✅ Enhanced analysis complete for \(enhancedVideos.count) videos")
+        print("Enhanced analysis complete for \(enhancedVideos.count) videos")
 
         #endif
         return enhancedVideos
@@ -1016,7 +1016,7 @@ class YouTubeService: YouTubeServiceProtocol {
             } catch {
                 lastError = error
                 #if DEBUG
-                print("⚠️ Attempt \(attempt)/\(maxAttempts) failed: \(error)")
+                print("Attempt \(attempt)/\(maxAttempts) failed: \(error)")
 
                 #endif
                 if attempt < maxAttempts {
@@ -1079,13 +1079,13 @@ class YouTubeService: YouTubeServiceProtocol {
         // Circuit breaker: skip processing if too many consecutive failures
         if consecutiveFailures >= maxConsecutiveFailures {
             #if DEBUG
-            print("🚨 Circuit breaker activated - skipping video processing due to \(consecutiveFailures) consecutive failures")
+            print("Circuit breaker activated - skipping video processing due to \(consecutiveFailures) consecutive failures")
             #endif
             return createFallbackVideo(video: video)
         }
         do {
             #if DEBUG
-            print("🔍 Processing video: \(video.title.prefix(50))...")
+            print("Processing video: \(video.title.prefix(50))...")
 
             #endif
             // Get video details with caching
@@ -1115,7 +1115,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
             #if DEBUG
 
-            print("✅ Completed: \(video.title.prefix(30))...")
+            print("Completed: \(video.title.prefix(30))...")
 
             #endif
             consecutiveFailures = 0  // Reset failure count on success
@@ -1123,7 +1123,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         } catch {
             #if DEBUG
-            print("⚠️ Failed to process video \(video.title.prefix(30)): \(error)")
+            print("Failed to process video \(video.title.prefix(30)): \(error)")
             #endif
             consecutiveFailures += 1
 
@@ -1134,7 +1134,7 @@ class YouTubeService: YouTubeServiceProtocol {
     // Create a fallback video with basic analysis when processing fails
     private func createFallbackVideo(video: YouTubeVideo) -> EnhancedYouTubeVideo {
         #if DEBUG
-        print("🔄 Creating fallback video for: \(video.title.prefix(30))...")
+        print("Creating fallback video for: \(video.title.prefix(30))...")
 
         #endif
         let basicAnalysis = analyzeVideoDifficultyComprehensive(
@@ -1162,7 +1162,7 @@ class YouTubeService: YouTubeServiceProtocol {
         // Check cache first
         if let cachedDetails = videoDetailsCache[videoId] {
             #if DEBUG
-            print("📂 Using cached video details for: \(videoId)")
+            print("Using cached video details for: \(videoId)")
             #endif
             return cachedDetails
         }
@@ -1177,7 +1177,7 @@ class YouTubeService: YouTubeServiceProtocol {
         // Cache the result
         videoDetailsCache[videoId] = details
         #if DEBUG
-        print("💾 Cached video details for: \(videoId)")
+        print("Cached video details for: \(videoId)")
 
         #endif
         return details
@@ -1187,7 +1187,7 @@ class YouTubeService: YouTubeServiceProtocol {
         // Check cache first
         if let cachedEntry = transcriptCache[videoId] {
             #if DEBUG
-            print("📂 Using cached transcript for: \(videoId)")
+            print("Using cached transcript for: \(videoId)")
             #endif
             return cachedEntry
         }
@@ -1201,7 +1201,7 @@ class YouTubeService: YouTubeServiceProtocol {
         transcriptCache[videoId] = transcript
         if transcript != nil {
             #if DEBUG
-            print("💾 Cached transcript for: \(videoId)")
+            print("Cached transcript for: \(videoId)")
             #endif
         }
 
@@ -1215,7 +1215,7 @@ class YouTubeService: YouTubeServiceProtocol {
             self.videoDetailsCache.removeAll()
             self.transcriptCache.removeAll()
             #if DEBUG
-            print("🧹 Cleared expired cache")
+            print("Cleared expired cache")
             #endif
         }
     }
@@ -1298,7 +1298,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         guard let url = URL(string: urlString) else {
             #if DEBUG
-            print("❌ Invalid URL for YouTube search")
+            print("Invalid URL for YouTube search")
             #endif
             return []
         }
@@ -1308,20 +1308,20 @@ class YouTubeService: YouTubeServiceProtocol {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 #if DEBUG
-                print("❌ Invalid HTTP response")
+                print("Invalid HTTP response")
                 #endif
                 return []
             }
 
             guard 200...299 ~= httpResponse.statusCode else {
                 #if DEBUG
-                print("❌ YouTube API Error - Status Code: \(httpResponse.statusCode)")
+                print("YouTube API Error - Status Code: \(httpResponse.statusCode)")
                 #endif
                 if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let error = errorData["error"] as? [String: Any],
                    let message = error["message"] as? String {
                     #if DEBUG
-                    print("❌ YouTube API Error Message: \(message)")
+                    print("YouTube API Error Message: \(message)")
                     #endif
                 }
                 return []
@@ -1330,7 +1330,7 @@ class YouTubeService: YouTubeServiceProtocol {
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
                 #if DEBUG
-                print("❌ Failed to parse YouTube response")
+                print("Failed to parse YouTube response")
                 #endif
                 return []
             }
@@ -1353,7 +1353,7 @@ class YouTubeService: YouTubeServiceProtocol {
             }
         } catch {
             #if DEBUG
-            print("❌ Network error: \(error)")
+            print("Network error: \(error)")
             #endif
             return []
         }
@@ -1520,7 +1520,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
     func getSmartRecommendations(for player: Player, limit: Int = 5) -> [DrillRecommendation] {
         #if DEBUG
-        print("🧠 Generating smart recommendations for \(player.name ?? "Unknown")")
+        print("Generating smart recommendations for \(player.name ?? "Unknown")")
 
         #endif
         // Ensure we're getting training history only for this specific player
@@ -1578,11 +1578,11 @@ class YouTubeService: YouTubeServiceProtocol {
 
         #if DEBUG
 
-        print("✅ Generated \(sortedRecommendations.count) unique smart recommendations")
+        print("Generated \(sortedRecommendations.count) unique smart recommendations")
 
         #endif
         #if DEBUG
-        print("📝 Used exercises: \(globalUsedExercises)")
+        print("Used exercises: \(globalUsedExercises)")
         #endif
         return Array(sortedRecommendations)
     }
@@ -1599,14 +1599,14 @@ class YouTubeService: YouTubeServiceProtocol {
                 uniqueRecommendations.append(recommendation)
             } else {
                 #if DEBUG
-                print("🔄 Skipping duplicate recommendation: \(exerciseName)")
+                print("Skipping duplicate recommendation: \(exerciseName)")
                 #endif
             }
         }
 
         #if DEBUG
 
-        print("📊 Filtered \(recommendations.count) recommendations to \(uniqueRecommendations.count) unique ones")
+        print("Filtered \(recommendations.count) recommendations to \(uniqueRecommendations.count) unique ones")
 
         #endif
         return uniqueRecommendations
@@ -1639,7 +1639,7 @@ class YouTubeService: YouTubeServiceProtocol {
     private func analyzeTrainingHistory(for player: Player) -> TrainingHistory {
         guard let sessionsSet = player.sessions as? Set<TrainingSession> else {
             #if DEBUG
-            print("⚠️ No training sessions found for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown"))")
+            print("No training sessions found for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown"))")
             #endif
             return TrainingHistory(
                 totalSessions: 0,
@@ -1659,7 +1659,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         #if DEBUG
 
-        print("📊 Analyzing training history for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown")) - found \(sessionsSet.count) sessions")
+        print("Analyzing training history for player \(player.name ?? "Unknown") (UID: \(player.firebaseUID ?? "Unknown")) - found \(sessionsSet.count) sessions")
 
 
         #endif
@@ -2105,13 +2105,13 @@ class YouTubeService: YouTubeServiceProtocol {
                     // Strong boost for recent poor performance
                     confidence = 0.82 + ((3.0 - recentPerf) * 0.04) // 82-90% for recent struggles
                     #if DEBUG
-                    print("🔥 PRIORITY: \(gap) performed poorly recently (\(String(format: "%.1f", recentPerf))/5) - boosting confidence to \(String(format: "%.0f%%", confidence * 100))")
+                    print("PRIORITY: \(gap) performed poorly recently (\(String(format: "%.1f", recentPerf))/5) - boosting confidence to \(String(format: "%.0f%%", confidence * 100))")
                     #endif
                 } else if let veryRecentPerf = veryRecentPerformance, veryRecentPerf < 3.5 {
                     // Moderate boost for very recent struggles
                     confidence = 0.75 + ((3.5 - veryRecentPerf) * 0.06) // 75-84% for last week struggles
                     #if DEBUG
-                    print("⚡ RECENT: \(gap) showed room to grow last week (\(String(format: "%.1f", veryRecentPerf))/5) - confidence: \(String(format: "%.0f%%", confidence * 100))")
+                    print("RECENT: \(gap) showed room to grow last week (\(String(format: "%.1f", veryRecentPerf))/5) - confidence: \(String(format: "%.0f%%", confidence * 100))")
                     #endif
                 } else if gapFrequency == 0 && totalSessions > 5 {
                     // High confidence for completely neglected skills
@@ -2373,7 +2373,7 @@ class YouTubeService: YouTubeServiceProtocol {
             return try context.fetch(request)
         } catch {
             #if DEBUG
-            print("❌ Failed to fetch exercises: \(error)")
+            print("Failed to fetch exercises: \(error)")
             #endif
             return []
         }
@@ -2381,7 +2381,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
     func removeDuplicateExercises(for player: Player) {
         #if DEBUG
-        print("🧹 Starting comprehensive duplicate cleanup for player \(player.name ?? "Unknown")...")
+        print("Starting comprehensive duplicate cleanup for player \(player.name ?? "Unknown")...")
         #endif
         let exercises = CoreDataManager.shared.fetchExercises(for: player)
         var nameToExercises: [String: [Exercise]] = [:]
@@ -2406,7 +2406,7 @@ class YouTubeService: YouTubeServiceProtocol {
         for (name, exerciseGroup) in nameToExercises {
             if exerciseGroup.count > 1 {
                 #if DEBUG
-                print("🔍 Found \(exerciseGroup.count) name duplicates for '\(name)'")
+                print("Found \(exerciseGroup.count) name duplicates for '\(name)'")
 
                 #endif
                 // Keep the first one that hasn't been processed, delete the rest
@@ -2416,11 +2416,11 @@ class YouTubeService: YouTubeServiceProtocol {
                         processedExercises.insert(exercise.objectID)
                         kept = true
                         #if DEBUG
-                        print("✅ Keeping: \(exercise.name ?? "Unnamed")")
+                        print("Keeping: \(exercise.name ?? "Unnamed")")
                         #endif
                     } else {
                         #if DEBUG
-                        print("🗑️ Deleting: \(exercise.name ?? "Unnamed")")
+                        print("Deleting: \(exercise.name ?? "Unnamed")")
                         #endif
                         context.delete(exercise)
                         duplicatesRemoved += 1
@@ -2435,7 +2435,7 @@ class YouTubeService: YouTubeServiceProtocol {
         for (videoId, exerciseGroup) in videoIdToExercises {
             if exerciseGroup.count > 1 {
                 #if DEBUG
-                print("🎥 Found \(exerciseGroup.count) video ID duplicates for: \(videoId)")
+                print("Found \(exerciseGroup.count) video ID duplicates for: \(videoId)")
 
                 #endif
                 // Keep the first one that hasn't been deleted, delete the rest
@@ -2443,7 +2443,7 @@ class YouTubeService: YouTubeServiceProtocol {
                 if remainingExercises.count > 1 {
                     for duplicateExercise in remainingExercises.dropFirst() {
                         #if DEBUG
-                        print("🗑️ Deleting YouTube duplicate: \(duplicateExercise.name ?? "Unnamed")")
+                        print("Deleting YouTube duplicate: \(duplicateExercise.name ?? "Unnamed")")
                         #endif
                         context.delete(duplicateExercise)
                         duplicatesRemoved += 1
@@ -2455,18 +2455,18 @@ class YouTubeService: YouTubeServiceProtocol {
         if duplicatesRemoved > 0 {
             CoreDataManager.shared.save()
             #if DEBUG
-            print("🎉 Successfully removed \(duplicatesRemoved) duplicate exercises")
+            print("Successfully removed \(duplicatesRemoved) duplicate exercises")
             #endif
         } else {
             #if DEBUG
-            print("✅ No duplicate exercises found")
+            print("No duplicate exercises found")
             #endif
         }
 
         // Print final count
         let finalCount = fetchAllExercises().count
         #if DEBUG
-        print("📊 Exercise library now contains \(finalCount) unique exercises")
+        print("Exercise library now contains \(finalCount) unique exercises")
         #endif
     }
 

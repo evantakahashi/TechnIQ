@@ -288,7 +288,7 @@ struct SessionHistoryView: View {
         // Filter sessions by player's Firebase UID
         sessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
         #if DEBUG
-        print("🔍 Updated SessionHistoryView filter for user: \(authManager.userUID)")
+        print("Updated SessionHistoryView filter for user: \(authManager.userUID)")
         #endif
     }
 
