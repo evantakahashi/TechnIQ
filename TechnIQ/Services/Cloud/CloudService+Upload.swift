@@ -487,7 +487,7 @@ extension CloudService {
         ]
     }
 
-    private func createCustomExerciseDocument(exercise: Exercise) -> [String: Any] {
+    func createCustomExerciseDocument(exercise: Exercise) -> [String: Any] {
         return [
             "id": exercise.id?.uuidString ?? "",
             "name": exercise.name ?? "",
@@ -510,7 +510,7 @@ extension CloudService {
         ]
     }
 
-    private func createTrainingPlanDocument(plan: TrainingPlan) -> [String: Any] {
+    func createTrainingPlanDocument(plan: TrainingPlan) -> [String: Any] {
         var weeksData: [[String: Any]] = []
         if let weeks = plan.weeks as? Set<PlanWeek> {
             weeksData = weeks.sorted { $0.weekNumber < $1.weekNumber }.map { week in

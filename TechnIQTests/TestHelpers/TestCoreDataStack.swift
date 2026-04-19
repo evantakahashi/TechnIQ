@@ -211,6 +211,24 @@ class TestCoreDataStack: CoreDataManagerProtocol {
     }
 
     @discardableResult
+    func makePlanSession(
+        day: PlanDay,
+        exercises: [Exercise] = [],
+        sessionType: String = "training"
+    ) -> PlanSession {
+        let session = PlanSession(context: context)
+        session.id = UUID()
+        session.sessionType = sessionType
+        session.duration = 30
+        session.day = day
+        if !exercises.isEmpty {
+            session.exercises = NSSet(array: exercises)
+        }
+        try? context.save()
+        return session
+    }
+
+    @discardableResult
     func makeSeason(
         player: Player,
         name: String = "2025-26",

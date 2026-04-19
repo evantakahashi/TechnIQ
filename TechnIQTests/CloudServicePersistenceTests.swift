@@ -129,4 +129,56 @@ final class CloudServicePersistenceTests: XCTestCase {
         XCTAssertNotNil(restored)
         XCTAssertNil(restored?.season)
     }
+
+    // MARK: - PlanSession.exercises restore
+
+    func test_trainingPlan_restoresPlanSessionExerciseRelationship() throws {
+        let player = stack.makePlayer()
+        let e1 = stack.makeExercise(player: player, name: "Passing Drill")
+        let e2 = stack.makeExercise(player: player, name: "Shooting Drill")
+        let plan = stack.makeTrainingPlan(player: player)
+        let week = stack.makePlanWeek(plan: plan, weekNumber: 1)
+        let day = stack.makePlanDay(week: week, dayNumber: 1)
+        _ = stack.makePlanSession(day: day, exercises: [e1, e2])
+
+        let customExerciseDocs: [[String: Any]] = [e1, e2].map { sut.createCustomExerciseDocument(exercise: $0) }
+        let planDoc = sut.createTrainingPlanDocument(plan: plan)
+
+        let restoredContext = TestCoreDataStack().context
+        let restoredPlayer = Player(context: restoredContext)
+        restoredPlayer.id = UUID()
+        // Mirror production order: exercises first, then plan.
+        for exerciseDoc in customExerciseDocs {
+            try sut.restoreCustomExercise(from: exerciseDoc, for: restoredPlayer, in: restoredContext)
+        }
+        try sut.restoreTrainingPlan(from: planDoc, for: restoredPlayer, in: restoredContext)
+
+        let restoredPlan = (restoredPlayer.trainingPlans?.allObjects as? [TrainingPlan])?.first
+        let restoredWeek = (restoredPlan?.weeks?.allObjects as? [PlanWeek])?.first
+        let restoredDay = (restoredWeek?.days?.allObjects as? [PlanDay])?.first
+        let restoredSession = (restoredDay?.sessions?.allObjects as? [PlanSession])?.first
+        let restoredExercises = (restoredSession?.exercises as? Set<Exercise>) ?? []
+
+        XCTAssertEqual(restoredExercises.count, 2)
+        XCTAssertEqual(Set(restoredExercises.compactMap { $0.id }), Set([e1.id!, e2.id!]))
+    }
+
+    func test_trainingPlan_restoresWithNoExercises_whenSessionHasEmptyExerciseIDs() throws {
+        let player = stack.makePlayer()
+        let plan = stack.makeTrainingPlan(player: player)
+        let week = stack.makePlanWeek(plan: plan, weekNumber: 1)
+        let day = stack.makePlanDay(week: week, dayNumber: 1)
+        _ = stack.makePlanSession(day: day, exercises: [])
+
+        let planDoc = sut.createTrainingPlanDocument(plan: plan)
+
+        let restoredContext = TestCoreDataStack().context
+        let restoredPlayer = Player(context: restoredContext)
+        restoredPlayer.id = UUID()
+        try sut.restoreTrainingPlan(from: planDoc, for: restoredPlayer, in: restoredContext)
+
+        let restoredDays = ((restoredPlayer.trainingPlans?.allObjects as? [TrainingPlan])?.first?
+            .weeks?.allObjects as? [PlanWeek])?.first?.days?.allObjects as? [PlanDay]
+        XCTAssertEqual(restoredDays?.first?.sessions?.count, 1)
+    }
 }

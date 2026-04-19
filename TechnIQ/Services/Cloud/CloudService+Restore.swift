@@ -262,12 +262,16 @@ extension CloudService {
     }
 
     private static func int16Value(from value: Any?) -> Int16 {
+        return int16Value(from: value, default: 0)
+    }
+
+    private static func int16Value(from value: Any?, default defaultValue: Int16) -> Int16 {
         if let v = value as? Int { return Int16(v) }
         if let v = value as? Int16 { return v }
         if let v = value as? Int32 { return Int16(v) }
         if let v = value as? Int64 { return Int16(v) }
         if let v = value as? NSNumber { return v.int16Value }
-        return 0
+        return defaultValue
     }
 
     private static func int32Value(from value: Any?) -> Int32 {
@@ -296,7 +300,7 @@ extension CloudService {
         player.addToStats(stats)
     }
 
-    private func restoreCustomExercise(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+    func restoreCustomExercise(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
         let exercise = Exercise(context: context)
         exercise.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         exercise.name = data["name"] as? String
@@ -351,7 +355,7 @@ extension CloudService {
         }
     }
 
-    private func restoreTrainingPlan(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+    func restoreTrainingPlan(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
         let plan = TrainingPlan(context: context)
         plan.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         plan.name = data["name"] as? String
@@ -379,12 +383,12 @@ extension CloudService {
 
         if let weeksData = data["weeks"] as? [[String: Any]] {
             for weekData in weeksData {
-                try restorePlanWeek(from: weekData, for: plan, in: context)
+                try restorePlanWeek(from: weekData, for: plan, player: player, in: context)
             }
         }
     }
 
-    private func restorePlanWeek(from data: [String: Any], for plan: TrainingPlan, in context: NSManagedObjectContext) throws {
+    func restorePlanWeek(from data: [String: Any], for plan: TrainingPlan, player: Player, in context: NSManagedObjectContext) throws {
         let week = PlanWeek(context: context)
         week.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         week.weekNumber = Int16(data["weekNumber"] as? Int ?? 1)
@@ -401,12 +405,12 @@ extension CloudService {
 
         if let daysData = data["days"] as? [[String: Any]] {
             for dayData in daysData {
-                try restorePlanDay(from: dayData, for: week, in: context)
+                try restorePlanDay(from: dayData, for: week, player: player, in: context)
             }
         }
     }
 
-    private func restorePlanDay(from data: [String: Any], for week: PlanWeek, in context: NSManagedObjectContext) throws {
+    func restorePlanDay(from data: [String: Any], for week: PlanWeek, player: Player, in context: NSManagedObjectContext) throws {
         let day = PlanDay(context: context)
         day.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         day.dayNumber = Int16(data["dayNumber"] as? Int ?? 1)
@@ -425,22 +429,22 @@ extension CloudService {
 
         if let sessionsData = data["sessions"] as? [[String: Any]] {
             for sessionData in sessionsData {
-                try restorePlanSession(from: sessionData, for: day, in: context)
+                try restorePlanSession(from: sessionData, for: day, player: player, in: context)
             }
         }
     }
 
-    private func restorePlanSession(from data: [String: Any], for day: PlanDay, in context: NSManagedObjectContext) throws {
+    func restorePlanSession(from data: [String: Any], for day: PlanDay, player: Player, in context: NSManagedObjectContext) throws {
         let session = PlanSession(context: context)
         session.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         session.sessionType = data["sessionType"] as? String
-        session.duration = Int16(data["duration"] as? Int ?? 30)
-        session.intensity = Int16(data["intensity"] as? Int ?? 5)
-        session.orderIndex = Int16(data["orderIndex"] as? Int ?? 0)
+        session.duration = Self.int16Value(from: data["duration"], default: 30)
+        session.intensity = Self.int16Value(from: data["intensity"], default: 5)
+        session.orderIndex = Self.int16Value(from: data["orderIndex"])
         session.notes = data["notes"] as? String
         session.isCompleted = data["isCompleted"] as? Bool ?? false
-        session.actualDuration = Int16(data["actualDuration"] as? Int ?? 0)
-        session.actualIntensity = Int16(data["actualIntensity"] as? Int ?? 0)
+        session.actualDuration = Self.int16Value(from: data["actualDuration"])
+        session.actualIntensity = Self.int16Value(from: data["actualIntensity"])
 
         if let completedAtTimestamp = data["completedAt"] as? Timestamp {
             session.completedAt = completedAtTimestamp.dateValue()
@@ -448,6 +452,18 @@ extension CloudService {
 
         session.day = day
         day.addToSessions(session)
+
+        if let exerciseIDStrings = data["exerciseIDs"] as? [String], !exerciseIDStrings.isEmpty {
+            let targetIDs = Set(exerciseIDStrings.compactMap { UUID(uuidString: $0) })
+            let restoredExercises = (player.exercises?.allObjects as? [Exercise]) ?? []
+            let matching = restoredExercises.filter { exercise in
+                guard let id = exercise.id else { return false }
+                return targetIDs.contains(id)
+            }
+            if !matching.isEmpty {
+                session.exercises = NSSet(array: matching)
+            }
+        }
     }
 
     // MARK: - Conflict Resolution
