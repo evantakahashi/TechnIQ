@@ -82,6 +82,14 @@ extension CloudService {
                 try restorePlayerStats(from: statsData, for: player, in: context)
             }
 
+            restoreProgress = 0.77
+            for seasonData in cloudData.seasons {
+                try restoreSeason(from: seasonData, for: player, in: context)
+            }
+            for matchData in cloudData.matches {
+                try restoreMatch(from: matchData, for: player, in: context)
+            }
+
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions {
                 try restoreTrainingSession(from: sessionData, for: player, in: context)
@@ -208,6 +216,67 @@ extension CloudService {
 
         goal.player = player
         player.addToPlayerGoals(goal)
+    }
+
+    func restoreSeason(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+        let season = Season(context: context)
+        season.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
+        season.name = data["name"] as? String
+        season.team = data["team"] as? String
+        season.startDate = (data["startDate"] as? Timestamp)?.dateValue() ?? (data["startDate"] as? Date) ?? Date()
+        season.endDate = (data["endDate"] as? Timestamp)?.dateValue() ?? (data["endDate"] as? Date)
+        season.isActive = data["isActive"] as? Bool ?? false
+        season.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? Date()
+        season.player = player
+        player.addToSeasons(season)
+    }
+
+    func restoreMatch(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+        let match = Match(context: context)
+        match.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
+        match.date = (data["date"] as? Timestamp)?.dateValue() ?? (data["date"] as? Date) ?? Date()
+        match.opponent = data["opponent"] as? String
+        match.competition = data["competition"] as? String
+        match.minutesPlayed = Self.int16Value(from: data["minutesPlayed"])
+        match.goals = Self.int16Value(from: data["goals"])
+        match.assists = Self.int16Value(from: data["assists"])
+        match.positionPlayed = data["positionPlayed"] as? String
+        match.isHomeGame = data["isHomeGame"] as? Bool ?? false
+        match.result = data["result"] as? String
+        match.notes = data["notes"] as? String
+        match.rating = Self.int16Value(from: data["rating"])
+        match.xpEarned = Self.int32Value(from: data["xpEarned"])
+        match.strengths = data["strengths"] as? String
+        match.weaknesses = data["weaknesses"] as? String
+        match.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? Date()
+        match.player = player
+        player.addToMatches(match)
+
+        if let seasonIDString = data["seasonID"] as? String,
+           !seasonIDString.isEmpty,
+           let seasonID = UUID(uuidString: seasonIDString),
+           let seasons = player.seasons?.allObjects as? [Season],
+           let matchingSeason = seasons.first(where: { $0.id == seasonID }) {
+            match.season = matchingSeason
+        }
+    }
+
+    private static func int16Value(from value: Any?) -> Int16 {
+        if let v = value as? Int { return Int16(v) }
+        if let v = value as? Int16 { return v }
+        if let v = value as? Int32 { return Int16(v) }
+        if let v = value as? Int64 { return Int16(v) }
+        if let v = value as? NSNumber { return v.int16Value }
+        return 0
+    }
+
+    private static func int32Value(from value: Any?) -> Int32 {
+        if let v = value as? Int { return Int32(v) }
+        if let v = value as? Int16 { return Int32(v) }
+        if let v = value as? Int32 { return v }
+        if let v = value as? Int64 { return Int32(v) }
+        if let v = value as? NSNumber { return v.int32Value }
+        return 0
     }
 
     func restorePlayerStats(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {

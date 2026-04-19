@@ -133,6 +133,8 @@ struct CloudUserData {
     let customExercises: [[String: Any]]
     let trainingPlans: [[String: Any]]
     let playerStats: [[String: Any]]
+    let seasons: [[String: Any]]
+    let matches: [[String: Any]]
 }
 
 struct CloudPlayerProfile {

@@ -63,6 +63,32 @@ extension CloudService {
         }
     }
 
+    func syncSeasons(_ seasons: [Season], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        try await commitInChunks(seasons) { batch, season in
+            let seasonData = self.createSeasonDocument(season: season)
+            let docRef = self.db.collection("users").document(userUID)
+                .collection("seasons").document(season.id?.uuidString ?? UUID().uuidString)
+            batch.setData(seasonData, forDocument: docRef, merge: true)
+        }
+    }
+
+    func syncMatches(_ matches: [Match], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        try await commitInChunks(matches) { batch, match in
+            let matchData = self.createMatchDocument(match: match)
+            let docRef = self.db.collection("users").document(userUID)
+                .collection("matches").document(match.id?.uuidString ?? UUID().uuidString)
+            batch.setData(matchData, forDocument: docRef, merge: true)
+        }
+    }
+
     // MARK: - Training Session Sync
 
     func syncTrainingSession(_ session: TrainingSession) async throws {
@@ -189,11 +215,13 @@ extension CloudService {
         async let customExercisesSnapshot = userRef.collection("customExercises").getDocuments()
         async let trainingPlansSnapshot = userRef.collection("trainingPlans").getDocuments()
         async let statsSnapshot = userRef.collection("playerStats").getDocuments()
+        async let seasonsSnapshot = userRef.collection("seasons").getDocuments()
+        async let matchesSnapshot = userRef.collection("matches").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats) = try await (
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
             avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
-            statsSnapshot
+            statsSnapshot, seasonsSnapshot, matchesSnapshot
         )
 
         return CloudUserData(
@@ -205,7 +233,9 @@ extension CloudService {
             ownedAvatarItems: ownedItems.documents.compactMap { $0.data() },
             customExercises: exercises.documents.compactMap { $0.data() },
             trainingPlans: plans.documents.compactMap { $0.data() },
-            playerStats: stats.documents.compactMap { $0.data() }
+            playerStats: stats.documents.compactMap { $0.data() },
+            seasons: seasons.documents.compactMap { $0.data() },
+            matches: matches.documents.compactMap { $0.data() }
         )
     }
 
@@ -420,6 +450,40 @@ extension CloudService {
             "skillRatings": stats.skillRatings ?? [:],
             "totalTrainingHours": stats.totalTrainingHours,
             "totalSessions": stats.totalSessions
+        ]
+    }
+
+    func createSeasonDocument(season: Season) -> [String: Any] {
+        return [
+            "id": season.id?.uuidString ?? "",
+            "name": season.name ?? "",
+            "team": season.team ?? "",
+            "startDate": season.startDate ?? Date(),
+            "endDate": season.endDate as Any,
+            "isActive": season.isActive,
+            "createdAt": season.createdAt ?? Date()
+        ]
+    }
+
+    func createMatchDocument(match: Match) -> [String: Any] {
+        return [
+            "id": match.id?.uuidString ?? "",
+            "date": match.date ?? Date(),
+            "opponent": match.opponent ?? "",
+            "competition": match.competition ?? "",
+            "minutesPlayed": match.minutesPlayed,
+            "goals": match.goals,
+            "assists": match.assists,
+            "positionPlayed": match.positionPlayed ?? "",
+            "isHomeGame": match.isHomeGame,
+            "result": match.result ?? "",
+            "notes": match.notes ?? "",
+            "rating": match.rating,
+            "xpEarned": match.xpEarned,
+            "strengths": match.strengths ?? "",
+            "weaknesses": match.weaknesses ?? "",
+            "createdAt": match.createdAt ?? Date(),
+            "seasonID": match.season?.id?.uuidString ?? ""
         ]
     }
 
