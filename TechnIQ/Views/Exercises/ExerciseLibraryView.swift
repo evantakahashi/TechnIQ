@@ -38,7 +38,7 @@ struct ExerciseLibraryView: View {
     var customGeneratedExercises: [Exercise] {
         allExercises
             .filter { $0.isAIGenerated }
-            .sorted { ($0.id?.uuidString ?? "") > ($1.id?.uuidString ?? "") }
+            .sorted { $0.objectID.uriRepresentation().absoluteString > $1.objectID.uriRepresentation().absoluteString }
     }
 
     var youtubeExercises: [Exercise] {
@@ -185,8 +185,9 @@ struct ExerciseLibraryView: View {
                                 // AI Custom Drills Section
                                 if !customGeneratedExercises.isEmpty {
                                     categorySection(
-                                        title: "🤖 AI Custom Drills",
-                                        exercises: Array(customGeneratedExercises.prefix(6)),
+                                        title: "AI Custom Drills",
+                                        icon: "sparkles",
+                                        exercises: customGeneratedExercises,
                                         color: DesignSystem.Colors.primaryGreen
                                     )
                                 }
@@ -194,7 +195,8 @@ struct ExerciseLibraryView: View {
                                 // YouTube Training Section
                                 if !youtubeExercises.isEmpty {
                                     categorySection(
-                                        title: "🎥 YouTube Training",
+                                        title: "YouTube Training",
+                                        icon: "play.rectangle.fill",
                                         exercises: Array(youtubeExercises.prefix(6)),
                                         color: .red
                                     )
@@ -203,7 +205,8 @@ struct ExerciseLibraryView: View {
                                 // Physical Section
                                 if !physicalExercises.isEmpty {
                                     categorySection(
-                                        title: "💪 Physical",
+                                        title: "Physical",
+                                        icon: "figure.strengthtraining.traditional",
                                         exercises: Array(physicalExercises.prefix(6)),
                                         color: DesignSystem.Colors.accentOrange
                                     )
@@ -212,7 +215,8 @@ struct ExerciseLibraryView: View {
                                 // Technical Section
                                 if !technicalExercises.isEmpty {
                                     categorySection(
-                                        title: "⚽ Technical",
+                                        title: "Technical",
+                                        icon: "soccerball",
                                         exercises: Array(technicalExercises.prefix(6)),
                                         color: DesignSystem.Colors.primaryGreen
                                     )
@@ -221,7 +225,8 @@ struct ExerciseLibraryView: View {
                                 // Tactical Section
                                 if !tacticalExercises.isEmpty {
                                     categorySection(
-                                        title: "🧠 Tactical",
+                                        title: "Tactical",
+                                        icon: "brain",
                                         exercises: Array(tacticalExercises.prefix(6)),
                                         color: DesignSystem.Colors.secondaryBlue
                                     )
@@ -448,9 +453,13 @@ struct ExerciseLibraryView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("❤️ Favorites")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(.red)
+                        Text("Favorites")
+                            .font(DesignSystem.Typography.titleLarge)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
 
                     Text("\(favoriteExercises.count) exercise\(favoriteExercises.count == 1 ? "" : "s")")
                         .font(DesignSystem.Typography.bodySmall)
@@ -482,9 +491,13 @@ struct ExerciseLibraryView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("🕐 Recently Used")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "clock")
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                        Text("Recently Used")
+                            .font(DesignSystem.Typography.titleLarge)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
 
                     Text("Your last \(recentlyUsedExercises.count) exercises")
                         .font(DesignSystem.Typography.bodySmall)
@@ -517,9 +530,13 @@ struct ExerciseLibraryView: View {
             // Section Header
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("⭐ Recommended for You")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(DesignSystem.Colors.accentYellow)
+                        Text("Recommended for You")
+                            .font(DesignSystem.Typography.titleLarge)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
 
                     Text("Based on your training history")
                         .font(DesignSystem.Typography.bodySmall)
@@ -556,14 +573,18 @@ struct ExerciseLibraryView: View {
 
     // MARK: - Category Section
 
-    private func categorySection(title: String, exercises: [Exercise], color: Color) -> some View {
+    private func categorySection(title: String, icon: String, exercises: [Exercise], color: Color) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             // Section Header
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text(title)
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: icon)
+                            .foregroundColor(color)
+                        Text(title)
+                            .font(DesignSystem.Typography.titleLarge)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                    }
 
                     Text("\(exercises.count) exercise\(exercises.count == 1 ? "" : "s")")
                         .font(DesignSystem.Typography.bodySmall)
@@ -861,9 +882,9 @@ struct ExerciseLibraryView: View {
         recentlyUsedExercises = CoreDataManager.shared.fetchRecentlyUsedExercises(for: player, limit: 5)
         #if DEBUG
         let aiCount = allExercises.filter { $0.isAIGenerated }.count
-        print("📋 loadExercises: \(allExercises.count) total, \(aiCount) AI-generated")
+        print("loadExercises: \(allExercises.count) total, \(aiCount) AI-generated")
         for ex in allExercises where ex.isAIGenerated {
-            print("  ✅ AI: \(ex.name ?? "nil") | desc prefix: \(String(ex.exerciseDescription?.prefix(50) ?? "nil"))")
+            print("AI: \(ex.name ?? "nil") | desc prefix: \(String(ex.exerciseDescription?.prefix(50) ?? "nil"))")
         }
         #endif
     }

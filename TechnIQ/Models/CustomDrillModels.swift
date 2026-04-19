@@ -20,13 +20,22 @@ enum DrillCategory: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .technical: return "⚽ Technical"
-        case .physical: return "💪 Physical"
-        case .tactical: return "🧠 Tactical"
-        case .mental: return "🎯 Mental"
+        case .technical: return "Technical"
+        case .physical: return "Physical"
+        case .tactical: return "Tactical"
+        case .mental: return "Mental"
         }
     }
-    
+
+    var iconSystemName: String {
+        switch self {
+        case .technical: return "soccerball"
+        case .physical: return "figure.strengthtraining.traditional"
+        case .tactical: return "brain"
+        case .mental: return "target"
+        }
+    }
+
     var color: String {
         switch self {
         case .technical: return "primaryGreen"
@@ -44,11 +53,13 @@ enum DifficultyLevel: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .beginner: return "🟢 Beginner"
-        case .intermediate: return "🟡 Intermediate"
-        case .advanced: return "🔴 Advanced"
+        case .beginner: return "Beginner"
+        case .intermediate: return "Intermediate"
+        case .advanced: return "Advanced"
         }
     }
+
+    var iconSystemName: String { "circle.fill" }
     
     var numericValue: Int {
         switch self {
@@ -72,15 +83,15 @@ enum Equipment: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .ball: return "⚽ Ball"
-        case .cones: return "🔶 Cones"
-        case .goals: return "🥅 Goals"
-        case .partner: return "👥 Partner"
-        case .hurdles: return "🚧 Hurdles"
-        case .ladder: return "🪜 Agility Ladder"
-        case .poles: return "📍 Poles"
-        case .wall: return "🧱 Wall"
-        case .none: return "❌ No Equipment"
+        case .ball: return "Ball"
+        case .cones: return "Cones"
+        case .goals: return "Goals"
+        case .partner: return "Partner"
+        case .hurdles: return "Hurdles"
+        case .ladder: return "Agility Ladder"
+        case .poles: return "Poles"
+        case .wall: return "Wall"
+        case .none: return "No Equipment"
         }
     }
 

@@ -404,6 +404,9 @@ struct CategorySelectionCard: View {
         Button(action: action) {
             ModernCard(padding: DesignSystem.Spacing.sm) {
                 VStack(spacing: DesignSystem.Spacing.xs) {
+                    Image(systemName: category.iconSystemName)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
                     Text(category.displayName)
                         .font(DesignSystem.Typography.labelMedium)
                         .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
@@ -436,10 +439,15 @@ struct DifficultySelectionCard: View {
     var body: some View {
         Button(action: action) {
             ModernCard(padding: DesignSystem.Spacing.sm) {
-                Text(difficulty.displayName)
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
-                    .frame(maxWidth: .infinity)
+                HStack(spacing: DesignSystem.Spacing.xs) {
+                    Image(systemName: difficulty.iconSystemName)
+                        .font(.caption)
+                        .foregroundColor(difficultyColor)
+                    Text(difficulty.displayName)
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                }
+                .frame(maxWidth: .infinity)
             }
             .background(
                 isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
@@ -454,6 +462,14 @@ struct DifficultySelectionCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private var difficultyColor: Color {
+        switch difficulty {
+        case .beginner: return .green
+        case .intermediate: return .yellow
+        case .advanced: return .red
+        }
     }
 }
 
@@ -470,7 +486,7 @@ struct EquipmentSelectionCard: View {
                         .font(.title3)
                         .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
                     
-                    Text(equipment.displayName.components(separatedBy: " ").dropFirst().joined(separator: " "))
+                    Text(equipment.displayName)
                         .font(DesignSystem.Typography.labelSmall)
                         .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
                         .multilineTextAlignment(.center)

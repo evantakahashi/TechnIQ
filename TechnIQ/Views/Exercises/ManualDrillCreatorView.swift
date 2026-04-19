@@ -49,7 +49,7 @@ struct ManualDrillCreatorView: View {
         if !setupRequirements.isEmpty {
             output += "**Setup:**\n\(setupRequirements)\n"
             if !selectedEquipment.isEmpty {
-                let equipmentNames = selectedEquipment.map { $0.displayName.components(separatedBy: " ").dropFirst().joined(separator: " ") }.sorted()
+                let equipmentNames = selectedEquipment.map { $0.displayName }.sorted()
                 output += "Equipment: \(equipmentNames.joined(separator: ", "))\n"
             }
             output += "\n"
