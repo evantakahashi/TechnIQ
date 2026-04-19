@@ -181,4 +181,38 @@ final class CloudServicePersistenceTests: XCTestCase {
             .weeks?.allObjects as? [PlanWeek])?.first?.days?.allObjects as? [PlanDay]
         XCTAssertEqual(restoredDays?.first?.sessions?.count, 1)
     }
+
+    // MARK: - hasCloudData gating
+
+    func test_hasMeaningfulCloudProfile_completeProfile_returnsTrue() {
+        let doc: [String: Any] = [
+            "playerId": UUID().uuidString,
+            "position": "Midfielder",
+            "experienceLevel": "Intermediate"
+        ]
+        XCTAssertTrue(sut.hasMeaningfulCloudProfile(doc))
+    }
+
+    func test_hasMeaningfulCloudProfile_missingPosition_returnsFalse() {
+        let doc: [String: Any] = [
+            "playerId": UUID().uuidString,
+            "position": "",
+            "experienceLevel": "Intermediate"
+        ]
+        XCTAssertFalse(sut.hasMeaningfulCloudProfile(doc), "Partial onboarding upload should not trigger restore")
+    }
+
+    func test_hasMeaningfulCloudProfile_missingExperienceLevel_returnsFalse() {
+        let doc: [String: Any] = [
+            "playerId": UUID().uuidString,
+            "position": "Midfielder",
+            "experienceLevel": ""
+        ]
+        XCTAssertFalse(sut.hasMeaningfulCloudProfile(doc))
+    }
+
+    func test_hasMeaningfulCloudProfile_missingFields_returnsFalse() {
+        let doc: [String: Any] = ["playerId": UUID().uuidString]
+        XCTAssertFalse(sut.hasMeaningfulCloudProfile(doc))
+    }
 }

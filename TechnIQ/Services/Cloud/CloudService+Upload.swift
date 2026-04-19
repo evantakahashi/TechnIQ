@@ -239,7 +239,18 @@ extension CloudService {
         )
     }
 
-    /// Check if cloud data exists for current user (for restore flow)
+    /// Pure decision: does this cloud profile document represent a user who actually finished onboarding,
+    /// or is it a partial upload that should NOT trigger a restore?
+    /// We consider a profile "meaningful" only if both `position` and `experienceLevel` are set —
+    /// both are mandatory fields in the onboarding flow, so a doc missing either was written by a
+    /// crash or abandoned session.
+    func hasMeaningfulCloudProfile(_ doc: [String: Any]) -> Bool {
+        let position = (doc["position"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let experienceLevel = (doc["experienceLevel"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        return !position.isEmpty && !experienceLevel.isEmpty
+    }
+
+    /// Check if a restorable cloud profile exists for the current user.
     func hasCloudData() async throws -> Bool {
         guard let userUID = auth.currentUser?.uid else {
             return false
@@ -249,10 +260,14 @@ extension CloudService {
             return false
         }
 
-        let profilesSnapshot = try await db.collection("users").document(userUID)
+        let snapshot = try await db.collection("users").document(userUID)
             .collection("playerProfiles").limit(to: 1).getDocuments()
 
-        return !profilesSnapshot.documents.isEmpty
+        guard let doc = snapshot.documents.first?.data() else {
+            return false
+        }
+
+        return hasMeaningfulCloudProfile(doc)
     }
 
     // MARK: - Analytics and ML Data Collection
