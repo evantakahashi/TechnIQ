@@ -246,7 +246,19 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         player_profile = request_data.get("player_profile", {})
         requirements = request_data.get("requirements", {})
 
-        weakness = (player_profile.get("weaknesses") or ["Ball Control"])[0]
+        # Weakness precedence: request-specific signals beat static profile.
+        # 1) requirements.selected_weaknesses[0].category (for archetype lookup)
+        # 2) fallback to player_profile.weaknesses[0]
+        # 3) fallback to "Ball Control"
+        selected_weaknesses = requirements.get("selected_weaknesses") or []
+        skill_description = (requirements.get("skill_description") or "").strip()
+        if selected_weaknesses and selected_weaknesses[0].get("category"):
+            weakness = selected_weaknesses[0]["category"]
+        elif player_profile.get("weaknesses"):
+            weakness = player_profile["weaknesses"][0]
+        else:
+            weakness = "Ball Control"
+
         level = player_profile.get("experienceLevel", "beginner")
         age = int(player_profile.get("age") or 14)
         position = player_profile.get("position", "midfielder")
@@ -293,6 +305,8 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                     "player_age": age,
                     "position": position,
                     "equipment": equipment,
+                    "skill_description": skill_description,
+                    "selected_weaknesses": selected_weaknesses,
                 },
                 llm_call=_llm_call,
             )
@@ -309,8 +323,9 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         else:
             drill.setdefault("coachingPoints", [])
 
-        drill.setdefault("name", f"{weakness} Drill")
-        drill.setdefault("description", f"Custom drill for {weakness}")
+        focus_label = skill_description or weakness
+        drill.setdefault("name", f"{focus_label} Drill")
+        drill.setdefault("description", f"Custom drill for {focus_label}")
         drill.setdefault("setup", "See diagram.")
         drill.setdefault("instructions", ["Follow the diagram."])
         drill.setdefault("estimatedDuration", 15)

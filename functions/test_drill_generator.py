@@ -91,3 +91,59 @@ def test_prompt_contains_archetype_exemplars():
     assert "cone_weave" in captured[0]
     # Seed exemplar content should be embedded
     assert "dribbles to" in captured[0]
+
+
+def test_prompt_features_skill_description_prominently():
+    """skill_description must appear in the SKILL TO TRAIN banner, not just as
+    a footnote. Regression for drills defaulting to archetype shape over skill."""
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["skill_description"] = "first touch under pressure receiving bouncing balls"
+    generate_drill(req, llm_call=capture)
+
+    prompt = captured[0]
+    assert "SKILL TO TRAIN" in prompt
+    # Skill description appears in the banner line (above 'Player:')
+    banner_section = prompt.split("Player:")[0]
+    assert "first touch under pressure" in banner_section
+    # Anti-template language in place
+    assert "do NOT copy" in prompt or "not copy" in prompt.lower()
+    # Old slavish-copy language is gone
+    assert "in the same style" not in prompt
+
+
+def test_prompt_falls_back_to_selected_weaknesses_then_weakness():
+    """When skill_description is empty, use selected_weaknesses; then weakness."""
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["selected_weaknesses"] = [{"category": "Shooting", "specific": "Weak foot volleys"}]
+    generate_drill(req, llm_call=capture)
+    assert "Weak foot volleys" in captured[0]
+
+
+def test_prompt_lists_selected_weaknesses_block():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["selected_weaknesses"] = [
+        {"category": "First Touch", "specific": "Bouncing balls"},
+        {"category": "First Touch", "specific": "Turning with first touch"},
+    ]
+    generate_drill(req, llm_call=capture)
+    assert "Specific weaknesses flagged" in captured[0]
+    assert "Bouncing balls" in captured[0]
+    assert "Turning with first touch" in captured[0]
