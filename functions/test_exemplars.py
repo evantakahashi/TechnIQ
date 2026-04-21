@@ -20,15 +20,19 @@ def test_exemplars_file_loads():
     assert len(data) > 0
 
 
-def test_eight_entries():
-    assert len(EXEMPLARS) == 8
+def test_at_least_sixteen_entries():
+    assert len(EXEMPLARS) >= 16
 
 
-def test_one_per_archetype():
-    archetypes_with_exemplars = {e["archetype"] for e in EXEMPLARS}
-    # Every archetype appears exactly once, and exactly matches valid set
-    assert archetypes_with_exemplars == VALID_ARCHETYPES
-    assert len(EXEMPLARS) == len(set(a["archetype"] for a in EXEMPLARS))
+def test_every_archetype_has_at_least_two():
+    from collections import Counter
+    counts = Counter(e["archetype"] for e in EXEMPLARS)
+    # Every exemplar's archetype is valid
+    for archetype in counts:
+        assert archetype in VALID_ARCHETYPES, f"unknown archetype {archetype!r}"
+    # Every valid archetype appears at least twice
+    for archetype in VALID_ARCHETYPES:
+        assert counts[archetype] >= 2, f"{archetype!r} has only {counts[archetype]} exemplar(s)"
 
 
 def test_every_exemplar_has_required_fields():
