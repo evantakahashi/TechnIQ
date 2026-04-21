@@ -1,0 +1,56 @@
+[
+  {
+    "id": "cone_weave_beginner_01",
+    "archetype": "cone_weave",
+    "dsl": "cone C1 at (0, 0)\ncone C2 at (3, 0)\ncone C3 at (6, 0)\ncone C4 at (9, 0)\nplayer P1 at (-2, 0) role \"worker\"\nball B1 at (-2, 0)\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 dribbles to C4\n\npoint: Use inside and outside of the same foot\npoint: Keep the ball within half a step",
+    "notes": "Classic 4-cone weave, 3m spacing, ball mastery fundamentals"
+  },
+  {
+    "id": "wall_passing_beginner_01",
+    "archetype": "wall_passing",
+    "dsl": "cone C1 at (0, 0)\ncone C2 at (6, 0)\nplayer P1 at (0, 0) role \"worker\"\nplayer P2 at (6, 0) role \"server\"\nball B1 at (0, 0)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P1\nstep 3: P1 passes to P2\n\npoint: Inside of the foot, plant foot pointing at target\npoint: Receive across the body with your back foot",
+    "notes": "Stationary wall-pass rhythm; 6m distance suits beginner weight of pass"
+  },
+  {
+    "id": "gate_dribbling_intermediate_01",
+    "archetype": "gate_dribbling",
+    "dsl": "gate G1 at (3, 2) width 2\ngate G2 at (7, -2) width 2\ngate G3 at (11, 3) width 2\nplayer P1 at (0, 0) role \"worker\"\nball B1 at (0, 0)\n\nstep 1: P1 dribbles to G1\nstep 2: P1 dribbles to G2\nstep 3: P1 dribbles to G3\n\npoint: Scan before each gate; pick your line early\npoint: Change pace after you exit each gate",
+    "notes": "3 gates offset to force direction changes; intermediate U12+"
+  },
+  {
+    "id": "dribble_and_shoot_beginner_01",
+    "archetype": "dribble_and_shoot",
+    "dsl": "cone C1 at (5, 0)\ncone C2 at (9, 0)\nplayer P1 at (0, 0) role \"worker\"\nball B1 at (0, 0)\ngoal GL at (18, 0) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 shoots at GL\n\npoint: Set up with your second-to-last touch\npoint: Head still, eyes on the ball at contact",
+    "notes": "2 cones → shot; introduces the finishing setup touch"
+  },
+  {
+    "id": "relay_shuttle_beginner_01",
+    "archetype": "relay_shuttle",
+    "dsl": "cone C1 at (0, 0)\ncone C2 at (10, 0)\nplayer P1 at (0, -1) role \"worker\"\nplayer P2 at (0, 1) role \"worker\"\nball B1 at (0, -1)\n\nstep 1: P1 dribbles to C2\nstep 2: P1 passes to P2\nstep 3: P2 dribbles to C1\n\npoint: Full speed to the turn, slow to strike the pass\npoint: Receiver calls their name to start the rep",
+    "notes": "2-player shuttle with handoff via pass; conditioning + technical"
+  },
+  {
+    "id": "server_executor_intermediate_01",
+    "archetype": "server_executor",
+    "dsl": "player P1 at (0, 0) role \"server\"\nplayer P2 at (8, -3) role \"worker\"\ncone C1 at (12, 0)\ngoal GL at (18, 0) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 shoots at GL\n\npoint: Open hips before the ball arrives\npoint: First touch forward into the run, not into your feet",
+    "notes": "Server feeds channel runner; attacking midfielder finishing pattern"
+  },
+  {
+    "id": "triangle_passing_intermediate_01",
+    "archetype": "triangle_passing",
+    "dsl": "player P1 at (0, 0) role \"worker\"\nplayer P2 at (6, 0) role \"worker\"\nplayer P3 at (3, 5) role \"worker\"\nball B1 at (0, 0)\n\nstep 1: P1 passes to P3\nstep 2: P3 passes to P2\nstep 3: P2 passes to P1\n\npoint: Receive on the back foot, open to the next pass\npoint: Follow your pass two steps to keep the triangle alive",
+    "notes": "3-player triangle, 6m base; positional passing fundamentals"
+  },
+  {
+    "id": "1v1_plus_server_advanced_01",
+    "archetype": "1v1_plus_server",
+    "dsl": "player P1 at (0, 0) role \"server\"\nplayer P2 at (8, -2) role \"worker\"\nplayer P3 at (8, 2) role \"worker\"\ngoal GL at (18, 0) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Attacker takes on the defender at a jog-to-sprint change of pace\npoint: Defender pressures from the attacker's strong side to force weak-foot decisions",
+    "notes": "Server feeds attacker; attacker beats defender and finishes; 8m attacking channel"
+  },
+  {
+    "id": "rondo_intermediate_01",
+    "archetype": "rondo",
+    "dsl": "player P1 at (0, 0) role \"worker\"\nplayer P2 at (6, 0) role \"worker\"\nplayer P3 at (6, 6) role \"worker\"\nplayer P4 at (0, 6) role \"worker\"\nplayer P5 at (3, 3) role \"server\"\nball B1 at (0, 0)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P4\n\npoint: Body shape open before the ball arrives\npoint: One-touch only if your next option is already set up",
+    "notes": "4v1 rondo on a 6x6 grid; P5 is the defender (server role)"
+  }
+]
