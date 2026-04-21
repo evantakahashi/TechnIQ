@@ -8,8 +8,8 @@
   {
     "id": "wall_passing_beginner_01",
     "archetype": "wall_passing",
-    "dsl": "cone C1 at (7, 7.5)\ncone C2 at (13, 7.5)\nplayer P1 at (7, 7.5) role \"worker\"\nplayer P2 at (13, 7.5) role \"server\"\nball B1 at (7, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P1\nstep 3: P1 passes to P2\n\npoint: Inside of the foot, plant foot pointing at target\npoint: Receive across the body with your back foot",
-    "notes": "Stationary wall-pass rhythm; 6m distance suits beginner weight of pass"
+    "dsl": "cone C1 at (8, 7.5)\ncone C2 at (12, 7.5)\nplayer P1 at (5, 7.5) role \"worker\"\nplayer P2 at (15, 7.5) role \"server\"\nball B1 at (5, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P1\nstep 3: P1 passes to P2\n\npoint: First touch past your own cone, then pass back\npoint: Inside of the foot, plant foot pointing at target",
+    "notes": "2-cone wall-pass pattern; each player first-touches past their own cone before passing back"
   },
   {
     "id": "gate_dribbling_intermediate_01",
