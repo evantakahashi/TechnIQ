@@ -1278,6 +1278,63 @@ git commit -m "feat(drill): render-preview CLI for exemplar authoring"
 
 ---
 
+## Task 6.5: Seed exemplar review gate (HARD STOP)
+
+**Files:** none modified — review-only gate.
+
+This task is a blocking checkpoint. Do NOT proceed to Task 7 until every seed exemplar PNG is approved. Bad exemplars poison every drill of their archetype, so the catch point is here.
+
+- [ ] **Step 1: Render every seed exemplar to PNG**
+
+Run:
+```bash
+cd functions && for id in \
+  cone_weave_beginner_01 \
+  wall_passing_beginner_01 \
+  gate_dribbling_intermediate_01 \
+  dribble_and_shoot_beginner_01 \
+  relay_shuttle_beginner_01 \
+  server_executor_intermediate_01 \
+  triangle_passing_intermediate_01 \
+  1v1_plus_server_advanced_01 \
+  rondo_intermediate_01; do \
+    python -m tools.render_exemplar exemplars.json "$id"; \
+  done
+```
+Expected: 9 PNGs written to `/tmp/`.
+
+- [ ] **Step 2: User reviews all 9 PNGs**
+
+Open each PNG (`open /tmp/*.png` on macOS). For each:
+- Would a good coach actually run this drill as drawn?
+- Are cones/players positioned where they'd be in real training?
+- Do the step arrows match how the ball would actually move?
+- Is the spacing realistic for the target age/level?
+
+Mark each **APPROVED** or **REVISE** with specific feedback (what's wrong, what to change).
+
+- [ ] **Step 3: Revise any REVISE exemplars**
+
+For each flagged exemplar, edit its `dsl` field in `functions/exemplars.json`. Re-run `test_exemplars.py` after any edit to confirm it still parses and validates. Re-render and re-review.
+
+Run: `cd functions && python -m pytest test_exemplars.py -v`
+Expected: all exemplar round-trip tests pass.
+
+- [ ] **Step 4: Commit revised exemplars (only if changes made)**
+
+```bash
+git add functions/exemplars.json
+git commit -m "feat(drill): revise seed exemplars after visual review"
+```
+
+If no revisions: no commit.
+
+- [ ] **Step 5: User confirms all 9 are approved**
+
+Do not proceed to Task 7 until every seed exemplar is marked APPROVED. The production pipeline inherits its taste from these 9 drills.
+
+---
+
 ## Task 7: Wire drill_generator into main.py and delete old phases
 
 **Files:**
@@ -1430,6 +1487,80 @@ git commit -m "feat(drill): add exemplars surfaced during QA"
 ```
 
 Otherwise no commit for this step.
+
+---
+
+## Task 9: Hybrid exemplar authoring (expand to ~20)
+
+**Files:**
+- Modify: `functions/exemplars.json`
+
+Per Q11: the seed set is 9 (one per archetype, drafted by Claude). This task expands to ~20 with user-authored judgment-heavy drills. Target: ≥2 exemplars per archetype, with the judgment-heavy archetypes (`rondo`, `triangle_passing`, `server_executor`, `1v1_plus_server`) getting the user's taste directly.
+
+- [ ] **Step 1: User dictates each new drill**
+
+For each of the ~11 new exemplars, user describes in plain English:
+- Archetype
+- Player/cone layout (counts, rough spacing, shape)
+- Step-by-step action sequence
+- 2-3 coaching points
+- Target experience level (beginner / intermediate / advanced)
+
+Priorities, in order:
+1. `rondo_advanced_01`, `rondo_beginner_01`
+2. `triangle_passing_beginner_01`, `triangle_passing_advanced_01`
+3. `server_executor_beginner_01`, `server_executor_advanced_01`
+4. `1v1_plus_server_intermediate_01`
+5. Additional variants of mechanical archetypes where current seed feels thin
+
+- [ ] **Step 2: Claude transcribes each to DSL**
+
+For each dictated drill, write a new entry in `functions/exemplars.json` with the conventions:
+- `id`: `<archetype>_<level>_<NN>` (NN is a 2-digit counter starting at 01 per archetype+level)
+- `archetype`: one of the 9 valid archetypes
+- `dsl`: valid DSL per the grammar in Task 2
+- `notes`: one-line description of what the drill trains
+
+- [ ] **Step 3: Run exemplar tests after each addition**
+
+Run: `cd functions && python -m pytest test_exemplars.py -v`
+Expected: all parametrized round-trip tests pass, including the new exemplar.
+
+If the test fails, fix the DSL in the JSON file until it passes. Do not skip the test.
+
+- [ ] **Step 4: Render the new PNG for user review**
+
+Run: `cd functions && python -m tools.render_exemplar exemplars.json <new_id>`
+Open the PNG. User approves or sends it back with revision notes.
+
+- [ ] **Step 5: Commit each approved exemplar**
+
+```bash
+git add functions/exemplars.json
+git commit -m "feat(drill): add <exemplar_id>"
+```
+
+One commit per approved exemplar keeps the history readable and makes it easy to revert a single exemplar later.
+
+- [ ] **Step 6: Verify coverage**
+
+Run:
+```bash
+cd functions && python -c "
+import json
+from collections import Counter
+c = Counter(e['archetype'] for e in json.load(open('exemplars.json')))
+for a, n in sorted(c.items()):
+    print(f'{a}: {n}')
+print(f'total: {sum(c.values())}')
+"
+```
+Expected: every archetype has ≥2 entries, total ≥18.
+
+- [ ] **Step 7: Redeploy**
+
+Run: `cd functions && firebase deploy --only functions:generate_custom_drill`
+Expected: deploy succeeds. New exemplars take effect on next cold start.
 
 ---
 
