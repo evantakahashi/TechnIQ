@@ -1,4 +1,7 @@
 """Tests for exemplars loader + every exemplar parses+validates."""
+import json
+from pathlib import Path
+
 import pytest
 from archetype_picker import VALID_ARCHETYPES
 from dsl_parser import parse_dsl
@@ -7,13 +10,25 @@ from drill_validator import validate_drill
 from exemplars import EXEMPLARS, get_exemplars
 
 
-def test_exemplars_list_non_empty():
-    assert len(EXEMPLARS) >= 9
+def test_exemplars_file_loads():
+    """Verify exemplars.json parses from disk independently."""
+    exemplars_path = Path(__file__).with_name("exemplars.json")
+    assert exemplars_path.exists()
+    with exemplars_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert isinstance(data, list)
+    assert len(data) > 0
 
 
-def test_each_archetype_has_at_least_one_exemplar():
+def test_nine_entries():
+    assert len(EXEMPLARS) == 9
+
+
+def test_one_per_archetype():
     archetypes_with_exemplars = {e["archetype"] for e in EXEMPLARS}
-    assert VALID_ARCHETYPES.issubset(archetypes_with_exemplars)
+    # Every archetype appears exactly once, and exactly matches valid set
+    assert archetypes_with_exemplars == VALID_ARCHETYPES
+    assert len(EXEMPLARS) == len(set(a["archetype"] for a in EXEMPLARS))
 
 
 def test_every_exemplar_has_required_fields():
