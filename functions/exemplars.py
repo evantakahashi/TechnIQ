@@ -45,7 +45,13 @@ def get_exemplars(
       2. each neighbor archetype + allowed pressures (first hit wins)
       3. empty list — NO fallback to unfiltered (wrong-pressure) exemplars.
     """
-    allowed = _LEVEL_PRESSURE_ALLOW.get(level) if level else None
+    if level is None or level == "":
+        allowed: set[str] | None = None
+    elif level in _LEVEL_PRESSURE_ALLOW:
+        allowed = _LEVEL_PRESSURE_ALLOW[level]
+    else:
+        logger.warning("[exemplar] unknown level=%r; treating as unfiltered", level)
+        allowed = None
 
     def _match(arch: str) -> list[dict[str, Any]]:
         hits = [e for e in EXEMPLARS if e.get("archetype") == arch]

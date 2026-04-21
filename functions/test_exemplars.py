@@ -111,3 +111,12 @@ def test_get_exemplars_no_level_is_backwards_compatible():
     all_cone = get_exemplars("cone_weave")
     assert len(all_cone) >= 1
     assert all(e["archetype"] == "cone_weave" for e in all_cone)
+
+
+def test_get_exemplars_unknown_level_logs_warning_and_unfilters(caplog):
+    import logging
+    caplog.set_level(logging.WARNING, logger="exemplars")
+    hits = get_exemplars("cone_weave", level="expert")
+    assert hits  # unknown level → unfiltered → returns archetype matches
+    assert any("unknown level" in r.message for r in caplog.records), \
+        "expected a WARNING log for unknown level"
