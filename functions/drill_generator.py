@@ -7,11 +7,12 @@ from archetype_picker import pick_archetype
 from category_rules import get_rule_pack
 from dsl_parser import DSLParseError, parse_dsl
 from drill_post_processor import post_process_drill
+from drill_quality import score_drill_quality
 from drill_validator import ValidationError, validate_drill
 from exemplars import get_exemplars
 
 
-MAX_ATTEMPTS = 2
+MAX_ATTEMPTS = 4
 
 SYSTEM_PROMPT = """\
 You design soccer training drills. Your #1 job: make the player REPEATEDLY PRACTICE THE REQUESTED SKILL.
@@ -45,6 +46,14 @@ AGE_MAX_SPACING = {8: 7.0, 12: 10.0, 99: 15.0}
 
 class DrillGenerationFailed(RuntimeError):
     """Raised when the LLM cannot produce a valid drill within MAX_ATTEMPTS."""
+
+
+class QualityError(RuntimeError):
+    """Raised when a parsed drill fails the coaching-quality gate."""
+
+    def __init__(self, reasons: list[str]):
+        self.reasons = reasons
+        super().__init__("; ".join(reasons))
 
 
 def generate_drill(
@@ -92,9 +101,15 @@ def generate_drill(
             drill["equipment"] = equipment
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)
+            score, reasons = score_drill_quality(drill, rule_pack, level)
+            c2_failed = any(r.startswith("C2:") for r in reasons)
+            if score < 3 or (level != "beginner" and c2_failed):
+                raise QualityError(reasons)
             return drill
         except (DSLParseError, ValidationError) as e:
             errors.append(("syntax", str(e)))
+        except QualityError as e:
+            errors.append(("quality", "; ".join(e.reasons)))
 
     raise DrillGenerationFailed(f"Exhausted {MAX_ATTEMPTS} attempts: {errors}")
 

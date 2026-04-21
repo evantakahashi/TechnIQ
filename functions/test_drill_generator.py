@@ -8,12 +8,19 @@ VALID_DSL = """\
 cone C1 at (0, 0)
 cone C2 at (3, 0)
 player P1 at (-2, 0) role "worker"
+player P2 at (5, 5) role "server"
+player P3 at (3, -3) role "defender"
 ball B1 at (-2, 0)
+goal GL at (10, 0) width 5
 
 step 1: P1 dribbles to C1
-step 2: P1 dribbles to C2
+step 2: P2 passes to P1
+step 3: P1 dribbles to C2
+step 4: P2 passes to P1
+step 5: P1 shoots at GL
 
-point: Keep the ball close
+point: Keep the ball close under pressure
+point: Dribble past the defender, scan before the touch, drive through the shot
 """
 
 
@@ -33,7 +40,7 @@ def make_request():
         "experience_level": "beginner",
         "player_age": 12,
         "position": "midfielder",
-        "equipment": ["ball", "cones"],
+        "equipment": ["ball", "cones", "goals", "partner"],
     }
 
 
@@ -66,15 +73,15 @@ def test_retries_include_prior_error_in_prompt():
 
 
 def test_fails_after_second_parse_error():
-    llm = make_llm(["broken1", "broken2"])
+    llm = make_llm(["broken1", "broken2", "broken3", "broken4"])
     with pytest.raises(DrillGenerationFailed):
         generate_drill(make_request(), llm_call=llm)
-    assert llm.call_count == 2
+    assert llm.call_count == 4
 
 
 def test_fails_after_second_validation_error():
     invalid_dsl = "cone C1 at (0,0)\nplayer P1 at (5,0) role \"worker\"\nstep 1: P1 dribbles to GHOST\n"
-    llm = make_llm([invalid_dsl, invalid_dsl])
+    llm = make_llm([invalid_dsl, invalid_dsl, invalid_dsl, invalid_dsl])
     with pytest.raises(DrillGenerationFailed):
         generate_drill(make_request(), llm_call=llm)
 
@@ -242,3 +249,76 @@ def test_system_prompt_mentions_defender_role():
     generate_drill(make_request(), llm_call=capture)
     # The DSL grammar docstring inside SYSTEM_PROMPT must mention defender
     assert '"defender"' in captured[0]
+
+
+def test_retries_on_quality_error_then_succeeds():
+    """First attempt: valid DSL but no server/outcome (C2 fails at advanced).
+    Second attempt: valid DSL with server + goal + multiple steps (passes)."""
+    LOW_QUALITY_ADVANCED = """\
+player P1 at (5, 7) role "worker"
+cone C1 at (10, 7)
+ball B1 at (5, 7)
+
+step 1: P1 dribbles to C1
+step 2: P1 dribbles to C1
+
+point: Work hard
+point: Give 100%
+"""
+    HIGH_QUALITY_ADVANCED = """\
+player P1 at (2, 7) role "server"
+player P2 at (8, 7) role "worker"
+player P3 at (13, 7) role "defender"
+ball B1 at (2, 7)
+goal GL at (18, 7.5) width 7.32
+
+step 1: P1 passes to P2
+step 2: P2 dribbles to P3
+step 3: P2 shoots at GL
+step 4: P1 passes to P2
+step 5: P2 shoots at GL
+
+point: Attack the defender's front foot to force them to turn
+point: Scan the keeper before the final touch, then drive through the ball
+"""
+    captured_prompts = []
+
+    def capture(prompt: str) -> str:
+        captured_prompts.append(prompt)
+        if len(captured_prompts) == 1:
+            return LOW_QUALITY_ADVANCED
+        return HIGH_QUALITY_ADVANCED
+
+    req = make_request()
+    req["weakness"] = "Shooting"
+    req["experience_level"] = "advanced"
+    drill = generate_drill(req, llm_call=capture)
+    assert drill is not None
+    assert len(captured_prompts) == 2
+    # Second prompt must carry the typed quality error feedback
+    second_prompt = captured_prompts[1]
+    assert "PRIOR ATTEMPT WAS VALID DSL BUT NOT A USEFUL PRACTICE" in second_prompt
+
+
+def test_exhausts_four_attempts_on_quality_failure():
+    LOW_QUALITY = """\
+player P1 at (5, 7) role "worker"
+cone C1 at (10, 7)
+ball B1 at (5, 7)
+
+step 1: P1 dribbles to C1
+
+point: Work hard
+"""
+    llm = make_llm([LOW_QUALITY, LOW_QUALITY, LOW_QUALITY, LOW_QUALITY])
+    req = make_request()
+    req["weakness"] = "Shooting"
+    req["experience_level"] = "advanced"
+    with pytest.raises(DrillGenerationFailed):
+        generate_drill(req, llm_call=llm)
+    assert llm.call_count == 4
+
+
+def test_max_attempts_is_four():
+    from drill_generator import MAX_ATTEMPTS
+    assert MAX_ATTEMPTS == 4
