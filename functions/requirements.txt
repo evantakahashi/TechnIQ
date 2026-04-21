@@ -3,3 +3,4 @@ firebase-admin
 google-api-python-client
 anthropic
 requests
+Pillow>=10.0
