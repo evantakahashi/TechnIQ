@@ -120,3 +120,21 @@ step 1: P1 dribbles to C2
 """
     with pytest.raises(DSLParseError):
         parse_dsl(dsl)
+
+
+def test_parse_defender_role():
+    dsl = """\
+player P1 at (3, 7.5) role "server"
+player P2 at (8, 7.5) role "worker"
+player P3 at (12, 7.5) role "defender"
+ball B1 at (3, 7.5)
+goal GL at (18, 7.5) width 7.32
+
+step 1: P1 passes to P2
+step 2: P2 dribbles to P3
+step 3: P2 shoots at GL
+"""
+    diagram = parse_dsl(dsl)
+    players = [e for e in diagram["diagram"]["elements"] if e["type"] == "player"]
+    roles = {p["label"]: p.get("role") for p in players}
+    assert roles == {"P1": "server", "P2": "worker", "P3": "defender"}

@@ -30,11 +30,12 @@ TOP_PADDING = 50
 BOTTOM_PADDING = 120
 SIDE_PADDING = 40
 COLORS = {
-    "cone":   (255, 140, 0),   # orange
-    "gate":   (0, 200, 180),   # teal
-    "ball":   (255, 255, 255), # white
-    "goal":   (40, 120, 255),  # blue
-    "player": (220, 40, 40),   # red
+    "cone":     (255, 140, 0),    # orange
+    "gate":     (0, 200, 180),    # teal
+    "ball":     (255, 255, 255),  # white
+    "goal":     (40, 120, 255),   # blue
+    "player":   (220, 40, 40),    # red (worker default)
+    "defender": (140, 50, 200),   # dark purple (by role)
 }
 STEP_COLORS = [
     (30, 30, 200), (30, 150, 30), (200, 120, 30), (150, 30, 150),
@@ -235,12 +236,13 @@ def _render_png(drill: dict, path: Path, exemplar_id: str = "", archetype: str =
                          fill=color, outline=(0, 0, 0))
         else:
             r = 12
+            role = el.get("role", "") if el["type"] == "player" else ""
+            fill_color = COLORS["defender"] if role == "defender" else color
             draw.ellipse([(x - r, y - r), (x + r, y + r)],
-                         fill=color, outline=(0, 0, 0))
-            # Role badge (W/S) inside player circle
+                         fill=fill_color, outline=(0, 0, 0))
+            # Role badge (W/S/D) inside player circle
             if font and el["type"] == "player":
-                role = el.get("role", "")
-                badge = "W" if role == "worker" else ("S" if role == "server" else "")
+                badge = {"worker": "W", "server": "S", "defender": "D"}.get(role, "")
                 if badge:
                     bbox = font.getbbox(badge)
                     bw = bbox[2] - bbox[0]
