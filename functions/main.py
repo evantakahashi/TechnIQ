@@ -252,6 +252,21 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         position = player_profile.get("position", "midfielder")
         equipment = requirements.get("equipment", ["ball", "cones"])
 
+        # Initialize Anthropic client
+        anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not anthropic_api_key:
+            return https_fn.Response(
+                json.dumps({"error": "Anthropic API key not configured"}),
+                status=500,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            )
+
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_api_key)
+
         from drill_generator import generate_drill, DrillGenerationFailed
 
         def _llm_call(prompt: str) -> str:
