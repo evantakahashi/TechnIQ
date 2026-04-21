@@ -159,5 +159,12 @@
     "pressure": "active",
     "dsl": "player P1 at (2, 7.5) role \"server\"\nplayer P2 at (5, 7.5) role \"worker\"\nplayer P3 at (11, 7.5) role \"defender\"\nplayer P4 at (3, 4) role \"defender\"\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P4 runs to P2\nstep 4: P2 shoots at GL\n\npoint: Commit to beating P3 immediately — P4 joins after ~3 seconds\npoint: Take the first touch into space on P3's weaker side to buy the half-beat\npoint: If P4 closes before the shot, play a quick square pass back to the server instead of forcing it",
     "notes": "1v1 to finish with a recovery runner — forces the attacker to commit quickly"
+  },
+  {
+    "id": "rondo_advanced_02",
+    "archetype": "rondo",
+    "pressure": "active",
+    "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\nstep 4: P4 runs to P1\nstep 5: P1 dribbles to G1\n\npoint: 3v1 keep-away until the defender forces a turnover — then transition immediately\npoint: On regain, attack the target gate within 5 seconds — no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
+    "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger"
   }
 ]
