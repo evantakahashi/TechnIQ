@@ -243,76 +243,64 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        user_id = request_data.get('user_id')
-        player_profile = request_data.get('player_profile', {})
-        requirements = request_data.get('requirements', {})
-        session_context = request_data.get('session_context', {})
-        drill_feedback = request_data.get('drill_feedback', [])
-        field_size = request_data.get('field_size', 'medium')
+        player_profile = request_data.get("player_profile", {})
+        requirements = request_data.get("requirements", {})
 
-        if not all([user_id, player_profile, requirements]):
-            return https_fn.Response("Missing required fields", status=400)
+        weakness = (player_profile.get("weaknesses") or ["Ball Control"])[0]
+        level = player_profile.get("experienceLevel", "beginner")
+        age = int(player_profile.get("age") or 14)
+        position = player_profile.get("position", "midfielder")
+        equipment = requirements.get("equipment", ["ball", "cones"])
 
-        logger.info(f"🤖 Generating custom drill for user: {user_id} (4-phase pipeline)")
-        logger.info(f"📝 Skill description: {requirements.get('skill_description', '')}")
-        logger.info(f"📐 Field size: {field_size}")
-        logger.info(f"📊 Session context: {len(session_context.get('recent_exercises', []))} recent exercises")
-        logger.info(f"📊 Drill feedback: {len(drill_feedback)} previous drill ratings")
+        from drill_generator import generate_drill, DrillGenerationFailed
 
-        # Get Anthropic API key from environment variables
-        anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        def _llm_call(prompt: str) -> str:
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1500,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return msg.content[0].text
 
-        if not anthropic_api_key:
-            return https_fn.Response("Anthropic API key not configured", status=500)
+        try:
+            drill = generate_drill(
+                {
+                    "weakness": weakness,
+                    "experience_level": level,
+                    "player_age": age,
+                    "position": position,
+                    "equipment": equipment,
+                },
+                llm_call=_llm_call,
+            )
+        except DrillGenerationFailed as e:
+            logger.error(f"Drill generation failed: {e}")
+            return https_fn.Response(
+                json.dumps({"error": "Drill generation failed", "details": str(e)}),
+                status=500,
+                headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
+            )
 
-        # Generate drill using 4-phase agentic pipeline
-        drill_data = generate_drill_pipeline(player_profile, requirements, session_context, drill_feedback, field_size, anthropic_api_key)
-        
-        # Format response
-        response_data = {
-            "user_id": user_id,
-            "drill": drill_data,
-            "algorithm": "claude_custom_drill_generation",
-            "generated_at": datetime.now().isoformat(),
-            "model_version": "1.0.0",
-            "requirements": requirements
-        }
-        
-        logger.info(f"✅ Generated custom drill: {drill_data.get('name', 'Unknown')}")
+        drill.setdefault("name", f"{weakness} Drill")
+        drill.setdefault("description", f"Custom drill for {weakness}")
+        drill.setdefault("setup", "See diagram.")
+        drill.setdefault("instructions", [])
+        drill.setdefault("difficulty", level)
+        drill.setdefault("category", "technical")
+        drill.setdefault("targetSkills", [weakness])
+
         return https_fn.Response(
-            json.dumps(response_data),
+            json.dumps(drill),
             status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
+            headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
         )
-        
     except Exception as e:
-        logger.error(f"❌ Error in generate_custom_drill: {str(e)}")
-        logger.error(traceback.format_exc())
+        logger.exception(f"generate_custom_drill failed: {e}")
         return https_fn.Response(
-            json.dumps({"error": str(e)}),
+            json.dumps({"error": "Internal error", "details": str(e)}),
             status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
+            headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
         )
-
-def get_field_dimensions(field_size: str) -> Dict[str, int]:
-    """Get field dimensions based on size selection"""
-    sizes = {
-        "small": {"width": 20, "length": 15},
-        "medium": {"width": 30, "length": 20},
-        "large": {"width": 50, "length": 30}
-    }
-    return sizes.get(field_size, sizes["medium"])
-
 
 def parse_llm_json(content: str) -> Dict:
     """Extract and parse JSON from LLM response, stripping markdown fences"""
@@ -322,469 +310,6 @@ def parse_llm_json(content: str) -> Dict:
         content = content.split("```")[1]
     return json.loads(content.strip())
 
-
-def generate_drill_pipeline(player_profile: Dict, requirements: Dict, session_context: Dict, drill_feedback: list, field_size: str, anthropic_api_key: str) -> Dict:
-    """4-phase agentic drill generation: Scout → Coach → Writer → PostProcess → Referee"""
-    from anthropic import Anthropic
-    from drill_post_processor import post_process_drill
-    client = Anthropic(api_key=anthropic_api_key)
-
-    field_dims = get_field_dimensions(field_size)
-
-    # === Phase 1: Scout ===
-    logger.info("🔍 Phase 1: Scout - Analyzing player context...")
-    focus_strategy = phase_scout(client, player_profile, session_context, drill_feedback, requirements)
-    logger.info(f"🎯 Scout result: weakness='{focus_strategy.get('primary_weakness')}', archetype='{focus_strategy.get('drill_archetype')}'")
-
-    # === Phase 2: Coach ===
-    logger.info("📐 Phase 2: Coach - Designing spatial layout...")
-    skeletal_plan = phase_coach(client, focus_strategy, requirements, field_dims)
-    logger.info(f"📐 Coach result: pattern='{skeletal_plan.get('pattern_type')}', equipment={skeletal_plan.get('equipment_count')}")
-
-    # === Phase 3 & 4: Writer ⇄ Referee (self-correction loop) ===
-    best_drill = None
-    best_score = 0
-    revision_errors = []
-
-    player_age = player_profile.get('age', 14)
-
-    for attempt in range(3):
-        logger.info(f"✍️ Phase 3: Writer - Attempt {attempt + 1}/3...")
-        drill = phase_writer(client, skeletal_plan, focus_strategy, requirements, field_dims, revision_errors, player_profile)
-
-        # === Post-Process ===
-        logger.info("🔧 Post-processing diagram...")
-        # Override LLM-authored field dims with authoritative values
-        if "diagram" in drill:
-            drill["diagram"]["field"] = {"width": field_dims["width"], "length": field_dims["length"]}
-        pp_warnings = []
-        try:
-            drill, pp_warnings = post_process_drill(drill, player_age=player_age)
-        except Exception as e:
-            logger.warning(f"⚠️ Post-processor failed: {e}")
-            pp_warnings = [f"Post-processor error: {e}"]
-        if pp_warnings:
-            logger.info(f"⚠️ Post-processor warnings: {pp_warnings}")
-
-        logger.info(f"⚖️ Phase 4: Referee - Validating...")
-        validation = phase_referee(client, drill, focus_strategy, requirements, field_dims, pp_warnings)
-
-        score = validation.get("score", 0)
-        if score > best_score:
-            best_score = score
-            best_drill = drill
-
-        if validation.get("verdict") == "VALID":
-            logger.info(f"✅ Drill validated on attempt {attempt + 1} (score={score})")
-            if pp_warnings:
-                drill["validationWarnings"] = pp_warnings
-            return drill
-
-        # Collect errors for next attempt
-        errors = validation.get("errors", [])
-        revision_errors = [f"{e['check']}: {e['issue']}. Fix: {e['fix']}" for e in errors]
-        if pp_warnings:
-            revision_errors.extend([f"post_process: {w}" for w in pp_warnings])
-        logger.info(f"⚠️ Referee found {len(errors)} errors, retrying...")
-
-    # After 3 failures: return best attempt with warnings
-    logger.warning(f"⚠️ Returning best attempt after 3 tries (score={best_score})")
-    if best_drill:
-        best_drill["validationWarnings"] = revision_errors
-    return best_drill or drill
-
-
-def phase_scout(client, player_profile: Dict, session_context: Dict, drill_feedback: list, requirements: Dict) -> Dict:
-    """Phase 1: Analyze player data, output Focus Strategy"""
-    # Build context strings
-    recent_exercises = session_context.get('recent_exercises', [])
-    history_text = ""
-    if recent_exercises:
-        for ex in recent_exercises:
-            history_text += f"- {ex.get('skill', 'Unknown')}: rated {ex.get('rating', 0)}/5"
-            if ex.get('notes'):
-                history_text += f" ({ex['notes']})"
-            history_text += "\n"
-
-    feedback_text = ""
-    if drill_feedback:
-        for fb in drill_feedback:
-            feedback_text += f"- Rated {fb.get('rating', 0)}/5, difficulty: {fb.get('difficulty_feedback', 'appropriate')}, sentiment: {fb.get('feedback_type', 'Neutral')}"
-            if fb.get('notes'):
-                feedback_text += f", notes: {fb['notes']}"
-            feedback_text += "\n"
-
-    match_perf = player_profile.get('matchPerformance', {})
-    match_text = ""
-    if match_perf:
-        weaknesses = match_perf.get('recentWeaknesses', [])
-        strengths = match_perf.get('recentStrengths', [])
-        if weaknesses:
-            match_text += f"Match weaknesses (last {match_perf.get('matchCount', 0)} matches): {', '.join(weaknesses)}\n"
-        if strengths:
-            match_text += f"Match strengths: {', '.join(strengths)}\n"
-
-    # Handle structured weaknesses (new) vs freeform (legacy)
-    selected_weaknesses = requirements.get('selected_weaknesses', [])
-    weakness_text = ""
-    if selected_weaknesses:
-        weakness_text = "STRUCTURED WEAKNESSES (highest priority):\n"
-        for w in selected_weaknesses:
-            weakness_text += f"- {w.get('category', '')}: {w.get('specific', '')}\n"
-
-    # Anti-repetition: recent drill names
-    recent_drills = requirements.get('recent_drill_names', [])
-    anti_repeat_text = ""
-    if recent_drills:
-        anti_repeat_text = f"\nDO NOT generate drills similar to these recent ones: {', '.join(recent_drills)}\n"
-
-    # Weakness-to-archetype mapping for better targeting
-    archetype_hints = {
-        "Under Pressure": "rondo variants, pressing escape drills, tight-space possession games",
-        "Change Of Direction": "cone weave drills, cut-and-go exercises, directional change circuits",
-        "Tight Spaces": "small-sided possession, close-control dribbling boxes, 1v1 in limited area",
-        "Weak Foot Dribbling": "non-dominant foot gates, weak-foot-only dribbling circuits",
-        "Beat 1v1": "1v1 attacking drills, feint practice, step-over sequences",
-        "Long Range Accuracy": "target passing from distance, driven pass practice, switching play drills",
-        "Weak Foot Passing": "non-dominant passing walls, weak-foot triangle passing",
-        "Through Balls": "through-ball timing drills, splitting defenders, weight-of-pass practice",
-        "Finishing 1v1": "1v1 vs keeper, angle finishing, composure drills",
-        "Weak Foot Shooting": "non-dominant shooting circuits, weak-foot finishing angles",
-        "Touch Under Pressure": "receive-and-turn with passive defender, first-touch-under-pressure rondos",
-        "Tackling 1v1": "1v1 channel defending, jockeying drills, timing tackles",
-        "Recovery Runs": "recovery run and defend circuits, transition defending",
-        "Acceleration": "sprint starts, first-5-yard explosiveness, reaction sprints",
-        "Heading Accuracy": "heading target practice, headed passing drills"
-    }
-
-    archetype_hint = ""
-    if selected_weaknesses:
-        for w in selected_weaknesses:
-            specific = w.get('specific', '')
-            if specific in archetype_hints:
-                archetype_hint += f"\nFor '{specific}', consider: {archetype_hints[specific]}"
-
-    # Archetype filtering by experience level
-    exp_level = player_profile.get('experienceLevel', 'intermediate')
-    age = player_profile.get('age', 14)
-    position = player_profile.get('position', 'midfielder')
-    playing_style = player_profile.get('playingStyle', '')
-
-    archetype_by_level = {
-        "beginner": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot",
-        "intermediate": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot, relay_shuttle, server_executor, triangle_passing",
-        "advanced": "cone_weave, wall_passing, gate_dribbling, dribble_and_shoot, relay_shuttle, server_executor, triangle_passing, 1v1_plus_server, rondo"
-    }
-    available_archetypes = archetype_by_level.get(exp_level, archetype_by_level["intermediate"])
-
-    # Age-based spacing context
-    if age <= 8:
-        spacing_context = "Age U8: cone spacing 1-2m, passing distance 5-7m, drill duration 3-5 min"
-    elif age <= 12:
-        spacing_context = "Age U12: cone spacing 2-3m, passing distance 8-10m, drill duration 8-12 min"
-    else:
-        spacing_context = "Age U13+: cone spacing 3-5m, passing distance 10-15m, drill duration 10-15 min"
-
-    # Position-based archetype weighting
-    position_hints = {
-        "winger": "Prefer 1v1 dribbling, change of direction, crossing drills",
-        "midfielder": "Prefer passing patterns, possession, transition drills",
-        "striker": "Prefer finishing, first touch, 1v1 vs keeper drills",
-        "defender": "Prefer 1v1 defending, clearance, recovery run drills",
-        "goalkeeper": "Prefer shot-stopping, distribution, positioning drills"
-    }
-    position_hint = position_hints.get(position.lower(), "")
-
-    prompt = f"""Analyze this soccer player and identify their #1 weakness to target.
-
-Player: {player_profile.get('name', 'Player')}, Age {player_profile.get('age', 'Unknown')}, {player_profile.get('position', 'Unknown')}, {player_profile.get('experienceLevel', 'intermediate')} level
-Goals: {', '.join(player_profile.get('skillGoals', []))}
-Self-identified weaknesses: {', '.join(player_profile.get('weaknesses', []))}
-Request focus: {requirements.get('skill_description', '')}
-
-{weakness_text}
-Recent training ratings:
-{history_text or 'No history available'}
-
-Previous drill feedback:
-{feedback_text or 'No feedback available'}
-
-{match_text}
-{anti_repeat_text}
-{archetype_hint}
-
-Priority order: 1) Structured weaknesses if provided, 2) User's text description, 3) Match weaknesses, 4) Session ratings.
-Be CREATIVE and SPECIFIC with drill archetypes. Avoid generic drills.
-
-Available archetypes for {exp_level} level: {available_archetypes}
-{spacing_context}
-{position_hint}
-Playing style: {playing_style}
-
-You MUST pick a drill_archetype from the available archetypes list above. If archetype hints above suggest something not in the list, pick the closest canonical match.
-
-Return JSON:
-{{"primary_weakness": "specific weakness description", "drill_archetype": "specific drill type that addresses it", "difficulty_calibration": "maintain|easier|harder", "reasoning": "brief explanation"}}"""
-
-    try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            system="You are a soccer performance analyst. Identify the player's #1 weakness from their data and recommend a creative, specific drill archetype. Prioritize structured weakness selections, then explicit requests, then match data, then session ratings. Be inventive — avoid generic drills.",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=500,
-            temperature=0.3
-        )
-        return parse_llm_json(response.content[0].text)
-    except Exception as e:
-        logger.warning(f"⚠️ Scout phase parse error: {e}, using defaults")
-        primary = selected_weaknesses[0].get('specific', 'general technique') if selected_weaknesses else requirements.get('skill_description', 'general technique')
-        return {
-            "primary_weakness": primary,
-            "drill_archetype": "varied practice",
-            "difficulty_calibration": "maintain",
-            "reasoning": "Fallback: using user request as primary focus"
-        }
-
-
-def phase_coach(client, focus_strategy: Dict, requirements: Dict, field_dims: Dict) -> Dict:
-    """Phase 2: Design spatial layout and mechanics"""
-    equipment = requirements.get('equipment', [])
-    equipment_list = ', '.join(equipment) if equipment else 'minimal equipment'
-    num_players = requirements.get('number_of_players', 1)
-
-    prompt = f"""Design a soccer drill layout for this focus:
-
-Weakness: {focus_strategy.get('primary_weakness', '')}
-Drill archetype: {focus_strategy.get('drill_archetype', '')}
-Difficulty calibration: {focus_strategy.get('difficulty_calibration', 'maintain')}
-Field: {field_dims['width']}m x {field_dims['length']}m
-Equipment available: {equipment_list}
-Category: {requirements.get('category', 'technical')}
-Number of players: {num_players}
-
-Weakness→Pattern guidance:
-- Tight-space dribbling → cones 1-2m apart, zigzag/weave
-- Weak foot passing → angled gates requiring weak foot
-- First touch under pressure → receive + turn with defender cone behind
-- Shooting accuracy → target zones with approach angles
-- Speed/agility → ladder or sprint channels
-- Ball control → close-quarter footwork, no cones needed
-
-Wall equipment guidance (if wall is available):
-- Wall is flat and reflects ball at angle of incidence (NOT directly back to passer)
-- Player must position at correct angle to receive the rebound
-- Example: Pass at 45° angle, ball rebounds at 45° opposite side
-- Use wall for: one-touch passing, first touch work, weak foot practice
-
-Return JSON:
-{{"pattern_type": "zigzag|triangle|linear|gates|grid|free|diamond|square|rondo_circle|channel|overlap_run|wall_pass_sequence", "equipment_placement": [{{"type": "cone|goal|ball|player", "label": "A", "x": 0, "y": 0, "purpose": "start"}}], "field_dimensions": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "movement_paths": [{{"from": "A", "to": "B", "action": "dribble|pass|run", "detail": "description"}}], "weakness_address": "how this layout targets the weakness", "equipment_count": {{"cones": 0, "ball": 1}}}}
-
-Additional pattern guidance:
-- diamond: 4 points forming a diamond, ideal for passing rotations and positional play
-- square: 4 corner stations, good for combination play and overlaps
-- rondo_circle: circular arrangement for possession games, rondos, pressure drills
-- channel: long narrow corridor for 1v1 defending, recovery runs, dribbling under pressure
-- overlap_run: offset stations simulating wing play, overlapping runs, crossing
-- wall_pass_sequence: stations arranged for wall-pass combinations (give-and-go patterns)"""
-
-    try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            system="You are a soccer drill architect. Design practical spatial layouts that directly address the identified weakness. Only use equipment the player has. Keep coordinates within field dimensions.",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=600,
-            temperature=0.4
-        )
-        return parse_llm_json(response.content[0].text)
-    except Exception as e:
-        logger.warning(f"⚠️ Coach phase parse error: {e}, using minimal plan")
-        return {
-            "pattern_type": "linear",
-            "equipment_placement": [{"type": "ball", "label": "Start", "x": field_dims["width"] // 2, "y": 2, "purpose": "start"}],
-            "field_dimensions": field_dims,
-            "movement_paths": [],
-            "weakness_address": focus_strategy.get('primary_weakness', ''),
-            "equipment_count": {"ball": 1}
-        }
-
-
-def phase_writer(client, skeletal_plan: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, revision_errors: list, player_profile: Dict = None) -> Dict:
-    """Phase 3: Create full CustomDrillResponse JSON"""
-    equipment = requirements.get('equipment', [])
-    difficulty = requirements.get('difficulty', 'intermediate')
-    category = requirements.get('category', 'technical')
-    num_players = requirements.get('number_of_players', 1)
-
-    # Player-tailored context
-    player_context = ""
-    if player_profile:
-        age = player_profile.get('age', 14)
-        exp_level = player_profile.get('experienceLevel', 'intermediate')
-        position = player_profile.get('position', '')
-        playing_style = player_profile.get('playingStyle', '')
-        weaknesses = player_profile.get('weaknesses', [])
-        skill_goals = player_profile.get('skillGoals', [])
-
-        if age <= 8:
-            spacing_rule = "Cone spacing: 1-2m. Passing distance: 5-7m. Duration: 3-5 min. Keep instructions very simple."
-        elif age <= 12:
-            spacing_rule = "Cone spacing: 2-3m. Passing distance: 8-10m. Duration: 8-12 min."
-        else:
-            spacing_rule = "Cone spacing: 3-5m. Passing distance: 10-15m. Duration: 10-15 min."
-
-        success_criteria = {
-            "beginner": "Include a measurable goal like 'complete 10 passes without losing control'",
-            "intermediate": "Include a measurable goal like 'complete 15 passes in 45 seconds'",
-            "advanced": "Include a measurable challenge like 'complete 20 weak-foot passes in 30 seconds'"
-        }
-
-        player_context = f"""
-PLAYER CONTEXT (tailor drill to this player):
-- Age: {age}, Level: {exp_level}, Position: {position}, Style: {playing_style}
-- Weaknesses: {', '.join(weaknesses) if weaknesses else 'none specified'}
-- Skill goals: {', '.join(skill_goals) if skill_goals else 'none specified'}
-- {spacing_rule}
-- {success_criteria.get(exp_level, success_criteria['intermediate'])}
-- Coaching points must be body-mechanic specific (e.g., "lock ankle", "chest over ball", "check shoulder") — NOT generic ("practice more")
-- Movement after passing is mandatory — passer must move to a new position
-- Multi-player drills must assign clear roles with rotation instructions
-"""
-
-    revision_text = ""
-    if revision_errors:
-        revision_text = "\n=== ERRORS TO FIX (from previous attempt) ===\n"
-        for err in revision_errors:
-            revision_text += f"- {err}\n"
-        revision_text += "\nFix ALL listed errors in this attempt.\n"
-
-    wall_guidance = ""
-    if 'wall' in equipment:
-        wall_guidance = """
-WALL PHYSICS (IMPORTANT):
-- Wall reflects ball at angle of incidence, NOT directly back to passer
-- Player must position at correct angle to receive rebound
-- Pass at 45° angle → ball rebounds 45° to opposite side
-"""
-
-    prompt = f"""Write a complete soccer drill using this blueprint.
-
-Focus: {focus_strategy.get('primary_weakness', '')}
-Archetype: {focus_strategy.get('drill_archetype', '')}
-Layout: {json.dumps(skeletal_plan, indent=2)}
-Field: {field_dims['width']}m x {field_dims['length']}m
-Number of players: {num_players}
-Difficulty: {difficulty}
-Category: {category}
-Equipment available: {', '.join(equipment) if equipment else 'minimal'}
-{revision_text}{wall_guidance}
-{player_context}
-INSTRUCTION RULES:
-- Each instruction = ONE action, imperative verb, 15-25 words
-- Use: Dribble, Pass, Sprint, Control, Shoot, Turn, Set up, Place
-- NO "Step 1:" prefixes
-- Design for {num_players} player(s) - assign roles/positions if multiple
-
-DIAGRAM RULES:
-- All element x values must be 0 to {field_dims['width']}
-- All element y values must be 0 to {field_dims['length']}
-- element types: "cone", "player", "defender", "server", "wall", "mannequin", "target", "goal", "ball"
-- Use "defender" for opposition players, "server" for feeders/passers, "mannequin" for passive obstacles, "wall" for rebound walls
-- Use "player" only for the main player or generic attackers
-- path styles: "dribble", "run", "pass"
-- EVERY path MUST include a "step" integer (1-indexed) linking it to the corresponding instruction
-- Example: instruction 1 = "Dribble from cone A to cone B" → path {{"from": "A", "to": "B", "style": "dribble", "step": 1}}
-
-VARIATIONS RULES:
-- Return "variations" as a structured JSON array with objects: {{"name": "...", "description": "...", "modification": "..."}}
-- Include at least 2 variations (1 easier, 1 harder)
-
-PHYSICAL REALISM RULES (CRITICAL):
-- Players can ONLY pass to other players, NEVER to cones, markers, or empty space
-- Every piece of equipment in the equipment list MUST appear as an element in the diagram
-- If "wall" is in equipment, it MUST appear as a diagram element with type "wall"
-- Movement paths must have a clear soccer purpose — no random or unnecessary runs
-- Cones mark positions/gates, they do NOT receive passes or act as players
-- If the drill requires multiple players, assign clear roles (attacker, defender, server)
-
-Return ONLY valid JSON:
-{{"name": "Short name (max 40 chars)", "description": "One sentence purpose.", "setup": "Dimensions. Equipment. Player start.", "instructions": ["Action 1", "Action 2", "Action 3", "Action 4"], "diagram": {{"field": {{"width": {field_dims['width']}, "length": {field_dims['length']}}}, "elements": [{{"type": "cone", "x": 0, "y": 0, "label": "A"}}], "paths": [{{"from": "A", "to": "B", "style": "dribble", "step": 1}}]}}, "progressions": ["Easier: ...", "Harder: ..."], "coachingPoints": ["Point 1", "Point 2", "Point 3"], "estimatedDuration": 15, "difficulty": "{difficulty}", "category": "{category}", "targetSkills": ["skill1", "skill2"], "equipment": {json.dumps(equipment)}, "safetyNotes": "Brief safety note", "variations": [{{"name": "Easier variation", "description": "...", "modification": "..."}}, {{"name": "Harder variation", "description": "...", "modification": "..."}}]}}"""
-
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        system="You are an expert soccer coach. Write complete, creative, practical drills from blueprints. Each instruction must be ONE clear action with an imperative verb. Keep all coordinates within field dimensions. Every diagram path MUST include a step integer linking to its instruction. Be inventive and specific — avoid generic drills.",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1500,
-        temperature=0.7
-    )
-    return parse_llm_json(response.content[0].text)
-
-
-
-def phase_referee(client, drill: Dict, focus_strategy: Dict, requirements: Dict, field_dims: Dict, post_process_warnings: list = None) -> Dict:
-    """Phase 4: Validate drill quality (LLM-only, programmatic checks moved to post-processor)"""
-    pp_context = ""
-    if post_process_warnings:
-        pp_context = "\nPost-processor warnings (already applied fixes where possible):\n"
-        for w in post_process_warnings:
-            pp_context += f"- {w}\n"
-
-    # LLM validation
-    prompt = f"""Review this soccer drill for quality and correctness.
-
-Drill JSON:
-{json.dumps(drill, indent=2)}
-
-Context:
-- Target weakness: {focus_strategy.get('primary_weakness', '')}
-- Field size: {field_dims['width']}m x {field_dims['length']}m
-- Available equipment: {', '.join(requirements.get('equipment', []))}
-- Difficulty: {requirements.get('difficulty', 'intermediate')}
-{pp_context}
-Validate:
-1. SPATIAL: All coordinates within {field_dims['width']}x{field_dims['length']}m?
-2. EQUIPMENT: Only uses available equipment?
-3. CLARITY: Instructions are imperative, 15-25 words, one action each?
-4. RELEVANCE: Addresses '{focus_strategy.get('primary_weakness', '')}'?
-5. SAFETY: Appropriate for the difficulty level?
-6. REALISM: Would a real coach assign this?
-7. SCHEMA: All required fields present with correct types?
-8. REALISM: Are players passing to other players (not cones/markers)? Does every equipment item appear in the diagram? Do movement paths make physical and tactical sense?
-9. PLAYER-FIT: Are distances age-appropriate? Is difficulty matched to experience level? Does the drill target the identified weakness specifically (not generically)?
-10. ARCHETYPE-LAYOUT: Does the spatial layout match the drill archetype '{focus_strategy.get('drill_archetype', '')}'? (e.g., triangle_passing should use triangular element placement)
-11. ROLES: If multi-player, does every player have a clear role and rotation?
-12. SUCCESS CRITERIA: Is there a measurable outcome (e.g., "complete X passes in Y seconds")?
-
-Return JSON:
-{{"verdict": "VALID or ERRORS", "errors": [{{"check": "category", "issue": "description", "fix": "suggestion"}}], "score": 0-100}}
-
-If everything passes, return {{"verdict": "VALID", "errors": [], "score": 85-100}}"""
-
-    try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            system="You are a soccer drill safety and logic checker. Be strict but fair. Only flag genuine issues that would make the drill confusing, unsafe, or ineffective. Score 85+ means production-ready.",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=800,
-            temperature=0.1
-        )
-        result = parse_llm_json(response.content[0].text)
-        # Ensure proper structure
-        if "verdict" not in result:
-            result["verdict"] = "VALID" if not result.get("errors") else "ERRORS"
-        if "score" not in result:
-            result["score"] = 85 if result["verdict"] == "VALID" else 50
-        return result
-    except Exception as e:
-        logger.warning(f"⚠️ Referee parse error: {e}, passing drill")
-        return {"verdict": "VALID", "errors": [], "score": 70}
 
 def get_existing_exercises(user_id: str) -> List[Dict]:
     """Get user's existing exercises to prevent duplicate recommendations"""
