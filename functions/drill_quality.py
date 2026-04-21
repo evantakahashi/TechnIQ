@@ -7,7 +7,7 @@ from typing import Any
 # Short phrases that add no coaching value on their own.
 GENERIC_COACHING_BLACKLIST: frozenset[str] = frozenset({
     "work hard", "give 100%", "give 100 percent", "do your best",
-    "try your best", "good effort", "focus", "focus up", "concentrate",
+    "try your best", "good effort", "focus up", "concentrate",
     "stay alert", "have fun", "keep going", "you got this",
 })
 
@@ -56,7 +56,7 @@ def score_drill_quality(
     if not c3_ok:
         reasons.append("C3: coaching points too thin or off-target (need ≥2, ≥1 on-skill or non-generic)")
     if not c4_ok:
-        reasons.append("C4: not enough reps (need ≥5 steps OR one element repeated in ≥3 steps)")
+        reasons.append("C4: not enough reps (need ≥5 steps OR one element appearing on ≥3 path endpoints)")
 
     score = sum((c1_ok, c2_ok, c3_ok, c4_ok))
     return score, reasons
@@ -111,8 +111,9 @@ def _c2_structural_realism(
         e.get("type") == "player" and e.get("role") == "defender" for e in elements
     )
     server_labels = {
-        e.get("label") for e in elements
+        lbl for e in elements
         if e.get("type") == "player" and e.get("role") == "server"
+        and (lbl := e.get("label")) is not None
     }
     server_step_counts: dict[str, set[int]] = {sl: set() for sl in server_labels}
     for p in paths:

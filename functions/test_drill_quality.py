@@ -272,4 +272,15 @@ def test_beginner_with_no_rule_pack_only_requires_c4():
 def test_generic_coaching_blacklist_populated():
     assert "work hard" in GENERIC_COACHING_BLACKLIST
     assert "give 100%" in GENERIC_COACHING_BLACKLIST
-    assert "focus" in GENERIC_COACHING_BLACKLIST
+    assert "focus up" in GENERIC_COACHING_BLACKLIST
+    # "focus" alone is intentionally NOT in the blacklist — too broad a substring
+    assert "focus" not in GENERIC_COACHING_BLACKLIST
+
+
+def test_is_non_generic_allows_focus_on_technical_detail():
+    # "Focus on your footwork" is not in the blacklist AND contains no football-verb word,
+    # so _is_non_generic still returns False via the second gate — but we care that the
+    # BLACKLIST doesn't reject it, which lets richer sentences pass.
+    from drill_quality import _is_non_generic
+    assert _is_non_generic("Focus the pass to the back foot") is True
+    # "pass" is a football verb and no blacklist phrase matches — should be non-generic
