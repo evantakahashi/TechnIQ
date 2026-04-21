@@ -145,5 +145,12 @@
     "pressure": "active",
     "dsl": "player P1 at (2, 7.5) role \"worker\"\nplayer P2 at (8, 10) role \"defender\"\ncone C1 at (6, 5)\ncone C2 at (11, 10)\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P2 runs to P1\nstep 4: P1 shoots at GL\n\npoint: Beat the first cone with your strong foot, then cut inside to lose the recovering defender\npoint: Defender starts 5m behind the attacker's line — sprint to recover as soon as P1 clears C1\npoint: Strike across the keeper; the defender's reach forces the low far-post finish",
     "notes": "Dribble past cone, defender recovers from 5m back, worker finishes under pressure"
+  },
+  {
+    "id": "server_executor_advanced_02",
+    "archetype": "server_executor",
+    "pressure": "active",
+    "dsl": "player P1 at (3, 10) role \"server\"\nplayer P2 at (9, 6) role \"worker\"\nplayer P3 at (6, 6) role \"defender\"\nball B1 at (3, 10)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P3 runs to P2\nstep 3: P2 dribbles to P2\nstep 4: P2 shoots at GL\n\npoint: Server plays a firm ball in and immediately closes to 3m — the worker reads the closing angle\npoint: First touch rolls across the defender's momentum, not into them\npoint: One touch to strike — hesitation lets the defender recover",
+    "notes": "Server feeds then closes; defender adds time pressure on the first touch; worker finishes quickly"
   }
 ]
