@@ -304,13 +304,11 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                 headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
             )
 
-        # Fix 3: Rename coaching_points → coachingPoints
         if "coaching_points" in drill:
             drill["coachingPoints"] = drill.pop("coaching_points")
         else:
             drill.setdefault("coachingPoints", [])
 
-        # Apply defaults
         drill.setdefault("name", f"{weakness} Drill")
         drill.setdefault("description", f"Custom drill for {weakness}")
         drill.setdefault("setup", "See diagram.")
@@ -320,7 +318,6 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         drill.setdefault("category", "technical")
         drill.setdefault("targetSkills", [weakness])
 
-        # Fix 1: Wrap response in {"drill": drill}
         return https_fn.Response(
             json.dumps({
                 "drill": drill,
