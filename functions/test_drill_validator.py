@@ -76,3 +76,11 @@ def test_server_plus_worker_passes():
         {"type": "player", "x": 5, "y": 0, "label": "P2", "role": "server"}
     )
     validate_drill(drill)  # still has P1 as worker
+
+
+def test_player_without_role_does_not_count_as_worker():
+    drill = make_valid_drill()
+    # remove role from the only player
+    del drill["diagram"]["elements"][1]["role"]
+    with pytest.raises(ValidationError, match="worker"):
+        validate_drill(drill)

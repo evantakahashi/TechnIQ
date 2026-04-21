@@ -9,7 +9,7 @@ EQUIPMENT_TO_ELEMENT_TYPES: dict[str, set[str]] = {
     "cones":   {"cone"},
     "goals":   {"goal"},
     "wall":    {"wall"},
-    "partner": {"player"},
+    "partner": {"player", "server", "defender"},
     "hurdles": {"cone"},
     "ladder":  {"cone"},
     "poles":   {"cone"},
@@ -79,6 +79,6 @@ def _check_equipment_consistency(
 
 def _check_at_least_one_worker(elements: list[dict[str, Any]]) -> None:
     for el in elements:
-        if el.get("type") == "player" and el.get("role") != "server":
+        if el.get("type") == "player" and el.get("role") == "worker":
             return
     raise ValidationError("drill must have at least one worker player")
