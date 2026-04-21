@@ -147,3 +147,98 @@ def test_prompt_lists_selected_weaknesses_block():
     assert "Specific weaknesses flagged" in captured[0]
     assert "Bouncing balls" in captured[0]
     assert "Turning with first touch" in captured[0]
+
+
+def test_prompt_injects_periodization_block():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["experience_level"] = "advanced"
+    generate_drill(req, llm_call=capture)
+    assert "PRACTICE TYPE BY LEVEL" in captured[0]
+    assert "Global practice" in captured[0]
+
+
+def test_prompt_injects_rule_pack_when_covered():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["weakness"] = "Shooting"
+    req["experience_level"] = "intermediate"
+    generate_drill(req, llm_call=capture)
+    prompt = captured[0]
+    assert "SKILL-SPECIFIC COACHING REQUIREMENTS" in prompt
+    assert "Shooting" in prompt
+    # A verb keyword from the Shooting pack must appear in the prompt
+    assert any(v in prompt.lower() for v in ["shoot", "strike", "finish"])
+
+
+def test_prompt_degrades_when_no_rule_pack():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["weakness"] = "Stamina"  # uncovered category
+    req["experience_level"] = "advanced"
+    generate_drill(req, llm_call=capture)
+    prompt = captured[0]
+    # Rule-pack block absent, but elite requirements still present for advanced
+    assert "SKILL-SPECIFIC COACHING REQUIREMENTS" not in prompt
+    assert "Active resistance" in prompt or "active pressure" in prompt.lower()
+
+
+def test_prompt_injects_elite_requirements_for_intermediate():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    req = make_request()
+    req["experience_level"] = "intermediate"
+    generate_drill(req, llm_call=capture)
+    assert "Active resistance" in captured[0] or "passive pressure" in captured[0].lower()
+
+
+def test_prompt_handles_empty_exemplars(monkeypatch):
+    import drill_generator
+
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    # Patch the name bound inside drill_generator (imported at module load)
+    monkeypatch.setattr(drill_generator, "get_exemplars", lambda *a, **k: [])
+
+    req = make_request()
+    drill_generator.generate_drill(req, llm_call=capture)
+    prompt = captured[0]
+    # The "Reference drills" header should not appear
+    assert "Reference drills" not in prompt
+    # Instead, an explicit from-first-principles instruction should
+    assert "first principles" in prompt.lower() or "no matching reference" in prompt.lower()
+
+
+def test_system_prompt_mentions_defender_role():
+    captured = []
+
+    def capture(prompt: str) -> str:
+        captured.append(prompt)
+        return VALID_DSL
+
+    generate_drill(make_request(), llm_call=capture)
+    # The DSL grammar docstring inside SYSTEM_PROMPT must mention defender
+    assert '"defender"' in captured[0]
