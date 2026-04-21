@@ -138,5 +138,12 @@
     "pressure": "active",
     "dsl": "player P1 at (7, 5) role \"worker\"\nplayer P2 at (13, 5) role \"worker\"\nplayer P3 at (13, 11) role \"worker\"\nplayer P4 at (7, 11) role \"worker\"\nplayer P5 at (8.5, 8) role \"server\"\nplayer P6 at (11.5, 8) role \"server\"\nball B1 at (7, 5)\n\nstep 1: P1 passes to P4\nstep 2: P4 passes to P2\nstep 3: P2 passes to P3\nstep 4: P3 passes to P1\n\npoint: Split the two defenders whenever the line opens — one-touch through the middle\npoint: Support angles adjust every pass; stay available on both sides of the grid",
     "notes": "4v2 rondo, tight 6x6 grid with a split-pass option; advanced pressure keep-away"
+  },
+  {
+    "id": "dribble_and_shoot_advanced_01",
+    "archetype": "dribble_and_shoot",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"worker\"\nplayer P2 at (8, 10) role \"defender\"\ncone C1 at (6, 5)\ncone C2 at (11, 10)\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P2 runs to P1\nstep 4: P1 shoots at GL\n\npoint: Beat the first cone with your strong foot, then cut inside to lose the recovering defender\npoint: Defender starts 5m behind the attacker's line — sprint to recover as soon as P1 clears C1\npoint: Strike across the keeper; the defender's reach forces the low far-post finish",
+    "notes": "Dribble past cone, defender recovers from 5m back, worker finishes under pressure"
   }
 ]
