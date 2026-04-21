@@ -24,12 +24,6 @@
     "notes": "2 cones → shot; introduces the finishing setup touch"
   },
   {
-    "id": "relay_shuttle_beginner_01",
-    "archetype": "relay_shuttle",
-    "dsl": "cone C1 at (5, 7.5)\ncone C2 at (15, 7.5)\nplayer P1 at (5, 6.5) role \"worker\"\nplayer P2 at (5, 8.5) role \"worker\"\nball B1 at (5, 6.5)\n\nstep 1: P1 dribbles to C2\nstep 2: P1 passes to P2\nstep 3: P2 dribbles to C1\n\npoint: Full speed to the turn, slow to strike the pass\npoint: Receiver calls their name to start the rep",
-    "notes": "2-player shuttle with handoff via pass; conditioning + technical"
-  },
-  {
     "id": "server_executor_intermediate_01",
     "archetype": "server_executor",
     "dsl": "player P1 at (1, 7.5) role \"server\"\nplayer P2 at (8, 4.5) role \"worker\"\ncone C1 at (12, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 shoots at GL\n\npoint: Open hips before the ball arrives\npoint: First touch forward into the run, not into your feet",

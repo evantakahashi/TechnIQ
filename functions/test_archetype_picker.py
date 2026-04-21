@@ -28,10 +28,10 @@ def test_every_table_value_is_a_valid_archetype():
         assert archetype in VALID_ARCHETYPES, f"{archetype} is not a valid archetype"
 
 
-def test_valid_archetypes_contains_all_nine():
+def test_valid_archetypes_contains_all_eight():
     expected = {
         "cone_weave", "wall_passing", "gate_dribbling", "dribble_and_shoot",
-        "relay_shuttle", "server_executor", "triangle_passing",
+        "server_executor", "triangle_passing",
         "1v1_plus_server", "rondo",
     }
     assert VALID_ARCHETYPES == expected

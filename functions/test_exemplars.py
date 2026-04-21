@@ -20,8 +20,8 @@ def test_exemplars_file_loads():
     assert len(data) > 0
 
 
-def test_nine_entries():
-    assert len(EXEMPLARS) == 9
+def test_eight_entries():
+    assert len(EXEMPLARS) == 8
 
 
 def test_one_per_archetype():

@@ -6,7 +6,6 @@ VALID_ARCHETYPES: Final[set[str]] = {
     "wall_passing",
     "gate_dribbling",
     "dribble_and_shoot",
-    "relay_shuttle",
     "server_executor",
     "triangle_passing",
     "1v1_plus_server",
@@ -37,8 +36,8 @@ ARCHETYPE_TABLE: Final[dict[tuple[str, str], str]] = {
     ("Dribbling", "intermediate"): "gate_dribbling",
     ("Dribbling", "advanced"):     "1v1_plus_server",
 
-    ("Speed", "beginner"):     "relay_shuttle",
-    ("Speed", "intermediate"): "relay_shuttle",
+    ("Speed", "beginner"):     "cone_weave",
+    ("Speed", "intermediate"): "server_executor",
     ("Speed", "advanced"):     "server_executor",
 
     ("Crossing", "beginner"):     "server_executor",
