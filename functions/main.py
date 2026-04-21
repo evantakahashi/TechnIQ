@@ -277,6 +277,14 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             )
             return msg.content[0].text
 
+        # Validate request data
+        if not player_profile or not requirements:
+            return https_fn.Response(
+                json.dumps({"error": "Invalid request", "details": "player_profile and requirements are required"}),
+                status=400,
+                headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
+            )
+
         try:
             drill = generate_drill(
                 {
@@ -296,16 +304,28 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                 headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
             )
 
+        # Fix 3: Rename coaching_points → coachingPoints
+        if "coaching_points" in drill:
+            drill["coachingPoints"] = drill.pop("coaching_points")
+        else:
+            drill.setdefault("coachingPoints", [])
+
+        # Apply defaults
         drill.setdefault("name", f"{weakness} Drill")
         drill.setdefault("description", f"Custom drill for {weakness}")
         drill.setdefault("setup", "See diagram.")
-        drill.setdefault("instructions", [])
+        drill.setdefault("instructions", ["Follow the diagram."])
+        drill.setdefault("estimatedDuration", 15)
         drill.setdefault("difficulty", level)
         drill.setdefault("category", "technical")
         drill.setdefault("targetSkills", [weakness])
 
+        # Fix 1: Wrap response in {"drill": drill}
         return https_fn.Response(
-            json.dumps(drill),
+            json.dumps({
+                "drill": drill,
+                "generated_at": datetime.now().isoformat(),
+            }),
             status=200,
             headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
         )
