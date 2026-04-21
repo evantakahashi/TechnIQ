@@ -44,6 +44,9 @@ def main() -> int:
     p.add_argument("exemplars_file", type=Path)
     p.add_argument("exemplar_id")
     p.add_argument("--out-dir", type=Path, default=Path("/tmp"))
+    p.add_argument("--player-age", type=int, default=14, help="Player age (default: 14)")
+    p.add_argument("--equipment", type=str, default="ball,cones,goals,partner",
+                   help="Comma-separated equipment list (default: ball,cones,goals,partner)")
     args = p.parse_args()
 
     exemplars = json.loads(args.exemplars_file.read_text(encoding="utf-8"))
@@ -53,8 +56,8 @@ def main() -> int:
         return 1
 
     drill = parse_dsl(match["dsl"])
-    drill["equipment"] = ["ball", "cones", "goals", "partner"]
-    drill, warnings = post_process_drill(drill, player_age=14)
+    drill["equipment"] = [e.strip() for e in args.equipment.split(",")]
+    drill, warnings = post_process_drill(drill, player_age=args.player_age)
     for w in warnings:
         print(f"WARN: {w}", file=sys.stderr)
 
@@ -96,6 +99,7 @@ def _render_png(drill: dict, path: Path) -> None:
         src = el_by_id.get(p["from"])
         dst = el_by_id.get(p["to"])
         if src is None or dst is None:
+            print(f"WARN: path step {p['step']} references unknown element {p['from']!r} → {p['to']!r}", file=sys.stderr)
             continue
         sx, sy = _to_px(src["x"], src["y"])
         dx, dy = _to_px(dst["x"], dst["y"])
