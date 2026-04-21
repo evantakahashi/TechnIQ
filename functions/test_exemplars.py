@@ -23,7 +23,7 @@ def test_exemplars_file_loads():
 def test_has_expected_entry_count():
     # Plan 1 will bring this to 24 after T7-T10 add 4 high-intensity exemplars.
     # During execution, count monotonically grows from 20 → 24.
-    assert len(EXEMPLARS) >= 22
+    assert len(EXEMPLARS) >= 23
 
 
 def test_every_archetype_has_at_least_two():

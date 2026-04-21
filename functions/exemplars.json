@@ -152,5 +152,12 @@
     "pressure": "active",
     "dsl": "player P1 at (3, 10) role \"server\"\nplayer P2 at (9, 6) role \"worker\"\nplayer P3 at (6, 6) role \"defender\"\nball B1 at (3, 10)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P3 runs to P2\nstep 3: P2 dribbles to P2\nstep 4: P2 shoots at GL\n\npoint: Server plays a firm ball in and immediately closes to 3m — the worker reads the closing angle\npoint: First touch rolls across the defender's momentum, not into them\npoint: One touch to strike — hesitation lets the defender recover",
     "notes": "Server feeds then closes; defender adds time pressure on the first touch; worker finishes quickly"
+  },
+  {
+    "id": "1v1_plus_server_advanced_02",
+    "archetype": "1v1_plus_server",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"server\"\nplayer P2 at (5, 7.5) role \"worker\"\nplayer P3 at (11, 7.5) role \"defender\"\nplayer P4 at (3, 4) role \"defender\"\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P4 runs to P2\nstep 4: P2 shoots at GL\n\npoint: Commit to beating P3 immediately — P4 joins after ~3 seconds\npoint: Take the first touch into space on P3's weaker side to buy the half-beat\npoint: If P4 closes before the shot, play a quick square pass back to the server instead of forcing it",
+    "notes": "1v1 to finish with a recovery runner — forces the attacker to commit quickly"
   }
 ]
