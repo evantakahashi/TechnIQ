@@ -38,8 +38,8 @@
   {
     "id": "1v1_plus_server_advanced_01",
     "archetype": "1v1_plus_server",
-    "dsl": "player P1 at (1, 7.5) role \"server\"\nplayer P2 at (8, 5.5) role \"worker\"\nplayer P3 at (8, 9.5) role \"worker\"\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Attacker takes on the defender at a jog-to-sprint change of pace\npoint: Defender pressures from the attacker's strong side to force weak-foot decisions",
-    "notes": "Server feeds attacker; attacker beats defender and finishes; 8m attacking channel"
+    "dsl": "player P1 at (1, 4) role \"server\"\nplayer P2 at (4, 7.5) role \"worker\"\nplayer P3 at (12, 7.5) role \"worker\"\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Attacker takes on the defender at a jog-to-sprint change of pace\npoint: Defender pressures from the attacker's strong side to force weak-foot decisions",
+    "notes": "Server feeds attacker; defender stands between attacker and goal; attacker beats defender and finishes"
   },
   {
     "id": "rondo_intermediate_01",
