@@ -217,9 +217,18 @@ def _render_png(drill: dict, path: Path, exemplar_id: str = "", archetype: str =
             draw.ellipse([(x - r, y - r), (x + r, y + r)],
                          fill=(255, 255, 255), outline=(160, 160, 160), width=1)
         elif el["type"] == "gate":
+            w = el.get("width", 2.0)
+            cone_color = (255, 140, 0)  # orange
             r = 8
-            draw.ellipse([(x - r, y - r), (x + r, y + r)],
-                         fill=color, outline=(0, 0, 0))
+            # Two cone markers offset by ±width/2 on y-axis
+            for offset_m in (-w / 2, w / 2):
+                cx, cy = _to_px(el["x"], el["y"] + offset_m, field_left, field_top)
+                draw.ellipse([(cx - r, cy - r), (cx + r, cy + r)],
+                             fill=cone_color, outline=(0, 0, 0))
+            # Label centered between the two cones, to the right
+            if font:
+                draw.text((x + r + 2, y - r), el["label"], fill=(255, 255, 255), font=font)
+            continue  # skip the generic label draw below
         elif el["type"] == "goal":
             r = 8
             draw.ellipse([(x - r, y - r), (x + r, y + r)],
