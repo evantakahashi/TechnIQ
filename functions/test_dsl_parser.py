@@ -57,6 +57,22 @@ def test_parse_gate_with_width():
     assert g1.get("width") == 2.0
 
 
+def test_parse_wall_with_width():
+    dsl = (
+        'wall W1 at (15, 7) width 5\n'
+        'player P1 at (5, 7) role "worker"\n'
+        'step 1: P1 passes to W1\n'
+        'step 2: P1 receives from W1\n'
+    )
+    diagram = parse_dsl(dsl)
+    w1 = diagram["diagram"]["elements"][0]
+    assert w1["type"] == "wall"
+    assert w1.get("width") == 5.0
+    paths = diagram["diagram"]["paths"]
+    assert paths[0]["style"] == "pass"
+    assert paths[0]["to"] == "W1"
+
+
 def test_parse_goal_keyword():
     dsl = 'goal GL at (20, 0) width 7.32\nplayer P1 at (0, 0) role "worker"\nstep 1: P1 shoots at GL\n'
     diagram = parse_dsl(dsl)

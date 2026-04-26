@@ -12,7 +12,7 @@ VERB_TO_STYLE = {
     "receives from": "receive",
 }
 
-ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player"}
+ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall"}
 
 
 class DSLParseError(ValueError):
@@ -26,7 +26,7 @@ class DSLParseError(ValueError):
 
 _COORD_RE = re.compile(r"\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)")
 _ELEMENT_RE = re.compile(
-    r"^(?P<kind>cone|gate|ball|goal|player)\s+(?P<id>\w+)\s+at\s+"
+    r"^(?P<kind>cone|gate|ball|goal|player|wall)\s+(?P<id>\w+)\s+at\s+"
     r"(?P<coord>\([^)]+\))"
     r"(?:\s+width\s+(?P<width>\d+(?:\.\d+)?))?"
     r"(?:\s+role\s+\"(?P<role>[^\"]*)\")?"

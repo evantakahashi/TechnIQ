@@ -149,14 +149,33 @@ class TestPathValidation:
         assert len(result["diagram"]["paths"]) == 0
         assert any("GHOST" in w for w in warnings)
 
-    def test_orphan_path_step_warned(self):
+    def test_high_step_number_renumbered_to_one(self):
         drill = make_drill(
             elements=[make_el("player", 5, 5, "P1"), make_el("cone", 10, 10, "C1")],
             paths=[make_path("P1", "C1", "dribble", 5)],
             instructions=["Dribble from P1 to C1"]
         )
-        _, warnings = post_process_drill(drill, player_age=14)
-        assert any("step" in w.lower() for w in warnings)
+        result, _ = post_process_drill(drill, player_age=14)
+        assert result["diagram"]["paths"][0]["step"] == 1
+
+    def test_dropped_path_renumbers_remaining_steps(self):
+        drill = make_drill(
+            elements=[
+                make_el("player", 5, 5, "P1"),
+                make_el("cone", 10, 5, "C1"),
+                make_el("cone", 15, 5, "C2"),
+            ],
+            paths=[
+                make_path("P1", "C1", "pass", 1),     # dropped: cone is invalid pass target
+                make_path("P1", "C1", "dribble", 2),
+                make_path("P1", "C2", "pass", 3),     # dropped: cone is invalid pass target
+                make_path("P1", "C2", "dribble", 4),
+            ],
+            instructions=["a", "b"],
+        )
+        result, _ = post_process_drill(drill, player_age=14)
+        steps = [p["step"] for p in result["diagram"]["paths"]]
+        assert steps == [1, 2], f"expected contiguous [1,2], got {steps}"
 
 
 # --- Equipment Consistency ---

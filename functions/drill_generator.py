@@ -28,9 +28,11 @@ Then output ONLY valid DSL - no markdown, no prose, no code fences, no reasoning
 
 DSL grammar:
 - Elements: `cone C1 at (x, y)`, `gate G1 at (x, y) width 2`, `ball B1 at (x, y)`,
-  `goal GL at (x, y) width 7.32`, `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
+  `goal GL at (x, y) width 7.32`, `wall W1 at (x, y) width 5` (use ONLY when "wall" is in equipment),
+  `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
   optional `label "..."` on players.
 - Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from}
+- Valid `passes to` targets: player, server, defender, wall, goal. Never pass to a cone or gate.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
 
 Rules:

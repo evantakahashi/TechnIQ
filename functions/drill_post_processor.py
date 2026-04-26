@@ -215,6 +215,13 @@ def _validate_paths(
 
         valid_paths.append(path)
 
+    # Renumber paths so step numbers stay contiguous after drops.
+    # Preserves un-stepped paths (step=None). Validator requires [1..n].
+    stepped = [p for p in valid_paths if p.get("step") is not None]
+    stepped.sort(key=lambda p: p["step"])
+    for new_step, path in enumerate(stepped, start=1):
+        path["step"] = new_step
+
     # Check step-instruction alignment
     # Un-stepped paths (step=None) show on all steps, so they cover every instruction
     has_unstep_paths = any(p.get("step") is None for p in valid_paths)
@@ -222,12 +229,6 @@ def _validate_paths(
     for i in range(1, len(instructions) + 1):
         if steps_with_paths and i not in steps_with_paths and not has_unstep_paths:
             warnings.append(f"Instruction step {i} has no matching diagram path")
-
-    # Check for orphan steps (path step > number of instructions)
-    for path in valid_paths:
-        step = path.get("step")
-        if step is not None and step > len(instructions):
-            warnings.append(f"Path step {step} exceeds instruction count ({len(instructions)})")
 
     return valid_paths, warnings
 
