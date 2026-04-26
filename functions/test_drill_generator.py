@@ -322,3 +322,84 @@ point: Work hard
 def test_max_attempts_is_four():
     from drill_generator import MAX_ATTEMPTS
     assert MAX_ATTEMPTS == 4
+
+
+def test_generate_drill_accepts_new_fields(monkeypatch):
+    """generate_drill reads new optional keys without raising KeyError."""
+    from drill_generator import generate_drill
+
+    # Stub _build_prompt to capture kwargs and skip LLM
+    captured = {}
+    def fake_build_prompt(**kwargs):
+        captured.update(kwargs)
+        return "PROMPT"
+    monkeypatch.setattr("drill_generator._build_prompt", fake_build_prompt)
+
+    # Stub llm_call to return a minimal valid drill DSL — pre-build a known-good drill.
+    valid_dsl = '''player P1 at (5, 5) role "worker" label "P1"
+player P2 at (10, 5) role "server" label "P2"
+goal GL at (15, 7.5) width 7
+ball B1 at (5, 5)
+step 1: P1 passes to P2
+step 2: P2 passes to P1
+step 3: P1 dribbles to GL
+step 4: P1 shoots at GL
+step 5: P1 runs to P1
+point: receive with the far foot
+point: scan before you receive
+'''
+    request = {
+        "weakness": "Passing", "experience_level": "intermediate", "player_age": 14,
+        "position": "midfielder", "equipment": ["ball", "cones", "goals", "partner"],
+        "skill_description": "improve passing",
+        "selected_weaknesses": [],
+        "category": "technical",
+        "number_of_players": 2,
+        "field_size": "medium",
+        "recent_drill_names": ["Drill A"],
+        "playing_style": "possession",
+        "skill_goals": ["accuracy"],
+    }
+    drill = generate_drill(request, llm_call=lambda _: valid_dsl)
+    assert drill is not None
+    assert captured["number_of_players"] == 2
+    assert captured["field_size"] == "medium"
+    assert captured["category"] == "technical"
+    assert captured["recent_drill_names"] == ["Drill A"]
+    assert captured["playing_style"] == "possession"
+    assert captured["skill_goals"] == ["accuracy"]
+
+
+def test_generate_drill_defaults_for_missing_new_fields(monkeypatch):
+    """Missing new fields use safe defaults — backward compatible."""
+    from drill_generator import generate_drill
+
+    captured = {}
+    def fake_build_prompt(**kwargs):
+        captured.update(kwargs)
+        return "PROMPT"
+    monkeypatch.setattr("drill_generator._build_prompt", fake_build_prompt)
+
+    valid_dsl = '''player P1 at (5, 5) role "worker" label "P1"
+player P2 at (10, 5) role "server" label "P2"
+goal GL at (15, 7.5) width 7
+ball B1 at (5, 5)
+step 1: P1 passes to P2
+step 2: P2 passes to P1
+step 3: P1 dribbles to GL
+step 4: P1 shoots at GL
+step 5: P1 runs to P1
+point: receive with the far foot
+point: scan before you receive
+'''
+    request = {
+        "weakness": "Passing", "experience_level": "intermediate", "player_age": 14,
+        "position": "midfielder", "equipment": ["ball", "cones", "goals", "partner"],
+    }
+    generate_drill(request, llm_call=lambda _: valid_dsl)
+    assert captured["number_of_players"] == 2
+    assert captured["field_size"] == "small"
+    assert captured["category"] == "technical"
+    assert captured["recent_drill_names"] == []
+    assert captured["playing_style"] == ""
+    assert captured["skill_goals"] == []

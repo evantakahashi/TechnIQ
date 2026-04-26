@@ -72,6 +72,12 @@ def generate_drill(
     equipment: list[str] = list(request["equipment"])
     skill_description = (request.get("skill_description") or "").strip()
     selected_weaknesses = request.get("selected_weaknesses") or []
+    category = request.get("category") or "technical"
+    number_of_players = int(request.get("number_of_players") or 2)
+    field_size = request.get("field_size") or "small"
+    recent_drill_names = request.get("recent_drill_names") or []
+    playing_style = request.get("playing_style") or ""
+    skill_goals = request.get("skill_goals") or []
 
     archetype = pick_archetype(weakness, level)
     exemplars = get_exemplars(archetype, level=level, n=3)
@@ -94,6 +100,12 @@ def generate_drill(
             exemplars=exemplars,
             rule_pack=rule_pack,
             prior_errors=errors,
+            category=category,
+            number_of_players=number_of_players,
+            field_size=field_size,
+            recent_drill_names=recent_drill_names,
+            playing_style=playing_style,
+            skill_goals=skill_goals,
         )
         raw = llm_call(prompt)
         try:
@@ -163,6 +175,12 @@ def _build_prompt(
     exemplars: list[dict[str, Any]],
     rule_pack: dict[str, Any] | None,
     prior_errors: list[tuple[str, str]],
+    category: str = "technical",
+    number_of_players: int = 2,
+    field_size: str = "small",
+    recent_drill_names: list[str] | None = None,
+    playing_style: str = "",
+    skill_goals: list[str] | None = None,
 ) -> str:
     focus = _format_focus(skill_description, weakness, selected_weaknesses)
 
