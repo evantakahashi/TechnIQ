@@ -403,3 +403,102 @@ point: scan before you receive
     assert captured["recent_drill_names"] == []
     assert captured["playing_style"] == ""
     assert captured["skill_goals"] == []
+
+
+@pytest.fixture
+def base_prompt_kwargs():
+    return {
+        "weakness": "Passing",
+        "skill_description": "improve passing",
+        "selected_weaknesses": [],
+        "level": "intermediate",
+        "age": 14,
+        "position": "midfielder",
+        "equipment": ["ball", "cones"],
+        "archetype": "server_executor",
+        "age_cap": 12.0,
+        "exemplars": [],
+        "rule_pack": None,
+        "prior_errors": [],
+    }
+
+
+def test_prompt_solo_directive_when_one_player(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, number_of_players=1)
+    assert "SOLO drill" in prompt or "solo drill" in prompt
+    assert "no partners" in prompt.lower() or "no partner" in prompt.lower()
+    assert "1 player" in prompt or "exactly 1" in prompt
+
+
+def test_prompt_partner_directive_when_two_players(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, number_of_players=2)
+    assert "2 player" in prompt or "exactly 2" in prompt
+
+
+def test_prompt_team_directive_when_many_players(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, number_of_players=5)
+    assert "5 player" in prompt or "exactly 5" in prompt
+
+
+def test_prompt_field_size_small_uses_20x15(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, field_size="small")
+    assert "20" in prompt and "15" in prompt
+
+
+def test_prompt_field_size_medium_uses_30x20(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, field_size="medium")
+    assert "30" in prompt and "20" in prompt
+
+
+def test_prompt_field_size_large_uses_50x30(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, field_size="large")
+    assert "50" in prompt and "30" in prompt
+
+
+def test_prompt_includes_category(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, category="tactical")
+    assert "tactical" in prompt.lower()
+
+
+def test_prompt_includes_recent_drill_names(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(
+        **base_prompt_kwargs,
+        recent_drill_names=["Cone Weave A", "Triangle Pass"],
+    )
+    assert "Cone Weave A" in prompt
+    assert "Triangle Pass" in prompt
+    assert "distinct" in prompt.lower() or "different" in prompt.lower() or "avoid" in prompt.lower()
+
+
+def test_prompt_includes_playing_style_and_goals(base_prompt_kwargs):
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(
+        **base_prompt_kwargs,
+        playing_style="attacking winger",
+        skill_goals=["improve weak foot", "increase pace"],
+    )
+    assert "attacking winger" in prompt
+    assert "improve weak foot" in prompt or "weak foot" in prompt
+
+
+def test_prompt_omits_recent_drills_block_when_empty(base_prompt_kwargs):
+    """No recent drills → no 'avoid these' block in prompt."""
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, recent_drill_names=[])
+    # Should not contain heading for recent drills
+    assert "RECENT DRILLS" not in prompt.upper() or "AVOID" not in prompt.upper()
+
+
+def test_prompt_omits_player_flavor_when_empty(base_prompt_kwargs):
+    """No playing_style and no skill_goals → no flavor block injected."""
+    from drill_generator import _build_prompt
+    prompt = _build_prompt(**base_prompt_kwargs, playing_style="", skill_goals=[])
+    assert "PLAYER STYLE" not in prompt.upper()

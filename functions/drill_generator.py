@@ -153,6 +153,12 @@ _PERIODIZATION_BY_LEVEL = {
     "advanced":     "Global practice: active pressure — a defender closes, real decisions required, game-realistic transitions.",
 }
 
+_FIELD_SIZE_DIMS = {
+    "small":  (20, 15),
+    "medium": (30, 20),
+    "large":  (50, 30),
+}
+
 _ELITE_REQUIREMENTS = """\
 For intermediate/advanced, the drill MUST include ALL of:
 - Active resistance: a server who passes, a defender who closes, or a trigger that forces a decision.
@@ -183,6 +189,9 @@ def _build_prompt(
     skill_goals: list[str] | None = None,
 ) -> str:
     focus = _format_focus(skill_description, weakness, selected_weaknesses)
+    recent_drill_names = recent_drill_names or []
+    skill_goals = skill_goals or []
+    width, length = _FIELD_SIZE_DIMS.get(field_size, _FIELD_SIZE_DIMS["small"])
 
     lines = [SYSTEM_PROMPT, ""]
 
@@ -230,9 +239,42 @@ def _build_prompt(
             spec = w.get("specific", "")
             if cat or spec:
                 lines.append(f"  - {cat}: {spec}")
+    # Player count directive
+    if number_of_players == 1:
+        player_directive = (
+            "PLAYER COUNT: Use exactly 1 player (the worker). "
+            "This is a SOLO drill — no partners (no server, no defender). "
+            "Use static obstacles (cones, gates, walls) and a measurable success target instead of human pressure."
+        )
+    elif number_of_players == 2:
+        player_directive = "PLAYER COUNT: Use exactly 2 players (worker + 1 partner serving as server or defender)."
+    elif number_of_players <= 4:
+        player_directive = f"PLAYER COUNT: Use exactly {number_of_players} players (worker + {number_of_players - 1} partners)."
+    else:
+        player_directive = f"PLAYER COUNT: Use exactly {number_of_players} players — small-sided team drill."
+    lines += [player_directive, ""]
+
+    # Drill category context
+    lines += [f"DRILL CATEGORY: {category}", ""]
+
+    # Recent drill names — variety
+    if recent_drill_names:
+        lines += [
+            "RECENT DRILLS (make this structurally distinct from these — different shape/pattern):",
+        ] + [f"  - {n}" for n in recent_drill_names] + [""]
+
+    # Player flavor — non-binding context
+    if playing_style or skill_goals:
+        flavor = ["PLAYER STYLE / GOALS (use to tailor coaching cues, not to constrain shape):"]
+        if playing_style:
+            flavor.append(f"  - Style: {playing_style}")
+        if skill_goals:
+            flavor.append(f"  - Goals: {', '.join(skill_goals)}")
+        lines += flavor + [""]
+
     lines += [
         f"Starting archetype (a shape to adapt, not copy): {archetype}",
-        f"Constraints: max area 20x15m, max cone spacing {age_cap}m, equipment {equipment}",
+        f"Constraints: max area {width}x{length}m, max cone spacing {age_cap}m, equipment {equipment}",
         "",
     ]
 
