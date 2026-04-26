@@ -19,6 +19,12 @@ _FOOTBALL_VERBS: frozenset[str] = frozenset({
     "accelerate", "sprint", "burst", "finish", "jockey", "carry",
 })
 
+# Detects measurable success targets in coaching points (e.g., "10 in 60 seconds").
+_METRIC_RE = re.compile(
+    r"\b\d+\s*(?:reps?|times?|seconds?|sec|secs|in a row|consecutive|in\s*\d+\s*(?:seconds?|sec))",
+    re.IGNORECASE,
+)
+
 # Stopwords to strip when mining keywords from success_metric for C3.
 _STOPWORDS: frozenset[str] = frozenset({
     "the", "and", "for", "with", "from", "into", "onto", "within",
@@ -31,12 +37,13 @@ def score_drill_quality(
     drill: dict[str, Any],
     rule_pack: dict[str, Any] | None,
     level: str,
+    number_of_players: int = 2,
 ) -> tuple[int, list[str]]:
     """Return (checks_passed, reasons_for_failures). Max score = 4.
 
-    Threshold: score >= 3. Additionally, for level != 'beginner', C2 is
-    mandatory (caller should reject if C2 fails even when score >= 3).
-    Caller enforces the mandatory-C2 rule via the reasons list.
+    Solo carve-out: when number_of_players == 1, C2's player-count and
+    pressure-source sub-checks are replaced by a "measurable target in
+    coaching points" sub-check. Outcome and rep-loop sub-checks are unchanged.
     """
     reasons: list[str] = []
 
@@ -45,14 +52,17 @@ def score_drill_quality(
     coaching: list[str]            = drill.get("coaching_points", [])
 
     c1_ok = _c1_forces_primary_action(drill, rule_pack, level)
-    c2_ok = _c2_structural_realism(elements, paths, coaching, level)
+    c2_ok = _c2_structural_realism(elements, paths, coaching, level, number_of_players)
     c3_ok = _c3_coaching_points_on_target(coaching, rule_pack, level)
     c4_ok = _c4_rep_density(paths)
 
     if not c1_ok:
         reasons.append("C1: drill does not surface the primary action (no verb_keyword in steps or coaching)")
     if not c2_ok:
-        reasons.append("C2: structural realism failed (need ≥2 players, outcome object, pressure source, and repeating element)")
+        if number_of_players == 1:
+            reasons.append("C2: solo drill needs outcome element + rep loop + a measurable success metric in coaching")
+        else:
+            reasons.append("C2: structural realism failed (need ≥2 players, outcome object, pressure source, and repeating element)")
     if not c3_ok:
         reasons.append("C3: coaching points too thin or off-target (need ≥2, ≥1 on-skill or non-generic)")
     if not c4_ok:
@@ -88,23 +98,45 @@ def _c2_structural_realism(
     paths: list[dict[str, Any]],
     coaching: list[str],
     level: str,
+    number_of_players: int = 2,
 ) -> bool:
     if level == "beginner":
         return True
 
-    player_roles = [
-        e.get("role", "") for e in elements
-        if e.get("type") == "player" and e.get("role") in {"worker", "server", "defender"}
-    ]
-    if len(player_roles) < 2:
-        return False
-
+    # Outcome check (shared across solo and multi-player paths)
     has_outcome_element = any(e.get("type") in {"goal", "gate"} for e in elements)
     outcome_terms_in_cp = any(
         any(term in cp.lower() for term in ("line", "gate", "goal", "zone"))
         for cp in coaching
     )
     if not (has_outcome_element or outcome_terms_in_cp):
+        return False
+
+    # Rep-loop check (shared)
+    el_step_counts: dict[str, set[int]] = {}
+    for p in paths:
+        step = p.get("step")
+        if step is None:
+            continue
+        for key in ("from", "to"):
+            lbl = p.get(key)
+            if lbl:
+                el_step_counts.setdefault(lbl, set()).add(step)
+    has_rep_loop = any(len(s) >= 2 for s in el_step_counts.values())
+    if not has_rep_loop:
+        return False
+
+    if number_of_players == 1:
+        # Solo carve-out: replace player-count + pressure-source with measurable metric.
+        has_metric = any(_METRIC_RE.search(cp) for cp in coaching)
+        return has_metric
+
+    # Multi-player path: original checks
+    player_roles = [
+        e.get("role", "") for e in elements
+        if e.get("type") == "player" and e.get("role") in {"worker", "server", "defender"}
+    ]
+    if len(player_roles) < 2:
         return False
 
     has_defender = any(
@@ -126,18 +158,6 @@ def _c2_structural_realism(
                 server_step_counts[lbl].add(step)
     server_active = any(len(s) >= 2 for s in server_step_counts.values())
     if not (has_defender or server_active):
-        return False
-
-    el_step_counts: dict[str, set[int]] = {}
-    for p in paths:
-        step = p.get("step")
-        if step is None:
-            continue
-        for key in ("from", "to"):
-            lbl = p.get(key)
-            if lbl:
-                el_step_counts.setdefault(lbl, set()).add(step)
-    if not any(len(s) >= 2 for s in el_step_counts.values()):
         return False
 
     return True

@@ -113,7 +113,8 @@ def generate_drill(
             drill["equipment"] = equipment
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)
-            score, reasons = score_drill_quality(drill, rule_pack, level)
+            score, reasons = score_drill_quality(drill, rule_pack, level,
+                                                 number_of_players=number_of_players)
             c2_failed = any(r.startswith("C2:") for r in reasons)
             if score < 3 or (level != "beginner" and c2_failed):
                 raise QualityError(reasons)

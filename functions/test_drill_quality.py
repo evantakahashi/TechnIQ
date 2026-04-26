@@ -284,3 +284,111 @@ def test_is_non_generic_allows_focus_on_technical_detail():
     from drill_quality import _is_non_generic
     assert _is_non_generic("Focus the pass to the back foot") is True
     # "pass" is a football verb and no blacklist phrase matches — should be non-generic
+
+
+import re
+
+
+def _make_solo_drill(coaching_points, with_outcome=True, with_rep_loop=True):
+    """Build a 1-player drill with optional outcome element + rep-loop."""
+    elements = [{"type": "player", "label": "P1", "role": "worker", "x": 5.0, "y": 5.0}]
+    if with_outcome:
+        elements.append({"type": "gate", "label": "G1", "x": 15.0, "y": 7.5})
+    elements.append({"type": "cone", "label": "C1", "x": 8.0, "y": 5.0})
+    elements.append({"type": "cone", "label": "C2", "x": 12.0, "y": 5.0})
+    paths = [
+        {"step": 1, "from": "P1", "to": "C1", "style": "dribble"},
+        {"step": 2, "from": "P1", "to": "C2", "style": "dribble"},
+        {"step": 3, "from": "P1", "to": "G1", "style": "shoot"},
+        {"step": 4, "from": "P1", "to": "C1", "style": "dribble"},
+        {"step": 5, "from": "P1", "to": "C2", "style": "dribble"},
+    ]
+    if not with_rep_loop:
+        paths = paths[:1]
+    return {
+        "diagram": {"elements": elements, "paths": paths},
+        "coaching_points": coaching_points,
+    }
+
+
+def test_c2_solo_drill_with_metric_passes_at_advanced():
+    from drill_quality import score_drill_quality
+
+    drill = _make_solo_drill(
+        coaching_points=[
+            "Strike with the laces and follow through",
+            "Complete 10 successful shots in 60 seconds",
+        ],
+    )
+    score, reasons = score_drill_quality(drill, rule_pack=None, level="advanced",
+                                         number_of_players=1)
+    c2_failures = [r for r in reasons if r.startswith("C2:")]
+    assert not c2_failures, f"C2 should pass for solo drill with metric, got: {c2_failures}"
+
+
+def test_c2_solo_drill_without_metric_fails():
+    from drill_quality import score_drill_quality
+
+    drill = _make_solo_drill(
+        coaching_points=[
+            "Keep the ball close",
+            "Stay on the balls of your feet",
+        ],
+    )
+    score, reasons = score_drill_quality(drill, rule_pack=None, level="advanced",
+                                         number_of_players=1)
+    c2_failures = [r for r in reasons if r.startswith("C2:")]
+    assert c2_failures, "C2 must fail for solo drill with no measurable metric"
+
+
+def test_c2_solo_drill_without_outcome_fails():
+    from drill_quality import score_drill_quality
+
+    drill = _make_solo_drill(
+        coaching_points=["Complete 10 reps in 30 seconds"],
+        with_outcome=False,
+    )
+    score, reasons = score_drill_quality(drill, rule_pack=None, level="advanced",
+                                         number_of_players=1)
+    c2_failures = [r for r in reasons if r.startswith("C2:")]
+    assert c2_failures, "C2 must still require outcome element even for solo drills"
+
+
+def test_c2_solo_drill_without_rep_loop_fails():
+    from drill_quality import score_drill_quality
+
+    drill = _make_solo_drill(
+        coaching_points=["Complete 10 reps in 30 seconds"],
+        with_rep_loop=False,
+    )
+    score, reasons = score_drill_quality(drill, rule_pack=None, level="advanced",
+                                         number_of_players=1)
+    c2_failures = [r for r in reasons if r.startswith("C2:")]
+    assert c2_failures, "C2 must still require rep loop even for solo drills"
+
+
+def test_c2_multi_player_default_path_unchanged():
+    """Existing 2+ player drills behave exactly as before."""
+    from drill_quality import score_drill_quality
+
+    drill = {
+        "diagram": {
+            "elements": [
+                {"type": "player", "label": "P1", "role": "worker", "x": 5.0, "y": 5.0},
+                {"type": "player", "label": "P2", "role": "server", "x": 10.0, "y": 5.0},
+                {"type": "goal", "label": "GL", "x": 15.0, "y": 7.5},
+            ],
+            "paths": [
+                {"step": 1, "from": "P2", "to": "P1", "style": "pass"},
+                {"step": 2, "from": "P1", "to": "GL", "style": "shoot"},
+                {"step": 3, "from": "P2", "to": "P1", "style": "pass"},
+                {"step": 4, "from": "P1", "to": "GL", "style": "shoot"},
+                {"step": 5, "from": "P1", "to": "P2", "style": "pass"},
+            ],
+        },
+        "coaching_points": ["Strike across the ball", "Plant foot pointing at target"],
+    }
+    score_default, _ = score_drill_quality(drill, rule_pack=None, level="advanced")
+    score_explicit, _ = score_drill_quality(drill, rule_pack=None, level="advanced",
+                                             number_of_players=2)
+    assert score_default == score_explicit
