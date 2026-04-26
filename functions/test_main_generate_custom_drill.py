@@ -211,3 +211,60 @@ def test_handler_defaults_number_of_players_to_2():
     with patch("drill_generator.generate_drill", fake):
         generate_custom_drill(_make_request(payload))
     assert captured[0]["number_of_players"] == 2
+
+
+def test_handler_solo_request_passes_through_to_quality_gate():
+    """Solo request → generate_drill receives number_of_players=1 → C2 uses solo carve-out.
+
+    We mock generate_drill to return a known drill but verify the request dict
+    forwarded matches what would let the solo carve-out activate.
+    """
+    from main import generate_custom_drill
+
+    captured, fake = _capture_request_dict()
+    payload = {
+        "user_id": "u1",
+        "player_profile": {"age": 16, "position": "winger", "experienceLevel": "advanced"},
+        "field_size": "medium",
+        "requirements": {
+            "skill_description": "solo dribbling under time pressure",
+            "difficulty": "advanced",
+            "category": "technical",
+            "equipment": ["ball", "cones"],
+            "number_of_players": 1,
+            "selected_weaknesses": [{"category": "Dribbling"}],
+        },
+    }
+    with patch("drill_generator.generate_drill", fake):
+        resp = generate_custom_drill(_make_request(payload))
+    assert resp.status_code == 200
+    forwarded = captured[0]
+    assert forwarded["number_of_players"] == 1
+    assert forwarded["experience_level"] == "advanced"
+    assert forwarded["field_size"] == "medium"
+    assert forwarded["category"] == "technical"
+
+
+def test_handler_response_preserves_drill_shape():
+    """Response wraps drill in {"drill": ..., "generated_at": ...} with camelCase keys."""
+    from main import generate_custom_drill
+
+    _, fake = _capture_request_dict()
+    payload = {
+        "user_id": "u1",
+        "player_profile": {"age": 14, "position": "midfielder", "experienceLevel": "intermediate"},
+        "requirements": {
+            "skill_description": "test",
+            "equipment": ["ball"],
+            "selected_weaknesses": [{"category": "Passing"}],
+        },
+    }
+    with patch("drill_generator.generate_drill", fake):
+        resp = generate_custom_drill(_make_request(payload))
+    body = json.loads(resp.get_data(as_text=True))
+    assert "drill" in body
+    drill = body["drill"]
+    assert "coachingPoints" in drill  # camelCase
+    assert "coaching_points" not in drill  # no leak
+    assert "estimatedDuration" in drill
+    assert isinstance(drill["estimatedDuration"], int)
