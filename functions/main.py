@@ -247,9 +247,6 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         requirements = request_data.get("requirements", {})
 
         # Weakness precedence: request-specific signals beat static profile.
-        # 1) requirements.selected_weaknesses[0].category (for archetype lookup)
-        # 2) fallback to player_profile.weaknesses[0]
-        # 3) fallback to "Ball Control"
         selected_weaknesses = requirements.get("selected_weaknesses") or []
         skill_description = (requirements.get("skill_description") or "").strip()
         if selected_weaknesses and selected_weaknesses[0].get("category"):
@@ -259,10 +256,21 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         else:
             weakness = "Ball Control"
 
-        level = player_profile.get("experienceLevel", "beginner")
+        # Periodization source of truth: requirements.difficulty wins, then profile, then default.
+        level = (
+            requirements.get("difficulty")
+            or player_profile.get("experienceLevel")
+            or "intermediate"
+        )
         age = int(player_profile.get("age") or 14)
         position = player_profile.get("position", "midfielder")
         equipment = requirements.get("equipment", ["ball", "cones"])
+        category = requirements.get("category", "technical")
+        number_of_players = int(requirements.get("number_of_players") or 2)
+        field_size = request_data.get("field_size", "small")
+        recent_drill_names = requirements.get("recent_drill_names") or []
+        playing_style = player_profile.get("playingStyle", "")
+        skill_goals = player_profile.get("skillGoals") or []
 
         # Initialize Anthropic client
         anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -307,6 +315,12 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                     "equipment": equipment,
                     "skill_description": skill_description,
                     "selected_weaknesses": selected_weaknesses,
+                    "category": category,
+                    "number_of_players": number_of_players,
+                    "field_size": field_size,
+                    "recent_drill_names": recent_drill_names,
+                    "playing_style": playing_style,
+                    "skill_goals": skill_goals,
                 },
                 llm_call=_llm_call,
             )
