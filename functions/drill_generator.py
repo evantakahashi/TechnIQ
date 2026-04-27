@@ -38,7 +38,7 @@ DSL grammar:
 Rules:
 - Every step ID must refer to a declared element.
 - Step numbers start at 1 and increase by 1.
-- Use coordinates in meters. Keep the drill inside a 20m x 15m area.
+- Use coordinates in meters. Keep the drill inside the field dimensions specified below.
 - The drill must TRAIN THE REQUESTED SKILL, not generic ball-work.
 - Prioritize game-relevant reps: every step should move the worker toward or through the requested skill.
 """
@@ -109,9 +109,11 @@ def generate_drill(
             playing_style=playing_style,
             skill_goals=skill_goals,
         )
+        width, length = _FIELD_SIZE_DIMS.get(field_size, _FIELD_SIZE_DIMS["small"])
         raw = llm_call(prompt)
         try:
             drill = parse_dsl(raw)
+            drill["diagram"]["field"] = {"width": width, "length": length}
             drill["equipment"] = equipment
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)

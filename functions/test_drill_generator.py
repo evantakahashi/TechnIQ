@@ -461,6 +461,28 @@ def test_prompt_field_size_large_uses_50x30(base_prompt_kwargs):
     assert "50" in prompt and "30" in prompt
 
 
+def test_generate_drill_field_size_large_propagates_to_diagram():
+    """Pipeline must thread field_size into diagram.field, not hardcode 20x15."""
+    dsl = (
+        'cone C1 at (5, 5)\n'
+        'cone C2 at (40, 25)\n'
+        'player P1 at (5, 5) role "worker"\n'
+        'ball B1 at (5, 5)\n'
+        'goal GL at (45, 15) width 7\n'
+        'step 1: P1 dribbles to C1\n'
+        'step 2: P1 dribbles to C2\n'
+        'step 3: P1 shoots at GL\n'
+        'point: Push the ball into space ahead of you, accelerate after the third touch\n'
+        'point: Aim 3 of 5 reps for the bottom corner — count successes\n'
+    )
+    request = {**make_request(), "field_size": "large"}
+    drill = generate_drill(request, llm_call=make_llm([dsl]))
+    assert drill["diagram"]["field"] == {"width": 50, "length": 30}
+    # Element at x=40 must NOT be clamped down to 19 (the small-field bound)
+    c2 = next(e for e in drill["diagram"]["elements"] if e["label"] == "C2")
+    assert c2["x"] > 19, f"C2.x={c2['x']} — clamped to small field bounds"
+
+
 def test_prompt_includes_category(base_prompt_kwargs):
     from drill_generator import _build_prompt
     prompt = _build_prompt(**base_prompt_kwargs, category="tactical")
