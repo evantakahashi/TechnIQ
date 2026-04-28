@@ -1,0 +1,170 @@
+[
+  {
+    "id": "cone_weave_beginner_01",
+    "archetype": "cone_weave",
+    "pressure": "none",
+    "dsl": "cone C1 at (6.5, 7.5)\ncone C2 at (9.5, 7.5)\ncone C3 at (12.5, 7.5)\ncone C4 at (15.5, 7.5)\nplayer P1 at (4.5, 7.5) role \"worker\"\nball B1 at (4.5, 7.5)\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 dribbles to C4\n\npoint: Use inside and outside of the same foot\npoint: Keep the ball within half a step",
+    "notes": "Classic 4-cone weave, 3m spacing, ball mastery fundamentals"
+  },
+  {
+    "id": "cone_weave_intermediate_01",
+    "archetype": "cone_weave",
+    "pressure": "none",
+    "dsl": "cone C1 at (5, 6)\ncone C2 at (8, 9)\ncone C3 at (11, 6)\ncone C4 at (14, 9)\ncone C5 at (17, 6)\nplayer P1 at (2, 6) role \"worker\"\nball B1 at (2, 6)\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 dribbles to C4\nstep 5: P1 dribbles to C5\n\npoint: Push the ball out of the turn, not into it\npoint: Drop a shoulder before each cone to sell the direction change",
+    "notes": "5-cone serpentine, alternating Y; layered direction changes"
+  },
+  {
+    "id": "wall_passing_beginner_01",
+    "archetype": "wall_passing",
+    "pressure": "passive",
+    "dsl": "cone C1 at (8, 7.5)\ncone C2 at (12, 7.5)\nplayer P1 at (5, 7.5) role \"worker\"\nplayer P2 at (15, 7.5) role \"server\"\nball B1 at (5, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P1\nstep 3: P1 passes to P2\n\npoint: First touch past your own cone, then pass back\npoint: Inside of the foot, plant foot pointing at target",
+    "notes": "2-cone wall-pass pattern; each player first-touches past their own cone before passing back"
+  },
+  {
+    "id": "wall_passing_intermediate_01",
+    "archetype": "wall_passing",
+    "pressure": "passive",
+    "dsl": "cone C1 at (8, 7.5)\ncone C2 at (13, 7.5)\nplayer P1 at (4, 7.5) role \"worker\"\nplayer P2 at (17, 7.5) role \"server\"\nball B1 at (4, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P1\nstep 3: P1 dribbles to C1\nstep 4: P1 passes to P2\nstep 5: P2 passes to P1\n\npoint: After the wall pass, accelerate onto the return\npoint: Open your hips on the second touch so the next pass is already visible",
+    "notes": "Wall-pass + dribble + wall-pass; adds movement between exchanges"
+  },
+  {
+    "id": "gate_dribbling_beginner_01",
+    "archetype": "gate_dribbling",
+    "pressure": "none",
+    "dsl": "gate G1 at (7, 7.5) width 2\ngate G2 at (11, 7.5) width 2\ngate G3 at (15, 7.5) width 2\nplayer P1 at (3, 7.5) role \"worker\"\nball B1 at (3, 7.5)\n\nstep 1: P1 dribbles to G1\nstep 2: P1 dribbles to G2\nstep 3: P1 dribbles to G3\n\npoint: Look up between gates, not down at the ball\npoint: Small touches through the gate, bigger touches between",
+    "notes": "3 gates in a straight line; introduces controlled dribbling through targets"
+  },
+  {
+    "id": "gate_dribbling_intermediate_01",
+    "archetype": "gate_dribbling",
+    "pressure": "none",
+    "dsl": "gate G1 at (7.5, 9) width 2\ngate G2 at (11.5, 5) width 2\ngate G3 at (15.5, 10) width 2\nplayer P1 at (4.5, 7) role \"worker\"\nball B1 at (4.5, 7)\n\nstep 1: P1 dribbles to G1\nstep 2: P1 dribbles to G2\nstep 3: P1 dribbles to G3\n\npoint: Scan before each gate; pick your line early\npoint: Change pace after you exit each gate",
+    "notes": "3 gates offset to force direction changes; intermediate U12+"
+  },
+  {
+    "id": "dribble_and_shoot_beginner_01",
+    "archetype": "dribble_and_shoot",
+    "pressure": "none",
+    "dsl": "cone C1 at (5, 7.5)\ncone C2 at (9, 7.5)\nplayer P1 at (1, 7.5) role \"worker\"\nball B1 at (1, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 shoots at GL\n\npoint: Set up with your second-to-last touch\npoint: Head still, eyes on the ball at contact",
+    "notes": "2 cones → shot; introduces the finishing setup touch"
+  },
+  {
+    "id": "dribble_and_shoot_intermediate_01",
+    "archetype": "dribble_and_shoot",
+    "pressure": "none",
+    "dsl": "cone C1 at (5, 5)\ncone C2 at (9, 5)\ncone C3 at (13, 9)\nplayer P1 at (2, 5) role \"worker\"\nball B1 at (2, 5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 shoots at GL\n\npoint: Cut inside off your stronger foot to open the shooting angle\npoint: Plant foot next to the ball, strike through the middle-upper third",
+    "notes": "Dribble wide, cut inside diagonally, finish far post; angle-opening pattern"
+  },
+  {
+    "id": "server_executor_beginner_01",
+    "archetype": "server_executor",
+    "pressure": "passive",
+    "dsl": "player P1 at (3, 7.5) role \"server\"\nplayer P2 at (10, 7.5) role \"worker\"\ngoal GL at (18, 7.5) width 7.32\nball B1 at (3, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 shoots at GL\n\npoint: Take a positive first touch toward goal, not sideways\npoint: Don't wait for the ball — step onto it as it arrives",
+    "notes": "Server feeds central striker; simplest serve-and-finish pattern"
+  },
+  {
+    "id": "server_executor_intermediate_01",
+    "archetype": "server_executor",
+    "pressure": "passive",
+    "dsl": "player P1 at (1, 7.5) role \"server\"\nplayer P2 at (8, 4.5) role \"worker\"\ncone C1 at (12, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 shoots at GL\n\npoint: Open hips before the ball arrives\npoint: First touch forward into the run, not into your feet",
+    "notes": "Server feeds channel runner; attacking midfielder finishing pattern"
+  },
+  {
+    "id": "server_executor_advanced_01",
+    "archetype": "server_executor",
+    "pressure": "passive",
+    "dsl": "player P1 at (2, 10) role \"server\"\nplayer P2 at (8, 5) role \"worker\"\nplayer P3 at (15, 11) role \"server\"\ncone C1 at (13, 5)\ngoal GL at (18, 7.5) width 7.32\nball B1 at (2, 10)\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 passes to P3\nstep 4: P3 passes to P2\nstep 5: P2 shoots at GL\n\npoint: Second server is a wall — one-touch back into the finisher's path\npoint: Finisher's run bends around the cone so the cut-back arrives in stride",
+    "notes": "Two-server combination: feed, carry, wall-pass off second server, finish"
+  },
+  {
+    "id": "triangle_passing_beginner_01",
+    "archetype": "triangle_passing",
+    "pressure": "passive",
+    "dsl": "player P1 at (5, 4) role \"worker\"\nplayer P2 at (15, 4) role \"worker\"\nplayer P3 at (10, 12) role \"worker\"\nball B1 at (5, 4)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\n\npoint: Inside of the foot, weight firm enough to reach in two seconds\npoint: Call the receiver's name before you pass",
+    "notes": "Wide beginner triangle; one direction only; passing fundamentals"
+  },
+  {
+    "id": "triangle_passing_intermediate_01",
+    "archetype": "triangle_passing",
+    "pressure": "passive",
+    "dsl": "player P1 at (7, 5) role \"worker\"\nplayer P2 at (13, 5) role \"worker\"\nplayer P3 at (10, 10) role \"worker\"\nball B1 at (7, 5)\n\nstep 1: P1 passes to P3\nstep 2: P3 passes to P2\nstep 3: P2 passes to P1\n\npoint: Receive on the back foot, open to the next pass\npoint: Follow your pass two steps to keep the triangle alive",
+    "notes": "3-player triangle, 6m base; positional passing fundamentals"
+  },
+  {
+    "id": "triangle_passing_advanced_01",
+    "archetype": "triangle_passing",
+    "pressure": "passive",
+    "dsl": "player P1 at (6, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 12) role \"worker\"\nball B1 at (6, 5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\nstep 4: P1 passes to P3\nstep 5: P3 passes to P2\nstep 6: P2 passes to P1\n\npoint: One-touch whenever the next receiver is already checked in\npoint: Reverse the rotation on demand — coach's call changes direction",
+    "notes": "Triangle rotating both directions, 6 passes; requires anticipation and first-touch direction"
+  },
+  {
+    "id": "1v1_plus_server_beginner_01",
+    "archetype": "1v1_plus_server",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"server\"\nplayer P2 at (6, 7.5) role \"worker\"\nplayer P3 at (11, 4) role \"server\"\ngoal GL at (18, 7.5) width 7.32\nball B1 at (2, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Attack the defender's front foot to force them to turn\npoint: As soon as you're past, head up and pick your finish",
+    "notes": "Defender offset from the direct line to goal; easier 1v1 for attacker to beat and finish"
+  },
+  {
+    "id": "1v1_plus_server_intermediate_01",
+    "archetype": "1v1_plus_server",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"server\"\nplayer P2 at (5, 7.5) role \"worker\"\nplayer P3 at (13, 7.5) role \"server\"\ngoal GL at (18, 7.5) width 7.32\nball B1 at (2, 7.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Take the first touch into space, not into the defender\npoint: Commit to the beat — hesitation lets the defender recover",
+    "notes": "Server + worker + defender between worker and goal; standard 1v1 finish"
+  },
+  {
+    "id": "1v1_plus_server_advanced_01",
+    "archetype": "1v1_plus_server",
+    "pressure": "active",
+    "dsl": "player P1 at (1, 4) role \"server\"\nplayer P2 at (4, 7.5) role \"worker\"\nplayer P3 at (12, 7.5) role \"worker\"\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P2 shoots at GL\n\npoint: Attacker takes on the defender at a jog-to-sprint change of pace\npoint: Defender pressures from the attacker's strong side to force weak-foot decisions",
+    "notes": "Server feeds attacker; defender stands between attacker and goal; attacker beats defender and finishes"
+  },
+  {
+    "id": "rondo_beginner_01",
+    "archetype": "rondo",
+    "pressure": "passive",
+    "dsl": "player P1 at (6, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 12) role \"worker\"\nplayer P4 at (10, 7.5) role \"server\"\nball B1 at (6, 5)\n\nstep 1: P1 passes to P3\nstep 2: P3 passes to P2\nstep 3: P2 passes to P1\n\npoint: Open up before the ball arrives so your next pass is already lined up\npoint: Pass to the foot away from the defender, not the near foot",
+    "notes": "3v1 rondo, loose 8m triangle; introductory keep-away"
+  },
+  {
+    "id": "rondo_intermediate_01",
+    "archetype": "rondo",
+    "pressure": "passive",
+    "dsl": "player P1 at (7, 4.5) role \"worker\"\nplayer P2 at (13, 4.5) role \"worker\"\nplayer P3 at (13, 10.5) role \"worker\"\nplayer P4 at (7, 10.5) role \"worker\"\nplayer P5 at (10, 7.5) role \"server\"\nball B1 at (7, 4.5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P4\n\npoint: Body shape open before the ball arrives\npoint: One-touch only if your next option is already set up",
+    "notes": "4v1 rondo on a 6x6 grid; P5 is the defender (server role)"
+  },
+  {
+    "id": "rondo_advanced_01",
+    "archetype": "rondo",
+    "pressure": "active",
+    "dsl": "player P1 at (7, 5) role \"worker\"\nplayer P2 at (13, 5) role \"worker\"\nplayer P3 at (13, 11) role \"worker\"\nplayer P4 at (7, 11) role \"worker\"\nplayer P5 at (8.5, 8) role \"server\"\nplayer P6 at (11.5, 8) role \"server\"\nball B1 at (7, 5)\n\nstep 1: P1 passes to P4\nstep 2: P4 passes to P2\nstep 3: P2 passes to P3\nstep 4: P3 passes to P1\n\npoint: Split the two defenders whenever the line opens — one-touch through the middle\npoint: Support angles adjust every pass; stay available on both sides of the grid",
+    "notes": "4v2 rondo, tight 6x6 grid with a split-pass option; advanced pressure keep-away"
+  },
+  {
+    "id": "dribble_and_shoot_advanced_01",
+    "archetype": "dribble_and_shoot",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"worker\"\nplayer P2 at (8, 10) role \"defender\"\ncone C1 at (6, 5)\ncone C2 at (11, 10)\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P2 runs to P1\nstep 4: P1 shoots at GL\n\npoint: Beat the first cone with your strong foot, then cut inside to lose the recovering defender\npoint: Defender starts 5m behind the attacker's line — sprint to recover as soon as P1 clears C1\npoint: Strike across the keeper; the defender's reach forces the low far-post finish",
+    "notes": "Dribble past cone, defender recovers from 5m back, worker finishes under pressure"
+  },
+  {
+    "id": "server_executor_advanced_02",
+    "archetype": "server_executor",
+    "pressure": "active",
+    "dsl": "player P1 at (3, 10) role \"server\"\nplayer P2 at (9, 6) role \"worker\"\nplayer P3 at (6, 6) role \"defender\"\nball B1 at (3, 10)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P3 runs to P2\nstep 3: P2 dribbles to P2\nstep 4: P2 shoots at GL\n\npoint: Server plays a firm ball in and immediately closes to 3m — the worker reads the closing angle\npoint: First touch rolls across the defender's momentum, not into them\npoint: One touch to strike — hesitation lets the defender recover",
+    "notes": "Server feeds then closes; defender adds time pressure on the first touch; worker finishes quickly"
+  },
+  {
+    "id": "1v1_plus_server_advanced_02",
+    "archetype": "1v1_plus_server",
+    "pressure": "active",
+    "dsl": "player P1 at (2, 7.5) role \"server\"\nplayer P2 at (5, 7.5) role \"worker\"\nplayer P3 at (11, 7.5) role \"defender\"\nplayer P4 at (3, 4) role \"defender\"\nball B1 at (2, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to P3\nstep 3: P4 runs to P2\nstep 4: P2 shoots at GL\n\npoint: Commit to beating P3 immediately — P4 joins after ~3 seconds\npoint: Take the first touch into space on P3's weaker side to buy the half-beat\npoint: If P4 closes before the shot, play a quick square pass back to the server instead of forcing it",
+    "notes": "1v1 to finish with a recovery runner — forces the attacker to commit quickly"
+  },
+  {
+    "id": "rondo_advanced_02",
+    "archetype": "rondo",
+    "pressure": "active",
+    "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\nstep 4: P4 runs to P1\nstep 5: P1 dribbles to G1\n\npoint: 3v1 keep-away until the defender forces a turnover — then transition immediately\npoint: On regain, attack the target gate within 5 seconds — no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
+    "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger"
+  }
+]
