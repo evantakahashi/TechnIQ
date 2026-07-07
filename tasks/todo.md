@@ -1,49 +1,24 @@
-# App Store Readiness Fixes
+# Live Tracker — App Store Readiness v2 (2026-07-06)
 
-## Parallel Workstreams (no file conflicts)
+Supersedes the stale 2025 checklist (verified: most of it was already fixed; see docs/audits/2026-07-06-full-audit.md).
+Plan: docs/superpowers/plans/2026-07-06-app-store-readiness-v2.md · Spec: docs/superpowers/specs/2026-07-06-app-store-readiness-v2-design.md
 
-### Stream 1: View Crash Fixes
-- [ ] NewSessionView.swift: Replace force unwraps on exercise.id (lines 368,369,528,550)
-- [ ] PlayerProgressView.swift: Guard unwrap session dates (line 474)
-- [ ] SessionCalendarView.swift: Safe optional access (lines 543,547,725,729)
-- [ ] CalendarHeatMapView.swift: Fix double unwrap (lines 154,161)
-- [ ] TrainingPlanModels.swift: Use flatMap for DayOfWeek (line 273)
-- [ ] InsightsEngine.swift: Guard unwrap dates.last (line 193)
+## Status
+- [x] 8-domain audit (121 findings, verified)
+- [x] Spec + plan
+- [ ] Wave 1: parallel fix agents (A cloud/services, B dash/training UX, C auth/exercises UX, D modernization, E tooling) + W2 backend — IN FLIGHT
+- [ ] Gate 1: build + lint + pytest, commit
+- [ ] Wave 3: Firebase/GoogleSignIn SDK bump (submission blocker)
+- [ ] Wave 4: sync architecture, NavigationStack, Dynamic Type, a11y
+- [ ] Wave 5: app icon, privacy manifest/policy, style sweep, ASC metadata docs
+- [ ] Final: full verify + report
 
-### Stream 2: Core Service Crash + Concurrency
-- [ ] CoreDataManager.swift: Replace fatalError() at lines 84,92 with graceful recovery
-- [ ] CloudSyncManager.swift: Add @MainActor, fix timer in deinit
-- [ ] CloudRestoreService.swift: Fix unsafe context parameter
+## User actions still required (cannot be automated)
+- Rotate functions/.env.yaml API keys; then `firebase deploy --only functions` (backend fixes won't be live until deployed)
+- Apple Developer: confirm SIWA capability on the App ID; physical-device test (SIWA, Google SSO, purchases)
+- App Store Connect: create app record, StoreKit products for paywall, upload screenshots, nutrition labels, demo account
+- Host privacy policy (need URL)
+- Decide: bundle ID keep/change (permanent after first upload); icon branding
 
-### Stream 3: Auth + Security + Firebase
-- [ ] AuthenticationManager.swift: Fix deprecated UIApplication.windows (line 118)
-- [ ] AuthenticationManager.swift: Fix auth state race (lines 29-36)
-- [ ] functions/main.py: Make auth required in production
-- [ ] firestore.rules: Add subcollection rules under /users/{userId}
-
-### Stream 4: App Store Compliance Files
-- [ ] Create PrivacyInfo.xcprivacy
-- [ ] Create TechnIQ.entitlements
-- [ ] Update Info.plist with privacy descriptions + UIRequiredDeviceCapabilities
-
-### Stream 5: Performance + Resilience
-- [ ] ActiveSessionManager.swift: Fix array bounds (lines 195,202,203,274)
-- [ ] CloudMLService.swift: Fix array bounds (line 408), add retry logic
-- [ ] CustomDrillService.swift: Add timeout config
-- [ ] CloudDataService.swift: Fix network monitor callback
-
-### Deferred (needs user action or separate planning)
-- Sign in with Apple (complex integration, needs Apple Developer setup)
-- App icon (needs design assets from user)
-- API key revocation (manual action in Google/OpenAI consoles)
-- Print → AppLogger replacement (268 occurrences, separate pass)
-- Localization
-- Certificate pinning
-- Full incremental sync redesign
-- Accessibility labels
-
-## Unresolved Questions
-- Sign in with Apple: implement now or defer?
-- App icon: do you have assets?
-- API keys: have they been revoked yet?
-- Print→AppLogger: tackle in this pass or separate?
+## Unresolved questions
+See spec §Unresolved (bundle ID, policy hosting, paywall for v1, key rotation, icon branding, quota defaults).
