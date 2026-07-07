@@ -6,8 +6,9 @@ Provides collaborative filtering and content-based recommendations for soccer tr
 import json
 import logging
 import os
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Any, Optional, Tuple
 import traceback
 
 from firebase_admin import initialize_app, firestore, auth
@@ -31,6 +32,176 @@ except Exception as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# MARK: - Security & Request Helpers
+
+# Standard response headers. CORS is intentionally omitted: this backend serves the
+# native iOS app (URLSession), not browsers, so no page legitimately calls it
+# cross-origin. See .claude/rules/firebase.md.
+_JSON_HEADERS = {"Content-Type": "application/json"}
+
+# Reject request bodies larger than this before any prompt construction.
+MAX_REQUEST_BYTES = 100_000
+
+# Per-field caps for values interpolated into LLM prompts.
+MAX_STR_LEN = 500
+MAX_LIST_ITEMS = 20
+MAX_LIST_ITEM_LEN = 200
+
+# Per-uid daily request quotas (Firestore-backed, day-bucketed).
+RATE_LIMIT_LLM = 10          # drill / plan / recommendation / coaching generation
+RATE_LIMIT_LIGHTWEIGHT = 50  # non-LLM or cheap endpoints
+
+_PROFILE_STR_FIELDS = (
+    "position", "playingStyle", "experienceLevel", "playerRoleModel",
+    "name", "style", "dominant_foot", "experience",
+)
+_PROFILE_LIST_FIELDS = ("goals", "weaknesses", "skillGoals")
+
+
+def _emulator() -> bool:
+    """True only inside the Firebase Functions emulator (local dev)."""
+    return os.environ.get("FUNCTIONS_EMULATOR") == "true"
+
+
+def _new_request_id() -> str:
+    return uuid.uuid4().hex[:12]
+
+
+def _json_response(body: Dict, status: int = 200) -> https_fn.Response:
+    return https_fn.Response(json.dumps(body), status=status, headers=_JSON_HEADERS)
+
+
+def _error_response(message: str, status: int, request_id: Optional[str] = None) -> https_fn.Response:
+    body = {"error": message}
+    if request_id:
+        body["request_id"] = request_id
+    return https_fn.Response(json.dumps(body), status=status, headers=_JSON_HEADERS)
+
+
+def _preflight_response() -> https_fn.Response:
+    # No CORS headers: native-app-only backend. Kept so any stray OPTIONS gets a clean 204.
+    return https_fn.Response("", status=204, headers={})
+
+
+def verify_request_uid(req: https_fn.Request) -> Tuple[Optional[str], Optional[https_fn.Response]]:
+    """Verify the Firebase ID token.
+
+    Returns (uid, None) when authenticated. Inside the emulator, returns
+    (None, None) so local calls without a token proceed. In production, returns
+    (None, <401 response>) on a missing or invalid token.
+    """
+    auth_header = req.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            id_token = auth_header.split("Bearer ")[1]
+            decoded_token = auth.verify_id_token(id_token)
+            uid = decoded_token["uid"]
+            logger.info(f"🔐 Authenticated user: {uid}")
+            return uid, None
+        except Exception as e:
+            logger.warning(f"⚠️ Auth token verification failed: {e}")
+            if _emulator():
+                return None, None
+            return None, _error_response("Invalid authentication token", 401)
+    if _emulator():
+        return None, None
+    logger.warning("⚠️ No auth token provided, rejecting request")
+    return None, _error_response("Authentication required", 401)
+
+
+def enforce_user_match(request_data: Dict, uid: Optional[str]) -> Optional[https_fn.Response]:
+    """IDOR guard: reject when the body user_id doesn't match the authenticated uid.
+
+    The admin SDK bypasses Firestore rules, so the token uid must be the source of
+    truth for all data access. Callers should treat `uid` as authoritative after this.
+    """
+    if uid is None:
+        return None  # emulator / local unauthenticated path
+    body_user_id = request_data.get("user_id")
+    if body_user_id and body_user_id != uid:
+        logger.warning(f"🚫 user_id mismatch: body={body_user_id} token={uid}")
+        return _error_response("user_id does not match authenticated user", 403)
+    return None
+
+
+def request_too_large(req: https_fn.Request) -> bool:
+    """True when the request body exceeds MAX_REQUEST_BYTES."""
+    try:
+        length = req.content_length
+        if length is not None:
+            return length > MAX_REQUEST_BYTES
+        return len(req.get_data(cache=True)) > MAX_REQUEST_BYTES
+    except Exception:
+        return False
+
+
+def _clip_str(value: Any, max_len: int = MAX_STR_LEN) -> Any:
+    if isinstance(value, str) and len(value) > max_len:
+        return value[:max_len]
+    return value
+
+
+def _clip_list(value: Any, max_items: int = MAX_LIST_ITEMS, item_len: int = MAX_LIST_ITEM_LEN) -> Any:
+    if not isinstance(value, list):
+        return value
+    return [_clip_str(v, item_len) if isinstance(v, str) else v for v in value[:max_items]]
+
+
+def sanitize_profile(profile: Any) -> Dict:
+    """Clip string/list fields of a player_profile that get interpolated into prompts."""
+    if not isinstance(profile, dict):
+        return {}
+    out = dict(profile)
+    for field in _PROFILE_STR_FIELDS:
+        if field in out:
+            out[field] = _clip_str(out[field])
+    for field in _PROFILE_LIST_FIELDS:
+        if field in out:
+            out[field] = _clip_list(out[field])
+    return out
+
+
+def _rate_limit_bucket() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%d")
+
+
+@firestore.transactional
+def _rate_limit_txn(transaction, doc_ref, endpoint: str, limit: int, day: str) -> bool:
+    snapshot = doc_ref.get(transaction=transaction)
+    data = snapshot.to_dict() if (snapshot and snapshot.exists) else {}
+    counts = data.get("counts", {}) if data.get("day") == day else {}
+    current = counts.get(endpoint, 0)
+    if current >= limit:
+        return False
+    counts[endpoint] = current + 1
+    transaction.set(doc_ref, {"day": day, "counts": counts, "updatedAt": firestore.SERVER_TIMESTAMP})
+    return True
+
+
+def enforce_rate_limit(uid: Optional[str], endpoint: str, limit: int) -> Optional[https_fn.Response]:
+    """Per-uid daily quota. Returns a 429 response when exceeded, else None.
+
+    Fails OPEN (returns None) on any limiter-internal error — logged loudly — so a
+    Firestore hiccup never takes down the endpoint.
+    """
+    if uid is None or not db:
+        return None
+    try:
+        day = _rate_limit_bucket()
+        doc_ref = db.collection("rateLimits").document(uid)
+        allowed = _rate_limit_txn(db.transaction(), doc_ref, endpoint, limit, day)
+        if not allowed:
+            logger.warning(f"🚦 Rate limit hit: uid={uid} endpoint={endpoint} limit={limit}/day")
+            return _error_response(
+                f"Daily limit reached for this feature ({limit}/day). Please try again tomorrow.",
+                429,
+            )
+        return None
+    except Exception as e:
+        logger.error(f"🚨 Rate limiter error (failing OPEN) endpoint={endpoint}: {e}")
+        return None
+
+
 # MARK: - Main Recommendation Endpoints
 
 @https_fn.on_request()
@@ -52,71 +223,45 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
         "limit": 5
     }
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
-        
+            return _preflight_response()
+
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
-        
-        # Firebase Auth token verification (required in production)
-        auth_header = req.headers.get('Authorization')
-        authenticated_user_uid = None
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
 
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                authenticated_user_uid = decoded_token['uid']
-                logger.info(f"🔐 Authenticated user: {authenticated_user_uid}")
-            except Exception as e:
-                logger.warning(f"⚠️ Auth token verification failed: {e}")
-                if not allow_unauth:
-                    return https_fn.Response(
-                        json.dumps({"error": "Invalid authentication token"}),
-                        status=401,
-                        headers={
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        }
-                    )
-                logger.info("📝 Proceeding as unauthenticated (ALLOW_UNAUTHENTICATED=true)")
-        else:
-            if not allow_unauth:
-                logger.warning("⚠️ No auth token provided, rejecting request")
-                return https_fn.Response(
-                    json.dumps({"error": "Authentication required"}),
-                    status=401,
-                    headers={
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                )
-            logger.info("📝 No auth token provided, proceeding as unauthenticated (ALLOW_UNAUTHENTICATED=true)")
-        
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
+        # Firebase Auth token verification (required in production)
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
+
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
-        
-        user_id = request_data.get('user_id')
-        player_profile = request_data.get('player_profile', {})
+
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        # Token uid is the source of truth for data access (admin SDK bypasses rules).
+        user_id = uid or request_data.get('user_id')
+        player_profile = sanitize_profile(request_data.get('player_profile', {}))
         # Force limit to 1 - only generate one recommendation at a time (v2)
         limit = 1
-        
+
         if not user_id or not player_profile:
             return https_fn.Response("Missing user_id or player_profile", status=400)
-        
+
+        rate_error = enforce_rate_limit(uid, "youtube_recommendations", RATE_LIMIT_LLM)
+        if rate_error:
+            return rate_error
+
         logger.info(f"🎥 Generating single YouTube recommendation for user: {user_id} (v2 - enhanced duplicate detection)")
         
         # Get API keys from environment variables
@@ -157,30 +302,11 @@ def get_youtube_recommendations(req: https_fn.Request) -> https_fn.Response:
         }
         
         logger.info(f"✅ Generated {len(recommendations)} YouTube recommendations for {user_id}")
-        return https_fn.Response(
-            json.dumps(response_data),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
-        
+        return _json_response(response_data, 200)
+
     except Exception as e:
-        logger.error(f"❌ Error in get_youtube_recommendations: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in get_youtube_recommendations [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 @https_fn.on_request(timeout_sec=540)
 def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
@@ -208,51 +334,46 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         }
     }
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
-        
+            return _preflight_response()
+
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
         # Firebase Auth token verification
-        auth_header = req.headers.get('Authorization')
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
-            except Exception as e:
-                if not allow_unauth:
-                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
-        elif not allow_unauth:
-            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
 
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        player_profile = request_data.get("player_profile", {})
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        rate_error = enforce_rate_limit(uid, "custom_drill", RATE_LIMIT_LLM)
+        if rate_error:
+            return rate_error
+
+        player_profile = sanitize_profile(request_data.get("player_profile", {}))
         requirements = request_data.get("requirements", {})
 
         # Weakness precedence: request-specific signals beat static profile.
-        selected_weaknesses = requirements.get("selected_weaknesses") or []
-        skill_description = (requirements.get("skill_description") or "").strip()
-        if selected_weaknesses and selected_weaknesses[0].get("category"):
-            weakness = selected_weaknesses[0]["category"]
+        selected_weaknesses = _clip_list(requirements.get("selected_weaknesses") or [])
+        skill_description = _clip_str((requirements.get("skill_description") or "").strip())
+        if selected_weaknesses and isinstance(selected_weaknesses[0], dict) and selected_weaknesses[0].get("category"):
+            weakness = _clip_str(selected_weaknesses[0]["category"])
         elif player_profile.get("weaknesses"):
-            weakness = player_profile["weaknesses"][0]
+            weakness = _clip_str(player_profile["weaknesses"][0])
         else:
             weakness = "Ball Control"
 
@@ -262,27 +383,20 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             or player_profile.get("experienceLevel")
             or "intermediate"
         )
-        age = int(player_profile.get("age") or 14)
-        position = player_profile.get("position", "midfielder")
-        equipment = requirements.get("equipment", ["ball", "cones"])
-        category = requirements.get("category", "technical")
-        number_of_players = int(requirements.get("number_of_players") or 2)
-        field_size = request_data.get("field_size", "small")
-        recent_drill_names = requirements.get("recent_drill_names") or []
-        playing_style = player_profile.get("playingStyle", "")
-        skill_goals = player_profile.get("skillGoals") or []
+        age = max(4, min(int(player_profile.get("age") or 14), 99))
+        position = _clip_str(player_profile.get("position", "midfielder"))
+        equipment = _clip_list(requirements.get("equipment", ["ball", "cones"]))
+        category = _clip_str(requirements.get("category", "technical"))
+        number_of_players = max(1, min(int(requirements.get("number_of_players") or 2), 22))
+        field_size = _clip_str(request_data.get("field_size", "small"))
+        recent_drill_names = _clip_list(requirements.get("recent_drill_names") or [])
+        playing_style = _clip_str(player_profile.get("playingStyle", ""))
+        skill_goals = _clip_list(player_profile.get("skillGoals") or [])
 
         # Initialize Anthropic client
         anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not anthropic_api_key:
-            return https_fn.Response(
-                json.dumps({"error": "Anthropic API key not configured"}),
-                status=500,
-                headers={
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            )
+            return _error_response("Service temporarily unavailable", 500, request_id)
 
         from anthropic import Anthropic
         client = Anthropic(api_key=anthropic_api_key)
@@ -299,11 +413,7 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
 
         # Validate request data
         if not player_profile or not requirements:
-            return https_fn.Response(
-                json.dumps({"error": "Invalid request", "details": "player_profile and requirements are required"}),
-                status=400,
-                headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-            )
+            return _error_response("player_profile and requirements are required", 400, request_id)
 
         try:
             drill = generate_drill(
@@ -325,12 +435,8 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                 llm_call=_llm_call,
             )
         except DrillGenerationFailed as e:
-            logger.error(f"Drill generation failed: {e}")
-            return https_fn.Response(
-                json.dumps({"error": "Drill generation failed", "details": str(e)}),
-                status=500,
-                headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-            )
+            logger.error(f"Drill generation failed [{request_id}]: {e}")
+            return _error_response("Drill generation failed", 500, request_id)
 
         if "coaching_points" in drill:
             drill["coachingPoints"] = drill.pop("coaching_points")
@@ -347,21 +453,13 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         drill.setdefault("category", "technical")
         drill.setdefault("targetSkills", [weakness])
 
-        return https_fn.Response(
-            json.dumps({
-                "drill": drill,
-                "generated_at": datetime.now().isoformat(),
-            }),
-            status=200,
-            headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-        )
+        return _json_response({
+            "drill": drill,
+            "generated_at": datetime.now().isoformat(),
+        }, 200)
     except Exception as e:
-        logger.exception(f"generate_custom_drill failed: {e}")
-        return https_fn.Response(
-            json.dumps({"error": "Internal error", "details": str(e)}),
-            status=500,
-            headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
-        )
+        logger.exception(f"generate_custom_drill failed [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 def parse_llm_json(content: str) -> Dict:
     """Extract and parse JSON from LLM response, stripping markdown fences"""
@@ -520,9 +618,12 @@ def get_user_training_history(user_id: str, days: int = 30) -> List[Dict]:
         
         logger.info(f"🔍 Fetching training history for user {user_id} from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
         
-        # Query Firestore for training sessions
-        sessions_ref = db.collection('training_sessions')
-        query = sessions_ref.where('playerId', '==', user_id) \
+        # Query Firestore for training sessions. Collection is 'trainingSessions'
+        # (camelCase) to match the rest of the codebase; filter by firebaseUID since
+        # that is the value the caller passes (the token uid). Requires the
+        # firebaseUID+date composite index in firestore.indexes.json.
+        sessions_ref = db.collection('trainingSessions')
+        query = sessions_ref.where('firebaseUID', '==', user_id) \
                            .where('date', '>=', start_date) \
                            .where('date', '<=', end_date) \
                            .order_by('date', direction=firestore.Query.DESCENDING) \
@@ -600,49 +701,45 @@ def get_advanced_recommendations(req: https_fn.Request) -> https_fn.Response:
         "limit": 5
     }
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
-        
+            return _preflight_response()
+
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
         # Firebase Auth token verification
-        auth_header = req.headers.get('Authorization')
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
-            except Exception as e:
-                if not allow_unauth:
-                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
-        elif not allow_unauth:
-            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
 
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        user_id = request_data.get('user_id')
-        player_profile = request_data.get('player_profile', {})
-        candidate_exercises = request_data.get('candidate_exercises', [])
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        rate_error = enforce_rate_limit(uid, "advanced_recommendations", RATE_LIMIT_LIGHTWEIGHT)
+        if rate_error:
+            return rate_error
+
+        # Token uid is the source of truth for data access (admin SDK bypasses rules).
+        user_id = uid or request_data.get('user_id')
+        player_profile = sanitize_profile(request_data.get('player_profile', {}))
+        candidate_exercises = _clip_list(request_data.get('candidate_exercises', []), max_items=50)
         limit = min(request_data.get('limit', 5), 10)  # Cap at 10
-        
+
         if not user_id or not player_profile:
             return https_fn.Response("Missing user_id or player_profile", status=400)
-        
+
         logger.info(f"🧠 Generating advanced recommendations for user: {user_id} (SVD + Collaborative Filtering)")
         
         # Get comprehensive training data from Firestore
@@ -708,30 +805,11 @@ def get_advanced_recommendations(req: https_fn.Request) -> https_fn.Response:
         }
         
         logger.info(f"✅ Generated {len(recommendations)} advanced recommendations for {user_id}")
-        return https_fn.Response(
-            json.dumps(response_data),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
-        
+        return _json_response(response_data, 200)
+
     except Exception as e:
-        logger.error(f"❌ Error in get_advanced_recommendations: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in get_advanced_recommendations [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 def get_collaborative_training_data(limit_users: int = 100) -> List[Dict]:
     """Get training data from multiple users for collaborative filtering"""
@@ -969,53 +1047,51 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
         "target_role": "Midfielder"
     }
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
+            return _preflight_response()
 
         # Parse request
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
         # Firebase Auth token verification
-        auth_header = req.headers.get('Authorization')
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
-            except Exception as e:
-                if not allow_unauth:
-                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
-        elif not allow_unauth:
-            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
 
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        # Extract request parameters
-        user_id = request_data.get('user_id')
-        player_profile = request_data.get('player_profile', {})
-        duration_weeks = request_data.get('duration_weeks', 6)
-        difficulty = request_data.get('difficulty', 'Intermediate')
-        category = request_data.get('category', 'Technical')
-        focus_areas = request_data.get('focus_areas', [])
-        target_role = request_data.get('target_role')
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        rate_error = enforce_rate_limit(uid, "training_plan", RATE_LIMIT_LLM)
+        if rate_error:
+            return rate_error
+
+        # Extract request parameters (token uid authoritative; prompt-bound fields capped)
+        user_id = uid or request_data.get('user_id')
+        player_profile = sanitize_profile(request_data.get('player_profile', {}))
+        try:
+            duration_weeks = max(1, min(int(request_data.get('duration_weeks', 6)), 12))
+        except (TypeError, ValueError):
+            duration_weeks = 6
+        difficulty = _clip_str(request_data.get('difficulty', 'Intermediate'))
+        category = _clip_str(request_data.get('category', 'Technical'))
+        focus_areas = _clip_list(request_data.get('focus_areas', []))
+        target_role = _clip_str(request_data.get('target_role'))
 
         # Schedule preferences (Phase 2)
-        preferred_days = request_data.get('preferred_days', [])
-        rest_days = request_data.get('rest_days', [])
+        preferred_days = _clip_list(request_data.get('preferred_days', []))
+        rest_days = _clip_list(request_data.get('rest_days', []))
 
         if not user_id or not player_profile:
             return https_fn.Response("Missing user_id or player_profile", status=400)
@@ -1099,14 +1175,7 @@ IMPORTANT REQUIREMENTS:
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
 
         if not anthropic_api_key:
-            return https_fn.Response(
-                json.dumps({"error": "Anthropic API key not configured"}),
-                status=500,
-                headers={
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            )
+            return _error_response("Service temporarily unavailable", 500, request_id)
 
         # Call Claude Sonnet
         from anthropic import Anthropic
@@ -1141,30 +1210,11 @@ IMPORTANT REQUIREMENTS:
         logger.info(f"📊 Plan structure: {len(plan_data.get('weeks', []))} weeks")
 
         # Return to app
-        return https_fn.Response(
-            json.dumps(plan_data),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        return _json_response(plan_data, 200)
 
     except Exception as e:
-        logger.error(f"❌ Error in generate_training_plan: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in generate_training_plan [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 
 @https_fn.on_request(timeout_sec=60)
@@ -1173,42 +1223,37 @@ def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
     Generate daily coaching recommendation based on player context.
     Returns focus area, reasoning, recommended drill, tips, and AI insights.
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
+            return _preflight_response()
 
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
-        # Auth verification (same pattern as existing endpoints)
-        auth_header = req.headers.get('Authorization')
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
-            except Exception as e:
-                if not allow_unauth:
-                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
-        elif not allow_unauth:
-            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
+        # Auth verification
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
 
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        player_profile = request_data.get('player_profile', {})
-        recent_sessions = request_data.get('recent_sessions', [])
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        rate_error = enforce_rate_limit(uid, "daily_coaching", RATE_LIMIT_LLM)
+        if rate_error:
+            return rate_error
+
+        player_profile = sanitize_profile(request_data.get('player_profile', {}))
+        recent_sessions = request_data.get('recent_sessions', [])[:20]
         category_balance = request_data.get('category_balance', {})
         active_plan = request_data.get('active_plan', {})
         streak_days = request_data.get('streak_days', 0)
@@ -1219,7 +1264,7 @@ def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
 
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         if not anthropic_api_key:
-            return https_fn.Response(json.dumps({"error": "Anthropic API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+            return _error_response("Service temporarily unavailable", 500, request_id)
 
         from anthropic import Anthropic
         client = Anthropic(api_key=anthropic_api_key)
@@ -1277,30 +1322,11 @@ Return ONLY valid JSON:
         result = parse_llm_json(response.content[0].text)
 
         logger.info(f"✅ Daily coaching generated: focus={result.get('focus_area', '?')}")
-        return https_fn.Response(
-            json.dumps(result),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        return _json_response(result, 200)
 
     except Exception as e:
-        logger.error(f"❌ Error in get_daily_coaching: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in get_daily_coaching [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 
 @https_fn.on_request(timeout_sec=60)
@@ -1308,32 +1334,35 @@ def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
     """
     Review a completed plan week and propose adaptations for the next week.
     """
+    request_id = _new_request_id()
     try:
         if req.method == 'OPTIONS':
-            return https_fn.Response("", status=200, headers={'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'})
+            return _preflight_response()
 
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
+        if request_too_large(req):
+            return _error_response("Request too large", 400)
+
         # Auth verification
-        auth_header = req.headers.get('Authorization')
-        allow_unauth = os.environ.get("ALLOW_UNAUTHENTICATED", "false") == "true"
-        if auth_header and auth_header.startswith('Bearer '):
-            try:
-                id_token = auth_header.split('Bearer ')[1]
-                decoded_token = auth.verify_id_token(id_token)
-                logger.info(f"🔐 Authenticated user: {decoded_token['uid']}")
-            except Exception as e:
-                if not allow_unauth:
-                    return https_fn.Response(json.dumps({"error": "Invalid authentication token"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
-        elif not allow_unauth:
-            return https_fn.Response(json.dumps({"error": "Authentication required"}), status=401, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+        uid, auth_error = verify_request_uid(req)
+        if auth_error:
+            return auth_error
 
         request_data = req.get_json()
         if not request_data:
             return https_fn.Response("Invalid JSON", status=400)
 
-        player_profile = request_data.get('player_profile', {})
+        idor_error = enforce_user_match(request_data, uid)
+        if idor_error:
+            return idor_error
+
+        rate_error = enforce_rate_limit(uid, "plan_adaptation", RATE_LIMIT_LLM)
+        if rate_error:
+            return rate_error
+
+        player_profile = sanitize_profile(request_data.get('player_profile', {}))
         plan_structure = request_data.get('plan_structure', {})
         completed_week = request_data.get('completed_week', {})
         week_number = request_data.get('week_number', 1)
@@ -1342,7 +1371,7 @@ def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
 
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         if not anthropic_api_key:
-            return https_fn.Response(json.dumps({"error": "Anthropic API key not configured"}), status=500, headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'})
+            return _error_response("Service temporarily unavailable", 500, request_id)
 
         from anthropic import Anthropic
         client = Anthropic(api_key=anthropic_api_key)
@@ -1404,30 +1433,11 @@ Return ONLY valid JSON:
         result = parse_llm_json(response.content[0].text)
 
         logger.info(f"✅ Plan adaptation generated: {len(result.get('adaptations', []))} changes proposed")
-        return https_fn.Response(
-            json.dumps(result),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        return _json_response(result, 200)
 
     except Exception as e:
-        logger.error(f"❌ Error in get_plan_adaptation: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in get_plan_adaptation [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 
 @https_fn.on_request(timeout_sec=120)
@@ -1436,30 +1446,19 @@ def delete_account(req: https_fn.Request) -> https_fn.Response:
     Permanently delete a user's account and all associated data.
     Anonymizes community posts, deletes Firestore docs, deletes Firebase Auth user.
     """
+    request_id = _new_request_id()
     try:
         # Handle CORS preflight
         if req.method == 'OPTIONS':
-            return https_fn.Response(
-                "",
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                }
-            )
+            return _preflight_response()
 
         if req.method != 'POST':
             return https_fn.Response("Method not allowed", status=405)
 
-        # Auth verification — REQUIRED, no ALLOW_UNAUTHENTICATED bypass
+        # Auth verification — REQUIRED, no emulator bypass for account deletion.
         auth_header = req.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
-            return https_fn.Response(
-                json.dumps({"error": "Authentication required"}),
-                status=401,
-                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
-            )
+            return _error_response("Authentication required", 401)
 
         try:
             id_token = auth_header.split('Bearer ')[1]
@@ -1467,20 +1466,34 @@ def delete_account(req: https_fn.Request) -> https_fn.Response:
             uid = decoded_token['uid']
             logger.info(f"🗑️ Account deletion requested by user: {uid}")
         except Exception as e:
-            return https_fn.Response(
-                json.dumps({"error": "Invalid authentication token"}),
-                status=401,
-                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
-            )
+            logger.warning(f"⚠️ delete_account token verification failed [{request_id}]: {e}")
+            return _error_response("Invalid authentication token", 401)
 
         global db
         if not db:
             db = firestore.client()
 
-        # Step 1: Anonymize community posts
+        # Collect every player identity owned by this uid. Legacy top-level docs
+        # (playerProfiles/players/trainingSessions/exercises) are keyed by generated
+        # doc IDs and reference the owner via a firebaseUID field and/or a playerId
+        # (Core Data UUID) field, so we need both to find all of the user's data.
+        owned_player_ids = set()
+        owned_profile_refs = []
+        for collection_name in ('playerProfiles', 'players'):
+            try:
+                for doc in db.collection(collection_name).where('firebaseUID', '==', uid).stream():
+                    owned_profile_refs.append(doc.reference)
+                    owned_player_ids.add(doc.id)
+                    pid = doc.to_dict().get('playerId')
+                    if pid:
+                        owned_player_ids.add(pid)
+            except Exception as e:
+                logger.warning(f"⚠️ Error querying {collection_name} by firebaseUID [{request_id}]: {e}")
+        owned_player_ids.discard(uid)  # uid-keyed docs handled separately below
+
+        # Step 1: Anonymize community posts and comments authored by this user.
         try:
-            posts_ref = db.collection('communityPosts').where('authorID', '==', uid)
-            posts = posts_ref.get()
+            posts = db.collection('communityPosts').where('authorID', '==', uid).get()
             for post in posts:
                 post.reference.update({
                     'authorID': 'deleted',
@@ -1490,71 +1503,93 @@ def delete_account(req: https_fn.Request) -> https_fn.Response:
                 })
             logger.info(f"📝 Anonymized {len(posts)} community posts")
         except Exception as e:
-            logger.warning(f"⚠️ Error anonymizing posts: {e}")
+            logger.warning(f"⚠️ Error anonymizing posts [{request_id}]: {e}")
 
-        # Step 2: Delete user-scoped Firestore documents
-        collections_to_delete = [
-            'playerProfiles',
-            'players',
-            'mlRecommendations',
-            'playerGoals',
-            'recommendationFeedback',
-            'cloudSyncStatus'
-        ]
+        try:
+            comments = db.collection_group('comments').where('authorID', '==', uid).get()
+            for comment in comments:
+                comment.reference.update({'authorID': 'deleted', 'authorName': 'Deleted User'})
+            logger.info(f"📝 Anonymized {len(comments)} community comments")
+        except Exception as e:
+            logger.warning(f"⚠️ Error anonymizing comments [{request_id}]: {e}")
 
-        for collection_name in collections_to_delete:
+        # Step 2: Delete uid-keyed top-level documents.
+        for collection_name in (
+            'playerProfiles', 'players', 'mlRecommendations',
+            'playerGoals', 'recommendationFeedback', 'cloudSyncStatus',
+        ):
             try:
-                doc_ref = db.collection(collection_name).document(uid)
-                doc_ref.delete()
+                db.collection(collection_name).document(uid).delete()
                 logger.info(f"🗑️ Deleted {collection_name}/{uid}")
             except Exception as e:
-                logger.warning(f"⚠️ Error deleting {collection_name}/{uid}: {e}")
+                logger.warning(f"⚠️ Error deleting {collection_name}/{uid} [{request_id}]: {e}")
 
-        # Step 3: Delete /users/{uid} and all subcollections
+        # Step 3: Delete legacy profile docs found via firebaseUID (doc ID != uid).
+        for ref in owned_profile_refs:
+            try:
+                ref.delete()
+            except Exception as e:
+                logger.warning(f"⚠️ Error deleting profile doc {ref.path} [{request_id}]: {e}")
+
+        # Step 4: Batch-delete owned data in top-level collections keyed by
+        # generated IDs, matched by firebaseUID and by each owned playerId.
+        for collection_name in ('trainingSessions', 'exercises'):
+            try:
+                n = _batch_delete_query(db.collection(collection_name).where('firebaseUID', '==', uid))
+                for pid in owned_player_ids:
+                    n += _batch_delete_query(db.collection(collection_name).where('playerId', '==', pid))
+                logger.info(f"🗑️ Deleted {n} docs from {collection_name}")
+            except Exception as e:
+                logger.warning(f"⚠️ Error deleting {collection_name} [{request_id}]: {e}")
+
+        # Step 5: Delete user-authored community content.
         try:
-            user_doc_ref = db.collection('users').document(uid)
-            _delete_document_and_subcollections(user_doc_ref)
+            n = _batch_delete_query(db.collection('sharedDrills').where('authorID', '==', uid))
+            logger.info(f"🗑️ Deleted {n} sharedDrills")
+        except Exception as e:
+            logger.warning(f"⚠️ Error deleting sharedDrills [{request_id}]: {e}")
+
+        try:
+            n = _batch_delete_query(db.collection('communityPlans').where('contributorUID', '==', uid))
+            logger.info(f"🗑️ Deleted {n} communityPlans")
+        except Exception as e:
+            logger.warning(f"⚠️ Error deleting communityPlans [{request_id}]: {e}")
+
+        # Step 6: Delete ML analytics keyed by owned playerIds (no firebaseUID field).
+        for pid in owned_player_ids:
+            try:
+                _batch_delete_query(db.collection('mlAnalytics').where('playerId', '==', pid))
+            except Exception as e:
+                logger.warning(f"⚠️ Error deleting mlAnalytics for playerId={pid} [{request_id}]: {e}")
+
+        # Step 7: Delete the user's rate-limit counter.
+        try:
+            db.collection('rateLimits').document(uid).delete()
+        except Exception as e:
+            logger.warning(f"⚠️ Error deleting rateLimits/{uid} [{request_id}]: {e}")
+
+        # Step 8: Delete /users/{uid} and all subcollections.
+        try:
+            _delete_document_and_subcollections(db.collection('users').document(uid))
             logger.info(f"🗑️ Deleted users/{uid} and subcollections")
         except Exception as e:
-            logger.warning(f"⚠️ Error deleting users/{uid}: {e}")
+            logger.warning(f"⚠️ Error deleting users/{uid} [{request_id}]: {e}")
 
-        # Step 4: Delete Firebase Auth user
+        # Step 9: Delete Firebase Auth user LAST — if Firestore cleanup above failed,
+        # the account still exists so the client can retry.
         try:
             auth.delete_user(uid)
             logger.info(f"🗑️ Deleted Firebase Auth user: {uid}")
         except Exception as e:
-            logger.error(f"❌ Error deleting auth user: {e}")
-            return https_fn.Response(
-                json.dumps({"error": f"Failed to delete auth user: {str(e)}"}),
-                status=500,
-                headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
-            )
+            logger.exception(f"❌ Error deleting auth user [{request_id}]: {e}")
+            return _error_response("Failed to delete account", 500, request_id)
 
         logger.info(f"✅ Account deletion complete for user: {uid}")
-        return https_fn.Response(
-            json.dumps({"success": True}),
-            status=200,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        return _json_response({"success": True}, 200)
 
     except Exception as e:
-        logger.error(f"❌ Error in delete_account: {str(e)}")
-        logger.error(traceback.format_exc())
-        return https_fn.Response(
-            json.dumps({"error": str(e)}),
-            status=500,
-            headers={
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
-        )
+        logger.exception(f"❌ Error in delete_account [{request_id}]: {e}")
+        return _error_response("Internal error", 500, request_id)
 
 
 def _delete_document_and_subcollections(doc_ref):
@@ -1563,3 +1598,19 @@ def _delete_document_and_subcollections(doc_ref):
         for doc in collection_ref.get():
             _delete_document_and_subcollections(doc.reference)
     doc_ref.delete()
+
+
+def _batch_delete_query(query, batch_size: int = 400) -> int:
+    """Delete every document matching a query in batches. Returns the count deleted."""
+    deleted = 0
+    docs = list(query.limit(batch_size).stream())
+    while docs:
+        batch = db.batch()
+        for doc in docs:
+            batch.delete(doc.reference)
+        batch.commit()
+        deleted += len(docs)
+        if len(docs) < batch_size:
+            break
+        docs = list(query.limit(batch_size).stream())
+    return deleted

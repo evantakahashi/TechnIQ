@@ -1,4 +1,22 @@
 {
-  "indexes": [],
-  "fieldOverrides": []
+  "indexes": [
+    {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "firebaseUID", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "comments",
+      "fieldPath": "authorID",
+      "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "ASCENDING" }
+      ]
+    }
+  ]
 }

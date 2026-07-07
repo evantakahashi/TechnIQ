@@ -1,15 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---- Community engagement helpers ----
+    // A non-author may only touch like/report/comment counters, and each change
+    // must be self-consistent: a counter moves by exactly ±1 only when the caller
+    // adds/removes their OWN uid in the matching array. This blocks author
+    // impersonation, arbitrary like counts, and wiping likedBy/reportedBy.
+    function communityEngagementOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['likesCount', 'likedBy', 'reportCount', 'reportedBy', 'commentsCount'])
+             && likeChangeValid()
+             && reportChangeValid(resource.data.reportCount, request.resource.data.reportCount,
+                                  resource.data.reportedBy, request.resource.data.reportedBy)
+             && commentCountChangeValid();
+    }
+
+    function likeChangeValid() {
+      return
+        (request.resource.data.likesCount == resource.data.likesCount
+          && request.resource.data.likedBy == resource.data.likedBy)
+        || (request.resource.data.likesCount == resource.data.likesCount + 1
+          && !(request.auth.uid in resource.data.likedBy)
+          && request.auth.uid in request.resource.data.likedBy)
+        || (request.resource.data.likesCount == resource.data.likesCount - 1
+          && request.auth.uid in resource.data.likedBy
+          && !(request.auth.uid in request.resource.data.likedBy));
+    }
+
+    function reportChangeValid(oldCount, newCount, oldList, newList) {
+      return (newCount == oldCount && newList == oldList)
+          || (newCount == oldCount + 1
+              && !(request.auth.uid in oldList)
+              && request.auth.uid in newList);
+    }
+
+    function commentCountChangeValid() {
+      return request.resource.data.commentsCount == resource.data.commentsCount
+          || request.resource.data.commentsCount == resource.data.commentsCount + 1;
+    }
+
+    // Non-author updates to a shared drill: save/report engagement only.
+    function drillEngagementOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['saveCount', 'savedBy', 'reportCount', 'reportedBy'])
+             && saveChangeValid()
+             && reportChangeValid(resource.data.reportCount, request.resource.data.reportCount,
+                                  resource.data.reportedBy, request.resource.data.reportedBy);
+    }
+
+    function saveChangeValid() {
+      return
+        (request.resource.data.saveCount == resource.data.saveCount
+          && request.resource.data.savedBy == resource.data.savedBy)
+        || (request.resource.data.saveCount == resource.data.saveCount + 1
+          && !(request.auth.uid in resource.data.savedBy)
+          && request.auth.uid in request.resource.data.savedBy);
+    }
+
+    // Collection-group read for leaderboards: playerProfiles docs are readable by
+    // any signed-in user wherever they live (collectionGroup queries require this).
+    match /{path=**}/playerProfiles/{docId} {
+      allow read: if request.auth != null;
+    }
+
     // Allow authenticated users to read and write their own data
     match /playerProfiles/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     match /players/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
@@ -29,65 +92,93 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
-    
-    // Allow authenticated users to read and write training sessions they own
+
+    // Top-level training sessions. Create must stamp the caller's own firebaseUID
+    // (resource does not exist yet on create, so read/update/delete use resource.data).
     match /trainingSessions/{sessionId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.firebaseUID == request.auth.uid || 
-         request.auth.uid in resource.data.allowedUsers);
+      allow create: if request.auth != null &&
+        request.resource.data.firebaseUID == request.auth.uid;
+      allow read, update, delete: if request.auth != null &&
+        (resource.data.firebaseUID == request.auth.uid ||
+         (resource.data.allowedUsers is list && request.auth.uid in resource.data.allowedUsers));
     }
-    
-    // Allow authenticated users to read and write exercises they own
+
+    // Top-level exercises. Same split as trainingSessions.
     match /exercises/{exerciseId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.firebaseUID == request.auth.uid || 
-         request.auth.uid in resource.data.allowedUsers);
+      allow create: if request.auth != null &&
+        request.resource.data.firebaseUID == request.auth.uid;
+      allow read, update, delete: if request.auth != null &&
+        (resource.data.firebaseUID == request.auth.uid ||
+         (resource.data.allowedUsers is list && request.auth.uid in resource.data.allowedUsers));
     }
-    
+
     // Allow Firebase Functions to read/write all documents (using admin SDK)
     // This rule is for client access only - admin SDK bypasses these rules
-    
+
     // Allow authenticated users to read their own ML recommendations
     match /mlRecommendations/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Allow authenticated users to read their own player goals
     match /playerGoals/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Allow authenticated users to read their own feedback
     match /recommendationFeedback/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Allow authenticated users to read their own sync status
     match /cloudSyncStatus/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Community posts - any authenticated user can read, author can write
+
+    // Community posts - any authenticated user can read, author owns writes.
     match /communityPosts/{postId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      // Author can update anything; non-authors can only update like/report fields
+      // Author cannot be impersonated on create.
+      allow create: if request.auth != null &&
+        request.resource.data.authorID == request.auth.uid;
+      // Author edits freely; everyone else is limited to valid engagement updates.
       allow update: if request.auth != null && (
         resource.data.authorID == request.auth.uid ||
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['likesCount', 'likedBy', 'reportCount', 'reportedBy'])
+        communityEngagementOnly()
       );
       allow delete: if request.auth != null && resource.data.authorID == request.auth.uid;
 
       // Comments subcollection
       match /comments/{commentId} {
         allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        // Allow updating report fields only
-        allow update: if request.auth != null &&
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['reportCount', 'reportedBy']);
+        allow create: if request.auth != null &&
+          request.resource.data.authorID == request.auth.uid;
+        // Non-authors may only add a single report of themselves.
+        allow update: if request.auth != null && (
+          resource.data.authorID == request.auth.uid || (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['reportCount', 'reportedBy']) &&
+            reportChangeValid(resource.data.reportCount, request.resource.data.reportCount,
+                              resource.data.reportedBy, request.resource.data.reportedBy)
+          )
+        );
+        allow delete: if request.auth != null && resource.data.authorID == request.auth.uid;
       }
+    }
+
+    // Shared drills marketplace - readable community-wide; author owns writes;
+    // non-authors limited to save/report engagement (increment-only, own uid).
+    match /sharedDrills/{drillId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.authorID == request.auth.uid &&
+        request.resource.data.saveCount == 0 &&
+        request.resource.data.reportCount == 0;
+      allow update: if request.auth != null && (
+        resource.data.authorID == request.auth.uid ||
+        drillEngagementOnly()
+      );
+      allow delete: if request.auth != null && resource.data.authorID == request.auth.uid;
     }
 
     // Reports collection - authenticated users can create

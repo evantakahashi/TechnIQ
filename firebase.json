@@ -14,7 +14,11 @@
         "firebase-debug.*.log",
         "*.local",
         "venv",
-        ".venv"
+        ".venv",
+        ".env.yaml",
+        ".env*",
+        "test_*.py",
+        "__pycache__"
       ],
       "runtime": "python312"
     }

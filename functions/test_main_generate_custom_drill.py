@@ -15,8 +15,9 @@ from firebase_functions import https_fn
 
 
 @pytest.fixture(autouse=True)
-def allow_unauth(monkeypatch):
-    monkeypatch.setenv("ALLOW_UNAUTHENTICATED", "true")
+def emulator_env(monkeypatch):
+    # Auth bypass is now gated on the Functions emulator flag, not a deployable env var.
+    monkeypatch.setenv("FUNCTIONS_EMULATOR", "true")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
 
 

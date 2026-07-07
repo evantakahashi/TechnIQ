@@ -61,3 +61,6 @@ node_modules/
 # Temporary files
 *.tmp
 *.temp
+# Secrets — never upload
+.env.yaml
+.env*
