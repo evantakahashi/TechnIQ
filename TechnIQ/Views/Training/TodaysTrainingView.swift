@@ -16,6 +16,12 @@ struct TodaysTrainingView: View {
     @State private var showingActiveTraining = false
     @State private var selectedPlanSession: PlanSession?
     @State private var activeTrainingExercises: [Exercise] = []
+    @State private var showingSkipConfirmation = false
+    @State private var refreshedPlan: TrainingPlanModel?
+
+    private var displayPlan: TrainingPlanModel {
+        refreshedPlan ?? activePlan
+    }
 
     var body: some View {
         ZStack {
@@ -47,6 +53,12 @@ struct TodaysTrainingView: View {
         .onAppear {
             loadTodaysSessions()
         }
+        .onChange(of: showingActiveTraining) { _, isShowing in
+            if !isShowing { loadTodaysSessions() }
+        }
+        .onChange(of: showingNewSession) { _, isShowing in
+            if !isShowing { loadTodaysSessions() }
+        }
         .sheet(isPresented: $showingNewSession) {
             if let planSession = selectedPlanSession {
                 NewSessionView(
@@ -59,6 +71,14 @@ struct TodaysTrainingView: View {
             ActiveTrainingView(exercises: activeTrainingExercises)
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(SubscriptionManager.shared)
+        }
+        .confirmationDialog("Skip today's training?", isPresented: $showingSkipConfirmation, titleVisibility: .visible) {
+            Button("Skip Day", role: .destructive) {
+                skipCurrentDay()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("You can't undo this. Your plan will advance past today's sessions.")
         }
     }
 
@@ -92,7 +112,7 @@ struct TodaysTrainingView: View {
                 // Skip Day button
                 if currentDay != nil && !planComplete {
                     Button {
-                        skipCurrentDay()
+                        showingSkipConfirmation = true
                     } label: {
                         HStack(spacing: DesignSystem.Spacing.xs) {
                             Image(systemName: "forward.fill")
@@ -123,17 +143,17 @@ struct TodaysTrainingView: View {
 
                     Spacer()
 
-                    Text("\(Int(activePlan.progressPercentage))%")
+                    Text("\(Int(displayPlan.progressPercentage))%")
                         .font(DesignSystem.Typography.titleSmall)
                         .fontWeight(.bold)
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
 
-                ProgressView(value: activePlan.progressPercentage / 100.0)
+                ProgressView(value: displayPlan.progressPercentage / 100.0)
                     .tint(DesignSystem.Colors.primaryGreen)
 
                 HStack {
-                    Text("\(activePlan.completedSessions) of \(activePlan.totalSessions) sessions complete")
+                    Text("\(displayPlan.completedSessions) of \(displayPlan.totalSessions) sessions complete")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
@@ -221,11 +241,13 @@ struct TodaysTrainingView: View {
     // MARK: - Helper Functions
 
     private func loadTodaysSessions() {
-        if let (week, day) = TrainingPlanService.shared.getCurrentDay(for: activePlan) {
+        let plan = TrainingPlanService.shared.fetchActivePlan(for: player) ?? activePlan
+        refreshedPlan = plan
+        if let (week, day) = TrainingPlanService.shared.getCurrentDay(for: plan) {
             currentWeek = week
             currentDay = day
             planComplete = false
-            todaysSessions = TrainingPlanService.shared.getTodaysSessions(for: activePlan)
+            todaysSessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
         } else {
             currentDay = nil
             planComplete = true
@@ -245,7 +267,7 @@ struct TodaysTrainingView: View {
 struct PlanSessionCard: View {
     @Environment(\.managedObjectContext) private var viewContext
 
-    let session: PlanSession
+    @ObservedObject var session: PlanSession
     let onStartSession: () -> Void
 
     var body: some View {

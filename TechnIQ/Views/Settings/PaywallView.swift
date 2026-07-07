@@ -162,7 +162,11 @@ struct PaywallView: View {
     // MARK: - Pricing
     private var pricingSection: some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
-            if subscriptionManager.hasTrialOffer {
+            if !subscriptionManager.isProductAvailable {
+                Text(subscriptionManager.isLoading ? "Loading price…" : "Pricing unavailable")
+                    .font(DesignSystem.Typography.headlineMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+            } else if subscriptionManager.hasTrialOffer {
                 Text("7 days free, then \(subscriptionManager.displayPrice)/\(subscriptionManager.subscriptionPeriod)")
                     .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -187,7 +191,7 @@ struct PaywallView: View {
         ) {
             Task { await subscriptionManager.purchase() }
         }
-        .disabled(subscriptionManager.isLoading)
+        .disabled(subscriptionManager.isLoading || !subscriptionManager.isProductAvailable)
         .overlay {
             if subscriptionManager.isLoading {
                 ProgressView()

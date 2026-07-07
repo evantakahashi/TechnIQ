@@ -6,6 +6,9 @@ struct TrainHubView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @FetchRequest var players: FetchedResults<Player>
 
+    @State private var showingProfileCreation = false
+    @State private var isOnboardingComplete = false
+
     init() {
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
@@ -24,7 +27,7 @@ struct TrainHubView: View {
             if let player = currentPlayer {
                 ExerciseLibraryView(player: player)
             } else {
-                ProgressView("Loading...")
+                noProfileState
             }
         }
         .coachMark(.train)
@@ -42,6 +45,29 @@ struct TrainHubView: View {
         }
         .onAppear {
             updatePlayersFilter()
+        }
+        .sheet(isPresented: $showingProfileCreation) {
+            UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
+        }
+        .onChange(of: isOnboardingComplete) { _, completed in
+            if completed {
+                showingProfileCreation = false
+                isOnboardingComplete = false
+                updatePlayersFilter()
+            }
+        }
+    }
+
+    private var noProfileState: some View {
+        ContentUnavailableView {
+            Label("No Player Profile", systemImage: "person.crop.circle.badge.plus")
+        } description: {
+            Text("Create your player profile to browse drills and start training.")
+        } actions: {
+            ModernButton("Create Profile", icon: "person.crop.circle.badge.plus", style: .primary) {
+                showingProfileCreation = true
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
         }
     }
 

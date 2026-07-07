@@ -8,6 +8,10 @@ struct OnboardingPaywallView: View {
 
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var showFreeConfirmation = false
+    @State private var displayProduct: Product?
+    @State private var productLoadComplete = false
+
+    private let proProductID = "com.techniq.pro.monthly"
 
     var body: some View {
         ScrollView {
@@ -54,7 +58,11 @@ struct OnboardingPaywallView: View {
             .padding(.vertical, DesignSystem.Spacing.xl)
         }
         .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
-        .task { await subscriptionManager.loadProduct() }
+        .task {
+            await subscriptionManager.loadProduct()
+            displayProduct = try? await Product.products(for: [proProductID]).first
+            productLoadComplete = true
+        }
         .sheet(isPresented: $showFreeConfirmation) {
             freeConfirmationSheet
                 .presentationDetents([.medium])
@@ -199,19 +207,37 @@ struct OnboardingPaywallView: View {
 
     private var pricingSection: some View {
         VStack(spacing: DesignSystem.Spacing.xs) {
-            if subscriptionManager.hasTrialOffer {
-                Text("7 days free, then \(subscriptionManager.displayPrice)/\(subscriptionManager.subscriptionPeriod)")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            } else {
-                Text("\(subscriptionManager.displayPrice)/\(subscriptionManager.subscriptionPeriod)")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
+            if let product = displayProduct {
+                if subscriptionManager.hasTrialOffer {
+                    Text("7 days free, then \(product.displayPrice)/\(subscriptionManager.subscriptionPeriod)")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                } else {
+                    Text("\(product.displayPrice)/\(subscriptionManager.subscriptionPeriod)")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                }
 
-            Text("Cancel anytime")
-                .font(DesignSystem.Typography.bodySmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                Text("Cancel anytime")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+            } else if !productLoadComplete {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    ProgressView()
+                        .tint(DesignSystem.Colors.textSecondary)
+                    Text("Loading price…")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+            } else {
+                Text("Pricing unavailable")
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                Text("Check your connection and try again")
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.textTertiary)
+            }
         }
     }
 
@@ -231,8 +257,8 @@ struct OnboardingPaywallView: View {
                     }
                 }
             }
-            .disabled(subscriptionManager.isLoading)
-            .opacity(subscriptionManager.isLoading ? 0.6 : 1.0)
+            .disabled(subscriptionManager.isLoading || displayProduct == nil)
+            .opacity((subscriptionManager.isLoading || displayProduct == nil) ? 0.6 : 1.0)
 
             if subscriptionManager.isLoading {
                 ProgressView()
@@ -251,7 +277,7 @@ struct OnboardingPaywallView: View {
                 .multilineTextAlignment(.center)
 
             HStack(spacing: DesignSystem.Spacing.md) {
-                Link("Terms of Use", destination: URL(string: "https://techniq.app/terms")!)
+                Link("Terms of Use", destination: URL(string: "https://techniq-b9a27.web.app/terms-of-service.html")!)
                     .font(DesignSystem.Typography.labelSmall)
                     .foregroundColor(DesignSystem.Colors.textTertiary)
 
@@ -259,7 +285,7 @@ struct OnboardingPaywallView: View {
                     .font(DesignSystem.Typography.labelSmall)
                     .foregroundColor(DesignSystem.Colors.textTertiary)
 
-                Link("Privacy Policy", destination: URL(string: "https://techniq.app/privacy")!)
+                Link("Privacy Policy", destination: URL(string: "https://techniq-b9a27.web.app/privacy-policy.html")!)
                     .font(DesignSystem.Typography.labelSmall)
                     .foregroundColor(DesignSystem.Colors.textTertiary)
             }

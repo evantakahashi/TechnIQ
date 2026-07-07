@@ -58,7 +58,16 @@ struct DashboardView: View {
     @State private var quickStartExercises: [Exercise] = []
     @State private var aiDrillExercise: Exercise?
     @State private var showingAIDrill = false
-    
+
+    @State private var showingProgress = false
+
+    @State private var recommendationsState: RecommendationsState = .loading
+    @State private var recommendationsRetryToken = 0
+
+    private enum RecommendationsState: Equatable {
+        case loading, loaded, failed
+    }
+
     var currentPlayer: Player? {
         players.first
     }
@@ -113,9 +122,17 @@ struct DashboardView: View {
         .sheet(isPresented: $showingProfileCreation) {
             UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
         }
+        .sheet(isPresented: $showingProgress) {
+            if let player = currentPlayer {
+                NavigationView {
+                    PlayerProgressView(player: player)
+                }
+            }
+        }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {
                 QuickDrillSheet(player: player, onGenerated: { exercise in
+                    guard showingQuickDrill else { return }
                     showingQuickDrill = false
                     quickDrillWeakness = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -131,7 +148,7 @@ struct DashboardView: View {
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
         }
-        .onChange(of: isOnboardingComplete) { completed in
+        .onChange(of: isOnboardingComplete) { _, completed in
             if completed {
                 showingProfileCreation = false
                 isOnboardingComplete = false
@@ -153,7 +170,7 @@ struct DashboardView: View {
         .onChange(of: authManager.userUID) {
             updateDataFilters()
         }
-        .onChange(of: players.count) { count in
+        .onChange(of: players.count) { _, count in
             if count == 0 && !authManager.userUID.isEmpty {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     updateDataFilters()
@@ -369,7 +386,7 @@ struct DashboardView: View {
                         launchAIDrill(coaching.recommendedDrill, for: player)
                     },
                     onBrowseLibrary: {
-                        selectedTab = 2
+                        selectedTab = 1
                     }
                 )
             }
@@ -621,9 +638,7 @@ struct DashboardView: View {
                     icon: DesignSystem.Icons.stats,
                     color: DesignSystem.Colors.secondaryBlue
                 ) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        selectedTab = 3 // Navigate to Progress tab
-                    }
+                    showingProgress = true
                 }
                 
                 ModernActionCard(
@@ -825,7 +840,8 @@ struct DashboardView: View {
 
             if subscriptionManager.isPro {
                 ModernCard {
-                    if smartRecommendations.isEmpty {
+                    switch recommendationsState {
+                    case .loading:
                         VStack(spacing: DesignSystem.Spacing.md) {
                             SoccerBallSpinner()
                             Text("Analyzing your training patterns...")
@@ -833,23 +849,58 @@ struct DashboardView: View {
                                 .foregroundColor(DesignSystem.Colors.textSecondary)
                         }
                         .padding(.vertical, DesignSystem.Spacing.lg)
-                    } else {
+                    case .failed:
                         VStack(spacing: DesignSystem.Spacing.md) {
-                            ForEach(Array(smartRecommendations.enumerated()), id: \.offset) { index, recommendation in
-                                SmartRecommendationRow(
-                                    recommendation: recommendation
-                                )
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 32))
+                                .foregroundColor(DesignSystem.Colors.bloodOrange)
+                            Text("Couldn't load recommendations")
+                                .font(DesignSystem.Typography.titleSmall)
+                                .foregroundColor(DesignSystem.Colors.textPrimary)
+                            Text("Check your connection and try again.")
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                                .multilineTextAlignment(.center)
+                            ModernButton("Retry", icon: "arrow.clockwise", style: .secondary) {
+                                recommendationsState = .loading
+                                recommendationsRetryToken += 1
+                            }
+                        }
+                        .padding(.vertical, DesignSystem.Spacing.lg)
+                    case .loaded:
+                        if smartRecommendations.isEmpty {
+                            VStack(spacing: DesignSystem.Spacing.md) {
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                Text("Train more to unlock recommendations")
+                                    .font(DesignSystem.Typography.titleSmall)
+                                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                                    .multilineTextAlignment(.center)
+                                Text("Complete a few sessions and we'll tailor drills to your game.")
+                                    .font(DesignSystem.Typography.bodySmall)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, DesignSystem.Spacing.lg)
+                        } else {
+                            VStack(spacing: DesignSystem.Spacing.md) {
+                                ForEach(Array(smartRecommendations.enumerated()), id: \.offset) { index, recommendation in
+                                    SmartRecommendationRow(
+                                        recommendation: recommendation
+                                    )
 
-                                if index < smartRecommendations.count - 1 {
-                                    Divider()
-                                        .background(DesignSystem.Colors.neutral200)
+                                    if index < smartRecommendations.count - 1 {
+                                        Divider()
+                                            .background(DesignSystem.Colors.neutral200)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                .onAppear {
-                    loadSmartRecommendations(for: player)
+                .task(id: recommendationsRetryToken) {
+                    await loadSmartRecommendations(for: player)
                 }
             } else {
                 ProLockedCardView(feature: .mlRecommendations)
@@ -869,23 +920,27 @@ struct DashboardView: View {
         return sessions.filter { $0.date ?? Date.distantPast >= weekAgo }.count
     }
     
-    private func loadSmartRecommendations(for player: Player) {
-        Task {
-            // Clean up any duplicate exercises first
-            YouTubeService.shared.removeDuplicateExercises(for: player)
-            
-            do {
-                let mlRecs = try await cloudMLService.getCloudRecommendations(for: player, limit: 3)
-                await MainActor.run {
-                    mlRecommendations = mlRecs
-                    let recommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
-                    smartRecommendations = recommendations
-                }
-            } catch {
-                let recommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
-                await MainActor.run {
-                    smartRecommendations = recommendations
-                }
+    @MainActor
+    private func loadSmartRecommendations(for player: Player) async {
+        if recommendationsState == .loaded { return }
+
+        // Clean up any duplicate exercises first
+        YouTubeService.shared.removeDuplicateExercises(for: player)
+
+        do {
+            let mlRecs = try await cloudMLService.getCloudRecommendations(for: player, limit: 3)
+            if Task.isCancelled { return }
+            mlRecommendations = mlRecs
+            smartRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
+            recommendationsState = .loaded
+        } catch {
+            if Task.isCancelled { return }
+            let recommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
+            if recommendations.isEmpty {
+                recommendationsState = .failed
+            } else {
+                smartRecommendations = recommendations
+                recommendationsState = .loaded
             }
         }
     }

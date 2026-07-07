@@ -11,7 +11,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authManager: AuthenticationManager
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
-    @AppStorage("appColorScheme") private var appColorScheme: String = "system"
     @State private var showingPaywall = false
     @State private var showingDeleteAlert = false
     @State private var showingDeleteConfirmation = false
@@ -73,18 +72,6 @@ struct SettingsView: View {
                     .disabled(subscriptionManager.isLoading)
                 } header: {
                     Text("Subscription")
-                }
-
-                Section {
-                    Picker("Appearance", selection: $appColorScheme) {
-                        Text("System").tag("system")
-                        Text("Light").tag("light")
-                        Text("Dark").tag("dark")
-                    }
-                } header: {
-                    Text("Appearance")
-                } footer: {
-                    Text("Choose how TechnIQ looks. System follows your device settings.")
                 }
 
                 Section {
@@ -240,17 +227,6 @@ struct SettingsView: View {
                     showingDeleteError = true
                 }
             }
-        }
-    }
-}
-
-// MARK: - Color Scheme Helper
-extension String {
-    var toColorScheme: ColorScheme? {
-        switch self {
-        case "light": return .light
-        case "dark": return .dark
-        default: return nil
         }
     }
 }

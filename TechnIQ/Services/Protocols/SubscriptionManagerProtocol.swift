@@ -7,6 +7,7 @@ protocol SubscriptionManagerProtocol: AnyObject {
     var isPro: Bool { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }
+    var isProductAvailable: Bool { get }
     var displayPrice: String { get }
     var subscriptionPeriod: String { get }
     var hasTrialOffer: Bool { get }

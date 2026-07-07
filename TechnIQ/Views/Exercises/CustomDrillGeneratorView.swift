@@ -10,6 +10,8 @@ struct CustomDrillGeneratorView: View {
     @State private var showingWarnings = false
     @State private var validationWarnings: [String] = []
     @State private var generatedExercise: Exercise?
+    @State private var errorMessage = ""
+    @State private var showingError = false
     
     var body: some View {
         NavigationView {
@@ -65,6 +67,14 @@ struct CustomDrillGeneratorView: View {
             }
         } message: {
             Text(validationWarnings.joined(separator: "\n\n"))
+        }
+        .alert("Generation Failed", isPresented: $showingError) {
+            Button("Retry") {
+                generateDrill()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text(errorMessage.isEmpty ? "Something went wrong creating your drill. Please try again." : errorMessage)
         }
     }
     
@@ -245,7 +255,7 @@ struct CustomDrillGeneratorView: View {
                         get: { Double(request.numberOfPlayers) },
                         set: { request.numberOfPlayers = Int($0) }
                     ), in: 1...6, step: 1)
-                    .accentColor(DesignSystem.Colors.primaryGreen)
+                    .tint(DesignSystem.Colors.primaryGreen)
 
                     HStack {
                         Text("1")
@@ -350,8 +360,7 @@ struct CustomDrillGeneratorView: View {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 60))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .scaleEffect(1.0 + sin(Date().timeIntervalSince1970 * 3) * 0.1)
-                    .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: Date())
+                    .pulseAnimation()
                 
                 Text("AI is analyzing your requirements and creating a personalized drill...")
                     .font(DesignSystem.Typography.bodySmall)
@@ -388,6 +397,8 @@ struct CustomDrillGeneratorView: View {
                 #if DEBUG
                 print("Failed to generate drill: \(error)")
                 #endif
+                errorMessage = error.localizedDescription
+                showingError = true
             }
         }
     }

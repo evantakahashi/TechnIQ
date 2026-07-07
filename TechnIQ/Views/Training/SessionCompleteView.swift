@@ -11,7 +11,6 @@ struct SessionCompleteView: View {
 
     // Task 7: Training summary data
     var exercises: [Exercise] = []
-    var onGenerateAnotherDrill: (() -> Void)? = nil
 
     @State private var animateXP = false
     @State private var animateLevel = false
@@ -76,11 +75,6 @@ struct SessionCompleteView: View {
                             ProLockedCardView(feature: .weeklyAdaptation)
                                 .padding(.horizontal, DesignSystem.Spacing.md)
                         }
-                    }
-
-                    // Generate Another Drill shortcut
-                    if let onGenerate = onGenerateAnotherDrill {
-                        generateAnotherDrillButton(action: onGenerate)
                     }
 
                     // Continue Button
@@ -476,25 +470,6 @@ struct SessionCompleteView: View {
             }
         }
         return Array(categories).sorted()
-    }
-
-    // MARK: - Generate Another Drill Button
-
-    private func generateAnotherDrillButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                Image(systemName: "sparkles")
-                    .foregroundColor(DesignSystem.Colors.accentYellow)
-                Text("Generate Another Drill")
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(DesignSystem.Colors.accentYellow.opacity(0.12))
-            .cornerRadius(DesignSystem.CornerRadius.button)
-        }
-        .opacity(animateAchievements ? 1 : 0)
     }
 
     // MARK: - Continue Button

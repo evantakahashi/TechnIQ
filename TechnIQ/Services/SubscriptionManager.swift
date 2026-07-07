@@ -122,6 +122,10 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
 
     // MARK: - Product Info
 
+    var isProductAvailable: Bool {
+        product != nil
+    }
+
     var displayPrice: String {
         product?.displayPrice ?? "$6.99"
     }

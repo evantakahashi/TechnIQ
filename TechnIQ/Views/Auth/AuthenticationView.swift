@@ -24,11 +24,13 @@ struct ModernSignInView: View {
     @Binding var isSignUp: Bool
     @State private var email = ""
     @State private var password = ""
-    
+    @State private var showResetAlert = false
+    @State private var resetAlertMessage = ""
+
     private var isLoginEnabled: Bool {
         !email.isEmpty && !password.isEmpty && password.count >= 6
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -37,14 +39,8 @@ struct ModernSignInView: View {
                     Text("Sign In")
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
-                    
+
                     Spacer()
-                    
-                    Button(action: {}) {
-                        Image(systemName: DesignSystem.Icons.settings)
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 .padding(.top, DesignSystem.Spacing.md)
@@ -168,10 +164,17 @@ struct ModernSignInView: View {
 
                             // Forgot Password
                             Button("Forgot password?") {
-                                if !email.isEmpty {
-                                    Task {
-                                        await authManager.resetPassword(email: email)
-                                    }
+                                guard !email.isEmpty else {
+                                    resetAlertMessage = "Enter your email first to reset your password."
+                                    showResetAlert = true
+                                    return
+                                }
+                                Task {
+                                    await authManager.resetPassword(email: email)
+                                    resetAlertMessage = authManager.errorMessage.isEmpty
+                                        ? "Reset email sent — check your inbox."
+                                        : authManager.errorMessage
+                                    showResetAlert = true
                                 }
                             }
                             .font(DesignSystem.Typography.bodyMedium)
@@ -216,6 +219,11 @@ struct ModernSignInView: View {
                 .padding(.bottom, DesignSystem.Spacing.xl)
             }
         }
+        .alert("Password Reset", isPresented: $showResetAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(resetAlertMessage)
+        }
     }
 }
 
@@ -254,11 +262,9 @@ struct ModernSignUpView: View {
 
                 Spacer()
 
-                Button(action: {}) {
-                    Image(systemName: DesignSystem.Icons.settings)
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
+                // Balances the back button so the title stays centered
+                Color.clear
+                    .frame(width: 40, height: 40)
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
             .padding(.top, DesignSystem.Spacing.md)

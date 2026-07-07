@@ -735,26 +735,33 @@ struct TabBarItem: View {
 // MARK: - Animated Tab Content
 struct AnimatedTabContent<Content: View>: View {
     @Binding var selectedTab: Int
+    var tabCount: Int = 5
     let content: (Int) -> Content
 
-    @State private var previousTab: Int = 0
-
-    private var slideDirection: Edge {
-        selectedTab > previousTab ? .trailing : .leading
-    }
+    // Tabs stay alive once visited so navigation, scroll position, and
+    // in-flight state survive tab switches; only the first visit builds a tab.
+    @State private var visitedTabs: Set<Int> = []
 
     var body: some View {
-        ZStack {
-            content(selectedTab)
-                .id(selectedTab)
-                .transition(.asymmetric(
-                    insertion: .move(edge: slideDirection).combined(with: .opacity),
-                    removal: .opacity
-                ))
-        }
-        .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: selectedTab)
-        .onChange(of: selectedTab) { oldValue, _ in
-            previousTab = oldValue
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(0..<tabCount, id: \.self) { index in
+                    if index == selectedTab || visitedTabs.contains(index) {
+                        content(index)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .offset(x: CGFloat(index - selectedTab) * geometry.size.width)
+                            .opacity(index == selectedTab ? 1 : 0)
+                            .allowsHitTesting(index == selectedTab)
+                            .accessibilityHidden(index != selectedTab)
+                    }
+                }
+            }
+            .clipped()
+            .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: selectedTab)
+            .onAppear { visitedTabs.insert(selectedTab) }
+            .onChange(of: selectedTab) { _, newValue in
+                visitedTabs.insert(newValue)
+            }
         }
     }
 }

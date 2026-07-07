@@ -12,6 +12,8 @@ struct ExerciseLibraryView: View {
     @State private var selectedExercise: Exercise?
     @State private var showingExerciseDetail = false
     @State private var isLoadingYouTubeContent = false
+    @State private var youtubeErrorMessage: String?
+    @State private var showingYouTubeError = false
     @State private var showingCustomDrillGenerator = false
     @State private var showingManualDrillCreator = false
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
@@ -296,6 +298,14 @@ struct ExerciseLibraryView: View {
                 availableSkills: availableSkills,
                 onApply: { }
             )
+        }
+        .alert("Couldn't Load Drills", isPresented: $showingYouTubeError) {
+            Button("Retry") {
+                loadYouTubeContent()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text(youtubeErrorMessage ?? "We couldn't load YouTube drills. Check your connection and try again.")
         }
         .onAppear {
             loadExercises()
@@ -943,6 +953,10 @@ struct ExerciseLibraryView: View {
             #if DEBUG
             print("Error loading YouTube content: \(error)")
             #endif
+            await MainActor.run {
+                youtubeErrorMessage = error.localizedDescription
+                showingYouTubeError = true
+            }
         }
 
         await MainActor.run {

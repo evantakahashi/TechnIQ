@@ -33,6 +33,7 @@ struct UnifiedOnboardingView: View {
     @State private var planErrorMessage = ""
     @State private var loadingPhase: LoadingPhase = .connecting
     @State private var generationTask: Task<Void, Never>?
+    @State private var phaseTimer: Timer?
     @State private var planGenerationComplete = false
 
     // Constants
@@ -104,6 +105,10 @@ struct UnifiedOnboardingView: View {
                 UserDefaults.standard.removeObject(forKey: "onboarding_prefill_name")
             }
         }
+        .onDisappear {
+            generationTask?.cancel()
+            phaseTimer?.invalidate()
+        }
     }
 
     // MARK: - Header
@@ -137,11 +142,11 @@ struct UnifiedOnboardingView: View {
 
             Spacer()
 
-            // Skip button (only on welcome and goal steps)
+            // Skip button (welcome + feature highlight pages)
             if currentStep < 4 {
                 Button("Skip") {
                     withAnimation {
-                        currentStep = 4 // Skip to profile creation
+                        currentStep = 5 // Skip to profile creation
                     }
                 }
                 .font(DesignSystem.Typography.labelMedium)
@@ -176,7 +181,7 @@ struct UnifiedOnboardingView: View {
             HStack(spacing: 6) {
                 ForEach(0..<totalSteps, id: \.self) { index in
                     Capsule()
-                        .fill(index <= currentStep ? DesignSystem.Colors.primaryGreen : Color(.systemGray4))
+                        .fill(index <= currentStep ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.chalkWhite.opacity(0.12))
                         .frame(height: 4)
                         .animation(.spring(response: 0.3), value: currentStep)
                 }
@@ -255,7 +260,7 @@ struct UnifiedOnboardingView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(canContinue ? DesignSystem.Colors.primaryGreen : Color.gray)
+                    .background(canContinue ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
                     .cornerRadius(DesignSystem.CornerRadius.button)
                 }
                 .disabled(!canContinue)
@@ -437,7 +442,7 @@ struct UnifiedOnboardingView: View {
                         TextField("Enter your name", text: $playerName)
                             .font(DesignSystem.Typography.bodyLarge)
                             .padding(DesignSystem.Spacing.md)
-                            .background(Color(.systemGray6))
+                            .background(DesignSystem.Colors.surfaceHighlight)
                             .cornerRadius(DesignSystem.CornerRadius.md)
                     }
 
@@ -479,7 +484,7 @@ struct UnifiedOnboardingView: View {
                                     .foregroundColor(selectedExperienceLevel == level ? .white : DesignSystem.Colors.textPrimary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, DesignSystem.Spacing.md)
-                                    .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                                    .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
                                     .cornerRadius(DesignSystem.CornerRadius.sm)
                                 }
                             }
@@ -574,7 +579,7 @@ struct UnifiedOnboardingView: View {
                                         .foregroundColor(selectedPlayingStyle == style ? .white : DesignSystem.Colors.textPrimary)
                                         .padding(.horizontal, DesignSystem.Spacing.md)
                                         .padding(.vertical, DesignSystem.Spacing.sm)
-                                        .background(selectedPlayingStyle == style ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                                        .background(selectedPlayingStyle == style ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
                                         .cornerRadius(DesignSystem.CornerRadius.pill)
                                     }
                                 }
@@ -600,7 +605,7 @@ struct UnifiedOnboardingView: View {
                                         .foregroundColor(selectedDominantFoot == foot ? .white : DesignSystem.Colors.textPrimary)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, DesignSystem.Spacing.md)
-                                        .background(selectedDominantFoot == foot ? DesignSystem.Colors.primaryGreen : Color(.systemGray6))
+                                        .background(selectedDominantFoot == foot ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
                                         .cornerRadius(DesignSystem.CornerRadius.md)
                                 }
                             }
@@ -754,17 +759,10 @@ struct UnifiedOnboardingView: View {
 
         coreDataManager.createDefaultExercises(for: newPlayer)
 
-        do {
-            coreDataManager.save()
-            #if DEBUG
-            print("Successfully saved player profile to Core Data")
-            #endif
-        } catch {
-            #if DEBUG
-            print("Failed to save player profile: \(error)")
-            #endif
-            return
-        }
+        coreDataManager.save()
+        #if DEBUG
+        print("Successfully saved player profile to Core Data")
+        #endif
 
         // Sync to Firebase/Cloud
         Task {
@@ -782,7 +780,8 @@ struct UnifiedOnboardingView: View {
         loadingPhase = .connecting
 
         // Animate through loading phases
-        let phaseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { timer in
+        phaseTimer?.invalidate()
+        phaseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { timer in
             DispatchQueue.main.async {
                 switch loadingPhase {
                 case .connecting: loadingPhase = .analyzing
@@ -819,11 +818,16 @@ struct UnifiedOnboardingView: View {
                     restDays: restDays
                 )
 
+                guard !Task.isCancelled else {
+                    await MainActor.run { phaseTimer?.invalidate() }
+                    return
+                }
+
                 // Save plan to Core Data
                 let _ = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player)
 
                 await MainActor.run {
-                    phaseTimer.invalidate()
+                    phaseTimer?.invalidate()
                     isGeneratingPlan = false
                     planGenerationComplete = true
 
@@ -836,7 +840,7 @@ struct UnifiedOnboardingView: View {
                 }
             } catch {
                 await MainActor.run {
-                    phaseTimer.invalidate()
+                    phaseTimer?.invalidate()
                     isGeneratingPlan = false
                     planGenerationFailed = true
                     planErrorMessage = error.localizedDescription

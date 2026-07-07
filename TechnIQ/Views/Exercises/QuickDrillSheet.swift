@@ -11,6 +11,7 @@ struct QuickDrillSheet: View {
 
     @State private var skillDescription: String = ""
     @State private var errorMessage: String?
+    @State private var generationTask: Task<Void, Never>?
 
     private var isValid: Bool {
         skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10 || prefilledWeakness != nil
@@ -89,6 +90,9 @@ struct QuickDrillSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .onDisappear {
+                generationTask?.cancel()
+            }
         }
     }
 
@@ -116,10 +120,11 @@ struct QuickDrillSheet: View {
             selectedWeaknesses: prefilledWeakness.map { [$0] } ?? []
         )
 
-        Task {
+        generationTask = Task {
             do {
                 let exercise = try await drillService.generateCustomDrill(request: request, for: player)
                 await MainActor.run {
+                    guard !Task.isCancelled else { return }
                     SubscriptionManager.shared.markQuickDrillUsed()
                     onGenerated(exercise)
                 }

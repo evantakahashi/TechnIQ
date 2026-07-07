@@ -17,7 +17,6 @@ import FirebaseCrashlytics
 struct TechnIQApp: App {
     let coreDataManager = CoreDataManager.shared
     @StateObject private var authManager = AuthenticationManager.shared
-    @AppStorage("appColorScheme") private var appColorScheme: String = "system"
     @StateObject private var subscriptionManager = SubscriptionManager.shared
 
     init() {

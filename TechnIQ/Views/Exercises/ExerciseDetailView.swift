@@ -650,6 +650,9 @@ struct YouTubeWebView: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
+        guard context.coordinator.loadedVideoId != videoId else { return }
+        context.coordinator.loadedVideoId = videoId
+
         // Load YouTube embed URL
         let embedURL = "https://www.youtube.com/embed/\(videoId)?autoplay=1&playsinline=1"
         if let url = URL(string: embedURL) {
@@ -664,7 +667,8 @@ struct YouTubeWebView: UIViewRepresentable {
     
     class Coordinator: NSObject, WKNavigationDelegate {
         let parent: YouTubeWebView
-        
+        var loadedVideoId: String?
+
         init(_ parent: YouTubeWebView) {
             self.parent = parent
         }
