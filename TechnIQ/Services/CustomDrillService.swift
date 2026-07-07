@@ -340,7 +340,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         }
 
         // Save to Core Data
-        try CoreDataManager.shared.save()
+        CoreDataManager.shared.save()
 
         return exercise
     }

@@ -101,7 +101,7 @@ struct WeekEditorView: View {
 
                     TextField("e.g., Ball Control Fundamentals", text: $editedFocusArea)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .onChange(of: editedFocusArea) { _ in
+                        .onChange(of: editedFocusArea) {
                             hasChanges = true
                         }
                 }
@@ -115,7 +115,7 @@ struct WeekEditorView: View {
                     TextField("Optional notes for this week", text: $editedNotes, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(2...4)
-                        .onChange(of: editedNotes) { _ in
+                        .onChange(of: editedNotes) {
                             hasChanges = true
                         }
                 }

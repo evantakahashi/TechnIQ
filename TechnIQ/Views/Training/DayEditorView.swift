@@ -113,7 +113,7 @@ struct DayEditorView: View {
                     }
                 }
                 .tint(DesignSystem.Colors.accentYellow)
-                .onChange(of: isRestDay) { _ in
+                .onChange(of: isRestDay) {
                     hasChanges = true
                 }
 
@@ -133,7 +133,7 @@ struct DayEditorView: View {
                     TextField("Optional notes for this day", text: $editedNotes, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(2...4)
-                        .onChange(of: editedNotes) { _ in
+                        .onChange(of: editedNotes) {
                             hasChanges = true
                         }
                 }

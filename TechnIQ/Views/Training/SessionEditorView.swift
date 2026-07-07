@@ -260,7 +260,7 @@ struct SessionEditorView: View {
                 TextField("Add notes, goals, or reminders...", text: $editedNotes, axis: .vertical)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .lineLimit(3...6)
-                    .onChange(of: editedNotes) { _ in
+                    .onChange(of: editedNotes) {
                         hasChanges = true
                     }
             }

@@ -159,7 +159,6 @@ final class AvatarService: ObservableObject, AvatarServiceProtocol {
 
     /// Load owned items from Core Data
     func loadOwnedItems() {
-        let context = coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
             ownedItemIds = starterItemIds
             return

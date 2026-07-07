@@ -87,13 +87,13 @@ struct TrainingPlansListView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(feature: .trainingPlan)
         }
-        .onChange(of: showingAIGenerator) { newValue in
+        .onChange(of: showingAIGenerator) { _, newValue in
             // Reload plans when AI generator is dismissed
             if !newValue {
                 loadMyPlans()
             }
         }
-        .onChange(of: showingCustomBuilder) { newValue in
+        .onChange(of: showingCustomBuilder) { _, newValue in
             // Reload plans when custom builder is dismissed
             if !newValue {
                 loadMyPlans()

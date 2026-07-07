@@ -114,7 +114,7 @@ struct PlanEditorView: View {
 
                     TextField("Enter plan name", text: $editedName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .onChange(of: editedName) { _ in
+                        .onChange(of: editedName) {
                             hasChanges = true
                         }
                 }
@@ -128,7 +128,7 @@ struct PlanEditorView: View {
                     TextField("Enter description", text: $editedDescription, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(3...6)
-                        .onChange(of: editedDescription) { _ in
+                        .onChange(of: editedDescription) {
                             hasChanges = true
                         }
                 }

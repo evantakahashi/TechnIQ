@@ -109,7 +109,7 @@ struct SkillTrendChartView: View {
             }
 
             // Chart
-            if let skill = selectedSkill, !skillDataPoints.isEmpty {
+            if selectedSkill != nil, !skillDataPoints.isEmpty {
                 chartView
             } else {
                 emptyStateView

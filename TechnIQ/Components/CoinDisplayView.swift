@@ -199,28 +199,30 @@ struct CoinBurstView: View {
     }
 
     var body: some View {
-        ZStack {
-            ForEach(particles) { particle in
-                Image(systemName: "dollarsign.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(DesignSystem.Colors.coinGold)
-                    .scaleEffect(particle.scale)
-                    .rotationEffect(.degrees(particle.rotation))
-                    .opacity(particle.opacity)
-                    .position(x: particle.x, y: particle.y)
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(particles) { particle in
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(DesignSystem.Colors.coinGold)
+                        .scaleEffect(particle.scale)
+                        .rotationEffect(.degrees(particle.rotation))
+                        .opacity(particle.opacity)
+                        .position(x: particle.x, y: particle.y)
+                }
             }
-        }
-        .onAppear {
-            createParticles()
-            animateParticles()
+            .onAppear {
+                createParticles(in: geometry.size)
+                animateParticles()
+            }
         }
     }
 
-    private func createParticles() {
+    private func createParticles(in size: CGSize) {
         particles = (0..<particleCount).map { _ in
             CoinParticle(
-                x: UIScreen.main.bounds.width / 2,
-                y: UIScreen.main.bounds.height / 2,
+                x: size.width / 2,
+                y: size.height / 2,
                 rotation: 0,
                 scale: 0.5,
                 opacity: 1.0

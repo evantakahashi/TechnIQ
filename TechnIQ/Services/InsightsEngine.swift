@@ -158,7 +158,7 @@ class InsightsEngine: InsightsEngineProtocol {
         let calendar = Calendar.current
 
         // Calculate current streak
-        let dates = sessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) }.sorted()
+        let dates = Array(Set(sessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) })).sorted()
         var currentStreak = 0
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!

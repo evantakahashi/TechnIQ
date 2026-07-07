@@ -250,7 +250,7 @@ final class HapticManager {
 extension View {
     /// Add haptic feedback to any view action
     func hapticFeedback(_ type: HapticType, trigger: Bool) -> some View {
-        self.onChange(of: trigger) { newValue in
+        self.onChange(of: trigger) { _, newValue in
             if newValue {
                 switch type {
                 case .light: HapticManager.shared.lightTap()

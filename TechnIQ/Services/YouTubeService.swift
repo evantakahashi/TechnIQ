@@ -956,18 +956,11 @@ class YouTubeService: YouTubeServiceProtocol {
 
         #endif
         // Process all videos concurrently using TaskGroup with enhanced error handling
-        let enhancedVideos = try await withThrowingTaskGroup(of: EnhancedYouTubeVideo?.self) { group in
+        let enhancedVideos = await withThrowingTaskGroup(of: EnhancedYouTubeVideo?.self) { group in
             // Add a task for each video
             for video in basicVideos {
                 group.addTask {
-                    do {
-                        return await self.processVideoEnhanced(video: video, apiKey: apiKey)
-                    } catch {
-                        #if DEBUG
-                        print("TaskGroup error for video \(video.title.prefix(30)): \(error)")
-                        #endif
-                        return nil
-                    }
+                    return await self.processVideoEnhanced(video: video, apiKey: apiKey)
                 }
             }
 
