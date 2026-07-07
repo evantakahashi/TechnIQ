@@ -3,13 +3,16 @@
 ## About TechnIQ
 AI-powered soccer training app for iOS. Personalized programs, smart drills, progress analytics.
 
-**Tech Stack:** SwiftUI, Core Data, Firebase (Auth, Firestore, Functions), Google Sign-In, Vertex AI, YouTube Data API v3
-**Targets:** iOS 17.0+, iPhone & iPad, arm64
+**Tech Stack:** SwiftUI, Core Data, Firebase (Auth, Firestore, Functions), Google Sign-In, Sign in with Apple, StoreKit, Anthropic (via Functions), YouTube Data API v3
+**Targets:** iOS 17.0+, iPhone (v1.0 is iPhone-only; `TARGETED_DEVICE_FAMILY = 1`), arm64
 
 ---
 
 ## Quick Commands
-- **Build:** `xcodebuild -scheme TechnIQ -sdk iphonesimulator -destination 'id=197B259E-335F-47CF-855E-B5CE0FC385A1' build`
+- **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
+- **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests test`
+- **Lint:** `swiftlint` (config `.swiftlint.yml`; ~140 warnings / 0 errors today, not yet `--strict`)
+- **CI:** `.github/workflows/ci.yml` — SwiftLint + build + unit tests on PR / push to main
 - **Deploy functions:** `cd functions && firebase deploy --only functions`
 - **Commit:** `/commit`
 - **Build skill:** `/build`
@@ -38,30 +41,32 @@ Player (root)
 Independent: CloudSyncStatus, MLRecommendation
 ```
 
-### Services (all singletons via `.shared`)
+### Services (`TechnIQ/Services/`, primary singletons via `.shared`)
 | Service | @MainActor | Responsibility |
 |---------|------------|----------------|
 | CoreDataManager | No | Core Data stack, persistent store, migrations |
-| AuthenticationManager | No | Firebase Auth (email, Google, anonymous) |
-| CloudMLService | Yes | ML recommendations, YouTube recs via Firebase Functions |
-| CloudDataService | Yes | Firestore sync, network monitoring (NWPathMonitor) |
-| CloudSyncManager | Yes | Bi-directional Core Data ↔ Firestore, 5-min auto-sync |
-| CloudRestoreService | Yes | Cloud data restoration on startup |
-| TrainingPlanService | No | Plan CRUD, AI generation, completion-based progression |
+| AuthenticationManager | No | Firebase Auth (email, Google, Apple, anonymous) |
+| YouTubeService | No | YouTube Data API v3, video data, caching, smart recommendations, rate limiting |
+| CloudService | Yes | Firestore sync (bi-directional Core Data ↔ Firestore), cloud restore, network monitoring — split across `Cloud/CloudService.swift` + `+Upload`/`+Restore`/`+Sync` |
+| AIRecommendationService | Yes | AI/ML drill & video recommendations (`get_advanced_recommendations`) |
+| AICoachService | Yes | Daily AI coaching + plan adaptation via Functions |
 | CustomDrillService | Yes | AI drill generation via Firebase Functions |
-| YouTubeAPIService | No | YouTube Data API v3, rate limited (100 req/100s) |
-| YouTubeDataService | No | YouTube video data, caching, smart recommendations |
-| XPService | No | XP calc, level system (1-50), 10-tier career path |
-| CoinService | No | Coin economy, earning events, transactions |
-| AchievementService | No | 30 achievements, unlock checking, XP rewards |
-| AvatarService | No | Avatar configuration, item inventory |
-| MatchService | No | Match CRUD, season management |
-| ActiveSessionManager | No | Live training session state machine |
-| InsightsEngine | No | Analytics calculations, trend analysis |
-| AppLogger | No | OSLog-based logging with 6 categories |
+| TrainingPlanService | Yes | Plan CRUD, AI generation, completion-based progression |
+| WeaknessAnalysisService | Yes | Skill-gap / weakness analysis feeding recommendations |
+| CommunityService | Yes | Community posts/UGC, comments, report & block |
+| SubscriptionManager | Yes | StoreKit subscriptions, paywall, purchase/restore |
+| XPService | Yes | XP calc, level system (1-50), 10-tier career path |
+| CoinService | Yes | Coin economy, earning events, transactions |
+| AchievementService | Yes | 30 achievements, unlock checking, XP rewards |
+| AvatarService | Yes | Avatar configuration, item inventory |
+| MatchService | Yes | Match CRUD, season management |
+| ActiveSessionManager | Yes | Live training session state machine |
+| InsightsEngine | Yes | Analytics calculations, trend analysis |
+
+Supporting: `ServiceError.swift` (shared error enum), `CoreDataFetchRequests.swift` (dynamic description helpers), `Protocols/` (per-service protocols for DI/testing). `AppLogger` lives in `Utilities/`.
 
 ### Firebase Functions (functions/main.py)
-4 endpoints: `get_youtube_recommendations`, `generate_custom_drill`, `get_advanced_recommendations`, `generate_training_plan`
+7 HTTPS endpoints: `get_youtube_recommendations`, `generate_custom_drill`, `get_advanced_recommendations`, `generate_training_plan`, `get_daily_coaching`, `get_plan_adaptation`, `delete_account`
 All require Firebase Auth in production.
 
 ---
@@ -71,7 +76,7 @@ All require Firebase Auth in production.
 TechnIQ/
 ├── App/           (TechnIQApp, ContentView)
 ├── Models/        (CoreData classes/properties, value types, config)
-├── Services/      (all service singletons)
+├── Services/      (service singletons; Cloud/ and Protocols/ subdirs)
 ├── Views/
 │   ├── Auth/      Dashboard/ Training/ Exercises/ Matches/
 │   ├── Avatar/    Analytics/ Community/ Settings/
@@ -87,7 +92,7 @@ TechnIQ/
 | `Components/DesignSystem.swift` | Design tokens (colors, typography, spacing) |
 | `Components/ModernComponents.swift` | Reusable UI (ModernCard, ModernButton, etc.) |
 | `Services/CoreDataManager.swift` | Core Data stack, exercise CRUD |
-| `Services/YouTubeDataService.swift` | YouTube video data, caching, smart recommendations |
+| `Services/YouTubeService.swift` | YouTube video data, caching, smart recommendations |
 | `Services/CoreDataFetchRequests.swift` | Dynamic description generation helpers |
 | `Views/Exercises/TemplateExerciseLibrary.swift` | 45+ exercise templates with fuzzy matching |
 | `Models/TrainingPlanModels.swift` | UI models, SessionType enum (incl. warmup/cooldown) |
@@ -96,16 +101,16 @@ TechnIQ/
 
 1. **Plan first** — read relevant files, create plan in `tasks/todo.md`, wait for approval
 2. **Implement** — one task at a time, build after each change, minimal targeted changes
-3. **Code quality** — see `.claude/rules/` for Swift, Core Data, Firebase rules
+3. **Code quality** — see `.claude/rules/` for Swift, Core Data, Firebase rules; run `swiftlint`
 4. **Build** — `/build` to build and check errors
 5. **Git** — `/commit` to commit & push. Stage specific files only.
 
-## View Structure (55 views)
+## View Structure
 | Area | Key Views |
 |------|-----------|
-| Auth | AuthenticationView, EnhancedOnboardingView |
+| Auth | AuthenticationView, UnifiedOnboardingView, EnhancedOnboardingView |
 | Dashboard | DashboardView, TrainHubView, PlayerProgressView |
-| Training Plans | AITrainingPlanGeneratorView, ActivePlanView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
+| Training Plans | AITrainingPlanGeneratorView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
 | Sessions | TodaysTrainingView, ActiveTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
 | Exercises | ExerciseLibraryView, ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView, QuickDrillSheet |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
@@ -114,9 +119,12 @@ TechnIQ/
 | Settings | SettingsView, EditProfileView, SharePlanView |
 
 ## Deferred / Outstanding
-- Sign in with Apple (entitlement added, implementation pending)
-- App icon (needs design assets)
+- App icon (1024px asset missing — archive/upload blocker)
+- SDK privacy-manifest bump (firebase-ios-sdk 10.18 → 10.24+/11.x, GoogleSignIn 7.0 → 7.1+) required before App Store upload (ITMS-91053/91061)
 - API key rotation (keys in functions/.env.yaml need revoking)
-- Accessibility labels (zero currently)
+- Accessibility labels (near-zero currently)
 - Localization (English only)
+- iPad-adaptive layout (device family is iPhone-only for v1.0)
 - Incremental sync (currently full-sync on each cycle)
+
+Recently completed: Sign in with Apple (AuthenticationManager), in-app account deletion (Settings → `delete_account` function), SwiftLint config + CI, dead-view cleanup.

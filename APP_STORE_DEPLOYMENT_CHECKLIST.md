@@ -1,160 +1,78 @@
 # TechnIQ App Store Deployment Checklist
 
-**Last Updated:** November 24, 2025
+**Last Updated:** July 6, 2026 (rewritten from `docs/audits/2026-07-06-full-audit.md`)
 
-## ✅ **COMPLETED ITEMS**
+Status: closer to submission-ready than the prior (Nov-2025) checklist implied. The two hard
+blockers are the **missing app icon** and the **SDK privacy-manifest bump**; everything else is
+metadata prep or non-blocking polish. Compliance items previously flagged (encryption key,
+dangling SceneDelegate, iPad screenshots) are resolved in this pass.
 
-### Code Quality
-- [x] **Debug Logging Removed** - All 187 print() statements wrapped in `#if DEBUG` blocks
-- [x] **No TODOs/FIXMEs** - All code comments cleaned up
-- [x] **Build Succeeds** - Clean build with no errors
-- [x] **No Hardcoded Secrets** - API keys properly stored in environment variables
+---
 
-### Configuration
-- [x] **Bundle Identifier** - `evan.TechnIQ`
-- [x] **Version Number** - 1.0 (Build 1)
-- [x] **Info.plist Complete** - All required keys present
-- [x] **Privacy Descriptions** - No additional permissions needed (app doesn't use camera, location, etc.)
-- [x] **Privacy Policy** - Comprehensive policy created at `/PRIVACY_POLICY.md`
+## ✅ Done / Verified
 
-### Code Implementation
-- [x] **Core Data Models** - All Training Plan entities properly added
-- [x] **Firebase Integration** - Authentication, Firestore, Functions properly configured
-- [x] **Error Handling** - Appropriate error handling in place
-- [x] **API Deprecations Fixed** - Updated `.onChange(of:)` to iOS 17+ syntax
+### Guideline compliance
+- [x] **Sign in with Apple** — implemented (`AuthenticationManager.swift`), entitlement present (satisfies 4.8)
+- [x] **In-app account deletion** — Settings → token-verified `delete_account` Function (satisfies 5.1.1(v))
+- [x] **UGC moderation** — community report/block support (satisfies 1.2)
+- [x] **Functions auth enforced** — all HTTPS endpoints require Firebase Auth in production
+- [x] **No push mismatch** — entitlements contain no `aps-environment`
+- [x] **No unused permission prompts** — app uses no camera/photo/location/notification APIs, so no usage-description strings are needed (verified)
+- [x] **UserDefaults required-reason** — CA92.1 declared in `PrivacyInfo.xcprivacy`, matches usage
 
-## ⚠️ **CRITICAL - REQUIRES IMMEDIATE ACTION**
+### Configuration (fixed in this pass)
+- [x] **Export compliance** — `ITSAppUsesNonExemptEncryption = false` added to `Info.plist` (stops the TestFlight "Missing Compliance" prompt; app uses only standard HTTPS)
+- [x] **Dangling SceneDelegate removed** — deleted the `UISceneConfigurations`/`UISceneDelegateClassName` block from `Info.plist` (pure SwiftUI app; class never existed)
+- [x] **iPhone-only for v1.0** — `TARGETED_DEVICE_FAMILY = 1` (removes mandatory iPad 13" screenshots; iPad still runs it in compatibility mode)
+- [x] **Version** — 1.0 (build 1)
+- [x] **Launch screen** — configured (`UILaunchScreen`)
 
-### Visual Assets (BLOCKING)
-- [ ] **App Icon** - **MISSING - MUST CREATE**
-  - Required: 1024x1024px PNG
-  - Location: `TechnIQ/Assets.xcassets/AppIcon.appiconset/`
-  - No transparency allowed
-  - Should represent a soccer training app
+### Code quality
+- [x] **Debug logging gated** — all 283 `print()` calls are inside `#if DEBUG` (count was previously mis-stated as 187)
+- [x] **No force-unwrap/`try!`/`as!` landmines** — 0 `try!`, 0 `as!` in the app target
 
-- [ ] **App Store Screenshots** - **MISSING - MUST CREATE**
-  - Required for each device size:
-    - iPhone 6.7" (iPhone 14 Pro Max, 15 Pro Max)
-    - iPhone 6.5" (iPhone 11 Pro Max, XS Max)
-    - iPhone 5.5" (iPhone 8 Plus)
-  - Minimum: 3 screenshots per size
-  - Recommended: 5 screenshots showing key features
-  - Dimensions: See [Apple's guidelines](https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications)
+---
 
-## 📋 **RECOMMENDED BEFORE SUBMISSION**
+## 🚫 Blockers — must fix before a successful upload
 
-### Testing
-- [ ] **Physical Device Testing**
-  - Test on actual iPhone (not just simulator)
-  - Verify Firebase authentication works
-  - Test YouTube video recommendations
-  - Verify Core Data persistence
-  - Test offline functionality
+- [ ] **App icon (1024×1024 PNG, no alpha)** — `AppIcon.appiconset` has only `Contents.json`; App Store validation rejects binaries without the 1024px icon. Add the file and its `filename` entry (Xcode does this on drag-in).
+- [ ] **Bump SDKs for privacy manifests** — `firebase-ios-sdk 10.18.0` → 10.24+/11.x and `GoogleSignin-iOS 7.0.0` → 7.1+. These predate Apple's May-2024 mandate; App Store Connect rejects uploads with ITMS-91053/91061 until upgraded. Resolve packages, rebuild, retest auth/Firestore/Functions.
 
-- [ ] **User Flow Testing**
-  - Complete onboarding process
-  - Create player profile
-  - Add training sessions
-  - Generate recommendations
-  - Test all tabs (Home, Sessions, Exercises, Plans, Progress, Profile)
+---
 
-### App Store Connect Preparation
-- [ ] **App Store Listing Text**
-  - App Name (30 characters max)
-  - Subtitle (30 characters max)
-  - Description (4000 characters max)
-  - Keywords (100 characters max)
-  - Promotional Text (170 characters)
+## 📸 Screenshots & App Store Connect metadata
 
-- [ ] **Support & Marketing URLs**
-  - Support URL (required)
-  - Marketing URL (optional)
-  - Privacy Policy URL (required) - Host the PRIVACY_POLICY.md somewhere
+- [ ] **Screenshots** — 6.9" iPhone (iPhone 16/17 Pro Max class) is the current **mandatory** size; 5.5" is no longer accepted-as-required. Capture 3–5 per required size. (No iPad 13" needed now that the app is iPhone-only.)
+- [ ] **Hosted Privacy Policy URL** — `PRIVACY_POLICY.md` exists but is not hosted; host it (e.g. GitHub Pages) and use the permanent URL.
+- [ ] **Support URL** (required) and Marketing URL (optional — the 40k-sub YouTube channel is a strong marketing URL)
+- [ ] **Listing copy** — App name (≤30), subtitle (≤30), description (≤4000), keywords (≤100), promo text (≤170)
+- [ ] **Privacy nutrition labels** — must match actual collection (see privacy-manifest item below)
+- [ ] **Age rating** questionnaire (expected 4+)
+- [ ] **App Review notes + demo account** — reviewers can't use their own Google account; seed an email/password demo login. Call out that "Continue without account" (anonymous auth) is the fastest path to explore the app.
 
-- [ ] **Age Rating**
-  - Complete questionnaire in App Store Connect
-  - Expected: 4+ (safe for all ages)
+---
 
-- [ ] **App Review Information**
-  - Contact information
-  - Demo account credentials (if needed)
-  - Notes for reviewer
+## 🔧 Code / config still worth addressing (not upload-blocking)
 
-## 🔍 **KNOWN NON-BLOCKING ISSUES**
+- [ ] **Privacy manifest data types understate collection** — `PrivacyInfo.xcprivacy` declares only EmailAddress/UserID/Name. App also syncs fitness/training data (Fitness), stores community posts (OtherUserContent), and links GoogleAppMeasurement (UsageData/CrashData). Add these and mirror them in the ASC nutrition labels, or drop Firebase Analytics to shrink the disclosure surface.
+- [ ] **`YOUTUBE_API_KEY` build setting is defined nowhere** — `Info.plist` embeds `$(YOUTUBE_API_KEY)` but no pbxproj/xcconfig/scheme defines it, so in an Archive build the value is empty and YouTube recs silently no-op (Guideline 2.1 risk); any injected key also ships plaintext in the bundle. Fix: route YouTube search through the existing `get_youtube_recommendations` Function (key stays server-side) and delete the Info.plist key.
+- [ ] **SIWA presentation anchor** — `presentationContextProvider` cast is always nil (no conforming type); works on iPhone but verify SIWA on a physical device before submission (Apple tests it).
+- [ ] **Production logging** — release builds are silent (`print()` gated out); migrate hot paths to `AppLogger` for os_log breadcrumbs.
+- [ ] **Bundle ID** — `evan.TechnIQ` is valid but not reverse-DNS and becomes immutable after first upload. Decide now whether to switch to e.g. `com.evantakahashi.techniq` (requires new Firebase iOS app + updated `GoogleService-Info.plist` + URL scheme) before creating the ASC record.
 
-### Minor Warnings (Safe to Ignore)
-- Core Data auto-generated files in Copy Bundle Resources (cosmetic Xcode warning)
-- Duplicate library warnings in linker (harmless)
+---
 
-### Future Improvements (Post-Launch)
-- Implement CloudMLService TODO at line 87 (already completed)
-- Add more comprehensive analytics
-- Consider adding in-app purchases for premium features
-- Implement push notifications for training reminders
+## 👤 User action items (outside the codebase)
 
-## 📝 **SUBMISSION PROCESS**
+- [ ] **Rotate API keys** in `functions/.env.yaml` and revoke the old ones (they were exposed).
+- [ ] **Host the privacy policy** and update `PRIVACY_POLICY.md` (add email/Apple/anonymous auth methods, UGC/community section, and the in-app Settings → Delete Account path; bump the effective date).
+- [ ] **Create the App Store Connect app record**, then fill metadata, upload screenshots, complete nutrition labels + age rating, and add the demo account to review notes.
+- [ ] **Physical-device pass** — auth (Google/Apple/email/anonymous), Firestore sync, Core Data persistence, offline behavior.
 
-1. **Archive the App**
-   - Product → Archive in Xcode
-   - Wait for archive to complete
-   - Organizer window will open
+---
 
-2. **Upload to App Store Connect**
-   - Click "Distribute App"
-   - Select "App Store Connect"
-   - Upload
-   - Wait for processing (can take 30+ minutes)
-
-3. **Complete App Store Connect Listing**
-   - Add screenshots
-   - Write app description
-   - Add keywords
-   - Set pricing (free or paid)
-   - Submit for review
-
-4. **App Review**
-   - Typically takes 1-3 days
-   - May receive questions from review team
-   - Be ready to respond quickly
-
-## ⚡ **CRITICAL PATH TO LAUNCH**
-
-**You MUST complete these before submission:**
-
-1. **Create App Icon** (1-2 hours)
-   - Design or commission 1024x1024 icon
-   - Add to Assets.xcassets/AppIcon.appiconset/
-
-2. **Create Screenshots** (2-4 hours)
-   - Run app on actual devices or use simulator
-   - Capture key screens (Onboarding, Dashboard, Session, Exercises, Progress)
-   - Edit/polish in design tool if needed
-   - Upload to App Store Connect
-
-3. **Host Privacy Policy** (30 minutes)
-   - Upload PRIVACY_POLICY.md to a website
-   - Or use GitHub Pages
-   - Get permanent URL for App Store Connect
-
-4. **Test on Physical Device** (1-2 hours)
-   - Deploy to your iPhone
-   - Go through complete user flow
-   - Fix any device-specific issues
-
-5. **Write App Store Listing** (1-2 hours)
-   - App description highlighting features
-   - Keywords for discovery
-   - Support email/website
-
-**Estimated Time to Submission: 6-12 hours of work**
-
-## 📞 **SUPPORT INFORMATION**
-
+## Support information
 - **Developer Email:** evan10takahashi@gmail.com
 - **Bundle ID:** evan.TechnIQ
 - **Primary Category:** Health & Fitness → Sports
 - **Target Audience:** Soccer players (all skill levels)
-
----
-
-**Next Steps:** Focus on creating the app icon and screenshots. Everything else is ready for submission.

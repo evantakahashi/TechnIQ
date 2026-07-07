@@ -1,0 +1,51 @@
+included:
+  - TechnIQ
+  - TechnIQTests
+  - TechnIQUITests
+
+disabled_rules:
+  - todo
+  - trailing_whitespace                       # 738 hits; re-enable after `swiftlint --fix` settles
+  - multiple_closures_with_trailing_closure   # idiomatic SwiftUI Button {} label: {}
+  - redundant_string_enum_value               # 48 cosmetic hits; revisit
+  - implicit_optional_initialization          # 15 cosmetic hits; revisit
+
+line_length:
+  warning: 160
+  error: 320          # worst offender today: 303 chars (MatchServiceProtocol.swift:7)
+  ignores_urls: true
+  ignores_comments: true
+
+identifier_name:
+  min_length: 1       # allows s/i/x/y/xp and design tokens xs/sm/md/lg/xl
+  max_length: 60
+
+file_length:
+  warning: 1500
+  error: 3200         # YouTubeService.swift = 2945; ratchet down after splitting it
+
+type_body_length:
+  warning: 900
+  error: 2400         # YouTubeService class body = 2267
+
+function_body_length:
+  warning: 120
+  error: 250
+
+function_parameter_count:
+  warning: 8
+  error: 16           # MatchServiceProtocol has a 15-param requirement
+
+cyclomatic_complexity:
+  warning: 18
+  error: 30
+
+large_tuple:
+  warning: 4
+  error: 6
+
+nesting:
+  type_level: 3
+
+# Later ratchets: lower file/type/param error thresholds as offenders are split,
+# re-enable trailing_whitespace, and add a custom no_print rule once prints migrate to AppLogger.
