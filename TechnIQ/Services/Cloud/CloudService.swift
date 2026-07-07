@@ -89,10 +89,8 @@ class CloudService: ObservableObject, CloudServiceProtocol {
     // MARK: - Auto Sync
 
     private func startAutoSync() {
-        syncTimer = Timer.scheduledTimer(withTimeInterval: autoSyncInterval, repeats: true) { _ in
-            Task {
-                await self.performIncrementalSync()
-            }
+        syncTimer = Timer.scheduledTimer(withTimeInterval: autoSyncInterval, repeats: true) { [weak self] _ in
+            Task { await self?.performIncrementalSync() }
         }
     }
 

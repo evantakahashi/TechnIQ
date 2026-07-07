@@ -56,106 +56,94 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         #endif
         recommendationStatus = .loading
         
-        // Test if Firebase Function deployment completed with authentication support
-        let useFirebaseFunction = true
+        // Retry up to 3 times to get non-duplicate recommendations
+        var attempts = 0
+        let maxAttempts = 3
+        var seenVideoIds = Set<String>()
         
-        if useFirebaseFunction {
-            // Retry up to 3 times to get non-duplicate recommendations
-            var attempts = 0
-            let maxAttempts = 3
-            var seenVideoIds = Set<String>()
-            
-            // Get existing video IDs to avoid duplicates
-            let existingVideoIds = getExistingYouTubeVideoIds(for: player)
-            seenVideoIds.formUnion(existingVideoIds)
+        // Get existing video IDs to avoid duplicates
+        let existingVideoIds = getExistingYouTubeVideoIds(for: player)
+        seenVideoIds.formUnion(existingVideoIds)
+        #if DEBUG
+        print("CloudMLService: Will avoid \(existingVideoIds.count) existing video IDs")
+        
+        #endif
+        while attempts < maxAttempts {
+            attempts += 1
             #if DEBUG
-            print("CloudMLService: Will avoid \(existingVideoIds.count) existing video IDs")
+            print("CloudMLService: Attempt \(attempts)/\(maxAttempts) - calling fetchYouTubeRecommendations...")
             
             #endif
-            while attempts < maxAttempts {
-                attempts += 1
-                #if DEBUG
-                print("CloudMLService: Attempt \(attempts)/\(maxAttempts) - calling fetchYouTubeRecommendations...")
+            do {
+                // Try cloud-based YouTube ML recommendations
+                let youtubeRecommendations = try await fetchYouTubeRecommendations(player: player, limit: limit)
                 
-                #endif
-                do {
-                    // Try cloud-based YouTube ML recommendations
-                    let youtubeRecommendations = try await fetchYouTubeRecommendations(player: player, limit: limit)
+                // Filter out duplicates that we've already seen
+                let newRecommendations = youtubeRecommendations.filter { recommendation in
+                    let videoId = recommendation.videoId
+                    let title = recommendation.title
                     
-                    // Filter out duplicates that we've already seen
-                    let newRecommendations = youtubeRecommendations.filter { recommendation in
-                        let videoId = recommendation.videoId
-                        let title = recommendation.title
-                        
-                        if seenVideoIds.contains(videoId) {
+                    if seenVideoIds.contains(videoId) {
+                        #if DEBUG
+                        print("CloudMLService: Skipping duplicate video ID: \(videoId) - '\(title)'")
+                        #endif
+                        return false
+                    }
+                    
+                    // Also check if this exercise already exists by checking Core Data directly
+                    let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+                    request.predicate = NSPredicate(format: "youtubeVideoID == %@", videoId)
+                    do {
+                        let existingCount = try CoreDataManager.shared.context.count(for: request)
+                        if existingCount > 0 {
                             #if DEBUG
-                            print("CloudMLService: Skipping duplicate video ID: \(videoId) - '\(title)'")
+                            print("CloudMLService: Exercise with video ID '\(videoId)' already exists in Core Data - '\(title)'")
                             #endif
                             return false
                         }
-                        
-                        // Also check if this exercise already exists by checking Core Data directly
-                        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
-                        request.predicate = NSPredicate(format: "youtubeVideoID == %@", videoId)
-                        do {
-                            let existingCount = try CoreDataManager.shared.context.count(for: request)
-                            if existingCount > 0 {
-                                #if DEBUG
-                                print("CloudMLService: Exercise with video ID '\(videoId)' already exists in Core Data - '\(title)'")
-                                #endif
-                                return false
-                            }
-                        } catch {
-                            #if DEBUG
-                            print("CloudMLService: Error checking for existing exercise: \(error)")
-                            #endif
-                        }
-                        
-                        seenVideoIds.insert(videoId)
-                        return true
+                    } catch {
+                        #if DEBUG
+                        print("CloudMLService: Error checking for existing exercise: \(error)")
+                        #endif
                     }
                     
-                    if !newRecommendations.isEmpty {
-                        recommendationStatus = .success
-                        #if DEBUG
-                        print("CloudMLService: Successfully fetched \(newRecommendations.count) unique YouTube recommendation(s) on attempt \(attempts)")
-                        #endif
-                        return newRecommendations
-                    } else {
-                        #if DEBUG
-                        print("CloudMLService: All recommendations were duplicates on attempt \(attempts)")
-                        #endif
-                        if attempts < maxAttempts {
-                            // Wait a bit before retrying to get different results
-                            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                            continue
-                        }
-                    }
-                    
-                } catch {
-                    #if DEBUG
-                    print("CloudMLService: YouTube recommendations failed on attempt \(attempts): \(error.localizedDescription)")
-                    #endif
-                    if attempts >= maxAttempts {
-                        recommendationStatus = .error("YouTube recommendations unavailable")
-                        throw error
-                    }
-                    // Wait before retrying
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    seenVideoIds.insert(videoId)
+                    return true
                 }
+                
+                if !newRecommendations.isEmpty {
+                    recommendationStatus = .success
+                    #if DEBUG
+                    print("CloudMLService: Successfully fetched \(newRecommendations.count) unique YouTube recommendation(s) on attempt \(attempts)")
+                    #endif
+                    return newRecommendations
+                } else {
+                    #if DEBUG
+                    print("CloudMLService: All recommendations were duplicates on attempt \(attempts)")
+                    #endif
+                    if attempts < maxAttempts {
+                        // Wait a bit before retrying to get different results
+                        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                        continue
+                    }
+                }
+                
+            } catch {
+                #if DEBUG
+                print("CloudMLService: YouTube recommendations failed on attempt \(attempts): \(error.localizedDescription)")
+                #endif
+                if attempts >= maxAttempts {
+                    recommendationStatus = .error("YouTube recommendations unavailable")
+                    throw error
+                }
+                // Wait before retrying
+                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             }
-            
-            // If all attempts failed or returned duplicates
-            recommendationStatus = .error("No unique recommendations found")
-            throw MLError.insufficientData
-            
-        } else {
-            #if DEBUG
-            print("CloudMLService: Firebase Function temporarily disabled, throwing error to trigger fallback")
-            #endif
-            recommendationStatus = .error("Firebase Function deployment pending")
-            throw MLError.networkError // This will trigger the fallback to local search
         }
+        
+        // If all attempts failed or returned duplicates
+        recommendationStatus = .error("No unique recommendations found")
+        throw MLError.insufficientData
     }
     
     func getCloudRecommendations(for player: Player, limit: Int = 5) async throws -> [MLDrillRecommendation] {
@@ -608,7 +596,7 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         
         // Try real Firebase Functions first, fallback to simulation
         do {
-            return try await callFirebaseFunctionRecommendations(userUID: userUID, context: userContext, limit: limit)
+            return try await callFirebaseFunctionRecommendations(userUID: userUID, player: player, limit: limit)
         } catch {
             #if DEBUG
             print("Firebase Functions not available, using simulation: \(error.localizedDescription)")
@@ -617,32 +605,33 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         }
     }
     
-    private func callFirebaseFunctionRecommendations(userUID: String, context: UserMLContext, limit: Int) async throws -> [MLDrillRecommendation] {
-        // Construct Firebase Functions URL
-        // Format: https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/get_recommendations
-        let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/get_recommendations"
-        
+    private func callFirebaseFunctionRecommendations(userUID: String, player: Player, limit: Int) async throws -> [MLDrillRecommendation] {
+        // get_advanced_recommendations is the deployed endpoint (functions/main.py); it requires
+        // user_id + player_profile and returns a "recommendations" array.
+        let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/get_advanced_recommendations"
+
         guard let url = URL(string: functionsURL) else {
             throw MLError.networkError
         }
-        
+
         // Prepare request body
         let requestBody: [String: Any] = [
             "user_id": userUID,
-            "limit": limit,
-            "context": [
-                "skill_levels": context.skillLevels,
-                "recent_performance": context.recentPerformance,
-                "training_frequency": context.trainingFrequency,
-                "preferred_difficulty": context.preferredDifficulty
-            ]
+            "player_profile": buildPlayerProfile(for: player),
+            "limit": limit
         ]
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let user = auth.currentUser {
+            let idToken = try await user.getIDToken()
+            request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        }
+
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-        
+
         // Make the request
         let (data, response) = try await performRequestWithRetry(request)
 
@@ -650,24 +639,40 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
               httpResponse.statusCode == 200 else {
             throw MLError.networkError
         }
-        
+
         // Parse response
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let recommendations = json["recommendations"] as? [[String: Any]] else {
             throw MLError.modelNotAvailable
         }
-        
-        // Convert to MLDrillRecommendation objects
+
+        // The collaborative-filtering path returns camelCase (exerciseName/matchPercentage/
+        // reason/confidenceScore); the fallback path returns snake_case (exercise_id/
+        // match_percentage/confidence/reason). Accept either.
         var mlRecommendations: [MLDrillRecommendation] = []
-        
+
         for recData in recommendations {
+            let exerciseName = (recData["exerciseName"] as? String)
+                ?? (recData["exercise_name"] as? String)
+                ?? (recData["exercise_id"] as? String)
+                ?? "Unknown Exercise"
+
+            let matchPercentage = (recData["matchPercentage"] as? Double)
+                ?? (recData["match_percentage"] as? Double)
+
+            let confidenceScore = (recData["confidenceScore"] as? Double)
+                ?? (recData["confidence_score"] as? Double)
+                ?? (recData["confidence"] as? Double)
+                ?? matchPercentage.map { $0 / 100.0 }
+                ?? 0.5
+
             let mlRec = MLDrillRecommendation(
-                exerciseId: recData["exercise_id"] as? String ?? "",
-                exerciseName: recData["exercise_name"] as? String ?? "Unknown Exercise",
+                exerciseId: (recData["exercise_id"] as? String) ?? (recData["exerciseId"] as? String) ?? "",
+                exerciseName: exerciseName,
                 category: recData["category"] as? String ?? "General",
                 difficulty: recData["difficulty"] as? Int ?? 3,
-                confidenceScore: recData["confidence_score"] as? Double ?? 0.5,
-                reasoning: recData["reasoning"] as? String ?? "ML Recommendation",
+                confidenceScore: confidenceScore,
+                reasoning: (recData["reason"] as? String) ?? (recData["reasoning"] as? String) ?? "ML Recommendation",
                 recommendationType: .collaborativeFiltering,
                 estimatedDuration: recData["estimated_duration"] as? Int ?? 15,
                 targetSkills: recData["target_skills"] as? [String] ?? [],
@@ -678,11 +683,11 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             )
             mlRecommendations.append(mlRec)
         }
-        
+
         #if DEBUG
-        
-        print("Received \(mlRecommendations.count) recommendations from Firebase Functions")
-        
+
+        print("Received \(mlRecommendations.count) recommendations from get_advanced_recommendations")
+
         #endif
         return mlRecommendations
     }

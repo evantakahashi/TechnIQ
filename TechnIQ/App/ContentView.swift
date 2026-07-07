@@ -64,11 +64,16 @@ struct PlayerContentView: View {
     init(isOnboardingComplete: Binding<Bool>) {
         self._isOnboardingComplete = isOnboardingComplete
 
-        // Initialize with true predicate to detect if onboarding is needed
-        // Will be filtered by firebaseUID in onAppear
+        // Filter to the current user's players from the first render so a previous account's
+        // rows never gate routing. NSPredicate(value: false) until a UID is known; the
+        // onAppear/onChange path refreshes this when the UID changes.
+        let uid = AuthenticationManager.shared.userUID
+        let predicate = uid.isEmpty
+            ? NSPredicate(value: false)
+            : NSPredicate(format: "firebaseUID == %@", uid)
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true),
+            predicate: predicate,
             animation: .default
         )
     }

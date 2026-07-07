@@ -58,7 +58,9 @@ extension CloudService {
         do {
             try await syncRecentChanges()
             lastSyncDate = Date()
+            syncError = nil
         } catch {
+            syncError = error.localizedDescription
             #if DEBUG
             print("Incremental sync failed: \(error)")
             #endif

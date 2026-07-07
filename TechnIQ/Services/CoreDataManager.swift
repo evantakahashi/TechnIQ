@@ -16,6 +16,9 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
     /// Published error state so UI can react to Core Data failures
     @Published var persistentStoreError: Error?
 
+    /// Published error state for the most recent failed save so UI can surface lost writes
+    @Published var lastSaveError: Error?
+
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "DataModel")
 
@@ -24,43 +27,15 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
         description?.shouldMigrateStoreAutomatically = true
         description?.shouldInferMappingModelAutomatically = true
 
-        container.loadPersistentStores { storeDescription, error in
+        container.loadPersistentStores { [weak self] _, error in
             if let error = error as NSError? {
-                // If there's a migration error, delete the store and recreate
+                // Never auto-delete the store: a migration failure, locked file, or transient
+                // I/O error would otherwise wipe all local user data. Surface the error for UI;
+                // a destructive reset must be an explicit user action.
                 #if DEBUG
-                print("Core Data error: \(error.localizedDescription)")
+                print("Core Data store failed to load: \(error), \(error.userInfo)")
                 #endif
-                #if DEBUG
-                print("Attempting to reset Core Data store...")
-
-                #endif
-                if let storeURL = storeDescription.url {
-                    do {
-                        try FileManager.default.removeItem(at: storeURL)
-                        #if DEBUG
-                        print("Deleted corrupted store, will recreate")
-
-                        #endif
-                        // Try loading again
-                        container.loadPersistentStores { [weak self] _, retryError in
-                            if let retryError = retryError {
-                                #if DEBUG
-                                print("Failed to recreate Core Data store: \(retryError.localizedDescription)")
-                                #endif
-                                self?.persistentStoreError = retryError
-                            } else {
-                                #if DEBUG
-                                print("Successfully recreated Core Data store")
-                                #endif
-                            }
-                        }
-                    } catch {
-                        #if DEBUG
-                        print("Failed to delete corrupted Core Data store: \(error.localizedDescription)")
-                        #endif
-                        self.persistentStoreError = error
-                    }
-                }
+                self?.persistentStoreError = error
             }
         }
 
@@ -73,14 +48,14 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
     }
 
     func save() {
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                #if DEBUG
-                print("Save error: \(error.localizedDescription)")
-                #endif
-            }
+        guard context.hasChanges else { return }
+        do {
+            try context.save()
+            lastSaveError = nil
+        } catch {
+            context.rollback()
+            AppLogger.shared.error("[CoreDataManager] Failed to save context: \(error.localizedDescription)")
+            lastSaveError = error
         }
     }
 }

@@ -45,12 +45,13 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     /// - Returns: The new total balance
     @discardableResult
     func awardCoins(_ amount: Int, for reason: CoinEarningEvent, context: NSManagedObjectContext? = nil) -> Int {
-        let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
             AppLogger.shared.error("[CoinService] No player found to award coins")
             lastError = .notFound("Player")
             return 0
         }
+        // Mutate and save/rollback the player's own context so they never diverge.
+        let ctx = player.managedObjectContext ?? context ?? coreDataManager.context
 
         let previousBalance = Int(player.coins)
         player.coins += Int64(amount)
@@ -89,12 +90,13 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
     /// - Returns: True if successful, false if insufficient funds
     @discardableResult
     func deductCoins(_ amount: Int, for reason: String, context: NSManagedObjectContext? = nil) -> Bool {
-        let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
             AppLogger.shared.error("[CoinService] No player found to deduct coins")
             lastError = .notFound("Player")
             return false
         }
+        // Mutate and save/rollback the player's own context so they never diverge.
+        let ctx = player.managedObjectContext ?? context ?? coreDataManager.context
 
         let currentCoins = Int(player.coins)
         guard currentCoins >= amount else {
@@ -179,12 +181,13 @@ final class CoinService: ObservableObject, CoinServiceProtocol {
         streakDay: Int,
         context: NSManagedObjectContext? = nil
     ) -> Int {
-        let ctx = context ?? coreDataManager.context
         guard let player = coreDataManager.getCurrentPlayer() else {
             AppLogger.shared.error("[CoinService] No player found for session coins")
             lastError = .notFound("Player")
             return 0
         }
+        // Mutate and save/rollback the player's own context so they never diverge.
+        let ctx = player.managedObjectContext ?? context ?? coreDataManager.context
 
         var totalCoins = 0
         let lastReason: CoinEarningEvent

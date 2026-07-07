@@ -165,9 +165,15 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
         }
 
         do {
-            // Get the presenting view controller
-            guard let scene = await UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-                  let presentingViewController = scene.windows.first?.rootViewController else {
+            // Resolve the presenting view controller on the main actor (UIScene state is main-actor isolated)
+            let presentingViewController: UIViewController? = await MainActor.run {
+                guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
+                    return nil
+                }
+                return scene.windows.first?.rootViewController
+            }
+
+            guard let presentingViewController else {
                 await MainActor.run {
                     errorMessage = "Unable to find root view controller"
                     isLoading = false
@@ -289,9 +295,9 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
             }
 
             let controller = ASAuthorizationController(authorizationRequests: [request])
-            let delegate = AppleSignInDelegate(authManager: self, nonce: nonce)
+            let delegate = AppleSignInDelegate(authManager: self, nonce: nonce, presentationAnchor: window)
             controller.delegate = delegate
-            controller.presentationContextProvider = window.rootViewController as? ASAuthorizationControllerPresentationContextProviding
+            controller.presentationContextProvider = delegate
             objc_setAssociatedObject(controller, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN)
             controller.performRequests()
         }
@@ -427,6 +433,11 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
                     let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
                     throw NSError(domain: "AuthenticationManager", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(errorBody)"])
                 }
+            } catch let error as NSError where error.domain == "AuthenticationManager"
+                && (400..<500).contains(error.code)
+                && error.code != 408 && error.code != 429 {
+                // Client errors (auth/permission/not found) are not retryable — fail fast.
+                throw error
             } catch {
                 lastError = error
                 #if DEBUG
@@ -536,13 +547,19 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
 
 // MARK: - Apple Sign-In Delegate
 
-class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
+class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     private let authManager: AuthenticationManager
     private let nonce: String
+    private let anchor: ASPresentationAnchor
 
-    init(authManager: AuthenticationManager, nonce: String) {
+    init(authManager: AuthenticationManager, nonce: String, presentationAnchor: ASPresentationAnchor) {
         self.authManager = authManager
         self.nonce = nonce
+        self.anchor = presentationAnchor
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return anchor
     }
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {

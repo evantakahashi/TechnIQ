@@ -17,13 +17,18 @@ extension CloudService {
             throw CloudDataError.networkError
         }
 
+        guard let playerDocID = player.id?.uuidString else {
+            AppLogger.shared.warning("[CloudService] Skipping player profile sync — player has nil id")
+            return
+        }
+
         syncStatus = .syncing
 
         do {
             let playerData = try createPlayerProfileDocument(player: player, profile: profile)
 
             try await db.collection("users").document(userUID)
-                .collection("playerProfiles").document(player.id?.uuidString ?? UUID().uuidString)
+                .collection("playerProfiles").document(playerDocID)
                 .setData(playerData, merge: true)
 
             player.lastCloudSync = Date()
@@ -43,9 +48,13 @@ extension CloudService {
         }
 
         try await commitInChunks(goals) { batch, goal in
+            guard let goalDocID = goal.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping goal sync — goal has nil id")
+                return
+            }
             let goalData = try self.createPlayerGoalDocument(goal: goal)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("playerGoals").document(goal.id?.uuidString ?? UUID().uuidString)
+                .collection("playerGoals").document(goalDocID)
             batch.setData(goalData, forDocument: docRef, merge: true)
         }
     }
@@ -56,9 +65,13 @@ extension CloudService {
         }
 
         try await commitInChunks(statsList) { batch, stats in
+            guard let statsDocID = stats.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping stats sync — stats has nil id")
+                return
+            }
             let statsData = self.createPlayerStatsDocument(stats: stats)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("playerStats").document(stats.id?.uuidString ?? UUID().uuidString)
+                .collection("playerStats").document(statsDocID)
             batch.setData(statsData, forDocument: docRef, merge: true)
         }
     }
@@ -69,9 +82,13 @@ extension CloudService {
         }
 
         try await commitInChunks(seasons) { batch, season in
+            guard let seasonDocID = season.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping season sync — season has nil id")
+                return
+            }
             let seasonData = self.createSeasonDocument(season: season)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("seasons").document(season.id?.uuidString ?? UUID().uuidString)
+                .collection("seasons").document(seasonDocID)
             batch.setData(seasonData, forDocument: docRef, merge: true)
         }
     }
@@ -82,9 +99,13 @@ extension CloudService {
         }
 
         try await commitInChunks(matches) { batch, match in
+            guard let matchDocID = match.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping match sync — match has nil id")
+                return
+            }
             let matchData = self.createMatchDocument(match: match)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("matches").document(match.id?.uuidString ?? UUID().uuidString)
+                .collection("matches").document(matchDocID)
             batch.setData(matchData, forDocument: docRef, merge: true)
         }
     }
@@ -100,10 +121,15 @@ extension CloudService {
             throw CloudDataError.networkError
         }
 
+        guard let sessionDocID = session.id?.uuidString else {
+            AppLogger.shared.warning("[CloudService] Skipping training session sync — session has nil id")
+            return
+        }
+
         let sessionData = try createTrainingSessionDocument(session: session)
 
         try await db.collection("users").document(userUID)
-            .collection("trainingSessions").document(session.id?.uuidString ?? UUID().uuidString)
+            .collection("trainingSessions").document(sessionDocID)
             .setData(sessionData, merge: true)
     }
 
@@ -115,9 +141,13 @@ extension CloudService {
         }
 
         try await commitInChunks(feedback) { batch, feedbackItem in
+            guard let feedbackDocID = feedbackItem.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping feedback sync — feedback has nil id")
+                return
+            }
             let feedbackData = try self.createRecommendationFeedbackDocument(feedback: feedbackItem)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("recommendationFeedback").document(feedbackItem.id?.uuidString ?? UUID().uuidString)
+                .collection("recommendationFeedback").document(feedbackDocID)
             batch.setData(feedbackData, forDocument: docRef, merge: true)
         }
     }
@@ -146,9 +176,13 @@ extension CloudService {
         }
 
         try await commitInChunks(items) { batch, item in
+            guard let itemDocID = item.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping owned avatar item sync — item has nil id")
+                return
+            }
             let itemData = self.createOwnedAvatarItemDocument(item: item)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("ownedAvatarItems").document(item.id?.uuidString ?? UUID().uuidString)
+                .collection("ownedAvatarItems").document(itemDocID)
             batch.setData(itemData, forDocument: docRef, merge: true)
         }
     }
@@ -161,9 +195,13 @@ extension CloudService {
         }
 
         try await commitInChunks(exercises) { batch, exercise in
+            guard let exerciseDocID = exercise.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping custom exercise sync — exercise has nil id")
+                return
+            }
             let exerciseData = self.createCustomExerciseDocument(exercise: exercise)
             let docRef = self.db.collection("users").document(userUID)
-                .collection("customExercises").document(exercise.id?.uuidString ?? UUID().uuidString)
+                .collection("customExercises").document(exerciseDocID)
             batch.setData(exerciseData, forDocument: docRef, merge: true)
         }
     }
@@ -179,10 +217,15 @@ extension CloudService {
             throw CloudDataError.networkError
         }
 
+        guard let planDocID = plan.id?.uuidString else {
+            AppLogger.shared.warning("[CloudService] Skipping training plan sync — plan has nil id")
+            return
+        }
+
         let planData = createTrainingPlanDocument(plan: plan)
 
         try await db.collection("users").document(userUID)
-            .collection("trainingPlans").document(plan.id?.uuidString ?? UUID().uuidString)
+            .collection("trainingPlans").document(planDocID)
             .setData(planData, merge: true)
     }
 
@@ -279,8 +322,13 @@ extension CloudService {
     }
 
     func fetchSimilarPlayerProfiles(for playerProfile: PlayerProfile, limit: Int = 10) async throws -> [CloudPlayerProfile] {
+        // arrayContainsAny throws NSInvalidArgumentException on an empty array (uncatchable in Swift).
+        guard let skillGoals = playerProfile.skillGoals, !skillGoals.isEmpty else {
+            return []
+        }
+
         let skillGoalsQuery = db.collection("aggregatedProfiles")
-            .whereField("skillGoals", arrayContainsAny: playerProfile.skillGoals ?? [])
+            .whereField("skillGoals", arrayContainsAny: skillGoals)
             .limit(to: limit)
 
         let snapshot = try await skillGoalsQuery.getDocuments()

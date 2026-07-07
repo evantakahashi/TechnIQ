@@ -44,12 +44,19 @@ extension CloudService {
             restoreProgress = 0.1
             let cloudData = try await fetchAllUserData()
 
-            guard let profileData = cloudData.playerProfiles.first else {
+            guard let profileData = cloudData.playerProfiles.max(by: { lhs, rhs in
+                let lhsDate = (lhs["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                let rhsDate = (rhs["updatedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                return lhsDate < rhsDate
+            }) else {
                 throw CloudRestoreError.noDataFound
             }
 
             restoreProgress = 0.2
             let player = try createPlayer(from: profileData, in: context)
+
+            // Child docs carry a playerId; only attach those belonging to the restored profile.
+            let restoredPlayerId = profileData["playerId"] as? String ?? player.id?.uuidString
 
             restoreProgress = 0.3
             try restorePlayerProfile(from: profileData, for: player, in: context)
@@ -92,6 +99,13 @@ extension CloudService {
 
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions {
+                if let docPlayerId = sessionData["playerId"] as? String, !docPlayerId.isEmpty,
+                   let restoredPlayerId = restoredPlayerId, docPlayerId != restoredPlayerId {
+                    #if DEBUG
+                    print("CloudService: Skipping session with mismatched playerId \(docPlayerId)")
+                    #endif
+                    continue
+                }
                 try restoreTrainingSession(from: sessionData, for: player, in: context)
             }
 
@@ -110,6 +124,7 @@ extension CloudService {
             return player
 
         } catch {
+            context.rollback()
             restoreError = error.localizedDescription
             #if DEBUG
             print("CloudService: Restore failed - \(error)")
@@ -121,11 +136,21 @@ extension CloudService {
     // MARK: - Entity Creation Helpers
 
     private func createPlayer(from data: [String: Any], in context: NSManagedObjectContext) throws -> Player {
-        let player = Player(context: context)
-        player.id = UUID(uuidString: data["playerId"] as? String ?? "") ?? UUID()
-        player.firebaseUID = data["firebaseUID"] as? String ?? Auth.auth().currentUser?.uid
+        let firebaseUID = data["firebaseUID"] as? String ?? Auth.auth().currentUser?.uid
+
+        // Fetch-or-create keyed on firebaseUID so a retry/re-auth never duplicates the Player graph.
+        let player: Player
+        if let firebaseUID = firebaseUID,
+           let existing = CoreDataManager.shared.getCurrentPlayer(for: firebaseUID) {
+            player = existing
+        } else {
+            player = Player(context: context)
+        }
+
+        player.id = player.id ?? UUID(uuidString: data["playerId"] as? String ?? "") ?? UUID()
+        player.firebaseUID = firebaseUID
         player.name = data["name"] as? String
-        player.age = Int16(data["age"] as? Int ?? 0)
+        player.age = Self.int16Value(from: data["age"])
         player.position = data["position"] as? String
         player.experienceLevel = data["experienceLevel"] as? String
         player.competitiveLevel = data["competitiveLevel"] as? String
@@ -146,10 +171,10 @@ extension CloudService {
         profile.skillGoals = data["skillGoals"] as? [String]
         profile.physicalFocusAreas = data["physicalFocusAreas"] as? [String]
         profile.selfIdentifiedWeaknesses = data["selfIdentifiedWeaknesses"] as? [String]
-        profile.preferredIntensity = Int16(data["preferredIntensity"] as? Int ?? 5)
-        profile.preferredSessionDuration = Int16(data["preferredSessionDuration"] as? Int ?? 45)
+        profile.preferredIntensity = Self.int16Value(from: data["preferredIntensity"], default: 5)
+        profile.preferredSessionDuration = Self.int16Value(from: data["preferredSessionDuration"], default: 45)
         profile.preferredDrillComplexity = data["preferredDrillComplexity"] as? String
-        profile.yearsPlaying = Int16(data["yearsPlaying"] as? Int ?? 0)
+        profile.yearsPlaying = Self.int16Value(from: data["yearsPlaying"])
         profile.trainingBackground = data["trainingBackground"] as? String
         profile.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         profile.updatedAt = Date()
@@ -159,12 +184,12 @@ extension CloudService {
 
     private func restoreGamificationData(from data: [String: Any], to player: Player) {
         player.totalXP = Int64(data["totalXP"] as? Int ?? 0)
-        player.currentLevel = Int16(data["currentLevel"] as? Int ?? 1)
-        player.currentStreak = Int16(data["currentStreak"] as? Int ?? 0)
-        player.longestStreak = Int16(data["longestStreak"] as? Int ?? 0)
+        player.currentLevel = Self.int16Value(from: data["currentLevel"], default: 1)
+        player.currentStreak = Self.int16Value(from: data["currentStreak"])
+        player.longestStreak = Self.int16Value(from: data["longestStreak"])
         player.coins = Int64(data["coins"] as? Int ?? 0)
         player.totalCoinsEarned = Int64(data["totalCoinsEarned"] as? Int ?? 0)
-        player.streakFreezes = Int16(data["streakFreezes"] as? Int ?? 0)
+        player.streakFreezes = Self.int16Value(from: data["streakFreezes"])
         player.unlockedAchievements = data["unlockedAchievements"] as? [String]
 
         if let lastTrainingTimestamp = data["lastTrainingDate"] as? Timestamp {
@@ -266,20 +291,14 @@ extension CloudService {
     }
 
     private static func int16Value(from value: Any?, default defaultValue: Int16) -> Int16 {
-        if let v = value as? Int { return Int16(v) }
-        if let v = value as? Int16 { return v }
-        if let v = value as? Int32 { return Int16(v) }
-        if let v = value as? Int64 { return Int16(v) }
-        if let v = value as? NSNumber { return v.int16Value }
+        if let v = value as? NSNumber { return Int16(clamping: v.int64Value) }
+        if let v = value as? Int { return Int16(clamping: v) }
         return defaultValue
     }
 
     private static func int32Value(from value: Any?) -> Int32 {
-        if let v = value as? Int { return Int32(v) }
-        if let v = value as? Int16 { return Int32(v) }
-        if let v = value as? Int32 { return v }
-        if let v = value as? Int64 { return Int32(v) }
-        if let v = value as? NSNumber { return v.int32Value }
+        if let v = value as? NSNumber { return Int32(clamping: v.int64Value) }
+        if let v = value as? Int { return Int32(clamping: v) }
         return 0
     }
 
@@ -289,13 +308,7 @@ extension CloudService {
         stats.date = (data["date"] as? Timestamp)?.dateValue() ?? (data["date"] as? Date) ?? Date()
         stats.skillRatings = data["skillRatings"] as? [String: Double]
         stats.totalTrainingHours = data["totalTrainingHours"] as? Double ?? 0
-        if let sessions = data["totalSessions"] as? Int {
-            stats.totalSessions = Int32(sessions)
-        } else if let sessions = data["totalSessions"] as? Int32 {
-            stats.totalSessions = sessions
-        } else if let sessions = data["totalSessions"] as? NSNumber {
-            stats.totalSessions = sessions.int32Value
-        }
+        stats.totalSessions = Self.int32Value(from: data["totalSessions"])
         stats.player = player
         player.addToStats(stats)
     }
@@ -305,20 +318,20 @@ extension CloudService {
         exercise.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         exercise.name = data["name"] as? String
         exercise.category = data["category"] as? String
-        exercise.difficulty = Int16(data["difficulty"] as? Int ?? 2)
+        exercise.difficulty = Self.int16Value(from: data["difficulty"], default: 2)
         exercise.exerciseDescription = data["exerciseDescription"] as? String
         exercise.instructions = data["instructions"] as? String
         exercise.targetSkills = data["targetSkills"] as? [String]
         exercise.isYouTubeContent = data["isYouTubeContent"] as? Bool ?? false
         exercise.youtubeVideoID = data["youtubeVideoID"] as? String
         exercise.videoThumbnailURL = data["videoThumbnailURL"] as? String
-        exercise.videoDuration = Int32(data["videoDuration"] as? Int ?? 0)
+        exercise.videoDuration = Self.int32Value(from: data["videoDuration"])
         exercise.videoDescription = data["videoDescription"] as? String
         exercise.isFavorite = data["isFavorite"] as? Bool ?? false
         exercise.personalNotes = data["personalNotes"] as? String
         exercise.diagramJSON = data["diagramJSON"] as? String
-        exercise.metabolicLoad = Int16(data["metabolicLoad"] as? Int ?? 0)
-        exercise.technicalComplexity = Int16(data["technicalComplexity"] as? Int ?? 0)
+        exercise.metabolicLoad = Self.int16Value(from: data["metabolicLoad"])
+        exercise.technicalComplexity = Self.int16Value(from: data["technicalComplexity"])
 
         if let lastUsedTimestamp = data["lastUsedAt"] as? Timestamp {
             exercise.lastUsedAt = lastUsedTimestamp.dateValue()
@@ -334,22 +347,30 @@ extension CloudService {
         session.date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
         session.duration = Double(data["duration"] as? Int ?? 0)
         session.sessionType = data["sessionType"] as? String
-        session.intensity = Int16(data["intensity"] as? Int ?? 5)
+        session.intensity = Self.int16Value(from: data["intensity"], default: 5)
         session.location = data["location"] as? String
-        session.overallRating = Int16(data["overallRating"] as? Int ?? 0)
+        session.overallRating = Self.int16Value(from: data["overallRating"])
         session.notes = data["notes"] as? String
         session.player = player
         player.addToSessions(session)
 
         if let exercisesData = data["exercises"] as? [[String: Any]] {
+            let restoredExercises = (player.exercises?.allObjects as? [Exercise]) ?? []
             for exerciseData in exercisesData {
                 let sessionExercise = SessionExercise(context: context)
                 sessionExercise.id = UUID()
                 sessionExercise.duration = Double(exerciseData["duration"] as? Int ?? 0)
-                sessionExercise.sets = Int16(exerciseData["sets"] as? Int ?? 0)
-                sessionExercise.reps = Int16(exerciseData["reps"] as? Int ?? 0)
-                sessionExercise.performanceRating = Int16(exerciseData["performanceRating"] as? Int ?? 0)
+                sessionExercise.sets = Self.int16Value(from: exerciseData["sets"])
+                sessionExercise.reps = Self.int16Value(from: exerciseData["reps"])
+                sessionExercise.performanceRating = Self.int16Value(from: exerciseData["performanceRating"])
                 sessionExercise.notes = exerciseData["notes"] as? String
+
+                if let exerciseIDString = exerciseData["exerciseId"] as? String,
+                   let exerciseID = UUID(uuidString: exerciseIDString),
+                   let matchingExercise = restoredExercises.first(where: { $0.id == exerciseID }) {
+                    sessionExercise.exercise = matchingExercise
+                }
+
                 sessionExercise.session = session
             }
         }
@@ -360,13 +381,13 @@ extension CloudService {
         plan.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         plan.name = data["name"] as? String
         plan.planDescription = data["planDescription"] as? String
-        plan.durationWeeks = Int16(data["durationWeeks"] as? Int ?? 4)
+        plan.durationWeeks = Self.int16Value(from: data["durationWeeks"], default: 4)
         plan.difficulty = data["difficulty"] as? String
         plan.category = data["category"] as? String
         plan.targetRole = data["targetRole"] as? String
         plan.isPrebuilt = data["isPrebuilt"] as? Bool ?? false
         plan.isActive = data["isActive"] as? Bool ?? false
-        plan.currentWeek = Int16(data["currentWeek"] as? Int ?? 1)
+        plan.currentWeek = Self.int16Value(from: data["currentWeek"], default: 1)
         plan.progressPercentage = data["progressPercentage"] as? Double ?? 0.0
         plan.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         plan.updatedAt = Date()
@@ -391,7 +412,7 @@ extension CloudService {
     func restorePlanWeek(from data: [String: Any], for plan: TrainingPlan, player: Player, in context: NSManagedObjectContext) throws {
         let week = PlanWeek(context: context)
         week.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
-        week.weekNumber = Int16(data["weekNumber"] as? Int ?? 1)
+        week.weekNumber = Self.int16Value(from: data["weekNumber"], default: 1)
         week.focusArea = data["focusArea"] as? String
         week.notes = data["notes"] as? String
         week.isCompleted = data["isCompleted"] as? Bool ?? false
@@ -413,7 +434,7 @@ extension CloudService {
     func restorePlanDay(from data: [String: Any], for week: PlanWeek, player: Player, in context: NSManagedObjectContext) throws {
         let day = PlanDay(context: context)
         day.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
-        day.dayNumber = Int16(data["dayNumber"] as? Int ?? 1)
+        day.dayNumber = Self.int16Value(from: data["dayNumber"], default: 1)
         day.dayOfWeek = data["dayOfWeek"] as? String
         day.isRestDay = data["isRestDay"] as? Bool ?? false
         day.isSkipped = data["isSkipped"] as? Bool ?? false
@@ -486,8 +507,8 @@ extension CloudService {
 
         local.currentLevel = Int16(XPService.shared.levelForXP(local.totalXP))
 
-        let cloudStreak = Int16(cloudData["currentStreak"] as? Int ?? 0)
-        let cloudLongestStreak = Int16(cloudData["longestStreak"] as? Int ?? 0)
+        let cloudStreak = Int16(clamping: cloudData["currentStreak"] as? Int ?? 0)
+        let cloudLongestStreak = Int16(clamping: cloudData["longestStreak"] as? Int ?? 0)
 
         if let cloudLastTraining = (cloudData["lastTrainingDate"] as? Timestamp)?.dateValue() {
             let daysSinceCloud = Calendar.current.dateComponents([.day], from: cloudLastTraining, to: Date()).day ?? 100
