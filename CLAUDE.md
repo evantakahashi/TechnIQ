@@ -9,8 +9,9 @@ AI-powered soccer training app for iOS. Personalized programs, smart drills, pro
 ---
 
 ## Quick Commands
-- **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
-- **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests test`
+All xcodebuild invocations (build/test/archive) MUST append `SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO` — Xcode 26's explicit modules can't precompile FirebaseFirestoreInternal, and project-level settings don't reach SPM targets. GUI Product>Archive will fail; archive from CLI.
+- **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO build`
+- **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO test`
 - **Lint:** `swiftlint` (config `.swiftlint.yml`; ~140 warnings / 0 errors today, not yet `--strict`)
 - **CI:** `.github/workflows/ci.yml` — SwiftLint + build + unit tests on PR / push to main
 - **Deploy functions:** `cd functions && firebase deploy --only functions`

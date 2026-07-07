@@ -494,7 +494,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     
     private func handleAuthError(_ error: Error) {
         if let authError = error as NSError? {
-            switch AuthErrorCode.Code(rawValue: authError.code) {
+            switch AuthErrorCode(rawValue: authError.code) {
             case .invalidEmail:
                 errorMessage = "Invalid email address"
             case .wrongPassword:

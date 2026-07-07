@@ -9,6 +9,8 @@ functions/.env.yaml
 
 # Xcode
 build/
+!.claude/skills/build/
+!.claude/skills/build/**
 *.pbxuser
 !default.pbxuser
 *.mode1v3

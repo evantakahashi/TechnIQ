@@ -55,6 +55,10 @@ jobs:
           echo "Using simulator: $DEVICE"
           echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
 
+      # SWIFT/CLANG_ENABLE_EXPLICIT_MODULES=NO: Xcode 26's explicitly-built modules
+      # cannot precompile FirebaseFirestoreInternal's generated module map (missing
+      # Foundation dep). Must be passed on the command line so it reaches SPM package
+      # targets. Drop when Firebase/Apple fix the module map.
       - name: Build and unit test
         run: |
           set -o pipefail
@@ -63,4 +67,6 @@ jobs:
             -scheme TechnIQ \
             -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
             -only-testing:TechnIQTests \
+            SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+            CLANG_ENABLE_EXPLICIT_MODULES=NO \
             clean test

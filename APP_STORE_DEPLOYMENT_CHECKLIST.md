@@ -35,8 +35,10 @@ dangling SceneDelegate, iPad screenshots) are resolved in this pass.
 
 ## 🚫 Blockers — must fix before a successful upload
 
-- [ ] **App icon (1024×1024 PNG, no alpha)** — `AppIcon.appiconset` has only `Contents.json`; App Store validation rejects binaries without the 1024px icon. Add the file and its `filename` entry (Xcode does this on drag-in).
-- [ ] **Bump SDKs for privacy manifests** — `firebase-ios-sdk 10.18.0` → 10.24+/11.x and `GoogleSignin-iOS 7.0.0` → 7.1+. These predate Apple's May-2024 mandate; App Store Connect rejects uploads with ITMS-91053/91061 until upgraded. Resolve packages, rebuild, retest auth/Firestore/Functions.
+- [x] **App icon (1024×1024 PNG, no alpha)** — DONE 2026-07-07: generated stadium-night kickoff-circle icon at `AppIcon.appiconset/AppIcon.png` (replace with brand asset anytime; keep filename or update Contents.json).
+- [x] **Bump SDKs for privacy manifests** — DONE 2026-07-07: `firebase-ios-sdk` → 11.15.0 (upToNextMajor 11.0.0), `GoogleSignIn-iOS` → 8.0.0 (upToNextMajor 8.0.0); pruned 14 unused linked products (all Analytics variants, AppCheck, Database, Storage, Performance, MLModelDownloader, Combine/-Swift shims). Retest auth/Google/Apple sign-in on device before submitting.
+- [ ] **Archive from the command line ONLY** — Xcode 26's explicitly-built modules cannot compile `FirebaseFirestoreInternal` (broken generated module map), and the required overrides don't reach SPM targets from project settings, so GUI Product▸Archive fails. Use:
+  `xcodebuild -project TechnIQ.xcodeproj -scheme TechnIQ -destination 'generic/platform=iOS' SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO archive -archivePath build/TechnIQ.xcarchive` (then Organizer or `xcodebuild -exportArchive`). Drop the flags when Firebase/Apple fix the module map.
 
 ---
 
