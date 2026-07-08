@@ -29,8 +29,18 @@ class CloudService: ObservableObject, CloudServiceProtocol {
     }
 
     @Published var syncStatus: CloudSyncStatus = .idle
-    @Published var lastSyncDate: Date?
+    /// Watermark for incremental sync. Persisted so a relaunch keeps picking up only what changed
+    /// since the last successful sync instead of resetting the window every launch.
+    @Published var lastSyncDate: Date? {
+        didSet {
+            if let date = lastSyncDate {
+                UserDefaults.standard.set(date, forKey: Self.lastSyncDateKey)
+            }
+        }
+    }
     @Published var isNetworkAvailable = true
+
+    static let lastSyncDateKey = "CloudService.lastSyncDate"
 
     // From CloudSyncManager
     @Published var isSyncing = false
@@ -51,6 +61,7 @@ class CloudService: ObservableObject, CloudServiceProtocol {
     // MARK: - Init
 
     private init() {
+        lastSyncDate = UserDefaults.standard.object(forKey: Self.lastSyncDateKey) as? Date
         setupFirestore()
         startNetworkMonitoring()
         startAutoSync()

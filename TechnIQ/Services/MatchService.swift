@@ -57,6 +57,7 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         match.strengths = strengths
         match.weaknesses = weaknesses
         match.createdAt = Date()
+        match.updatedAt = Date()
         match.player = player
         match.season = season
 
@@ -64,6 +65,9 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         match.xpEarned = calculateMatchXP(goals: match.goals, assists: match.assists, minutesPlayed: match.minutesPlayed, result: result)
 
         saveContext()
+        // Push immediately so a match logged just before quitting still reaches the cloud (the
+        // 5-min/context-did-save incremental sync also covers it, but can be throttled).
+        Task { @MainActor in try? await CloudService.shared.syncMatches([match], for: player) }
         return match
     }
 
@@ -108,8 +112,12 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
 
     /// Deletes a match
     func deleteMatch(_ match: Match) {
+        let docId = match.id?.uuidString
         context.delete(match)
         saveContext()
+        if let docId {
+            Task { @MainActor in await CloudService.shared.propagateDeletion(collection: "matches", docId: docId) }
+        }
     }
 
     // MARK: - Season CRUD
@@ -130,9 +138,11 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         season.team = team
         season.isActive = false
         season.createdAt = Date()
+        season.updatedAt = Date()
         season.player = player
 
         saveContext()
+        Task { @MainActor in try? await CloudService.shared.syncSeasons([season], for: player) }
         return season
     }
 
@@ -172,17 +182,23 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         let seasons = fetchSeasons(for: player)
         for s in seasons {
             s.isActive = false
+            s.updatedAt = Date()
         }
 
         // Activate the selected season
         season.isActive = true
+        season.updatedAt = Date()
         saveContext()
     }
 
     /// Deletes a season
     func deleteSeason(_ season: Season) {
+        let docId = season.id?.uuidString
         context.delete(season)
         saveContext()
+        if let docId {
+            Task { @MainActor in await CloudService.shared.propagateDeletion(collection: "seasons", docId: docId) }
+        }
     }
 
     // MARK: - Statistics

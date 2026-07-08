@@ -15,18 +15,12 @@ extension CloudService {
 
         isSyncing = true
         syncError = nil
+        let syncStart = Date()
 
         do {
-            try await syncPlayerData()
-            try await syncTrainingHistory()
-            try await syncPlayerStatsData()
-            try await syncMatchData()
-            try await syncAvatarData()
-            try await syncCustomExercises()
-            try await syncTrainingPlans()
-            try await syncRecommendationFeedback()
+            try await pushAllScoped()
 
-            lastSyncDate = Date()
+            lastSyncDate = syncStart
             #if DEBUG
             print("Full cloud sync completed successfully")
             #endif
@@ -54,10 +48,12 @@ extension CloudService {
 
         lastSyncRequest = Date()
         isSyncing = true
+        let syncStart = Date()
 
         do {
             try await syncRecentChanges()
-            lastSyncDate = Date()
+            // Advance the watermark to when the sync started so edits made mid-sync are caught next cycle.
+            lastSyncDate = syncStart
             syncError = nil
         } catch {
             syncError = error.localizedDescription
@@ -69,155 +65,157 @@ extension CloudService {
         isSyncing = false
     }
 
+    // MARK: - Account Scoping
+
+    /// The single Player owned by the currently-authenticated user. Every sync fetch scopes to this
+    /// player so a different account's local rows never upload under this uid (cross-account leak).
+    func currentSyncPlayer(in context: NSManagedObjectContext) -> Player? {
+        guard let uid = auth.currentUser?.uid, !uid.isEmpty else { return nil }
+        let request: NSFetchRequest<Player> = Player.fetchRequest()
+        request.predicate = NSPredicate(format: "firebaseUID == %@", uid)
+        request.fetchLimit = 1
+        return try? context.fetch(request).first
+    }
+
+    /// Pushes every synced collection for the current account's player. Used by the full sync and by
+    /// the first incremental sync of a launch (when there is no watermark yet).
+    private func pushAllScoped() async throws {
+        try await syncPlayerData()
+        try await syncTrainingHistory()
+        try await syncPlayerStatsData()
+        try await syncMatchData()
+        try await syncAvatarData()
+        try await syncCustomExercises()
+        try await syncTrainingPlans()
+        try await syncRecommendationFeedback()
+    }
+
     // MARK: - Player Data Sync
 
     private func syncPlayerData() async throws {
-        let context = coreDataManager.context
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
 
-        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
-        playerRequest.predicate = NSPredicate(format: "playerProfile != nil")
-
-        let players = try context.fetch(playerRequest)
-
-        for player in players {
-            if let profile = player.playerProfile {
-                try await syncPlayerProfile(player, with: profile)
-            }
-
-            if let goals = player.playerGoals?.allObjects as? [PlayerGoal] {
-                try await syncPlayerGoals(goals, for: player)
-            }
+        if let profile = player.playerProfile {
+            try await syncPlayerProfile(player, with: profile)
+        }
+        if let goals = player.playerGoals?.allObjects as? [PlayerGoal], !goals.isEmpty {
+            try await syncPlayerGoals(goals, for: player)
         }
     }
 
     private func syncTrainingHistory() async throws {
-        let context = coreDataManager.context
-
-        let sessionRequest: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        sessionRequest.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)]
-
-        let sessions = try context.fetch(sessionRequest)
-
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        let sessions = (player.sessions?.allObjects as? [TrainingSession]) ?? []
         for session in sessions {
             try await syncTrainingSession(session)
         }
     }
 
     private func syncPlayerStatsData() async throws {
-        let context = coreDataManager.context
-
-        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
-        let players = try context.fetch(playerRequest)
-
-        for player in players {
-            if let stats = player.stats?.allObjects as? [PlayerStats], !stats.isEmpty {
-                try await syncPlayerStats(stats, for: player)
-            }
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        if let stats = player.stats?.allObjects as? [PlayerStats], !stats.isEmpty {
+            try await syncPlayerStats(stats, for: player)
         }
     }
 
     private func syncMatchData() async throws {
-        let context = coreDataManager.context
-
-        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
-        let players = try context.fetch(playerRequest)
-
-        for player in players {
-            if let seasons = player.seasons?.allObjects as? [Season], !seasons.isEmpty {
-                try await syncSeasons(seasons, for: player)
-            }
-            if let matches = player.matches?.allObjects as? [Match], !matches.isEmpty {
-                try await syncMatches(matches, for: player)
-            }
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        if let seasons = player.seasons?.allObjects as? [Season], !seasons.isEmpty {
+            try await syncSeasons(seasons, for: player)
+        }
+        if let matches = player.matches?.allObjects as? [Match], !matches.isEmpty {
+            try await syncMatches(matches, for: player)
         }
     }
 
     // MARK: - Avatar Sync
 
     private func syncAvatarData() async throws {
-        let context = coreDataManager.context
-
-        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
-        playerRequest.predicate = NSPredicate(format: "avatarConfiguration != nil")
-
-        let players = try context.fetch(playerRequest)
-
-        for player in players {
-            if let avatar = player.avatarConfiguration {
-                try await syncAvatarConfiguration(avatar, for: player)
-            }
-
-            if let ownedItems = player.ownedAvatarItems?.allObjects as? [OwnedAvatarItem], !ownedItems.isEmpty {
-                try await syncOwnedAvatarItems(ownedItems, for: player)
-            }
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        if let avatar = player.avatarConfiguration {
+            try await syncAvatarConfiguration(avatar, for: player)
+        }
+        if let ownedItems = player.ownedAvatarItems?.allObjects as? [OwnedAvatarItem], !ownedItems.isEmpty {
+            try await syncOwnedAvatarItems(ownedItems, for: player)
         }
     }
 
     // MARK: - Custom Exercises Sync
 
     private func syncCustomExercises() async throws {
-        let context = coreDataManager.context
-
-        let playerRequest: NSFetchRequest<Player> = Player.fetchRequest()
-
-        let players = try context.fetch(playerRequest)
-
-        for player in players {
-            if let exercises = player.exercises?.allObjects as? [Exercise], !exercises.isEmpty {
-                try await syncCustomExercises(exercises, for: player)
-            }
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        if let exercises = player.exercises?.allObjects as? [Exercise], !exercises.isEmpty {
+            try await syncCustomExercises(exercises, for: player)
         }
     }
 
     // MARK: - Training Plans Sync
 
     private func syncTrainingPlans() async throws {
-        let context = coreDataManager.context
-
-        let planRequest: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
-
-        let plans = try context.fetch(planRequest)
-
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        let plans = (player.trainingPlans?.allObjects as? [TrainingPlan]) ?? []
         for plan in plans {
             try await syncTrainingPlan(plan)
         }
     }
 
     private func syncRecommendationFeedback() async throws {
-        let context = coreDataManager.context
-
-        let feedbackRequest: NSFetchRequest<RecommendationFeedback> = RecommendationFeedback.fetchRequest()
-
-        let feedback = try context.fetch(feedbackRequest)
-        try await syncRecommendationFeedback(feedback)
+        guard let player = currentSyncPlayer(in: coreDataManager.context) else { return }
+        if let feedback = player.recommendationFeedback?.allObjects as? [RecommendationFeedback], !feedback.isEmpty {
+            try await syncRecommendationFeedback(feedback)
+        }
     }
 
+    /// Incremental sync: uploads only this account's rows whose `updatedAt` is newer than the last
+    /// successful sync. Covers every synced collection (previously only profile + sessions), which is
+    /// why matches/plans/drills/avatar/stats/goals no longer stop syncing after onboarding.
     private func syncRecentChanges() async throws {
+        let context = coreDataManager.context
+        guard let player = currentSyncPlayer(in: context) else { return }
+
+        // No watermark yet this launch: push everything once (scoped); later cycles filter by updatedAt.
         guard let lastSync = lastSyncDate else {
-            try await syncPlayerData()
-            try await syncTrainingHistory()
-            try await syncRecommendationFeedback()
+            try await pushAllScoped()
             return
         }
 
-        let context = coreDataManager.context
-
-        let profileRequest: NSFetchRequest<PlayerProfile> = PlayerProfile.fetchRequest()
-        profileRequest.predicate = NSPredicate(format: "updatedAt > %@", lastSync as NSDate)
-
-        let recentProfiles = try context.fetch(profileRequest)
-        for profile in recentProfiles {
-            if let player = profile.player {
-                try await syncPlayerProfile(player, with: profile)
-            }
+        if let profile = player.playerProfile,
+           (profile.updatedAt ?? .distantPast) > lastSync {
+            try await syncPlayerProfile(player, with: profile)
         }
 
-        let sessionRequest: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        sessionRequest.predicate = NSPredicate(format: "date > %@", lastSync as NSDate)
+        let goals = (player.playerGoals?.allObjects as? [PlayerGoal])?
+            .filter { ($0.updatedAt ?? .distantPast) > lastSync } ?? []
+        if !goals.isEmpty { try await syncPlayerGoals(goals, for: player) }
 
-        let recentSessions = try context.fetch(sessionRequest)
-        for session in recentSessions {
-            try await syncTrainingSession(session)
+        // updatedAt falls back to date/createdAt for rows saved before the field existed.
+        let sessions = (player.sessions?.allObjects as? [TrainingSession])?
+            .filter { ($0.updatedAt ?? $0.date ?? .distantPast) > lastSync } ?? []
+        for session in sessions { try await syncTrainingSession(session) }
+
+        let stats = (player.stats?.allObjects as? [PlayerStats])?
+            .filter { ($0.updatedAt ?? $0.date ?? .distantPast) > lastSync } ?? []
+        if !stats.isEmpty { try await syncPlayerStats(stats, for: player) }
+
+        let seasons = (player.seasons?.allObjects as? [Season])?
+            .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
+        if !seasons.isEmpty { try await syncSeasons(seasons, for: player) }
+
+        let matches = (player.matches?.allObjects as? [Match])?
+            .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
+        if !matches.isEmpty { try await syncMatches(matches, for: player) }
+
+        let exercises = (player.exercises?.allObjects as? [Exercise])?
+            .filter { ($0.updatedAt ?? .distantPast) > lastSync } ?? []
+        if !exercises.isEmpty { try await syncCustomExercises(exercises, for: player) }
+
+        let plans = (player.trainingPlans?.allObjects as? [TrainingPlan])?
+            .filter { ($0.updatedAt ?? .distantPast) > lastSync } ?? []
+        for plan in plans { try await syncTrainingPlan(plan) }
+
+        if let avatar = player.avatarConfiguration,
+           (avatar.updatedAt ?? avatar.lastModified ?? .distantPast) > lastSync {
+            try await syncAvatarConfiguration(avatar, for: player)
         }
     }
 

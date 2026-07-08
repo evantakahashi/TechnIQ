@@ -27,6 +27,7 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
         description?.shouldMigrateStoreAutomatically = true
         description?.shouldInferMappingModelAutomatically = true
 
+        var loadError: NSError?
         container.loadPersistentStores { [weak self] _, error in
             if let error = error as NSError? {
                 // Never auto-delete the store: a migration failure, locked file, or transient
@@ -35,11 +36,21 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
                 #if DEBUG
                 print("Core Data store failed to load: \(error), \(error.userInfo)")
                 #endif
+                loadError = error
                 self?.persistentStoreError = error
             }
         }
 
         container.viewContext.automaticallyMergesChangesFromParent = true
+        // With uniqueness constraints on the model, a save that would violate one merges into the
+        // existing row (in-memory object wins) instead of throwing — this backstops duplicate rows.
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+        // One-time backfill of legacy rows with a nil id so they satisfy the new uniqueness
+        // constraints. Uses the local container context (self.context would re-enter this getter).
+        if loadError == nil {
+            self.backfillMissingIDsIfNeeded(in: container.viewContext)
+        }
         return container
     }()
 
@@ -49,6 +60,7 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
 
     func save() {
         guard context.hasChanges else { return }
+        stampSyncMetadata(in: context)
         do {
             try context.save()
             lastSaveError = nil
@@ -57,6 +69,65 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
             AppLogger.shared.error("[CoreDataManager] Failed to save context: \(error.localizedDescription)")
             lastSaveError = error
         }
+    }
+
+    /// Entities whose rows are mirrored to Firestore. Kept in one place so save-time stamping and
+    /// the id backfill stay in sync with the model's uniqueness constraints.
+    static let syncedEntityNames: Set<String> = [
+        "Player", "PlayerProfile", "PlayerGoal", "TrainingSession", "Exercise",
+        "PlayerStats", "Match", "Season", "TrainingPlan", "AvatarConfiguration",
+        "RecommendationFeedback"
+    ]
+
+    /// Before a save, stamp `updatedAt` (so incremental sync can detect the change) and assign a
+    /// missing `id` (so uniqueness constraints hold) on every inserted/updated synced entity. This
+    /// backstops call sites — including view code and services that save directly — that forget to.
+    func stampSyncMetadata(in context: NSManagedObjectContext) {
+        let now = Date()
+        let touched = context.insertedObjects.union(context.updatedObjects)
+        for object in touched {
+            guard let entityName = object.entity.name,
+                  Self.syncedEntityNames.contains(entityName) else { continue }
+            let attributes = object.entity.attributesByName
+            if attributes["updatedAt"] != nil {
+                object.setValue(now, forKey: "updatedAt")
+            }
+            if attributes["id"] != nil, object.value(forKey: "id") == nil {
+                object.setValue(UUID(), forKey: "id")
+            }
+        }
+    }
+
+    /// Assigns a UUID to any synced-entity row left with a nil id by a legacy code path, so it can
+    /// participate in the model's uniqueness constraints. Runs at most once (guarded by a flag).
+    private func backfillMissingIDsIfNeeded(in context: NSManagedObjectContext) {
+        let flagKey = "didBackfillEntityIDs_v1"
+        guard !UserDefaults.standard.bool(forKey: flagKey) else { return }
+
+        // Every synced entity that carries an `id` attribute (Player included — its constraint is on
+        // firebaseUID, but a nil id still breaks its cloud doc key).
+        let entityNames = ["Player", "Exercise", "TrainingSession", "Match", "Season", "TrainingPlan", "PlayerGoal"]
+        var didChange = false
+        for name in entityNames {
+            let request = NSFetchRequest<NSManagedObject>(entityName: name)
+            request.predicate = NSPredicate(format: "id == nil")
+            guard let objects = try? context.fetch(request) else { continue }
+            for object in objects {
+                object.setValue(UUID(), forKey: "id")
+                didChange = true
+            }
+        }
+
+        if didChange {
+            do {
+                try context.save()
+            } catch {
+                AppLogger.shared.error("[CoreDataManager] ID backfill save failed: \(error.localizedDescription)")
+                context.rollback()
+                return
+            }
+        }
+        UserDefaults.standard.set(true, forKey: flagKey)
     }
 }
 
@@ -271,8 +342,15 @@ extension CoreDataManager {
     /// Delete an exercise
     func deleteExercise(_ exercise: Exercise) {
         let exerciseName = exercise.name ?? "Unknown"
+        let docId = exercise.id?.uuidString
         context.delete(exercise)
         save()
+        // Remove the cloud copy and tombstone it so a restore on another device won't resurrect it.
+        if let docId = docId {
+            Task { @MainActor in
+                await CloudService.shared.propagateDeletion(collection: "customExercises", docId: docId)
+            }
+        }
         #if DEBUG
         print("Deleted exercise: \(exerciseName)")
         #endif

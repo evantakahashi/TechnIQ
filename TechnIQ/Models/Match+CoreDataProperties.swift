@@ -23,6 +23,7 @@ extension Match {
     @NSManaged public var strengths: String?
     @NSManaged public var weaknesses: String?
     @NSManaged public var createdAt: Date?
+    @NSManaged public var updatedAt: Date?
     @NSManaged public var player: Player?
     @NSManaged public var season: Season?
 

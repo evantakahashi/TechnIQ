@@ -173,11 +173,14 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             }
         }
 
+        plan.updatedAt = Date()
         do {
             try context.save()
             #if DEBUG
             print("TrainingPlanService: Successfully created AI-generated plan with \(generated.weeks.count) weeks")
             #endif
+            // Push the fully-built plan now; the incremental sync also covers it but can be throttled.
+            Task { @MainActor in try? await CloudService.shared.syncTrainingPlan(plan) }
             return plan
         } catch {
             #if DEBUG
@@ -554,8 +557,12 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
 
         do {
             if let plan = try context.fetch(request).first {
+                let docId = plan.id?.uuidString
                 context.delete(plan)
                 try context.save()
+                if let docId {
+                    Task { @MainActor in await CloudService.shared.propagateDeletion(collection: "trainingPlans", docId: docId) }
+                }
             }
         } catch {
             #if DEBUG
@@ -778,11 +785,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             }
         }
 
+        clonedPlan.updatedAt = Date()
         do {
             try context.save()
             #if DEBUG
             print("Successfully cloned plan: \(planModel.name) -> \(clonedPlan.name ?? "")")
             #endif
+            Task { @MainActor in try? await CloudService.shared.syncTrainingPlan(clonedPlan) }
             return clonedPlan
         } catch {
             #if DEBUG

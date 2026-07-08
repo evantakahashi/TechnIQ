@@ -18,6 +18,7 @@ extension AvatarConfiguration {
     @NSManaged public var cleatsId: String?
     @NSManaged public var accessoryIds: NSArray?
     @NSManaged public var lastModified: Date?
+    @NSManaged public var updatedAt: Date?
     @NSManaged public var player: Player?
 
 }

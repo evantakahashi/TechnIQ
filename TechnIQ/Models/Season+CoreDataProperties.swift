@@ -14,6 +14,7 @@ extension Season {
     @NSManaged public var team: String?
     @NSManaged public var isActive: Bool
     @NSManaged public var createdAt: Date?
+    @NSManaged public var updatedAt: Date?
     @NSManaged public var player: Player?
     @NSManaged public var matches: NSSet?
 

@@ -45,6 +45,9 @@ extension Exercise {
     @NSManaged public var variationsJSON: String?
     @NSManaged public var weaknessCategories: String?
 
+    // Sync change tracking
+    @NSManaged public var updatedAt: Date?
+
 }
 
 // MARK: Generated accessors for sessionExercises

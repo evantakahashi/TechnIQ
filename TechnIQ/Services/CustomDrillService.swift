@@ -340,7 +340,12 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         }
 
         // Save to Core Data
+        exercise.updatedAt = Date()
         CoreDataManager.shared.save()
+
+        // Push the new AI drill to the cloud immediately so it survives a device switch (previously
+        // custom drills only reached Firestore during onboarding's one-time full sync).
+        Task { @MainActor in try? await CloudService.shared.syncCustomExercises([exercise], for: player) }
 
         return exercise
     }

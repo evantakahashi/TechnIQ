@@ -75,42 +75,40 @@ extension CloudService {
             }
 
             restoreProgress = 0.6
-            for goalData in cloudData.playerGoals {
+            for goalData in cloudData.playerGoals where docBelongs(goalData, to: restoredPlayerId) {
                 try restorePlayerGoal(from: goalData, for: player, in: context)
             }
 
+            restoreProgress = 0.65
+            for feedbackData in cloudData.recommendationFeedback where docBelongs(feedbackData, to: restoredPlayerId) {
+                try restoreRecommendationFeedback(from: feedbackData, for: player, in: context)
+            }
+
             restoreProgress = 0.7
-            for exerciseData in cloudData.customExercises {
+            for exerciseData in cloudData.customExercises where docBelongs(exerciseData, to: restoredPlayerId) {
                 try restoreCustomExercise(from: exerciseData, for: player, in: context)
             }
 
             restoreProgress = 0.75
-            for statsData in cloudData.playerStats {
+            for statsData in cloudData.playerStats where docBelongs(statsData, to: restoredPlayerId) {
                 try restorePlayerStats(from: statsData, for: player, in: context)
             }
 
             restoreProgress = 0.77
-            for seasonData in cloudData.seasons {
+            for seasonData in cloudData.seasons where docBelongs(seasonData, to: restoredPlayerId) {
                 try restoreSeason(from: seasonData, for: player, in: context)
             }
-            for matchData in cloudData.matches {
+            for matchData in cloudData.matches where docBelongs(matchData, to: restoredPlayerId) {
                 try restoreMatch(from: matchData, for: player, in: context)
             }
 
             restoreProgress = 0.8
-            for sessionData in cloudData.trainingSessions {
-                if let docPlayerId = sessionData["playerId"] as? String, !docPlayerId.isEmpty,
-                   let restoredPlayerId = restoredPlayerId, docPlayerId != restoredPlayerId {
-                    #if DEBUG
-                    print("CloudService: Skipping session with mismatched playerId \(docPlayerId)")
-                    #endif
-                    continue
-                }
+            for sessionData in cloudData.trainingSessions where docBelongs(sessionData, to: restoredPlayerId) {
                 try restoreTrainingSession(from: sessionData, for: player, in: context)
             }
 
             restoreProgress = 0.9
-            for planData in cloudData.trainingPlans {
+            for planData in cloudData.trainingPlans where docBelongs(planData, to: restoredPlayerId) {
                 try restoreTrainingPlan(from: planData, for: player, in: context)
             }
 
@@ -159,6 +157,7 @@ extension CloudService {
         player.dominantFoot = data["dominantFoot"] as? String
         player.height = data["height"] as? Double ?? 0
         player.weight = data["weight"] as? Double ?? 0
+        player.weaknessProfileJSON = data["weaknessProfileJSON"] as? String
         player.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         player.lastCloudSync = Date()
 
@@ -241,6 +240,33 @@ extension CloudService {
 
         goal.player = player
         player.addToPlayerGoals(goal)
+    }
+
+    func restoreRecommendationFeedback(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+        let feedback = RecommendationFeedback(context: context)
+        feedback.id = UUID(uuidString: data["feedbackId"] as? String ?? "") ?? UUID()
+        feedback.exerciseID = data["exerciseID"] as? String
+        feedback.recommendationSource = data["recommendationSource"] as? String
+        feedback.feedbackType = data["feedbackType"] as? String
+        feedback.rating = Self.int16Value(from: data["rating"])
+        feedback.wasCompleted = data["wasCompleted"] as? Bool ?? false
+        feedback.timeSpent = data["timeSpent"] as? Double ?? 0
+        feedback.difficultyRating = Self.int16Value(from: data["difficultyRating"])
+        feedback.relevanceRating = Self.int16Value(from: data["relevanceRating"])
+        feedback.notes = data["notes"] as? String
+        feedback.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+        feedback.player = player
+        player.addToRecommendationFeedback(feedback)
+    }
+
+    /// Child docs carry a `playerId`; restore only those belonging to the restored profile. Docs
+    /// written before playerId stamping (missing/empty playerId) are treated as belonging (back-compat).
+    func docBelongs(_ data: [String: Any], to restoredPlayerId: String?) -> Bool {
+        guard let restoredPlayerId,
+              let docPlayerId = data["playerId"] as? String, !docPlayerId.isEmpty else {
+            return true
+        }
+        return docPlayerId == restoredPlayerId
     }
 
     func restoreSeason(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
@@ -332,6 +358,12 @@ extension CloudService {
         exercise.diagramJSON = data["diagramJSON"] as? String
         exercise.metabolicLoad = Self.int16Value(from: data["metabolicLoad"])
         exercise.technicalComplexity = Self.int16Value(from: data["technicalComplexity"])
+        exercise.estimatedDurationSeconds = Self.int16Value(from: data["estimatedDurationSeconds"])
+        exercise.variationsJSON = data["variationsJSON"] as? String
+        exercise.weaknessCategories = data["weaknessCategories"] as? String
+        exercise.communityAuthor = data["communityAuthor"] as? String
+        exercise.communityDrillID = data["communityDrillID"] as? String
+        exercise.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
 
         if let lastUsedTimestamp = data["lastUsedAt"] as? Timestamp {
             exercise.lastUsedAt = lastUsedTimestamp.dateValue()
@@ -341,7 +373,7 @@ extension CloudService {
         player.addToExercises(exercise)
     }
 
-    private func restoreTrainingSession(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
+    func restoreTrainingSession(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
         let session = TrainingSession(context: context)
         session.id = UUID(uuidString: data["sessionId"] as? String ?? "") ?? UUID()
         session.date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
@@ -350,7 +382,9 @@ extension CloudService {
         session.intensity = Self.int16Value(from: data["intensity"], default: 5)
         session.location = data["location"] as? String
         session.overallRating = Self.int16Value(from: data["overallRating"])
+        session.xpEarned = Self.int32Value(from: data["xpEarned"])
         session.notes = data["notes"] as? String
+        session.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
         session.player = player
         player.addToSessions(session)
 

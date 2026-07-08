@@ -12,6 +12,7 @@ extension PlayerStats {
     @NSManaged public var skillRatings: [String: Double]?
     @NSManaged public var totalTrainingHours: Double
     @NSManaged public var totalSessions: Int32
+    @NSManaged public var updatedAt: Date?
     @NSManaged public var player: Player?
 
 }

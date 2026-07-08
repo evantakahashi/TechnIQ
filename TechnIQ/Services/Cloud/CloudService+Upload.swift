@@ -25,6 +25,14 @@ extension CloudService {
         syncStatus = .syncing
 
         do {
+            // Read the existing cloud doc first and pull up any higher XP/coins/streak so a stale
+            // device can't regress values written by a newer one (blind last-writer-wins otherwise).
+            let existing = try? await db.collection("users").document(userUID)
+                .collection("playerProfiles").document(playerDocID).getDocument()
+            if let cloudData = existing?.data() {
+                mergeWithConflictResolution(local: player, cloudData: cloudData)
+            }
+
             let playerData = try createPlayerProfileDocument(player: player, profile: profile)
 
             try await db.collection("users").document(userUID)
@@ -260,25 +268,32 @@ extension CloudService {
         async let statsSnapshot = userRef.collection("playerStats").getDocuments()
         async let seasonsSnapshot = userRef.collection("seasons").getDocuments()
         async let matchesSnapshot = userRef.collection("matches").getDocuments()
+        async let deletedItemsSnapshot = userRef.collection("deletedItems").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches) = try await (
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, deletedItems) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
             avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
-            statsSnapshot, seasonsSnapshot, matchesSnapshot
+            statsSnapshot, seasonsSnapshot, matchesSnapshot, deletedItemsSnapshot
         )
 
+        // Locally-deleted items are tombstoned by document id; drop them so restore never resurrects them.
+        let deletedIds = Set(deletedItems.documents.map { $0.documentID })
+        func live(_ documents: [QueryDocumentSnapshot]) -> [[String: Any]] {
+            documents.filter { !deletedIds.contains($0.documentID) }.map { $0.data() }
+        }
+
         return CloudUserData(
-            playerProfiles: profiles.documents.compactMap { $0.data() },
-            playerGoals: goals.documents.compactMap { $0.data() },
-            trainingSessions: sessions.documents.compactMap { $0.data() },
-            recommendationFeedback: feedback.documents.compactMap { $0.data() },
-            avatarConfiguration: avatar.documents.first?.data(),
-            ownedAvatarItems: ownedItems.documents.compactMap { $0.data() },
-            customExercises: exercises.documents.compactMap { $0.data() },
-            trainingPlans: plans.documents.compactMap { $0.data() },
-            playerStats: stats.documents.compactMap { $0.data() },
-            seasons: seasons.documents.compactMap { $0.data() },
-            matches: matches.documents.compactMap { $0.data() }
+            playerProfiles: live(profiles.documents),
+            playerGoals: live(goals.documents),
+            trainingSessions: live(sessions.documents),
+            recommendationFeedback: live(feedback.documents),
+            avatarConfiguration: avatar.documents.first(where: { !deletedIds.contains($0.documentID) })?.data(),
+            ownedAvatarItems: live(ownedItems.documents),
+            customExercises: live(exercises.documents),
+            trainingPlans: live(plans.documents),
+            playerStats: live(stats.documents),
+            seasons: live(seasons.documents),
+            matches: live(matches.documents)
         )
     }
 
@@ -345,6 +360,24 @@ extension CloudService {
         lastSyncDate = Date()
     }
 
+    // MARK: - Deletion Propagation
+
+    /// Removes a synced entity's cloud document and writes a tombstone under `deletedItems` so a
+    /// restore on another device will not resurrect it. Fire-and-forget: failures are logged, not thrown.
+    func propagateDeletion(collection: String, docId: String) async {
+        guard let userUID = auth.currentUser?.uid, !docId.isEmpty else { return }
+        let userRef = db.collection("users").document(userUID)
+        do {
+            try await userRef.collection(collection).document(docId).delete()
+            try await userRef.collection("deletedItems").document(docId).setData([
+                "collection": collection,
+                "deletedAt": FieldValue.serverTimestamp()
+            ], merge: true)
+        } catch {
+            AppLogger.shared.error("[CloudService] Failed to propagate deletion of \(collection)/\(docId): \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Community Training Plans
 
     func shareTrainingPlan(_ plan: TrainingPlanModel, message: String) async throws {
@@ -384,6 +417,7 @@ extension CloudService {
             "dominantFoot": player.dominantFoot ?? "",
             "height": player.height,
             "weight": player.weight,
+            "weaknessProfileJSON": player.weaknessProfileJSON ?? "",
             "skillGoals": profile.skillGoals ?? [],
             "physicalFocusAreas": profile.physicalFocusAreas ?? [],
             "selfIdentifiedWeaknesses": profile.selfIdentifiedWeaknesses ?? [],
@@ -409,6 +443,7 @@ extension CloudService {
     private func createPlayerGoalDocument(goal: PlayerGoal) throws -> [String: Any] {
         return [
             "goalId": goal.id?.uuidString ?? "",
+            "playerId": goal.player?.id?.uuidString ?? "",
             "skillName": goal.skillName ?? "",
             "currentLevel": goal.currentLevel,
             "targetLevel": goal.targetLevel,
@@ -421,7 +456,7 @@ extension CloudService {
         ] as [String: Any]
     }
 
-    private func createTrainingSessionDocument(session: TrainingSession) throws -> [String: Any] {
+    func createTrainingSessionDocument(session: TrainingSession) throws -> [String: Any] {
         var exercisesData: [[String: Any]] = []
         if let exercises = session.exercises as? Set<SessionExercise> {
             exercisesData = exercises.map { exercise in
@@ -446,7 +481,9 @@ extension CloudService {
             "intensity": session.intensity,
             "location": session.location ?? "",
             "overallRating": session.overallRating,
+            "xpEarned": session.xpEarned,
             "notes": session.notes ?? "",
+            "updatedAt": session.updatedAt ?? Date(),
             "exercises": exercisesData
         ]
     }
@@ -509,28 +546,33 @@ extension CloudService {
     func createPlayerStatsDocument(stats: PlayerStats) -> [String: Any] {
         return [
             "id": stats.id?.uuidString ?? "",
+            "playerId": stats.player?.id?.uuidString ?? "",
             "date": stats.date ?? Date(),
             "skillRatings": stats.skillRatings ?? [:],
             "totalTrainingHours": stats.totalTrainingHours,
-            "totalSessions": stats.totalSessions
+            "totalSessions": stats.totalSessions,
+            "updatedAt": stats.updatedAt ?? Date()
         ]
     }
 
     func createSeasonDocument(season: Season) -> [String: Any] {
         return [
             "id": season.id?.uuidString ?? "",
+            "playerId": season.player?.id?.uuidString ?? "",
             "name": season.name ?? "",
             "team": season.team ?? "",
             "startDate": season.startDate ?? Date(),
             "endDate": season.endDate as Any,
             "isActive": season.isActive,
-            "createdAt": season.createdAt ?? Date()
+            "createdAt": season.createdAt ?? Date(),
+            "updatedAt": season.updatedAt ?? Date()
         ]
     }
 
     func createMatchDocument(match: Match) -> [String: Any] {
         return [
             "id": match.id?.uuidString ?? "",
+            "playerId": match.player?.id?.uuidString ?? "",
             "date": match.date ?? Date(),
             "opponent": match.opponent ?? "",
             "competition": match.competition ?? "",
@@ -546,6 +588,7 @@ extension CloudService {
             "strengths": match.strengths ?? "",
             "weaknesses": match.weaknesses ?? "",
             "createdAt": match.createdAt ?? Date(),
+            "updatedAt": match.updatedAt ?? Date(),
             "seasonID": match.season?.id?.uuidString ?? ""
         ]
     }
@@ -553,6 +596,7 @@ extension CloudService {
     func createCustomExerciseDocument(exercise: Exercise) -> [String: Any] {
         return [
             "id": exercise.id?.uuidString ?? "",
+            "playerId": exercise.player?.id?.uuidString ?? "",
             "name": exercise.name ?? "",
             "category": exercise.category ?? "",
             "difficulty": exercise.difficulty,
@@ -569,7 +613,13 @@ extension CloudService {
             "personalNotes": exercise.personalNotes ?? "",
             "diagramJSON": exercise.diagramJSON ?? "",
             "metabolicLoad": exercise.metabolicLoad,
-            "technicalComplexity": exercise.technicalComplexity
+            "technicalComplexity": exercise.technicalComplexity,
+            "estimatedDurationSeconds": exercise.estimatedDurationSeconds,
+            "variationsJSON": exercise.variationsJSON ?? "",
+            "weaknessCategories": exercise.weaknessCategories ?? "",
+            "communityAuthor": exercise.communityAuthor ?? "",
+            "communityDrillID": exercise.communityDrillID ?? "",
+            "updatedAt": exercise.updatedAt ?? Date()
         ]
     }
 
@@ -626,6 +676,7 @@ extension CloudService {
 
         return [
             "id": plan.id?.uuidString ?? "",
+            "playerId": plan.player?.id?.uuidString ?? "",
             "name": plan.name ?? "",
             "planDescription": plan.planDescription ?? "",
             "durationWeeks": plan.durationWeeks,

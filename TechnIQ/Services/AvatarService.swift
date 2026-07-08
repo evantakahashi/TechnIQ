@@ -87,11 +87,14 @@ final class AvatarService: ObservableObject, AvatarServiceProtocol {
         config.socksId = avatarState.socksStyle.rawValue
         config.cleatsId = avatarState.cleatsStyle.rawValue
         config.lastModified = Date()
+        config.updatedAt = Date()
 
         do {
             try ctx.save()
 
             currentAvatarState = avatarState
+
+            Task { @MainActor in try? await CloudService.shared.syncAvatarConfiguration(config, for: player) }
 
             #if DEBUG
             print("[AvatarService] Avatar configuration saved successfully")
@@ -277,6 +280,7 @@ final class AvatarService: ObservableObject, AvatarServiceProtocol {
         config.cleatsId = defaultState.cleatsStyle.rawValue
         config.accessoryIds = [] as NSArray
         config.lastModified = Date()
+        config.updatedAt = Date()
         player.avatarConfiguration = config
 
         do {
