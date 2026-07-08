@@ -16,8 +16,8 @@ Branch: `feature/app-store-readiness-v2` (11 commits, local only — NOT pushed)
 ## Known constraint (documented in CLAUDE.md + checklist)
 Every xcodebuild (build/test/archive) needs `SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO` — Xcode 26 vs FirebaseFirestoreInternal. GUI Archive fails; archive via CLI.
 
-## Re-run when machine is free (final confirmation; last 2 attempts killed by host load/sim crash — code compiled green)
-`xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO test` (expect 128 tests: 125 prior + 3 new round-trip)
+## Final verification (2026-07-07 23:52)
+Full unit suite: **128/128 pass** (125 prior + 3 new CloudSyncRoundTripTests) · build green · unsigned Release archive SUCCEEDED · SwiftLint 139 warn/0 err · backend 181/181.
 
 ## User actions required (cannot be automated)
 - [ ] Review branch → PR/merge (nothing pushed)
