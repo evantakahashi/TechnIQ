@@ -3,6 +3,7 @@ import CoreData
 
 // MARK: - YouTubeService Protocol
 
+@MainActor
 protocol YouTubeServiceProtocol: AnyObject {
     func createExerciseFromYouTubeVideo(
         for player: Player,

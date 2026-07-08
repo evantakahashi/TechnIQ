@@ -1,6 +1,6 @@
 # Privacy Policy for TechnIQ
 
-**Last Updated:** November 24, 2025
+**Last Updated:** July 7, 2026
 
 ## Introduction
 
@@ -10,7 +10,7 @@ TechnIQ ("we," "our," or "us") is committed to protecting your privacy. This Pri
 
 ### Information You Provide
 
-- **Account Information**: When you create an account via Google Sign-In, we collect your name and email address
+- **Account Information**: When you create an account — via email/password, Google Sign-In, or Sign in with Apple — we collect your name (if provided) and email address. You may also use the app as a guest (anonymous account) without providing any of these; guest data is kept only on your device and in your anonymous cloud account.
 - **Player Profile**: Information you provide about your soccer training, including:
   - Age, position, experience level
   - Training goals and preferences
@@ -19,12 +19,12 @@ TechnIQ ("we," "our," or "us") is committed to protecting your privacy. This Pri
   - Session dates, duration, and intensity
   - Exercises completed and performance ratings
   - Progress tracking and skill assessments
+- **Community Content**: Content you choose to share with other users — community posts, comments, and shared drills — is visible to other signed-in users along with your player name and level. You can report or block other users' content, and delete your own.
 
 ### Automatically Collected Information
 
 - **Device Information**: Device type, operating system version, app version
-- **Usage Analytics**: How you interact with the app features (anonymized)
-- **Error Logs**: Technical information to help us fix bugs and improve performance
+- **Crash Reports**: Anonymous crash and error information (via Firebase Crashlytics) to help us fix bugs and improve stability. We do not use third-party advertising or analytics SDKs.
 
 ## How We Use Your Information
 
@@ -48,10 +48,13 @@ We use the information we collect to:
 
 TechnIQ uses the following third-party services:
 
-- **Firebase Authentication**: For secure user authentication via Google Sign-In
+- **Firebase Authentication**: For secure user authentication (email/password, Google Sign-In, Sign in with Apple, anonymous)
 - **Firebase Firestore**: For cloud data storage and synchronization
-- **Firebase Functions**: For server-side processing and ML recommendations
-- **YouTube Data API**: To fetch training video recommendations (no YouTube data is stored)
+- **Firebase Functions**: For server-side processing, drill generation, and recommendations
+- **Firebase Crashlytics**: For anonymous crash reporting
+- **AI Processing**: Drill and training-plan generation requests (your training profile, goals, and drill descriptions — never your credentials) are processed on our servers using a third-party AI model provider
+- **YouTube Data API**: To fetch training video recommendations (no YouTube account data is collected)
+- **Apple In-App Purchase (StoreKit)**: For TechnIQ Pro subscriptions; payment details are handled entirely by Apple and never reach our servers
 
 Each service has its own privacy policy:
 - [Firebase Privacy Policy](https://firebase.google.com/support/privacy)
@@ -63,7 +66,7 @@ Each service has its own privacy policy:
 You have the right to:
 
 - **Access Your Data**: Request a copy of your personal information
-- **Delete Your Data**: Request deletion of your account and associated data
+- **Delete Your Data**: Delete your account and all associated data directly in the app (Settings → Delete Account), or request deletion by email
 - **Update Your Information**: Modify your profile information at any time through the app
 - **Opt-Out**: Disconnect your account and stop using the service
 

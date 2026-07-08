@@ -442,7 +442,7 @@ struct PlanSessionCard: View {
         weeks: []
     )
 
-    return NavigationView {
+    return NavigationStack {
         TodaysTrainingView(player: samplePlayer, activePlan: mockPlan)
             .environment(\.managedObjectContext, context)
     }

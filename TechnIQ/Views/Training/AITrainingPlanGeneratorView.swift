@@ -468,7 +468,7 @@ struct AITrainingPlanGeneratorView: View {
     // MARK: - Success View
 
     private func successView(plan: TrainingPlan) -> some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
@@ -840,7 +840,7 @@ struct DayButton: View {
     samplePlayer.position = "midfielder"
     samplePlayer.experienceLevel = "intermediate"
 
-    return NavigationView {
+    return NavigationStack {
         AITrainingPlanGeneratorView(player: samplePlayer)
             .environment(\.managedObjectContext, context)
             .environmentObject(AuthenticationManager.shared)

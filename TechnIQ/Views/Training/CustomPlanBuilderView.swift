@@ -20,7 +20,7 @@ struct CustomPlanBuilderView: View {
     private let descriptionCharacterLimit = 200
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     // Info Card

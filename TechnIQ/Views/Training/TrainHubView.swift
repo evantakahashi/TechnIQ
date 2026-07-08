@@ -78,7 +78,7 @@ struct TrainHubView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         TrainHubView()
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)

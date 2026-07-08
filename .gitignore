@@ -69,3 +69,5 @@ ENV/
 *.backup
 *.backup2
 debug.log
+# Local secrets (xcconfig)
+Config/Secrets.xcconfig

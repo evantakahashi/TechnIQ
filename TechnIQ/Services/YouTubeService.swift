@@ -36,6 +36,7 @@ struct DifficultyAnalysis {
 
 // MARK: - YouTubeService
 
+@MainActor
 class YouTubeService: YouTubeServiceProtocol {
     static let shared = YouTubeService()
 
@@ -186,7 +187,6 @@ class YouTubeService: YouTubeServiceProtocol {
             throw APIError.apiKeyNotConfigured
         }
 
-        Task { [self] in
             do {
                 await progressCallback?(0.1, "Searching YouTube...")
 
@@ -294,8 +294,8 @@ class YouTubeService: YouTubeServiceProtocol {
                 print("Error loading YouTube drills: \(error)")
                 #endif
                 await progressCallback?(0.0, "Error occurred")
+                throw error
             }
-        }
     }
 
     // Enhanced exercise creation with comprehensive analysis

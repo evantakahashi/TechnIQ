@@ -14,7 +14,7 @@ struct AITrainingPlanPreviewView: View {
     @State private var isSaving = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

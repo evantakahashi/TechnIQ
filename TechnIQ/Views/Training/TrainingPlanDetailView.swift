@@ -24,7 +24,7 @@ struct TrainingPlanDetailView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     // Header Card

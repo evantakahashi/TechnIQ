@@ -31,7 +31,7 @@ struct NewSessionView: View {
     let sessionTypes = ["Training", "Match", "Fitness", "Technical", "Tactical"]
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Adaptive background (gradient light, solid dark)
                 AdaptiveBackground()

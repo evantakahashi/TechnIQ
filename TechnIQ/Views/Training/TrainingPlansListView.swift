@@ -74,7 +74,7 @@ struct TrainingPlansListView: View {
         }
         .sheet(isPresented: $showingAIGenerator) {
             if let player = players.first {
-                NavigationView {
+                NavigationStack {
                     AITrainingPlanGeneratorView(player: player)
                 }
             }
