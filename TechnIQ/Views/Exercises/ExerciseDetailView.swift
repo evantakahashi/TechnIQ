@@ -37,7 +37,7 @@ struct ExerciseDetailView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Exercise Header
@@ -129,7 +129,8 @@ struct ExerciseDetailView: View {
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
-                            
+                            .accessibilityLabel("Play video tutorial")
+
                             // YouTube Link
                             if let youtubeURL = URL(string: "https://youtube.com/watch?v=\(youtubeVideoId)") {
                                 Link("Open in YouTube", destination: youtubeURL)
@@ -163,6 +164,7 @@ struct ExerciseDetailView: View {
                             HStack {
                                 Image(systemName: "map")
                                     .foregroundColor(DesignSystem.Colors.primaryGreen)
+                                    .accessibilityHidden(true)
                                 Text("Field Layout")
                                     .font(.headline)
                                     .foregroundColor(DesignSystem.Colors.primaryDark)
@@ -248,6 +250,7 @@ struct ExerciseDetailView: View {
                         Image(systemName: isFavorite ? "heart.fill" : "heart")
                             .foregroundColor(isFavorite ? .red : DesignSystem.Colors.textSecondary)
                     }
+                    .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
@@ -259,6 +262,7 @@ struct ExerciseDetailView: View {
                                 Image(systemName: "pencil.circle")
                                     .foregroundColor(DesignSystem.Colors.primaryGreen)
                             }
+                            .accessibilityLabel("Edit exercise")
                         }
 
                         Button("Done") {
@@ -512,9 +516,13 @@ struct ExerciseDetailView: View {
                         Image(systemName: star <= feedbackRating ? "star.fill" : "star")
                             .foregroundColor(DesignSystem.Colors.accentOrange)
                             .font(.title2)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                             .onTapGesture {
                                 feedbackRating = star
                             }
+                            .accessibilityLabel("Rate \(star) star\(star == 1 ? "" : "s")")
+                            .accessibilityAddTraits(star <= feedbackRating ? [.isButton, .isSelected] : .isButton)
                     }
                 }
 

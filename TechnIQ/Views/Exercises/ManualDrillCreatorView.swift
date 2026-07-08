@@ -88,7 +88,7 @@ struct ManualDrillCreatorView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
@@ -669,7 +669,7 @@ struct DrillPreviewSheet: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                     // Header

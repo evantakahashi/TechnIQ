@@ -332,7 +332,10 @@ struct ExerciseLibraryView: View {
                     Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
                         .font(.title3)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel(isGridView ? "Show as list" : "Show as grid")
 
                 Button {
                     showingFilterSheet = true
@@ -352,7 +355,11 @@ struct ExerciseLibraryView: View {
                                 .offset(x: 6, y: -6)
                         }
                     }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Filter exercises")
+                .accessibilityValue(filterState.activeFilterCount > 0 ? "\(filterState.activeFilterCount) filters active" : "")
             }
         }
     }
@@ -362,6 +369,7 @@ struct ExerciseLibraryView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(DesignSystem.Colors.textSecondary)
                 .font(DesignSystem.Typography.bodyMedium)
+                .accessibilityHidden(true)
 
             TextField("Search exercises...", text: $searchText)
                 .font(DesignSystem.Typography.bodyMedium)
@@ -799,6 +807,7 @@ struct ExerciseLibraryView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 48))
                 .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
+                .accessibilityHidden(true)
 
             Text("No exercises match your filters")
                 .font(DesignSystem.Typography.titleMedium)

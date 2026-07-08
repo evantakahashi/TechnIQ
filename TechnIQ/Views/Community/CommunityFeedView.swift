@@ -446,7 +446,7 @@ extension Date {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         CommunityFeedView()
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)

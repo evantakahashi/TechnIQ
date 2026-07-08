@@ -20,7 +20,7 @@ struct SettingsView: View {
     @State private var showingDeleteError = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     if subscriptionManager.isPro {

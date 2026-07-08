@@ -300,15 +300,15 @@ struct MainTabView: View {
                     Group {
                         switch tab {
                         case 0:
-                            NavigationView { DashboardView(selectedTab: $selectedTab) }
+                            NavigationStack { DashboardView(selectedTab: $selectedTab) }
                         case 1:
-                            NavigationView { TrainHubView() }
+                            NavigationStack { TrainHubView() }
                         case 2:
-                            NavigationView { TrainingPlansListView() }
+                            NavigationStack { TrainingPlansListView() }
                         case 3:
-                            NavigationView { CommunityView() }
+                            NavigationStack { CommunityView() }
                         case 4:
-                            NavigationView { EnhancedProfileView() }
+                            NavigationStack { EnhancedProfileView() }
                         default:
                             EmptyView()
                         }
@@ -318,9 +318,9 @@ struct MainTabView: View {
                 }
 
                 AnimatedTabBar(selectedTab: $selectedTab)
+                    .ignoresSafeArea(.keyboard)
             }
         }
-        .ignoresSafeArea(.keyboard)
     }
 }
 

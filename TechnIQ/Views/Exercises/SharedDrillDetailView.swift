@@ -27,7 +27,7 @@ struct SharedDrillDetailView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
                     // Title & Author

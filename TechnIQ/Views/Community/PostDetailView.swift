@@ -14,7 +14,7 @@ struct PostDetailView: View {
     @State private var profileUserID: String?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {

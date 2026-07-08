@@ -32,7 +32,7 @@ struct EditProfileView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Basic Information") {
                     TextField("Name", text: $playerName)

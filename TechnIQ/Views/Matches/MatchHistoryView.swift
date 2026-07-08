@@ -395,7 +395,7 @@ struct MatchDetailView: View {
     let match: Match
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

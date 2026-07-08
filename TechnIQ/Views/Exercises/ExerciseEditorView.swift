@@ -43,7 +43,7 @@ struct ExerciseEditorView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 // Read-only notice for YouTube exercises
                 if isReadOnly {

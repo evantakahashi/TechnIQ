@@ -20,7 +20,7 @@ struct SessionEditorView: View {
     @State private var showingExercisePicker = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

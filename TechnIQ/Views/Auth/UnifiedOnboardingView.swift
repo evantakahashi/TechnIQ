@@ -127,6 +127,7 @@ struct UnifiedOnboardingView: View {
                         .foregroundColor(DesignSystem.Colors.textPrimary)
                         .frame(width: 44, height: 44)
                 }
+                .a11y(label: "Back")
             } else {
                 Spacer()
                     .frame(width: 44)
@@ -296,6 +297,7 @@ struct UnifiedOnboardingView: View {
             Image(systemName: "figure.soccer")
                 .font(.system(size: 120, weight: .regular))
                 .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .a11yHidden()
 
             VStack(spacing: DesignSystem.Spacing.md) {
                 Text("Welcome to TechnIQ")
@@ -342,6 +344,7 @@ struct UnifiedOnboardingView: View {
             Image(systemName: "target")
                 .font(.system(size: 96, weight: .regular))
                 .foregroundColor(DesignSystem.Colors.accentLime)
+                .a11yHidden()
 
             VStack(spacing: DesignSystem.Spacing.sm) {
                 Text("What's Your Training Goal?")
@@ -420,6 +423,7 @@ struct UnifiedOnboardingView: View {
                 Image(systemName: "person.fill")
                     .font(.system(size: 80, weight: .regular))
                     .foregroundColor(DesignSystem.Colors.accentLime)
+                    .a11yHidden()
 
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Text("Create Your Profile")
@@ -523,6 +527,7 @@ struct UnifiedOnboardingView: View {
                 Image(systemName: "sportscourt")
                     .font(.system(size: 80, weight: .regular))
                     .foregroundColor(DesignSystem.Colors.accentLime)
+                    .a11yHidden()
 
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Text("Your Playing Style")
@@ -660,6 +665,7 @@ struct UnifiedOnboardingView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 120, weight: .regular))
                     .foregroundColor(DesignSystem.Colors.accentLime)
+                    .a11yHidden()
 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Text("You're All Set!")
@@ -676,6 +682,7 @@ struct UnifiedOnboardingView: View {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 96, weight: .regular))
                     .foregroundColor(DesignSystem.Colors.bloodOrange)
+                    .a11yHidden()
 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Text("Couldn't Generate Plan")

@@ -16,7 +16,7 @@ struct PublicProfileView: View {
     @State private var sharedDrillsCount = 0
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     if isLoading {

@@ -119,32 +119,32 @@ struct DesignSystem {
         static let heroDisplay = Font.system(size: 72, weight: .black).width(.compressed)
         static let displayLarge = Font.system(size: 56, weight: .black).width(.compressed)
         static let displayMedium = Font.system(size: 42, weight: .heavy).width(.compressed)
-        static let displaySmall = Font.system(size: 32, weight: .heavy).width(.compressed)
+        static let displaySmall = Font.system(.largeTitle).weight(.heavy).width(.compressed)
 
         // Headlines — restrained, readable
-        static let headlineLarge = Font.system(size: 24, weight: .bold)
-        static let headlineMedium = Font.system(size: 20, weight: .semibold)
-        static let headlineSmall = Font.system(size: 17, weight: .semibold)
+        static let headlineLarge = Font.system(.title2).weight(.bold)
+        static let headlineMedium = Font.system(.title3).weight(.semibold)
+        static let headlineSmall = Font.system(.headline).weight(.semibold)
 
         // Titles
-        static let titleLarge = Font.system(size: 22, weight: .semibold)
-        static let titleMedium = Font.system(size: 16, weight: .semibold)
-        static let titleSmall = Font.system(size: 14, weight: .medium)
+        static let titleLarge = Font.system(.title2).weight(.semibold)
+        static let titleMedium = Font.system(.callout).weight(.semibold)
+        static let titleSmall = Font.system(.subheadline).weight(.medium)
 
         // Labels — compressed/heavy for buttons, tags, uppercase metadata
-        static let labelLarge = Font.system(size: 15, weight: .heavy).width(.compressed)
-        static let labelMedium = Font.system(size: 13, weight: .heavy).width(.compressed)
-        static let labelSmall = Font.system(size: 11, weight: .heavy).width(.compressed)
+        static let labelLarge = Font.system(.subheadline).weight(.heavy).width(.compressed)
+        static let labelMedium = Font.system(.footnote).weight(.heavy).width(.compressed)
+        static let labelSmall = Font.system(.caption2).weight(.heavy).width(.compressed)
 
         // Body — stays clean and readable
-        static let bodyLarge = Font.system(size: 17, weight: .regular)
-        static let bodyMedium = Font.system(size: 15, weight: .regular)
-        static let bodySmall = Font.system(size: 13, weight: .regular)
+        static let bodyLarge = Font.system(.body).weight(.regular)
+        static let bodyMedium = Font.system(.subheadline).weight(.regular)
+        static let bodySmall = Font.system(.footnote).weight(.regular)
 
         // Numbers — monospaced for stat alignment
-        static let numberLarge = Font.system(size: 36, weight: .black, design: .monospaced)
-        static let numberMedium = Font.system(size: 24, weight: .black, design: .monospaced)
-        static let numberSmall = Font.system(size: 17, weight: .semibold, design: .monospaced)
+        static let numberLarge = Font.system(.largeTitle, design: .monospaced).weight(.black)
+        static let numberMedium = Font.system(.title2, design: .monospaced).weight(.black)
+        static let numberSmall = Font.system(.body, design: .monospaced).weight(.semibold)
     }
     
     // MARK: - Spacing

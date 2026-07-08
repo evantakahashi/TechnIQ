@@ -253,6 +253,7 @@ struct ModernSignUpView: View {
                         .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
                         .cornerRadius(DesignSystem.CornerRadius.sm)
                 }
+                .a11y(label: "Back")
 
                 Spacer()
 
@@ -292,6 +293,7 @@ struct ModernSignUpView: View {
                     Image(systemName: "person")
                         .font(.system(size: 40))
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .a11yHidden()
                 }
                 .pulseAnimation()
                 

@@ -18,7 +18,7 @@ struct DayEditorView: View {
     @State private var showingSessionEditor = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

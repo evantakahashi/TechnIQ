@@ -89,7 +89,7 @@ struct EnhancedProfileView: View {
         }
         .sheet(isPresented: $showingProgress) {
             if let player = currentPlayer {
-                NavigationView {
+                NavigationStack {
                     PlayerProgressView(player: player)
                 }
             }
@@ -394,7 +394,7 @@ struct ProfileMenuItem: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         EnhancedProfileView()
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)

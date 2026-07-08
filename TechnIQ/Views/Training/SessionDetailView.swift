@@ -6,7 +6,7 @@ struct SessionDetailView: View {
     let session: TrainingSession
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     sessionHeaderCard
@@ -62,6 +62,8 @@ struct SessionDetailView: View {
                                 .foregroundColor(.yellow)
                         }
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Rating: \(session.overallRating) out of 5")
                 }
             }
             
@@ -164,6 +166,8 @@ struct ExerciseDetailRow: View {
                                 .foregroundColor(.yellow)
                         }
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Rating: \(sessionExercise.performanceRating) out of 5")
                 }
             }
             

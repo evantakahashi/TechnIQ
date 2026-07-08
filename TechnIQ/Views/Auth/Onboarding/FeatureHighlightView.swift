@@ -61,6 +61,7 @@ struct FeatureHighlightPage: View {
             // Icon visual
             iconView
                 .padding(.vertical, DesignSystem.Spacing.md)
+                .a11yHidden()
 
             // Headline
             Text(highlight.headline)

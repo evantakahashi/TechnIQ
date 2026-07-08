@@ -102,6 +102,8 @@ struct ModernSessionRow: View {
                             .foregroundColor(DesignSystem.Colors.accentYellow)
                     }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Rating: \(session.overallRating) out of 5")
             }
         }
         .padding(.vertical, DesignSystem.Spacing.sm)
@@ -225,6 +227,7 @@ struct SmartRecommendationRow: View {
                                 .font(DesignSystem.Typography.bodySmall)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
                         }
+                        .a11y(label: showingPhysicalDetails ? "Hide physical details" : "Show physical details")
                     }
 
                     HStack {
@@ -459,6 +462,7 @@ struct DailyGoalCard: View {
                 ) {
                     onStartSession()
                 }
+                .a11y(label: isGoalComplete ? "Log another session" : "Start session")
             }
         }
         .overlay(

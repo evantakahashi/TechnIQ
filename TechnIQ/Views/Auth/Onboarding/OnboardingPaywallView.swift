@@ -92,6 +92,7 @@ struct OnboardingPaywallView: View {
                         endPoint: .bottomTrailing
                     )
                 )
+                .a11yHidden()
 
             Text("Unlock TechnIQ Pro")
                 .font(DesignSystem.Typography.displaySmall)

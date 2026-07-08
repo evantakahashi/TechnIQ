@@ -13,7 +13,7 @@ struct CreatePostView: View {
     private let maxCharacters = 500
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {

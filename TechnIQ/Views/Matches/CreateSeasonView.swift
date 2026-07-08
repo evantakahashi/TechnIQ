@@ -12,7 +12,7 @@ struct CreateSeasonView: View {
     @State private var endDate = Calendar.current.date(byAdding: .month, value: 6, to: Date()) ?? Date()
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

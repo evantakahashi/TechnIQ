@@ -33,7 +33,7 @@ struct CommunityView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         CommunityView()
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)

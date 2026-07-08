@@ -7,7 +7,7 @@ struct WeeklyCheckInView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
 
@@ -62,6 +62,7 @@ struct WeeklyCheckInView: View {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 40))
                 .foregroundColor(DesignSystem.Colors.textSecondary)
+                .a11yHidden()
 
             Text("Couldn't reach AI coach")
                 .font(DesignSystem.Typography.titleSmall)

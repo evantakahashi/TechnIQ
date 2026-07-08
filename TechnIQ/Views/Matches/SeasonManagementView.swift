@@ -15,7 +15,7 @@ struct SeasonManagementView: View {
     @State private var seasonToDelete: Season?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
@@ -297,7 +297,7 @@ struct SeasonStatsView: View {
     @State private var matches: [Match] = []
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

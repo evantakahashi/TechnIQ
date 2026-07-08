@@ -21,7 +21,7 @@ struct PlanEditorView: View {
     @State private var showingWeekEditor = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

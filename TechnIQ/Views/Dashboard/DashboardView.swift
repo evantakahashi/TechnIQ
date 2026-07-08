@@ -103,6 +103,15 @@ struct DashboardView: View {
                 .padding(.top, DesignSystem.Spacing.md)
                 .padding(.bottom, DesignSystem.Spacing.xl)
             }
+            .refreshable {
+                updateDataFilters()
+                loadActivePlan()
+                recommendationsState = .loading
+                recommendationsRetryToken += 1
+                if let player = currentPlayer, subscriptionManager.isPro {
+                    await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
+                }
+            }
         }
         .sheet(isPresented: $showingQuickDrillPaywall) {
             PaywallView(feature: .quickDrill)
@@ -124,7 +133,7 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingProgress) {
             if let player = currentPlayer {
-                NavigationView {
+                NavigationStack {
                     PlayerProgressView(player: player)
                 }
             }
@@ -959,6 +968,7 @@ struct DashboardView: View {
                     .font(.system(size: 80))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
                     .pulseAnimation()
+                    .a11yHidden()
                 
                 Text("Welcome to TechnIQ")
                     .font(DesignSystem.Typography.headlineLarge)

@@ -57,7 +57,7 @@ struct MatchLogView: View {
     @State private var customWeakness: String = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()

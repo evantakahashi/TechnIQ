@@ -55,7 +55,7 @@ struct PaywallView: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.xl) {
                     featureHeader

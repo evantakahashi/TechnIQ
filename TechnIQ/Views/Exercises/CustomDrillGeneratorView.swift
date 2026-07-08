@@ -14,7 +14,7 @@ struct CustomDrillGeneratorView: View {
     @State private var showingError = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
