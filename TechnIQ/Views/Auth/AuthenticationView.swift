@@ -55,7 +55,8 @@ struct ModernSignInView: View {
                             Image(systemName: "soccerball")
                                 .font(.largeTitle)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            
+                                .a11yHidden()
+
                             Text("TechnIQ")
                                 .font(DesignSystem.Typography.displaySmall)
                                 .fontWeight(.bold)

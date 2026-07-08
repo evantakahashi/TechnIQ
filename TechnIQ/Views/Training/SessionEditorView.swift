@@ -293,6 +293,7 @@ struct SessionEditorView: View {
                         Image(systemName: "figure.run.circle")
                             .font(.largeTitle)
                             .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
+                            .a11yHidden()
 
                         Text("No exercises assigned")
                             .font(DesignSystem.Typography.bodyMedium)

@@ -158,6 +158,7 @@ struct SessionCompleteView: View {
                 .foregroundColor(DesignSystem.Colors.accentLime)
                 .scaleEffect(animateXP ? 1 : 0.5)
                 .opacity(animateXP ? 1 : 0)
+                .a11yHidden()
 
             Text("Session Complete!")
                 .font(DesignSystem.Typography.headlineLarge)
@@ -261,6 +262,7 @@ struct SessionCompleteView: View {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 50))
                     .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                    .a11yHidden()
 
                 Text("Level Up!")
                     .font(DesignSystem.Typography.headlineMedium)

@@ -41,6 +41,7 @@ struct TrainHubView: View {
                     Image(systemName: "calendar")
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
+                .a11y(label: "Session history")
             }
         }
         .onAppear {

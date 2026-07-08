@@ -82,6 +82,7 @@ struct SessionHistoryView: View {
                     Image(systemName: viewMode == .list ? "calendar" : "list.bullet")
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
+                .a11y(label: viewMode == .list ? "Switch to calendar view" : "Switch to list view")
             }
         }
         .sheet(isPresented: $showingSessionDetail) {
@@ -406,6 +407,8 @@ struct SessionHistoryRow: View {
                                 .foregroundColor(index < session.overallRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400)
                         }
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Rating: \(session.overallRating) out of 5")
 
                     // Intensity bars
                     IntensityBars(level: Int(session.intensity))

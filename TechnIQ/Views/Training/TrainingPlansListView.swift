@@ -215,6 +215,7 @@ struct TrainingPlansListView: View {
             Image(systemName: "doc.text.fill")
                 .font(.system(size: 60))
                 .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.3))
+                .a11yHidden()
 
             Text("No Custom Plans Yet")
                 .font(DesignSystem.Typography.titleMedium)
@@ -301,8 +302,11 @@ struct PlanCard: View {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.title3)
                                     .foregroundColor(DesignSystem.Colors.secondaryBlue)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .a11y(label: "Share plan")
                         }
 
                         DifficultyBadge(difficulty: plan.difficulty)

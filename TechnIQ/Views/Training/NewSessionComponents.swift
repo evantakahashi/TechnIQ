@@ -67,8 +67,11 @@ struct ModernExerciseRowView: View {
                         Image(systemName: "trash.circle.fill")
                             .font(DesignSystem.Typography.titleMedium)
                             .foregroundColor(DesignSystem.Colors.error.opacity(0.7))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .pressAnimation()
+                    .a11y(label: "Remove exercise")
 
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -79,8 +82,11 @@ struct ModernExerciseRowView: View {
                             .font(DesignSystem.Typography.titleMedium)
                             .foregroundColor(DesignSystem.Colors.primaryGreen.opacity(0.7))
                             .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .pressAnimation()
+                    .a11y(label: isExpanded ? "Collapse details" : "Expand details")
                 }
             }
             .padding(DesignSystem.Spacing.md)
@@ -182,8 +188,11 @@ struct ModernExerciseRowView: View {
                                         )
                                         .scaleEffect(rating <= detail.rating ? 1.1 : 1.0)
                                         .animation(.easeInOut(duration: 0.2), value: detail.rating)
+                                        .frame(minWidth: 44, minHeight: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .pressAnimation()
+                                .a11y(label: "Rate \(rating) star\(rating == 1 ? "" : "s")")
                             }
                             Spacer()
                         }
@@ -342,6 +351,7 @@ struct ExercisePickerView: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 50))
                                 .foregroundColor(DesignSystem.Colors.neutral400)
+                                .a11yHidden()
 
                             Text("No exercises found")
                                 .font(DesignSystem.Typography.titleMedium)
@@ -488,8 +498,11 @@ struct ModernExercisePickerRow: View {
                 }
                 .scaleEffect(isSelected ? 1.1 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .pressAnimation()
+            .a11y(label: isSelected ? "Deselect exercise" : "Select exercise")
         }
         .padding(DesignSystem.Spacing.md)
         .background(DesignSystem.Colors.background)

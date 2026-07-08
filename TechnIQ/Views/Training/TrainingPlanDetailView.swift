@@ -72,6 +72,7 @@ struct TrainingPlanDetailView: View {
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
+                        .a11y(label: "More options")
 
                         Button("Close") {
                             dismiss()
@@ -229,6 +230,7 @@ struct TrainingPlanDetailView: View {
                 Image(systemName: "calendar.badge.exclamationmark")
                     .font(.largeTitle)
                     .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.3))
+                    .a11yHidden()
 
                 Text("No weekly schedule yet")
                     .font(DesignSystem.Typography.bodyMedium)

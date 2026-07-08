@@ -217,6 +217,7 @@ struct DayEditorView: View {
             Image(systemName: "figure.run.circle")
                 .font(.largeTitle)
                 .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
+                .a11yHidden()
 
             Text("No sessions scheduled")
                 .font(DesignSystem.Typography.bodyMedium)

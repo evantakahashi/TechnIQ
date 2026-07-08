@@ -198,6 +198,7 @@ struct TodaysTrainingView: View {
                 Image(systemName: "calendar.badge.checkmark")
                     .font(.system(size: 50))
                     .foregroundColor(DesignSystem.Colors.neutral400)
+                    .a11yHidden()
 
                 Text("No Sessions Today")
                     .font(DesignSystem.Typography.titleMedium)
@@ -222,6 +223,7 @@ struct TodaysTrainingView: View {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 50))
                     .foregroundColor(DesignSystem.Colors.accentYellow)
+                    .a11yHidden()
 
                 Text("Plan Complete!")
                     .font(DesignSystem.Typography.titleMedium)

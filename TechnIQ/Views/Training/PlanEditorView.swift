@@ -212,6 +212,7 @@ struct PlanEditorView: View {
             Image(systemName: "calendar.badge.exclamationmark")
                 .font(.largeTitle)
                 .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
+                .a11yHidden()
 
             Text("No weeks to edit")
                 .font(DesignSystem.Typography.bodyMedium)

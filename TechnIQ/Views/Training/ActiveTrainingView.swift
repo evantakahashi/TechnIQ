@@ -77,6 +77,7 @@ struct ActiveTrainingView: View {
                     .font(.title2)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
             }
+            .a11y(label: "End session")
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
         .padding(.vertical, DesignSystem.Spacing.sm)
@@ -116,6 +117,7 @@ struct ActiveTrainingView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
                 .foregroundColor(DesignSystem.Colors.primaryGreen)
+                .a11yHidden()
 
             Text("Exercise Complete!")
                 .font(DesignSystem.Typography.headlineSmall)
@@ -132,10 +134,13 @@ struct ActiveTrainingView: View {
                         Image(systemName: star <= currentRating ? "star.fill" : "star")
                             .foregroundColor(DesignSystem.Colors.accentOrange)
                             .font(.title)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                             .onTapGesture {
                                 currentRating = star
                                 HapticManager.shared.selectionChanged()
                             }
+                            .a11y(label: "Rate \(star) star\(star == 1 ? "" : "s")")
                     }
                 }
             }
@@ -201,6 +206,7 @@ struct ActiveTrainingView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 60))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    .a11yHidden()
 
                 Text("Session Complete!")
                     .font(DesignSystem.Typography.headlineMedium)

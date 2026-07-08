@@ -347,7 +347,8 @@ struct NewSessionView: View {
                         Image(systemName: "figure.run")
                             .font(.system(size: 40))
                             .foregroundColor(DesignSystem.Colors.neutral400)
-                        
+                            .a11yHidden()
+
                         Text("No exercises selected")
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
@@ -418,8 +419,11 @@ struct NewSessionView: View {
                                 )
                                 .scaleEffect(rating <= overallRating ? 1.1 : 1.0)
                                 .animation(.easeInOut(duration: 0.2), value: overallRating)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .pressAnimation()
+                        .a11y(label: "Rate \(rating) star\(rating == 1 ? "" : "s")")
                     }
                     
                     Spacer()
