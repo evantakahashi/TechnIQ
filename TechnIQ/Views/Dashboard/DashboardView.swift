@@ -392,19 +392,66 @@ struct DashboardView: View {
                     coaching: coaching,
                     isStale: aiCoachService.isCacheStale,
                     onStartDrill: {
-                        launchAIDrill(coaching.recommendedDrill, for: player)
+                        launchAIDrill(coaching.recommendedDrill, focusArea: coaching.focusArea, for: player)
                     },
                     onBrowseLibrary: {
                         selectedTab = 1
                     }
                 )
             }
+        } else if !hasSessions(player) {
+            firstDrillCard(player: player)
         } else {
             ProLockedCardView(feature: .dailyCoaching)
         }
     }
 
-    private func launchAIDrill(_ drill: RecommendedDrill, for player: Player) {
+    private func hasSessions(_ player: Player) -> Bool {
+        (player.sessions?.count ?? 0) > 0
+    }
+
+    private func firstDrillCard(player: Player) -> some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    ZStack {
+                        Circle()
+                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                            .frame(width: 50, height: 50)
+                        Image(systemName: "figure.soccer")
+                            .font(.title3)
+                            .foregroundColor(DesignSystem.Colors.primaryGreen)
+                    }
+
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text("Do your first drill")
+                            .font(DesignSystem.Typography.titleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        Text("Start your streak today!")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+
+                    Spacer()
+                }
+
+                ModernButton("Start", icon: "play.fill", style: .primary) {
+                    if subscriptionManager.canUseQuickDrill() {
+                        showingQuickDrill = true
+                    } else {
+                        showingQuickDrillPaywall = true
+                    }
+                }
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(DesignSystem.Colors.primaryGreen.opacity(0.3), lineWidth: 1.5)
+        )
+    }
+
+    private func launchAIDrill(_ drill: RecommendedDrill, focusArea: String, for player: Player) {
         // If drill references a library exercise, fetch it
         if drill.isFromLibrary, let idString = drill.libraryExerciseID, let uuid = UUID(uuidString: idString) {
             let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
@@ -425,6 +472,7 @@ struct DashboardView: View {
         exercise.category = drill.category
         exercise.difficulty = Int16(drill.difficulty)
         exercise.targetSkills = drill.targetSkills
+        exercise.weaknessCategories = focusArea
         exercise.instructions = drill.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
         exercise.player = player
 
@@ -840,7 +888,16 @@ struct DashboardView: View {
         }
     }
 
+    @ViewBuilder
     private func modernRecommendations(player: Player) -> some View {
+        if !subscriptionManager.isPro && !hasSessions(player) {
+            EmptyView()
+        } else {
+            recommendationsContent(player: player)
+        }
+    }
+
+    private func recommendationsContent(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Recommended for You")
                 .font(DesignSystem.Typography.headlineSmall)
@@ -853,7 +910,7 @@ struct DashboardView: View {
                     case .loading:
                         VStack(spacing: DesignSystem.Spacing.md) {
                             SoccerBallSpinner()
-                            Text("Analyzing your training patterns...")
+                            Text("Finding drills for you...")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.textSecondary)
                         }

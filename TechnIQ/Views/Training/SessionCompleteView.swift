@@ -12,10 +12,15 @@ struct SessionCompleteView: View {
     // Task 7: Training summary data
     var exercises: [Exercise] = []
 
+    var sessionDurationMinutes: Int = 0
+    var sessionRating: Int? = nil
+
     @State private var animateXP = false
     @State private var animateLevel = false
     @State private var animateAchievements = false
     @State private var showConfetti = false
+    @State private var coinsEarned = 0
+    @State private var didAwardCoins = false
     @ObservedObject private var aiCoachService = AICoachService.shared
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var showingWeeklyCheckIn = false
@@ -111,6 +116,8 @@ struct SessionCompleteView: View {
             // Trigger haptic for session completion
             HapticManager.shared.sessionComplete()
 
+            awardCoinsIfNeeded()
+
             // Start confetti for big celebrations
             if isBigCelebration {
                 showConfetti = true
@@ -131,6 +138,12 @@ struct SessionCompleteView: View {
                     HapticManager.shared.achievementUnlocked()
                 }
             }
+        }
+        .task {
+            // Ask for notification permission right after the first dopamine hit
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            NotificationManager.shared.requestPermissionIfNeeded()
+            NotificationManager.shared.scheduleDailyTrainingReminder()
         }
         .sheet(isPresented: $showingWeeklyCheckIn) {
             WeeklyCheckInView(weekNumber: aiCoachService.completedWeekNumber, player: player)
@@ -170,8 +183,46 @@ struct SessionCompleteView: View {
                 .font(DesignSystem.Typography.bodyMedium)
                 .foregroundColor(DesignSystem.Colors.textSecondary)
                 .opacity(animateXP ? 1 : 0)
+
+            if coinsEarned > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "dollarsign.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.coinGold)
+                    Text("+\(coinsEarned) coins")
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.coinGold)
+                }
+                .font(DesignSystem.Typography.titleMedium)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(Capsule().fill(DesignSystem.Colors.coinGold.opacity(0.15)))
+                .opacity(animateXP ? 1 : 0)
+                .a11y(label: "Earned \(coinsEarned) coins", trait: .isStaticText)
+            }
         }
         .padding(.top, DesignSystem.Spacing.xl)
+    }
+
+    private func awardCoinsIfNeeded() {
+        guard !didAwardCoins else { return }
+        didAwardCoins = true
+
+        var total = CoinService.shared.awardSessionCoins(
+            duration: sessionDurationMinutes,
+            isFirstOfDay: (xpBreakdown?.firstSessionBonus ?? 0) > 0,
+            rating: sessionRating,
+            streakDay: Int(player.currentStreak)
+        )
+
+        if let level = newLevel {
+            total += CoinService.shared.awardLevelUpCoins(newLevel: level)
+        }
+
+        for achievement in achievements {
+            total += CoinService.shared.awardAchievementCoins(xpReward: Int(achievement.xpReward))
+        }
+
+        coinsEarned = total
     }
 
     /// Dynamic celebration message based on what was achieved
@@ -469,6 +520,8 @@ struct SessionCompleteView: View {
                     .map { $0.trimmingCharacters(in: .whitespaces) }
                     .filter { !$0.isEmpty }
                 categories.formUnion(parts)
+            } else if let skills = exercise.targetSkills {
+                categories.formUnion(skills.filter { !$0.isEmpty })
             }
         }
         return Array(categories).sorted()

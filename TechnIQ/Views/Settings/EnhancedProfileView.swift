@@ -13,6 +13,7 @@ struct EnhancedProfileView: View {
     @State private var showingShop = false
     @State private var showingSettings = false
     @State private var showingProgress = false
+    @State private var showingAchievements = false
     @State private var showingSignOutAlert = false
 
     init() {
@@ -91,6 +92,13 @@ struct EnhancedProfileView: View {
             if let player = currentPlayer {
                 NavigationStack {
                     PlayerProgressView(player: player)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAchievements) {
+            if let player = currentPlayer {
+                NavigationStack {
+                    AchievementsBrowseView(player: player)
                 }
             }
         }
@@ -217,7 +225,7 @@ struct EnhancedProfileView: View {
                         title: "Achievements",
                         color: DesignSystem.Colors.xpGold
                     ) {
-                        // TODO: Show achievements view
+                        showingAchievements = true
                     }
                 }
             }
@@ -390,6 +398,143 @@ struct ProfileMenuItem: View {
             .padding(DesignSystem.Spacing.md)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Achievements Browse
+
+struct AchievementsBrowseView: View {
+    let player: Player
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.md),
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.md)
+    ]
+
+    private var unlockedCount: Int {
+        AchievementService.shared.getUnlockedAchievements(for: player).count
+    }
+
+    var body: some View {
+        ZStack {
+            AdaptiveBackground()
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    summaryHeader
+
+                    ForEach(Achievement.AchievementCategory.allCases, id: \.self) { category in
+                        categorySection(category)
+                    }
+                }
+                .padding(DesignSystem.Spacing.md)
+            }
+        }
+        .navigationTitle("Achievements")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") { dismiss() }
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+            }
+        }
+    }
+
+    private var summaryHeader: some View {
+        ModernCard {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                ZStack {
+                    Circle()
+                        .fill(DesignSystem.Colors.xpGold.opacity(0.15))
+                        .frame(width: 56, height: 56)
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 26))
+                        .foregroundColor(DesignSystem.Colors.xpGold)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(unlockedCount) of \(AchievementService.allAchievements.count) unlocked")
+                        .font(DesignSystem.Typography.titleMedium)
+                        .fontWeight(.bold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Text("Keep training to earn them all!")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+
+                Spacer()
+            }
+        }
+    }
+
+    private func categorySection(_ category: Achievement.AchievementCategory) -> some View {
+        let items = AchievementService.allAchievements.filter { $0.category == category }
+        return VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            Text(category.rawValue.uppercased())
+                .font(DesignSystem.Typography.labelSmall)
+                .tracking(1.0)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .padding(.leading, DesignSystem.Spacing.sm)
+
+            LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.md) {
+                ForEach(items, id: \.id) { achievement in
+                    achievementTile(achievement)
+                }
+            }
+        }
+    }
+
+    private func achievementTile(_ achievement: Achievement) -> some View {
+        let unlocked = AchievementService.shared.isUnlocked(achievement.id, for: player)
+        let progress = AchievementService.shared.getProgress(for: achievement, player: player, in: viewContext)
+
+        return VStack(spacing: DesignSystem.Spacing.sm) {
+            ZStack {
+                Circle()
+                    .fill((unlocked ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400).opacity(0.15))
+                    .frame(width: 64, height: 64)
+                Image(systemName: unlocked ? achievement.icon : "lock.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(unlocked ? DesignSystem.Colors.xpGold : DesignSystem.Colors.textTertiary)
+            }
+
+            Text(achievement.name)
+                .font(DesignSystem.Typography.labelLarge)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+
+            Text(achievement.description)
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if unlocked {
+                Text("+\(achievement.xpReward) XP")
+                    .font(DesignSystem.Typography.labelSmall)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+            } else if progress > 0 {
+                ProgressView(value: progress)
+                    .tint(DesignSystem.Colors.primaryGreen)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 190, alignment: .top)
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.card)
+        .customShadow(DesignSystem.Shadow.small)
+        .opacity(unlocked ? 1.0 : 0.85)
+        .a11y(
+            label: "\(achievement.name), \(unlocked ? "unlocked" : "locked"). \(achievement.description)",
+            trait: .isStaticText
+        )
     }
 }
 

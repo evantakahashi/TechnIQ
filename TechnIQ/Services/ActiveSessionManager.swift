@@ -99,6 +99,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
         let completedCount = exerciseRatings.filter { $0 > 0 }.count
         let isFullCompletion = completedCount == exercises.count
+        let startingLevel = Int(player.currentLevel)
 
         // Create TrainingSession
         let session = TrainingSession(context: context)
@@ -108,6 +109,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         session.sessionType = "Training"
         session.duration = 0
         session.intensity = Int16(averageRating())
+        session.focusWeakness = dominantFocusWeakness()
 
         // Average notes
         let allNotes = exerciseNotes.filter { !$0.isEmpty }.joined(separator: "; ")
@@ -126,24 +128,134 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
             se.notes = exerciseNotes[i].isEmpty ? nil : exerciseNotes[i]
         }
 
+        // Update running skill ratings from this session's rated exercises
+        recordSkillRatings(for: player, context: context)
+
         // Save
         CoreDataManager.shared.save()
 
         // Process XP
-        let (breakdown, levelUp) = XPService.shared.processSessionCompletion(
+        let (breakdown, _) = XPService.shared.processSessionCompletion(
             session: session,
             player: player,
             context: context,
             allExercisesCompleted: isFullCompletion
         )
 
-        // Check achievements
+        // Check achievements (may award additional XP)
         let achievements = AchievementService.shared.checkAndUnlockAchievements(
             for: player,
             in: context
         )
 
-        return (breakdown, levelUp, achievements)
+        // Recompute level after all XP (session + achievements) so achievement-triggered level-ups aren't silent
+        let newLevel = XPService.shared.syncLevel(for: player, previousLevel: startingLevel)
+
+        // They trained today: clear the streak-at-risk reminder and re-arm the daily nudge
+        NotificationManager.shared.cancelStreakAtRiskForToday()
+        NotificationManager.shared.scheduleDailyTrainingReminder()
+
+        return (breakdown, newLevel, achievements)
+    }
+
+    // MARK: - Weakness & skill recording
+
+    /// Most common weakness category across this session's exercises, used to tag the session's focus.
+    private func dominantFocusWeakness() -> String? {
+        var counts: [String: Int] = [:]
+        for exercise in exercises {
+            guard let raw = exercise.weaknessCategories, !raw.isEmpty else { continue }
+            for name in Self.weaknessCategoryNames(from: raw) {
+                counts[name, default: 0] += 1
+            }
+        }
+        return counts.max { $0.value < $1.value }?.key
+    }
+
+    /// Merge this session's per-exercise ratings into the player's running skillRatings (0-100 scale).
+    private func recordSkillRatings(for player: Player, context: NSManagedObjectContext) {
+        var samples: [String: [Double]] = [:]
+        for (i, exercise) in exercises.enumerated() {
+            guard exerciseRatings[i] > 0 else { continue }
+            let scaled = Double(exerciseRatings[i]) * 20.0
+            var skills = exercise.targetSkills ?? []
+            if let raw = exercise.weaknessCategories, !raw.isEmpty {
+                skills.append(contentsOf: Self.weaknessCategoryNames(from: raw))
+            }
+            for skill in skills where !skill.isEmpty {
+                samples[skill, default: []].append(scaled)
+            }
+        }
+        guard !samples.isEmpty else { return }
+
+        let stats = Self.latestOrNewStats(for: player, context: context)
+        var ratings = stats.skillRatings ?? [:]
+        for (skill, values) in samples {
+            let sample = values.reduce(0, +) / Double(values.count)
+            if let existing = ratings[skill] {
+                ratings[skill] = (existing + sample) / 2.0
+            } else {
+                ratings[skill] = sample
+            }
+        }
+        stats.skillRatings = ratings
+        stats.date = Date()
+        stats.updatedAt = Date()
+    }
+
+    private static func latestOrNewStats(for player: Player, context: NSManagedObjectContext) -> PlayerStats {
+        if let stats = player.stats as? Set<PlayerStats>,
+           let latest = stats.sorted(by: { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }).first {
+            return latest
+        }
+        let stats = PlayerStats(context: context)
+        stats.id = UUID()
+        stats.player = player
+        player.addToStats(stats)
+        return stats
+    }
+
+    /// Parse the "Category:Specific,Category:Specific" weaknessCategories string into category names.
+    private static func weaknessCategoryNames(from raw: String) -> [String] {
+        raw.split(separator: ",").compactMap { pair -> String? in
+            let name = pair.split(separator: ":").first.map { String($0).trimmingCharacters(in: .whitespaces) }
+            return (name?.isEmpty == false) ? name : nil
+        }
+    }
+
+    /// Session-row variant used by manual logging (NewSessionView): same recording
+    /// math as finishSession, sourced from persisted SessionExercise rows.
+    static func recordCompletedSession(_ session: TrainingSession, player: Player, context: NSManagedObjectContext) {
+        var counts: [String: Int] = [:]
+        var samples: [String: [Double]] = [:]
+        for sessionExercise in (session.exercises as? Set<SessionExercise>) ?? [] {
+            guard let exercise = sessionExercise.exercise else { continue }
+            var skills = exercise.targetSkills ?? []
+            if let raw = exercise.weaknessCategories, !raw.isEmpty {
+                let names = weaknessCategoryNames(from: raw)
+                names.forEach { counts[$0, default: 0] += 1 }
+                skills.append(contentsOf: names)
+            }
+            let rating = Int(sessionExercise.performanceRating)
+            guard rating > 0 else { continue }
+            let scaled = Double(rating) * 20.0
+            for skill in skills where !skill.isEmpty {
+                samples[skill, default: []].append(scaled)
+            }
+        }
+        if session.focusWeakness == nil {
+            session.focusWeakness = counts.max { $0.value < $1.value }?.key
+        }
+        guard !samples.isEmpty else { return }
+        let stats = Self.latestOrNewStats(for: player, context: context)
+        var ratings = stats.skillRatings ?? [:]
+        for (skill, values) in samples {
+            let sample = values.reduce(0, +) / Double(values.count)
+            ratings[skill] = ratings[skill].map { ($0 + sample) / 2.0 } ?? sample
+        }
+        stats.skillRatings = ratings
+        stats.date = Date()
+        stats.updatedAt = Date()
     }
 
     // MARK: - Helpers

@@ -9,6 +9,7 @@ struct CreatePostView: View {
     @State private var selectedType: CommunityPostType = .general
     @State private var isPosting = false
     @State private var error: String?
+    @State private var showingGuidelines = false
 
     private let maxCharacters = 500
 
@@ -139,12 +140,20 @@ struct CreatePostView: View {
                     LoadingStateView(message: "Posting...")
                 }
             }
+            .sheet(isPresented: $showingGuidelines) {
+                CommunityGuidelinesSheet { submitPost() }
+            }
         }
     }
 
     private func submitPost() {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
+        guard CommunityGuidelines.hasAccepted else {
+            showingGuidelines = true
+            return
+        }
 
         isPosting = true
         error = nil

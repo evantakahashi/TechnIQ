@@ -41,6 +41,12 @@ Rules:
 - Use coordinates in meters. Keep the drill inside the field dimensions specified below.
 - The drill must TRAIN THE REQUESTED SKILL, not generic ball-work.
 - Prioritize game-relevant reps: every step should move the worker toward or through the requested skill.
+
+Safety (non-negotiable, applies to every drill):
+- Match intensity and complexity to the player's age and level; never prescribe adult training loads to young players.
+- Begin the coaching points with a 2-3 minute warm-up cue (light jogging + dynamic movement and easy ball touches) before any intense or high-skill work.
+- For players under 13 (U13), avoid dangerous or high-impact movements and physical contact — no slide tackles, collisions, or heading drills.
+- Include at least one safe-technique cue (e.g., cushion the ball, land softly, keep the knee tracking over the toe) among the coaching points.
 """
 
 AGE_MAX_SPACING = {8: 7.0, 12: 10.0, 99: 15.0}

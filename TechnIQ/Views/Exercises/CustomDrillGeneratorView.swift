@@ -102,6 +102,7 @@ struct CustomDrillGeneratorView: View {
                 numberOfPlayersSection
                 fieldSizeSection
                 generateButton
+                DrillSafetyDisclaimer()
             }
             .padding(.horizontal, DesignSystem.Spacing.md)
             .padding(.bottom, DesignSystem.Spacing.xxl)
@@ -129,7 +130,7 @@ struct CustomDrillGeneratorView: View {
                             .font(DesignSystem.Typography.titleMedium)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
                         
-                        Text("Describe what you want to work on, and our AI will create a personalized drill for you.")
+                        Text("Tell us what you want to get better at — we'll build you a drill!")
                             .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                     }
@@ -362,7 +363,7 @@ struct CustomDrillGeneratorView: View {
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
                     .pulseAnimation()
                 
-                Text("AI is analyzing your requirements and creating a personalized drill...")
+                Text("Building your drill...")
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -518,6 +519,27 @@ struct EquipmentSelectionCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Safety Disclaimer
+
+/// Footer shown on drill surfaces. Not medical advice; encourages warm-up.
+struct DrillSafetyDisclaimer: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.xs) {
+            Image(systemName: "info.circle")
+                .font(.caption2)
+                .foregroundColor(DesignSystem.Colors.textTertiary)
+                .accessibilityHidden(true)
+            Text("Warm up first. Stop if anything hurts. Not medical advice.")
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, DesignSystem.Spacing.sm)
+        .accessibilityElement(children: .combine)
     }
 }
 

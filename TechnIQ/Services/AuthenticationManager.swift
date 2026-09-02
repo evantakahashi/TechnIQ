@@ -511,6 +511,8 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
                 errorMessage = "Network error. Please check your connection"
             case .tooManyRequests:
                 errorMessage = "Too many attempts. Please try again later"
+            case .adminRestrictedOperation, .operationNotAllowed:
+                errorMessage = "That sign-in option isn't available right now — try creating a free account instead"
             default:
                 errorMessage = authError.localizedDescription
             }

@@ -125,6 +125,7 @@ final class XPService: ObservableObject, XPServiceProtocol {
     /// Update streak based on session completion
     func updateStreak(for player: Player, sessionDate: Date = Date()) {
         let calendar = Calendar.current
+        let previousStreak = player.currentStreak
 
         if let lastDate = player.lastTrainingDate {
             let daysSinceLastSession = calendar.dateComponents([.day], from: calendar.startOfDay(for: lastDate), to: calendar.startOfDay(for: sessionDate)).day ?? 0
@@ -160,6 +161,22 @@ final class XPService: ObservableObject, XPServiceProtocol {
         if player.currentStreak > player.longestStreak {
             player.longestStreak = player.currentStreak
         }
+
+        // Only react when the streak actually advanced this update (not on repeat same-day sessions)
+        if player.currentStreak != previousStreak {
+            handleStreakMilestone(for: player)
+        }
+    }
+
+    /// Grant a streak freeze (cap 3) and fire celebratory haptics when a weekly milestone is first reached.
+    private func handleStreakMilestone(for player: Player) {
+        let milestones: Set<Int16> = [7, 14, 30]
+        guard milestones.contains(player.currentStreak) else { return }
+        if player.streakFreezes < 3 {
+            player.streakFreezes += 1
+            AppLogger.shared.info("Granted streak freeze at \(player.currentStreak)-day milestone. Remaining: \(player.streakFreezes)")
+        }
+        HapticManager.shared.streakMilestone()
     }
 
     /// Calculate actual streak from session history (for fixing bugs)
@@ -240,6 +257,15 @@ final class XPService: ObservableObject, XPServiceProtocol {
         }
 
         return nil
+    }
+
+    /// Recompute the player's level from total XP after external XP awards (e.g. achievements).
+    /// Returns the new level if it increased beyond `previousLevel`.
+    @discardableResult
+    func syncLevel(for player: Player, previousLevel: Int) -> Int? {
+        let newLevel = levelForXP(player.totalXP)
+        player.currentLevel = Int16(newLevel)
+        return newLevel > previousLevel ? newLevel : nil
     }
 
     /// Award XP from a match to player

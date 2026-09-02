@@ -18,6 +18,7 @@ struct CommunityPost: Identifiable, Equatable {
     var commentsCount: Int
     var isLikedByCurrentUser: Bool
     var isReported: Bool
+    var isHidden: Bool = false
 
     // Rich post metadata (optional, only present for new post types)
     var drillID: String?
@@ -85,6 +86,7 @@ struct CommunityComment: Identifiable {
     let content: String
     let timestamp: Date
     var isReported: Bool
+    var isHidden: Bool = false
 }
 
 struct SharedDrill: Identifiable {
@@ -106,6 +108,7 @@ struct SharedDrill: Identifiable {
     var saveCount: Int
     var isSavedByCurrentUser: Bool
     let reportCount: Int
+    var isHidden: Bool = false
 }
 
 struct LeaderboardEntry: Identifiable {
@@ -162,6 +165,28 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         return uid
     }
 
+    // MARK: - Content Moderation
+
+    /// Throws if any user-authored text trips the community language filter.
+    /// Applied to posts, comments, and shared-drill title/description.
+    private func assertCleanText(_ values: String...) throws {
+        for value in values where CommunityTextFilter.containsBlocked(value) {
+            throw CommunityContentError.inappropriateLanguage
+        }
+    }
+
+    /// Public-facing identity: first name + last initial ("Evan Takahashi" -> "Evan T.").
+    /// Full names are never broadcast to the community; local/profile screens keep the real name.
+    /// `nonisolated` so SwiftUI views can call it synchronously off the main actor.
+    nonisolated static func displayName(for fullName: String?) -> String {
+        let trimmed = (fullName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Player" }
+        let parts = trimmed.split(separator: " ").map(String.init)
+        guard let first = parts.first else { return "Player" }
+        guard parts.count > 1, let initial = parts.last?.first else { return first }
+        return "\(first) \(initial)."
+    }
+
     // MARK: - Fetch Posts (Paginated)
 
     func fetchPosts(refresh: Bool = false) async {
@@ -195,6 +220,11 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                 let authorID = data["authorID"] as? String ?? ""
                 guard !blockedUsers.contains(authorID) else { return nil }
 
+                // Auto-hidden (report threshold) content is dropped for everyone
+                // except its author, who still sees it as a hidden placeholder.
+                let isHidden = data["isHidden"] as? Bool ?? false
+                guard !isHidden || authorID == userID else { return nil }
+
                 let likedBy = data["likedBy"] as? [String] ?? []
 
                 return CommunityPost(
@@ -210,6 +240,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                     commentsCount: data["commentsCount"] as? Int ?? 0,
                     isLikedByCurrentUser: likedBy.contains(userID),
                     isReported: false,
+                    isHidden: isHidden,
                     drillID: data["drillID"] as? String,
                     drillTitle: data["drillTitle"] as? String,
                     drillCategory: data["drillCategory"] as? String,
@@ -249,11 +280,13 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
 
     func createPost(content: String, postType: CommunityPostType = .general, player: Player) async throws {
         let userID = try requireAuth()
+        try assertCleanText(content)
+        let authorName = Self.displayName(for: player.name)
 
         let postRef = db.collection("communityPosts").document()
         let postData: [String: Any] = [
             "authorID": userID,
-            "authorName": player.name ?? "Player",
+            "authorName": authorName,
             "authorLevel": player.currentLevel,
             "authorPosition": player.position ?? "",
             "content": content,
@@ -272,7 +305,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         let newPost = CommunityPost(
             id: postRef.documentID,
             authorID: userID,
-            authorName: player.name ?? "Player",
+            authorName: authorName,
             authorLevel: Int(player.currentLevel),
             authorPosition: player.position ?? "",
             content: content,
@@ -295,10 +328,12 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         metadata: [String: Any] = [:]
     ) async throws {
         let userID = try requireAuth()
+        try assertCleanText(content)
+        let authorName = Self.displayName(for: player.name)
 
         var postData: [String: Any] = [
             "authorID": userID,
-            "authorName": player.name ?? "Player",
+            "authorName": authorName,
             "authorLevel": player.currentLevel,
             "authorPosition": player.position ?? "",
             "content": content,
@@ -321,7 +356,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         let newPost = CommunityPost(
             id: postRef.documentID,
             authorID: userID,
-            authorName: player.name ?? "Player",
+            authorName: authorName,
             authorLevel: Int(player.currentLevel),
             authorPosition: player.position ?? "",
             content: content,
@@ -388,7 +423,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
     // MARK: - Comments
 
     func fetchComments(for postID: String) async throws -> [CommunityComment] {
-        _ = try requireAuth()
+        let userID = try requireAuth()
 
         let snapshot = try await db.collection("communityPosts").document(postID)
             .collection("comments")
@@ -401,6 +436,10 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
             let authorID = data["authorID"] as? String ?? ""
             guard !blockedUsers.contains(authorID) else { return nil }
 
+            // Auto-hidden comments are dropped for everyone except their author.
+            let isHidden = data["isHidden"] as? Bool ?? false
+            guard !isHidden || authorID == userID else { return nil }
+
             return CommunityComment(
                 id: doc.documentID,
                 postID: postID,
@@ -409,20 +448,22 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                 authorLevel: data["authorLevel"] as? Int ?? 1,
                 content: data["content"] as? String ?? "",
                 timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
-                isReported: false
+                isReported: false,
+                isHidden: isHidden
             )
         }
     }
 
     func addComment(to postID: String, content: String, player: Player) async throws {
         let userID = try requireAuth()
+        try assertCleanText(content)
 
         let commentRef = db.collection("communityPosts").document(postID)
             .collection("comments").document()
 
         let commentData: [String: Any] = [
             "authorID": userID,
-            "authorName": player.name ?? "Player",
+            "authorName": Self.displayName(for: player.name),
             "authorLevel": player.currentLevel,
             "content": content,
             "timestamp": FieldValue.serverTimestamp(),
@@ -518,6 +559,10 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                 let authorID = data["authorID"] as? String ?? ""
                 guard !blockedUsers.contains(authorID) else { return nil }
 
+                // Auto-hidden drills are dropped for everyone except their author.
+                let isHidden = data["isHidden"] as? Bool ?? false
+                guard !isHidden || authorID == userID else { return nil }
+
                 let savedBy = data["savedBy"] as? [String] ?? []
 
                 return SharedDrill(
@@ -538,7 +583,8 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
                     timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
                     saveCount: data["saveCount"] as? Int ?? 0,
                     isSavedByCurrentUser: savedBy.contains(userID),
-                    reportCount: data["reportCount"] as? Int ?? 0
+                    reportCount: data["reportCount"] as? Int ?? 0,
+                    isHidden: isHidden
                 )
             }
 
@@ -562,11 +608,13 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
 
     func shareDrill(exercise: Exercise, player: Player) async throws {
         let userID = try requireAuth()
+        try assertCleanText(exercise.name ?? "", exercise.exerciseDescription ?? "")
+        let authorName = Self.displayName(for: player.name)
 
         let drillRef = db.collection("sharedDrills").document()
         let drillData: [String: Any] = [
             "authorID": userID,
-            "authorName": player.name ?? "Player",
+            "authorName": authorName,
             "authorLevel": player.currentLevel,
             "title": exercise.name ?? "Untitled Drill",
             "description": exercise.exerciseDescription ?? "",
@@ -588,7 +636,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         let postRef = db.collection("communityPosts").document()
         let postData: [String: Any] = [
             "authorID": userID,
-            "authorName": player.name ?? "Player",
+            "authorName": authorName,
             "authorLevel": player.currentLevel,
             "authorPosition": player.position ?? "",
             "content": "Shared a drill: \(exercise.name ?? "Untitled")",
@@ -741,6 +789,18 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         }
     }
 
+    // MARK: - Report User
+
+    func reportUser(_ reportedUID: String, reason: String = "Inappropriate profile") async throws {
+        let reporterID = try requireAuth()
+        try await db.collection("reports").document().setData([
+            "reportedUID": reportedUID,
+            "reporterID": reporterID,
+            "reason": reason,
+            "timestamp": FieldValue.serverTimestamp()
+        ])
+    }
+
     // MARK: - Block User
 
     func blockUser(_ userID: String) async throws {
@@ -800,5 +860,76 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
             totalXP: data["totalXP"] as? Int64 ?? 0,
             sessionsCount: data["totalSessions"] as? Int ?? 0
         )
+    }
+}
+
+// MARK: - Content Moderation
+
+/// User-facing errors surfaced by the community text filter.
+enum CommunityContentError: LocalizedError {
+    case inappropriateLanguage
+
+    var errorDescription: String? {
+        switch self {
+        case .inappropriateLanguage:
+            return "Let's keep it friendly — try different words."
+        }
+    }
+}
+
+/// Lightweight client-side language filter for a kid-safe community.
+/// Single source of truth for the blocklist; case- and leet-insensitive.
+/// This is a first-pass guard, not a replacement for server-side moderation.
+private enum CommunityTextFilter {
+    // Fold common leetspeak / symbol substitutions so "sh1t", "f@g", "b!tch" match.
+    private static let leetMap: [Character: Character] = [
+        "0": "o", "1": "i", "3": "e", "4": "a", "5": "s",
+        "7": "t", "8": "b", "9": "g", "@": "a", "$": "s", "!": "i"
+    ]
+
+    // Strong profanity, slurs, and sexual terms. Curated to be safe as
+    // substrings of collapsed text — no ultra-short stems (e.g. "ass", "hell")
+    // that hide inside ordinary soccer words like "pass" or "hello".
+    private static let blockedStems: [String] = [
+        "fuck", "motherfuck", "shit", "bullshit", "dipshit", "bitch", "asshole",
+        "dumbass", "jackass", "bastard", "cunt", "pussy", "douche", "wanker",
+        "bollocks", "cocksuck", "dickhead", "shithead", "fatass", "whore", "slut",
+        "nigger", "nigga", "faggot", "retard", "kike", "chink", "wetback",
+        "beaner", "gook", "tranny", "spearchuck", "towelhead",
+        "porn", "blowjob", "handjob", "penis", "vagina", "boner", "jizz",
+        "masturbat", "orgasm", "dildo", "creampie", "cumshot", "horny", "nudes", "nsfw",
+        "idiot", "stupid", "worthless", "pathetic", "killyourself", "killurself"
+    ]
+
+    // Short/ambiguous tokens matched only as whole words (avoids "shoe"->"hoe",
+    // "closer"->"loser", "snugly"->"ugly" style false positives).
+    private static let blockedWords: Set<String> = [
+        "loser", "losers", "moron", "morons", "ugly", "kys", "stfu", "gtfo",
+        "fag", "fags", "hoe", "hoes", "twat", "twats", "slag"
+    ]
+
+    // Harassment / self-harm phrases matched against space-preserved text.
+    private static let blockedPhrases: [String] = [
+        "kill yourself", "kill your self", "kill urself", "hang yourself",
+        "cut yourself", "go die", "you should die", "nobody likes you",
+        "no one likes you", "everyone hates you", "hate you"
+    ]
+
+    static func containsBlocked(_ text: String) -> Bool {
+        let folded = String(text.lowercased().map { leetMap[$0] ?? $0 })
+
+        // Letters-only form catches spaced/punctuated evasions ("f u c k").
+        let collapsed = String(folded.filter { $0.isLetter })
+        if blockedStems.contains(where: { collapsed.contains($0) }) { return true }
+
+        // Space-normalized form for whole-word and phrase checks.
+        let spaced = String(folded.map { $0.isLetter ? $0 : " " })
+        let words = spaced.split(separator: " ").map(String.init)
+        if words.contains(where: { blockedWords.contains($0) }) { return true }
+
+        let normalizedSpaced = words.joined(separator: " ")
+        if blockedPhrases.contains(where: { normalizedSpaced.contains($0) }) { return true }
+
+        return false
     }
 }

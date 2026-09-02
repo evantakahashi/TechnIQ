@@ -18,6 +18,14 @@ from firebase_functions import https_fn
 from ml.youtube_recommendations import create_youtube_ml_engine
 from lightweight_recommendations import create_lightweight_recommendations
 
+# Register Firestore moderation triggers (auto-hide reported community content).
+# Imported for the decorator side effects so `firebase deploy` picks them up.
+from moderation_triggers import (  # noqa: F401
+    hide_reported_post,
+    hide_reported_comment,
+    hide_reported_drill,
+)
+
 # Initialize Firebase
 db = None
 try:

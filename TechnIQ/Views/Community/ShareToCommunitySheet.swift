@@ -10,6 +10,7 @@ struct ShareToCommunitySheet: View {
     @State private var isSharing = false
     @State private var shareError: String?
     @State private var shareSuccess = false
+    @State private var showingGuidelines = false
 
     private let maxCharacters = 300
 
@@ -186,6 +187,9 @@ struct ShareToCommunitySheet: View {
                     .cornerRadius(DesignSystem.CornerRadius.xl)
                 }
             }
+            .sheet(isPresented: $showingGuidelines) {
+                CommunityGuidelinesSheet { share() }
+            }
         }
     }
 
@@ -218,6 +222,11 @@ struct ShareToCommunitySheet: View {
     // MARK: - Actions
 
     private func share() {
+        guard CommunityGuidelines.hasAccepted else {
+            showingGuidelines = true
+            return
+        }
+
         isSharing = true
         shareError = nil
 

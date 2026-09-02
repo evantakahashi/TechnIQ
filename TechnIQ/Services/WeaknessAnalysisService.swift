@@ -51,9 +51,19 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
             }
         }
 
-        // Rank by frequency descending, take top 3
+        // Demote weaknesses the player has already trained this week, and flag improving ones
+        let recentFocus = recentlyTrainedFocus(player)
         let ranked = frequencyMap.values
-            .sorted { $0.count > $1.count }
+            .map { entry -> (weakness: SelectedWeakness, score: Double) in
+                var weakness = entry.weakness
+                var score = Double(entry.count)
+                if let avgRating = recentFocus[weakness.category] {
+                    score *= 0.5
+                    if avgRating >= 3.5 { weakness.isImproving = true }
+                }
+                return (weakness, score)
+            }
+            .sorted { $0.score > $1.score }
             .prefix(3)
             .map { $0.weakness }
 
@@ -69,8 +79,17 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
             dataSources.append("Drill feedback")
         }
 
+        // Cold start: never leave the surface empty — seed starter focus areas from the player's position
+        var suggestions = Array(ranked)
+        if suggestions.isEmpty {
+            suggestions = starterFocusAreas(for: player)
+            if !suggestions.isEmpty {
+                dataSources = ["Starter focus for your position"]
+            }
+        }
+
         let profile = WeaknessProfile(
-            suggestedWeaknesses: Array(ranked),
+            suggestedWeaknesses: suggestions,
             dataSources: dataSources,
             lastUpdated: Date()
         )
@@ -79,7 +98,7 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
         cacheProfile(profile, for: player)
 
         #if DEBUG
-        print("[WeaknessAnalysis] Generated profile with \(ranked.count) suggestions from \(dataSources.count) sources")
+        print("[WeaknessAnalysis] Generated profile with \(suggestions.count) suggestions from \(dataSources.count) sources")
         #endif
 
         return profile
@@ -136,10 +155,7 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
 
                 for keyword in keywords {
                     if let category = mapKeywordToCategory(keyword) {
-                        suggestions.append(SelectedWeakness(
-                            category: category.displayName,
-                            specific: keyword
-                        ))
+                        suggestions.append(makeWeakness(categoryName: category.displayName))
                     }
                 }
             }
@@ -194,16 +210,10 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
             // Only suggest categories with 2+ low ratings
             for (category, count) in lowRatingsByCategory where count >= 2 {
                 if let weaknessCategory = matchCategoryString(category) {
-                    suggestions.append(SelectedWeakness(
-                        category: weaknessCategory.displayName,
-                        specific: "Low performance in \(category) (\(count) exercises rated below 3)"
-                    ))
+                    suggestions.append(makeWeakness(categoryName: weaknessCategory.displayName))
                 } else {
                     // Use raw category name if no enum match
-                    suggestions.append(SelectedWeakness(
-                        category: category,
-                        specific: "Low performance (\(count) exercises rated below 3)"
-                    ))
+                    suggestions.append(makeWeakness(categoryName: category))
                 }
             }
 
@@ -237,11 +247,7 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
                 // Try feedbackType first
                 if let feedbackType = feedback.feedbackType, !feedbackType.isEmpty {
                     if let category = mapKeywordToCategory(feedbackType.lowercased()) {
-                        let detail = feedback.difficultyRating > 3 ? "Found too difficult" : "Low rating"
-                        suggestions.append(SelectedWeakness(
-                            category: category.displayName,
-                            specific: detail
-                        ))
+                        suggestions.append(makeWeakness(categoryName: category.displayName))
                         continue
                     }
                 }
@@ -250,10 +256,7 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
                 if let notes = feedback.notes, !notes.isEmpty {
                     let lowered = notes.lowercased()
                     if let category = mapKeywordToCategory(lowered) {
-                        suggestions.append(SelectedWeakness(
-                            category: category.displayName,
-                            specific: "Feedback: \(notes)"
-                        ))
+                        suggestions.append(makeWeakness(categoryName: category.displayName))
                     }
                 }
             }
@@ -296,6 +299,111 @@ class WeaknessAnalysisService: WeaknessAnalysisServiceProtocol {
         }
         // Fall back to keyword matching
         return mapKeywordToCategory(lowered)
+    }
+
+    // MARK: - Kid-Friendly Copy
+
+    private func friendlyTitle(for category: WeaknessCategory) -> String {
+        switch category {
+        case .dribbling: return "Level up your dribbling!"
+        case .passing: return "Sharpen your passing!"
+        case .shooting: return "Boost your finishing!"
+        case .firstTouch: return "Master your first touch!"
+        case .defending: return "Lock down your defending!"
+        case .speedAgility: return "Get faster and sharper!"
+        case .stamina: return "Build your engine!"
+        case .positioning: return "Read the game better!"
+        case .weakFoot: return "Train your weaker foot!"
+        case .aerialAbility: return "Win it in the air!"
+        }
+    }
+
+    private func friendlyDetail(for category: WeaknessCategory) -> String {
+        switch category {
+        case .dribbling: return "A few focused drills and you'll beat defenders with confidence."
+        case .passing: return "Small passing reps add up fast — let's tighten it up."
+        case .shooting: return "Put in the finishing reps and watch the goals follow."
+        case .firstTouch: return "Cleaner control makes everything else on the pitch easier."
+        case .defending: return "Timing and positioning drills to win the ball back."
+        case .speedAgility: return "Quick feet and explosive starts, one drill at a time."
+        case .stamina: return "Keep your intensity high from first whistle to last."
+        case .positioning: return "Learn where to be before the ball even gets there."
+        case .weakFoot: return "A stronger weak foot makes you twice the threat."
+        case .aerialAbility: return "Time your jump right and headers become a weapon."
+        }
+    }
+
+    private func friendlyCopy(forCategoryName name: String) -> (specific: String, detail: String) {
+        if let category = WeaknessCategory.allCases.first(where: { $0.displayName == name }) {
+            return (friendlyTitle(for: category), friendlyDetail(for: category))
+        }
+        return ("Level up your \(name.lowercased())!", "A few focused drills will help you improve in this area.")
+    }
+
+    /// Build a display-ready weakness with friendly copy while keeping the category mechanics intact.
+    private func makeWeakness(categoryName: String) -> SelectedWeakness {
+        let copy = friendlyCopy(forCategoryName: categoryName)
+        return SelectedWeakness(category: categoryName, specific: copy.specific, detail: copy.detail, isImproving: false)
+    }
+
+    // MARK: - Recent Training Signal
+
+    /// Category name -> average exercise rating for the last 7 days of sessions tagged with that focus.
+    private func recentlyTrainedFocus(_ player: Player) -> [String: Double] {
+        let context = CoreDataManager.shared.context
+        let request = NSFetchRequest<TrainingSession>(entityName: "TrainingSession")
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        request.predicate = NSPredicate(format: "player == %@ AND date >= %@ AND focusWeakness != nil", player, sevenDaysAgo as NSDate)
+
+        var totals: [String: (sum: Double, count: Int)] = [:]
+        do {
+            let sessions = try context.fetch(request)
+            for session in sessions {
+                guard let focus = session.focusWeakness,
+                      let sessionExercises = session.exercises as? Set<SessionExercise> else { continue }
+                let ratings = sessionExercises.map { Double($0.performanceRating) }.filter { $0 > 0 }
+                guard !ratings.isEmpty else { continue }
+                let avg = ratings.reduce(0, +) / Double(ratings.count)
+                let existing = totals[focus] ?? (sum: 0, count: 0)
+                totals[focus] = (existing.sum + avg, existing.count + 1)
+            }
+        } catch {
+            return [:]
+        }
+
+        return totals.mapValues { $0.sum / Double($0.count) }
+    }
+
+    // MARK: - Cold Start
+
+    /// Two position-appropriate starter focus areas so a fresh profile is never empty.
+    private func starterFocusAreas(for player: Player) -> [SelectedWeakness] {
+        let positionLabel = player.position ?? "player"
+        return starterCategories(for: player.position).map { category in
+            SelectedWeakness(
+                category: category.displayName,
+                specific: friendlyTitle(for: category),
+                detail: "Starter focus for a \(positionLabel) — nail the basics here first!",
+                isImproving: false
+            )
+        }
+    }
+
+    private func starterCategories(for position: String?) -> [WeaknessCategory] {
+        let pos = (position ?? "").lowercased()
+        if pos.contains("goal") || pos.contains("keeper") || pos == "gk" {
+            return [.positioning, .firstTouch]
+        }
+        if pos.contains("def") || pos.contains("back") {
+            return [.defending, .positioning]
+        }
+        if pos.contains("mid") {
+            return [.passing, .positioning]
+        }
+        if pos.contains("for") || pos.contains("strik") || pos.contains("wing") || pos.contains("attack") {
+            return [.shooting, .firstTouch]
+        }
+        return [.dribbling, .passing]
     }
 
     /// Encode and cache profile to player's weaknessProfileJSON.

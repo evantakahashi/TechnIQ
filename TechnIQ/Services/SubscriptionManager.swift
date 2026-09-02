@@ -143,19 +143,27 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
         return "\(offer.period.value) \(offer.period.unit)"
     }
 
-    // MARK: - Free Drill Tracking
+    // MARK: - Free Drill Tracking (1 per day, resets at midnight)
 
-    static let hasUsedFreeCustomDrillKey = "hasUsedFreeCustomDrill"
-    static let hasUsedFreeQuickDrillKey = "hasUsedFreeQuickDrill"
+    static let customDrillLastUsedKey = "customDrillLastUsedDate"
+    static let quickDrillLastUsedKey = "quickDrillLastUsedDate"
+
+    private func usedToday(_ key: String) -> Bool {
+        let timestamp = UserDefaults.standard.double(forKey: key)
+        guard timestamp > 0 else { return false }
+        return Calendar.current.isDateInToday(Date(timeIntervalSince1970: timestamp))
+    }
+
+    private func markUsedToday(_ key: String) {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: key)
+    }
 
     var hasUsedFreeCustomDrill: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.hasUsedFreeCustomDrillKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.hasUsedFreeCustomDrillKey) }
+        usedToday(Self.customDrillLastUsedKey)
     }
 
     var hasUsedFreeQuickDrill: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.hasUsedFreeQuickDrillKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.hasUsedFreeQuickDrillKey) }
+        usedToday(Self.quickDrillLastUsedKey)
     }
 
     func canUseCustomDrill() -> Bool {
@@ -167,10 +175,10 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
     }
 
     func markCustomDrillUsed() {
-        if !isPro { hasUsedFreeCustomDrill = true }
+        if !isPro { markUsedToday(Self.customDrillLastUsedKey) }
     }
 
     func markQuickDrillUsed() {
-        if !isPro { hasUsedFreeQuickDrill = true }
+        if !isPro { markUsedToday(Self.quickDrillLastUsedKey) }
     }
 }

@@ -27,6 +27,7 @@ struct NewSessionView: View {
     @State private var xpBreakdown: SessionXPBreakdown?
     @State private var newLevel: Int?
     @State private var unlockedAchievements: [Achievement] = []
+    @State private var savedDurationMinutes = 0
     
     let sessionTypes = ["Training", "Match", "Fitness", "Technical", "Tactical"]
     
@@ -101,7 +102,10 @@ struct NewSessionView: View {
                     onDismiss: {
                         showSessionComplete = false
                         dismiss()
-                    }
+                    },
+                    exercises: selectedExercises,
+                    sessionDurationMinutes: savedDurationMinutes,
+                    sessionRating: overallRating
                 )
             }
             .onAppear {
@@ -564,6 +568,7 @@ struct NewSessionView: View {
         
         // Use manual duration if enabled, otherwise use calculated duration from exercises
         newSession.duration = useManualDuration ? manualDuration : totalDuration
+        savedDurationMinutes = Int(newSession.duration)
         
         #if DEBUG
 
@@ -588,6 +593,7 @@ struct NewSessionView: View {
         }
 
         // Process XP earning
+        let startingLevel = Int(player.currentLevel)
         let (breakdown, levelUp) = XPService.shared.processSessionCompletion(
             session: newSession,
             player: player,
@@ -614,6 +620,12 @@ struct NewSessionView: View {
             print("Unlocked \(unlockedAchievements.count) achievements!")
         }
         #endif
+
+        ActiveSessionManager.recordCompletedSession(newSession, player: player, context: viewContext)
+        if let syncedLevel = XPService.shared.syncLevel(for: player, previousLevel: startingLevel) {
+            newLevel = syncedLevel
+        }
+        NotificationManager.shared.cancelStreakAtRiskForToday()
 
         // Show completion view if XP was earned
         if breakdown.total > 0 {

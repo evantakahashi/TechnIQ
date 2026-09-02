@@ -11,6 +11,11 @@ struct LeaderboardView: View {
 
     private var player: Player? { players.first }
 
+    // Public identity only — first name + last initial.
+    private func publicName(_ entry: LeaderboardEntry) -> String {
+        CommunityService.displayName(for: entry.name)
+    }
+
     private var topThree: [LeaderboardEntry] {
         Array(communityService.leaderboard.prefix(3))
     }
@@ -109,7 +114,7 @@ struct LeaderboardView: View {
                     .frame(width: 56, height: 56)
                     .overlay(Circle().stroke(ringColor, lineWidth: 3))
 
-                Text(String(entry.name.prefix(1)).uppercased())
+                Text(String(publicName(entry).prefix(1)).uppercased())
                     .font(DesignSystem.Typography.titleMedium)
                     .fontWeight(.bold)
                     .foregroundColor(ringColor)
@@ -124,7 +129,7 @@ struct LeaderboardView: View {
                     .offset(x: 20, y: 20)
             }
 
-            Text(entry.name)
+            Text(publicName(entry))
                 .font(DesignSystem.Typography.labelMedium)
                 .fontWeight(.semibold)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -170,14 +175,14 @@ struct LeaderboardView: View {
                         .fill(DesignSystem.Colors.backgroundSecondary)
                         .frame(width: 36, height: 36)
                         .overlay(
-                            Text(String(entry.name.prefix(1)).uppercased())
+                            Text(String(publicName(entry).prefix(1)).uppercased())
                                 .font(DesignSystem.Typography.labelMedium)
                                 .fontWeight(.bold)
                                 .foregroundColor(DesignSystem.Colors.textSecondary)
                         )
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.name)
+                        Text(publicName(entry))
                             .font(DesignSystem.Typography.bodyMedium)
                             .fontWeight(.semibold)
                             .foregroundColor(isCurrentPlayer ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textPrimary)

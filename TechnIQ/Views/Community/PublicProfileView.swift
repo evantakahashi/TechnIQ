@@ -12,8 +12,15 @@ struct PublicProfileView: View {
     @State private var profileSessions = 0
     @State private var isLoading = true
     @State private var showingBlockConfirm = false
+    @State private var showingReportConfirm = false
+    @State private var reportSubmitted = false
     @State private var userPosts: [CommunityPost] = []
     @State private var sharedDrillsCount = 0
+
+    // Public identity only — first name + last initial.
+    private var displayName: String {
+        CommunityService.displayName(for: profileName)
+    }
 
     var body: some View {
         NavigationStack {
@@ -46,6 +53,11 @@ struct PublicProfileView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        Button {
+                            showingReportConfirm = true
+                        } label: {
+                            Label("Report User", systemImage: "exclamationmark.triangle")
+                        }
                         Button(role: .destructive) {
                             showingBlockConfirm = true
                         } label: {
@@ -55,6 +67,7 @@ struct PublicProfileView: View {
                         Image(systemName: "ellipsis.circle")
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                     }
+                    .accessibilityLabel("Profile actions")
                 }
             }
             .alert("Block User", isPresented: $showingBlockConfirm) {
@@ -64,6 +77,19 @@ struct PublicProfileView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("You won't see posts or comments from this user. This can't be undone.")
+            }
+            .alert("Report User", isPresented: $showingReportConfirm) {
+                Button("Report", role: .destructive) {
+                    reportUser()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Report this profile for review by our team.")
+            }
+            .alert("Thanks for reporting", isPresented: $reportSubmitted) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Our team will review this profile.")
             }
             .onAppear { loadProfile() }
         }
@@ -78,7 +104,7 @@ struct PublicProfileView: View {
                 Circle()
                     .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
                     .frame(width: 80, height: 80)
-                Text(String(profileName.prefix(1)).uppercased())
+                Text(String(displayName.prefix(1)).uppercased())
                     .font(DesignSystem.Typography.headlineMedium)
                     .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
@@ -86,7 +112,7 @@ struct PublicProfileView: View {
 
             // Name & level
             VStack(spacing: DesignSystem.Spacing.xs) {
-                Text(profileName)
+                Text(displayName)
                     .font(DesignSystem.Typography.titleLarge)
                     .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -233,6 +259,13 @@ struct PublicProfileView: View {
         Task {
             try? await communityService.blockUser(userID)
             dismiss()
+        }
+    }
+
+    private func reportUser() {
+        Task {
+            try? await communityService.reportUser(userID)
+            reportSubmitted = true
         }
     }
 }

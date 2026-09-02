@@ -166,6 +166,8 @@ enum SubWeakness: String, CaseIterable, Codable, Identifiable {
 struct SelectedWeakness: Codable {
     let category: String
     let specific: String
+    var detail: String? = nil
+    var isImproving: Bool? = nil
 }
 
 // MARK: - WeaknessProfile

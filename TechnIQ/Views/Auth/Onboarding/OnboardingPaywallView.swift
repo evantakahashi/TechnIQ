@@ -7,7 +7,6 @@ struct OnboardingPaywallView: View {
     let onPurchaseComplete: () -> Void
 
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
-    @State private var showFreeConfirmation = false
     @State private var displayProduct: Product?
     @State private var productLoadComplete = false
 
@@ -34,12 +33,8 @@ struct OnboardingPaywallView: View {
                 purchaseButton
 
                 // MARK: - Continue Free
-                Button {
-                    showFreeConfirmation = true
-                } label: {
-                    Text("Continue with Free")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                ModernButton("Continue with Free", style: .secondary) {
+                    onContinueFree()
                 }
 
                 // MARK: - Restore
@@ -62,10 +57,6 @@ struct OnboardingPaywallView: View {
             await subscriptionManager.loadProduct()
             displayProduct = try? await Product.products(for: [proProductID]).first
             productLoadComplete = true
-        }
-        .sheet(isPresented: $showFreeConfirmation) {
-            freeConfirmationSheet
-                .presentationDetents([.medium])
         }
         .alert("Error", isPresented: .init(
             get: { subscriptionManager.errorMessage != nil },
@@ -117,8 +108,8 @@ struct OnboardingPaywallView: View {
                 benefitRow(icon: "brain.head.profile", text: "Unlimited AI-generated drills")
                 benefitRow(icon: "calendar.badge.plus", text: "Personalized training plans")
                 benefitRow(icon: "play.circle.fill", text: "Animated drill walkthroughs")
-                benefitRow(icon: "sparkles", text: "Smart weakness recommendations")
-                benefitRow(icon: "chart.line.uptrend.xyaxis", text: "Full progress analytics")
+                benefitRow(icon: "sparkles", text: "Tips on what to practice next")
+                benefitRow(icon: "chart.line.uptrend.xyaxis", text: "See all your progress")
                 benefitRow(icon: "person.crop.circle.badge.checkmark", text: "All avatar items & rewards")
             }
         }
@@ -294,68 +285,6 @@ struct OnboardingPaywallView: View {
         .padding(.top, DesignSystem.Spacing.sm)
     }
 
-    // MARK: - Free Confirmation Sheet
-
-    private var freeConfirmationSheet: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            Text("Free Plan Includes")
-                .font(DesignSystem.Typography.headlineMedium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .padding(.top, DesignSystem.Spacing.lg)
-
-            VStack(spacing: DesignSystem.Spacing.md) {
-                freeFeatureRow("1 custom AI drill")
-                freeFeatureRow("1 quick AI drill")
-                freeFeatureRow("Basic training sessions")
-                freeFeatureRow("Progress tracking")
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-
-            Text("Upgrade anytime in Settings")
-                .font(DesignSystem.Typography.bodySmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            Spacer()
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ModernButton("Continue with Free", style: .secondary) {
-                    showFreeConfirmation = false
-                    onContinueFree()
-                }
-
-                ModernButton(
-                    "Start Free Trial Instead",
-                    icon: "crown.fill",
-                    style: .primary
-                ) {
-                    showFreeConfirmation = false
-                    Task {
-                        await subscriptionManager.purchase()
-                        if subscriptionManager.isPro {
-                            onPurchaseComplete()
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.bottom, DesignSystem.Spacing.lg)
-        }
-        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
-    }
-
-    private func freeFeatureRow(_ text: String) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 18))
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-            Text(text)
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            Spacer()
-        }
-    }
 }
 
 #Preview {

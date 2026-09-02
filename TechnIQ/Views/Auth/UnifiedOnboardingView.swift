@@ -15,10 +15,11 @@ struct UnifiedOnboardingView: View {
     // Step 2: Goal
     @State private var selectedGoal = "Improve Skills"
     @State private var selectedFrequency = "3-4x per week"
+    @State private var selectedWeaknesses: Set<WeaknessCategory> = []
 
     // Step 3: About You
     @State private var playerName = ""
-    @State private var playerAge = 13
+    @State private var playerAge: Int? = nil
     @State private var selectedExperienceLevel = "Beginner"
     @State private var yearsPlaying: Int = 2
 
@@ -104,6 +105,9 @@ struct UnifiedOnboardingView: View {
                 playerName = prefillName
                 UserDefaults.standard.removeObject(forKey: "onboarding_prefill_name")
             }
+            if playerName.isEmpty, authManager.currentUser?.isAnonymous == true {
+                playerName = "Player"
+            }
         }
         .onDisappear {
             generationTask?.cancel()
@@ -147,7 +151,7 @@ struct UnifiedOnboardingView: View {
             if currentStep < 4 {
                 Button("Skip") {
                     withAnimation {
-                        currentStep = 5 // Skip to profile creation
+                        currentStep = 4
                     }
                 }
                 .font(DesignSystem.Typography.labelMedium)
@@ -284,7 +288,7 @@ struct UnifiedOnboardingView: View {
     private var canContinue: Bool {
         switch currentStep {
         case 5:
-            return !playerName.isEmpty
+            return !playerName.isEmpty && playerAge != nil
         default:
             return true
         }
@@ -305,7 +309,7 @@ struct UnifiedOnboardingView: View {
                     .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                Text("Your AI-powered soccer training companion")
+                Text("Train smarter. Get better every day.")
                     .font(DesignSystem.Typography.bodyLarge)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -352,7 +356,7 @@ struct UnifiedOnboardingView: View {
                     .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                Text("This helps us personalize your experience")
+                Text("This helps us pick the right drills for you")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
             }
@@ -389,6 +393,31 @@ struct UnifiedOnboardingView: View {
                                 selectedFrequency = freq
                                 HapticManager.shared.selectionChanged()
                             }
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                Text("What do you want to get better at?")
+                    .font(DesignSystem.Typography.labelMedium)
+                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        ForEach(WeaknessCategory.allCases) { category in
+                            FrequencyChip(
+                                title: category.displayName,
+                                isSelected: selectedWeaknesses.contains(category)
+                            ) {
+                                toggleWeakness(category)
+                            }
+                            .a11y(
+                                label: category.displayName,
+                                trait: selectedWeaknesses.contains(category) ? [.isButton, .isSelected] : .isButton
+                            )
                         }
                     }
                     .padding(.horizontal, DesignSystem.Spacing.md)
@@ -448,6 +477,10 @@ struct UnifiedOnboardingView: View {
                             .padding(DesignSystem.Spacing.md)
                             .background(DesignSystem.Colors.surfaceHighlight)
                             .cornerRadius(DesignSystem.CornerRadius.md)
+
+                        Text("This name is shown to other players — first name or nickname is perfect.")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textTertiary)
                     }
 
                     // Age Picker
@@ -457,8 +490,9 @@ struct UnifiedOnboardingView: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
 
                         Picker("Age", selection: $playerAge) {
+                            Text("Select your age").tag(Int?.none)
                             ForEach(8...25, id: \.self) { age in
-                                Text("\(age) years").tag(age)
+                                Text("\(age) years").tag(Int?(age))
                             }
                         }
                         .pickerStyle(.wheel)
@@ -673,7 +707,7 @@ struct UnifiedOnboardingView: View {
                         .fontWeight(.bold)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                    Text("Your personalized training plan is ready")
+                    Text("Your plan is ready — Day 1 is waiting on your home screen.")
                         .font(DesignSystem.Typography.bodyLarge)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
@@ -735,6 +769,15 @@ struct UnifiedOnboardingView: View {
 
     // MARK: - Helper Functions
 
+    private func toggleWeakness(_ category: WeaknessCategory) {
+        if selectedWeaknesses.contains(category) {
+            selectedWeaknesses.remove(category)
+        } else if selectedWeaknesses.count < 3 {
+            selectedWeaknesses.insert(category)
+        }
+        HapticManager.shared.selectionChanged()
+    }
+
     private func createPlayer() {
         #if DEBUG
         print("Starting player creation...")
@@ -757,12 +800,22 @@ struct UnifiedOnboardingView: View {
         newPlayer.id = UUID()
         newPlayer.firebaseUID = userUID
         newPlayer.name = finalName
-        newPlayer.age = Int16(playerAge)
+        newPlayer.age = Int16(playerAge ?? 0)
         newPlayer.position = selectedPosition
         newPlayer.playingStyle = selectedPlayingStyle
         newPlayer.dominantFoot = selectedDominantFoot
         newPlayer.experienceLevel = selectedExperienceLevel
         newPlayer.createdAt = Date()
+
+        if !selectedWeaknesses.isEmpty {
+            let profile = PlayerProfile(context: viewContext)
+            profile.id = UUID()
+            profile.selfIdentifiedWeaknesses = selectedWeaknesses.map { $0.displayName }
+            profile.createdAt = Date()
+            profile.updatedAt = Date()
+            profile.player = newPlayer
+            newPlayer.playerProfile = profile
+        }
 
         coreDataManager.createDefaultExercises(for: newPlayer)
 
@@ -831,7 +884,9 @@ struct UnifiedOnboardingView: View {
                 }
 
                 // Save plan to Core Data
-                let _ = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player)
+                if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player) {
+                    TrainingPlanService.shared.activatePlan(plan.toModel(), for: player)
+                }
 
                 await MainActor.run {
                     phaseTimer?.invalidate()

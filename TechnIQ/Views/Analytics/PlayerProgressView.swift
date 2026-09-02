@@ -12,13 +12,26 @@ struct PlayerProgressView: View {
     @State private var recentAchievements: [ProgressAchievement] = []
     @State private var trainingInsights: [TrainingInsight] = []
     @State private var trainingSessions: [TrainingSession] = []
+    @State private var focusAreas: [FocusArea] = []
     @ObservedObject private var aiCoachService = AICoachService.shared
+
+    private struct FocusArea: Identifiable {
+        let id = UUID()
+        let category: String
+        let before: Double?
+        let after: Double?
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Time Range Picker
                 timeRangePicker
+
+                // Your Focus (weakness-driven)
+                if !focusAreas.isEmpty {
+                    focusSection
+                }
 
                 // Overall Stats Cards
                 overallStatsSection
@@ -77,6 +90,86 @@ struct PlayerProgressView: View {
         )
     }
 
+    // MARK: - Your Focus Section
+
+    private var focusSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Your Focus")
+                .font(DesignSystem.Typography.headlineSmall)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .fontWeight(.semibold)
+
+            VStack(spacing: 10) {
+                ForEach(focusAreas) { focus in
+                    focusRow(focus)
+                }
+            }
+        }
+    }
+
+    private func focusRow(_ focus: FocusArea) -> some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: iconForFocus(focus.category))
+                    .font(.system(size: 16))
+                    .foregroundColor(DesignSystem.Colors.primaryGreen)
+            }
+
+            Text(focus.category)
+                .font(DesignSystem.Typography.bodyMedium)
+                .fontWeight(.medium)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+
+            Spacer()
+
+            focusTrend(focus)
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.md)
+        .customShadow(DesignSystem.Shadow.small)
+    }
+
+    @ViewBuilder
+    private func focusTrend(_ focus: FocusArea) -> some View {
+        if let after = focus.after {
+            if let before = focus.before, abs(after - before) >= 1 {
+                HStack(spacing: 4) {
+                    Text("\(Int(before.rounded()))")
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                    Image(systemName: "arrow.right")
+                        .font(.caption2)
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                    Text("\(Int(after.rounded()))")
+                        .fontWeight(.semibold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    Image(systemName: after >= before ? "arrow.up.right" : "arrow.down.right")
+                        .foregroundColor(after >= before ? DesignSystem.Colors.successGreen : DesignSystem.Colors.error)
+                }
+                .font(DesignSystem.Typography.labelMedium)
+            } else {
+                Text("\(Int(after.rounded()))")
+                    .font(DesignSystem.Typography.labelMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+            }
+        } else {
+            Text("Keep training")
+                .font(DesignSystem.Typography.labelSmall)
+                .foregroundColor(DesignSystem.Colors.textTertiary)
+        }
+    }
+
+    private func iconForFocus(_ categoryName: String) -> String {
+        for cat in WeaknessCategory.allCases where cat.displayName == categoryName {
+            return cat.icon
+        }
+        return "scope"
+    }
+
     // MARK: - Overall Stats Section
 
     private var overallStatsSection: some View {
@@ -132,7 +225,7 @@ struct PlayerProgressView: View {
 
             if !skillProgressData.isEmpty {
                 VStack(spacing: 10) {
-                    ForEach(skillProgressData.prefix(5)) { skill in
+                    ForEach(skillProgressData) { skill in
                         SkillProgressRow(skill: skill)
                     }
                 }
@@ -310,7 +403,7 @@ struct PlayerProgressView: View {
 
     private var insightsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Smart Insights")
+            Text("Coach Tips")
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.semibold)
@@ -340,7 +433,7 @@ struct PlayerProgressView: View {
 
     private var skillTrendSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Performance Trends")
+            Text("How You're Improving")
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.semibold)
@@ -353,7 +446,7 @@ struct PlayerProgressView: View {
 
     private var categoryBreakdownSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Training Focus")
+            Text("What to Work On")
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.semibold)
@@ -393,6 +486,9 @@ struct PlayerProgressView: View {
 
         // Calculate skill progress
         skillProgressData = calculateSkillProgress(from: sessions)
+
+        // Weakness-driven focus areas with before/after skill ratings
+        focusAreas = computeFocusAreas()
 
         // Generate achievements
         recentAchievements = generateAchievements(from: sessions, stats: overallStats)
@@ -648,7 +744,32 @@ struct PlayerProgressView: View {
                 sessionsCount: ratings.count
             )
         }
-        .sorted { $0.currentLevel > $1.currentLevel }
+        .sorted { $0.currentLevel < $1.currentLevel }
+    }
+
+    private func computeFocusAreas() -> [FocusArea] {
+        let profile = WeaknessAnalysisService.shared.getCachedProfile(for: player)
+            ?? WeaknessAnalysisService.shared.analyzeWeaknesses(for: player)
+
+        return profile.suggestedWeaknesses.prefix(3).map { weakness in
+            let (before, after) = focusRatings(for: weakness.category)
+            return FocusArea(category: weakness.category, before: before, after: after)
+        }
+    }
+
+    private func focusRatings(for category: String) -> (before: Double?, after: Double?) {
+        guard let stats = player.stats as? Set<PlayerStats>, !stats.isEmpty else { return (nil, nil) }
+        let sorted = stats.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
+
+        func lookup(_ ratings: [String: Double]?) -> Double? {
+            guard let ratings = ratings else { return nil }
+            if let exact = ratings[category] { return exact }
+            return ratings.first { $0.key.caseInsensitiveCompare(category) == .orderedSame }?.value
+        }
+
+        let after = lookup(sorted.last?.skillRatings)
+        let before = sorted.count >= 2 ? lookup(sorted.first?.skillRatings) : nil
+        return (before, after)
     }
 
     private func calculateSkillChange(ratings: [Double]) -> Double {

@@ -524,3 +524,22 @@ def test_prompt_omits_player_flavor_when_empty(base_prompt_kwargs):
     from drill_generator import _build_prompt
     prompt = _build_prompt(**base_prompt_kwargs, playing_style="", skill_goals=[])
     assert "PLAYER STYLE" not in prompt.upper()
+
+
+def test_system_prompt_includes_safety_rules():
+    """Kid-safety guardrails must be baked into the system prompt: warm-up,
+    U13 contact/impact limits, and a safe-technique cue."""
+    from drill_generator import SYSTEM_PROMPT
+    low = SYSTEM_PROMPT.lower()
+    assert "warm-up" in low or "warm up" in low or "warmup" in low
+    assert "u13" in low or "under 13" in low
+    assert "contact" in low
+    assert "safe" in low
+
+
+def test_built_prompt_carries_safety_rules(base_prompt_kwargs):
+    """Safety guardrails survive into the assembled prompt for every drill."""
+    from drill_generator import _build_prompt
+    low = _build_prompt(**base_prompt_kwargs).lower()
+    assert "warm-up" in low or "warm up" in low or "warmup" in low
+    assert "contact" in low

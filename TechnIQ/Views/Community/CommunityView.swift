@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct CommunityView: View {
-    @State private var selectedTab = 0
+    // Default to the Drills tab rather than the stranger feed (kid-safety day-1 default).
+    @State private var selectedTab = 1
 
     var body: some View {
         VStack(spacing: 0) {

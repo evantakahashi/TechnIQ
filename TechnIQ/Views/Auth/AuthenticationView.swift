@@ -33,20 +33,9 @@ struct ModernSignInView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                // Header
-                HStack {
-                    Text("Sign In")
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+            VStack(spacing: DesignSystem.Spacing.lg) {
+                Spacer(minLength: DesignSystem.Spacing.lg)
 
-                    Spacer()
-                }
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.top, DesignSystem.Spacing.md)
-                
-                Spacer(minLength: DesignSystem.Spacing.xl)
-                
                 // Logo and Title Section
                 VStack(spacing: DesignSystem.Spacing.xl) {
                     VStack(spacing: DesignSystem.Spacing.md) {
@@ -163,6 +152,14 @@ struct ModernSignInView: View {
                             .disabled(authManager.isLoading)
                             .a11y(label: "Continue with Apple", hint: "Double tap to sign in with your Apple ID")
 
+                            ModernButton("TRY WITHOUT AN ACCOUNT", icon: "figure.run", style: .ghost) {
+                                Task {
+                                    await authManager.signInAnonymously()
+                                }
+                            }
+                            .disabled(authManager.isLoading)
+                            .a11y(label: "Try without an account", hint: "Double tap to explore the app as a guest")
+
                             // Forgot Password
                             Button("Forgot password?") {
                                 guard !email.isEmpty else {
@@ -185,8 +182,8 @@ struct ModernSignInView: View {
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 
-                Spacer(minLength: DesignSystem.Spacing.xl)
-                
+                Spacer(minLength: DesignSystem.Spacing.md)
+
                 // Create Account Section
                 ModernButton("CREATE AN ACCOUNT", icon: "person.crop.circle.badge.plus", style: .ghost) {
                     withAnimation(DesignSystem.Animation.smooth) {
@@ -195,6 +192,7 @@ struct ModernSignInView: View {
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 .a11y(label: "Create an account", hint: "Double tap to switch to the sign up form")
+
 
                 // Legal Links
                 HStack(spacing: DesignSystem.Spacing.md) {

@@ -507,8 +507,25 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
     }
 
     private func areAllTemplatesCompleted(for player: Player, in context: NSManagedObjectContext) -> Bool {
-        // Simplified check - would need to compare against TemplateExerciseLibrary
-        return false
+        let templates = TemplateExerciseLibrary.shared.allExercises
+        guard !templates.isEmpty,
+              let sessions = player.sessions as? Set<TrainingSession> else { return false }
+
+        var completedNames: Set<String> = []
+        for session in sessions {
+            guard let sessionExercises = session.exercises as? Set<SessionExercise> else { continue }
+            for sessionExercise in sessionExercises {
+                if let name = sessionExercise.exercise?.name?.lowercased() {
+                    completedNames.insert(name)
+                }
+            }
+        }
+        guard !completedNames.isEmpty else { return false }
+
+        return templates.allSatisfy { template in
+            let target = template.name.lowercased()
+            return completedNames.contains(target) || completedNames.contains { $0.contains(target) || target.contains($0) }
+        }
     }
 
     private func getCustomDrillCount(for player: Player, in context: NSManagedObjectContext) -> Int {
@@ -545,15 +562,11 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
     }
 
     private func hasImprovedSkillBy(_ improvement: Double, for player: Player, in context: NSManagedObjectContext) -> Bool {
-        guard let stats = player.stats as? Set<PlayerStats> else { return false }
-        let sortedStats = stats.sorted { ($0.date ?? Date.distantPast) < ($1.date ?? Date.distantPast) }
+        guard let ratings = latestSkillRatings(for: player) else { return false }
+        let baseline = weeklyBaseline(for: player, current: ratings)
 
-        guard sortedStats.count >= 2,
-              let firstRatings = sortedStats.first?.skillRatings,
-              let lastRatings = sortedStats.last?.skillRatings else { return false }
-
-        for (skill, latestValue) in lastRatings {
-            if let earlierValue = firstRatings[skill], latestValue - earlierValue >= improvement {
+        for (skill, value) in ratings {
+            if let base = baseline[skill], value - base >= improvement {
                 return true
             }
         }
@@ -562,8 +575,45 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
     }
 
     private func getSkillsImprovedThisWeek(for player: Player, in context: NSManagedObjectContext) -> Int {
-        // Simplified - would need historical skill tracking
-        return 0
+        guard let ratings = latestSkillRatings(for: player) else { return 0 }
+        let baseline = weeklyBaseline(for: player, current: ratings)
+
+        return ratings.reduce(0) { count, entry in
+            guard let base = baseline[entry.key] else { return count }
+            return count + (entry.value - base >= 1.0 ? 1 : 0)
+        }
+    }
+
+    /// Most recent skill rating snapshot for the player.
+    private func latestSkillRatings(for player: Player) -> [String: Double]? {
+        guard let stats = player.stats as? Set<PlayerStats>,
+              let latest = stats.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }).first else {
+            return nil
+        }
+        return latest.skillRatings
+    }
+
+    /// This week's baseline skill snapshot, captured on the first read of each new week (UserDefaults-backed).
+    private func weeklyBaseline(for player: Player, current: [String: Double]) -> [String: Double] {
+        let id = player.id?.uuidString ?? "unknown"
+        let ratingsKey = "skillBaseline_\(id)"
+        let weekKey = "skillBaselineWeek_\(id)"
+        let week = currentWeekIdentifier()
+        let defaults = UserDefaults.standard
+
+        if defaults.string(forKey: weekKey) == week,
+           let stored = defaults.dictionary(forKey: ratingsKey) as? [String: Double] {
+            return stored
+        }
+
+        defaults.set(current, forKey: ratingsKey)
+        defaults.set(week, forKey: weekKey)
+        return current
+    }
+
+    private func currentWeekIdentifier() -> String {
+        let comps = Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        return "\(comps.yearForWeekOfYear ?? 0)-W\(comps.weekOfYear ?? 0)"
     }
 
     private func getMaxExerciseTypeCount(for player: Player, in context: NSManagedObjectContext) -> Int {

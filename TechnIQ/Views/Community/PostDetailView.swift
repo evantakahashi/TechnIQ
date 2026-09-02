@@ -12,6 +12,8 @@ struct PostDetailView: View {
     @State private var isPostingComment = false
     @State private var showingProfile = false
     @State private var profileUserID: String?
+    @State private var showingGuidelines = false
+    @State private var commentError: String?
 
     var body: some View {
         NavigationStack {
@@ -54,6 +56,7 @@ struct PostDetailView: View {
                                     comment: comment,
                                     isOwnComment: comment.authorID == currentPlayer.firebaseUID,
                                     onReport: { reportComment(comment) },
+                                    onBlock: { blockCommentAuthor(comment) },
                                     onAuthorTap: {
                                         profileUserID = comment.authorID
                                         showingProfile = true
@@ -67,6 +70,9 @@ struct PostDetailView: View {
 
                 // Comment input bar
                 commentInputBar
+                    .sheet(isPresented: $showingGuidelines) {
+                        CommunityGuidelinesSheet { postComment() }
+                    }
             }
             .background(AdaptiveBackground().ignoresSafeArea())
             .navigationTitle("Post")
@@ -83,10 +89,23 @@ struct PostDetailView: View {
                     PublicProfileView(userID: uid)
                 }
             }
+            .alert("Comment not posted", isPresented: Binding(
+                get: { commentError != nil },
+                set: { if !$0 { commentError = nil } }
+            )) {
+                Button("OK", role: .cancel) { commentError = nil }
+            } message: {
+                Text(commentError ?? "")
+            }
         }
     }
 
     // MARK: - Post Section
+
+    // Public identity only — first name + last initial.
+    private var authorDisplayName: String {
+        CommunityService.displayName(for: post.authorName)
+    }
 
     private var postSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -96,7 +115,7 @@ struct PostDetailView: View {
                     Circle()
                         .fill(DesignSystem.Colors.secondaryBlue.opacity(0.15))
                         .frame(width: 48, height: 48)
-                    Text(String(post.authorName.prefix(1)).uppercased())
+                    Text(String(authorDisplayName.prefix(1)).uppercased())
                         .font(DesignSystem.Typography.titleMedium)
                         .fontWeight(.bold)
                         .foregroundColor(DesignSystem.Colors.secondaryBlue)
@@ -107,7 +126,7 @@ struct PostDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(post.authorName)
+                    Text(authorDisplayName)
                         .font(DesignSystem.Typography.bodyMedium)
                         .fontWeight(.semibold)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -126,13 +145,21 @@ struct PostDetailView: View {
             }
 
             // Content
-            Text(post.content)
-                .font(DesignSystem.Typography.bodyLarge)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+            if post.isHidden {
+                Text("This post was hidden after multiple reports.")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .italic()
+                    .foregroundColor(DesignSystem.Colors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(post.content)
+                    .font(DesignSystem.Typography.bodyLarge)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            // Rich content for new post types
-            richPostContent
+                // Rich content for new post types
+                richPostContent
+            }
 
             // Stats
             HStack(spacing: DesignSystem.Spacing.lg) {
@@ -324,6 +351,11 @@ struct PostDetailView: View {
         let trimmed = newCommentText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        guard CommunityGuidelines.hasAccepted else {
+            showingGuidelines = true
+            return
+        }
+
         isPostingComment = true
         Task {
             do {
@@ -334,6 +366,7 @@ struct PostDetailView: View {
                 isPostingComment = false
             } catch {
                 isPostingComment = false
+                commentError = error.localizedDescription
                 #if DEBUG
                 print("Post comment error: \(error)")
                 #endif
@@ -346,6 +379,13 @@ struct PostDetailView: View {
             try? await communityService.reportComment(comment)
         }
     }
+
+    private func blockCommentAuthor(_ comment: CommunityComment) {
+        Task {
+            try? await communityService.blockUser(comment.authorID)
+            comments.removeAll { $0.authorID == comment.authorID }
+        }
+    }
 }
 
 // MARK: - Comment Row
@@ -354,9 +394,13 @@ struct CommentRow: View {
     let comment: CommunityComment
     let isOwnComment: Bool
     let onReport: () -> Void
+    let onBlock: () -> Void
     let onAuthorTap: () -> Void
 
-    @State private var showingActions = false
+    // Public identity only — first name + last initial.
+    private var authorDisplayName: String {
+        CommunityService.displayName(for: comment.authorName)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
@@ -365,7 +409,7 @@ struct CommentRow: View {
                 Circle()
                     .fill(DesignSystem.Colors.neutral300)
                     .frame(width: 32, height: 32)
-                Text(String(comment.authorName.prefix(1)).uppercased())
+                Text(String(authorDisplayName.prefix(1)).uppercased())
                     .font(DesignSystem.Typography.labelSmall)
                     .fontWeight(.bold)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
@@ -374,7 +418,7 @@ struct CommentRow: View {
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 HStack(spacing: DesignSystem.Spacing.xs) {
-                    Text(comment.authorName)
+                    Text(authorDisplayName)
                         .font(DesignSystem.Typography.labelMedium)
                         .fontWeight(.semibold)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -389,23 +433,40 @@ struct CommentRow: View {
                     Text(comment.timestamp.timeAgoDisplay())
                         .font(DesignSystem.Typography.labelSmall)
                         .foregroundColor(DesignSystem.Colors.textTertiary)
+
+                    if !isOwnComment {
+                        Menu {
+                            Button(role: .destructive, action: onReport) {
+                                Label("Report", systemImage: "exclamationmark.triangle")
+                            }
+                            Button(role: .destructive, action: onBlock) {
+                                Label("Block User", systemImage: "hand.raised.fill")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                                .frame(width: 28, height: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Comment actions")
+                    }
                 }
 
-                Text(comment.content)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if comment.isHidden {
+                    Text("This comment was hidden after multiple reports.")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .italic()
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text(comment.content)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(.vertical, DesignSystem.Spacing.sm)
-        .contextMenu {
-            if !isOwnComment {
-                Button(role: .destructive) {
-                    onReport()
-                } label: {
-                    Label("Report", systemImage: "exclamationmark.triangle")
-                }
-            }
-        }
     }
 }

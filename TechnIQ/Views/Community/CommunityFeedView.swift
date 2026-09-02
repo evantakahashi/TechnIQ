@@ -174,6 +174,11 @@ struct CommunityPostCard: View {
 
     @State private var showingActions = false
 
+    // Public identity only — first name + last initial.
+    private var authorDisplayName: String {
+        CommunityService.displayName(for: post.authorName)
+    }
+
     var body: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -184,7 +189,7 @@ struct CommunityPostCard: View {
                         Circle()
                             .fill(postTypeColor.opacity(0.15))
                             .frame(width: 44, height: 44)
-                        Text(String(post.authorName.prefix(1)).uppercased())
+                        Text(String(authorDisplayName.prefix(1)).uppercased())
                             .font(DesignSystem.Typography.titleMedium)
                             .fontWeight(.bold)
                             .foregroundColor(postTypeColor)
@@ -193,7 +198,7 @@ struct CommunityPostCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: DesignSystem.Spacing.xs) {
-                            Text(post.authorName)
+                            Text(authorDisplayName)
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .fontWeight(.semibold)
                                 .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -247,13 +252,21 @@ struct CommunityPostCard: View {
                 }
 
                 // Content
-                Text(post.content)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if post.isHidden {
+                    Text("This post was hidden after multiple reports.")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .italic()
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text(post.content)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                // Rich content for new post types
-                richContentSection
+                    // Rich content for new post types
+                    richContentSection
+                }
 
                 // Interaction bar
                 HStack(spacing: DesignSystem.Spacing.lg) {

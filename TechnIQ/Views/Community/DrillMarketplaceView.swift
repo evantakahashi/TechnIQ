@@ -127,10 +127,10 @@ struct DrillMarketplaceView: View {
         return ModernCard(accentEdge: .leading, accentColor: accentColor) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 HStack {
-                    Text(drill.title)
+                    Text(drill.isHidden ? "Hidden after reports" : drill.title)
                         .font(DesignSystem.Typography.headlineSmall)
                         .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .foregroundColor(drill.isHidden ? DesignSystem.Colors.textTertiary : DesignSystem.Colors.textPrimary)
                         .lineLimit(1)
                     Spacer()
                     HStack(spacing: 4) {
@@ -142,7 +142,7 @@ struct DrillMarketplaceView: View {
                     .foregroundColor(DesignSystem.Colors.textSecondary)
                 }
 
-                Text("by \(drill.authorName)")
+                Text("by \(CommunityService.displayName(for: drill.authorName))")
                     .font(DesignSystem.Typography.labelSmall)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
 

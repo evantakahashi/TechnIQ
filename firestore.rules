@@ -40,6 +40,14 @@ service cloud.firestore {
           || request.resource.data.commentsCount == resource.data.commentsCount + 1;
     }
 
+    // Auto-hide moderation fields are written ONLY by admin triggers, which
+    // bypass these rules. No client update — author or not — may add, change,
+    // or clear them (this stops an author un-hiding their own reported content).
+    function noModerationFieldChange() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['isHidden', 'hiddenAt', 'hiddenReason']);
+    }
+
     // Non-author updates to a shared drill: save/report engagement only.
     function drillEngagementOnly() {
       return request.resource.data.diff(resource.data).affectedKeys()
@@ -141,9 +149,10 @@ service cloud.firestore {
       // Author cannot be impersonated on create.
       allow create: if request.auth != null &&
         request.resource.data.authorID == request.auth.uid;
-      // Author edits freely; everyone else is limited to valid engagement updates.
+      // Author edits freely (but never the moderation fields); everyone else is
+      // limited to valid engagement updates.
       allow update: if request.auth != null && (
-        resource.data.authorID == request.auth.uid ||
+        (resource.data.authorID == request.auth.uid && noModerationFieldChange()) ||
         communityEngagementOnly()
       );
       allow delete: if request.auth != null && resource.data.authorID == request.auth.uid;
@@ -153,9 +162,10 @@ service cloud.firestore {
         allow read: if request.auth != null;
         allow create: if request.auth != null &&
           request.resource.data.authorID == request.auth.uid;
-        // Non-authors may only add a single report of themselves.
+        // Author edits freely (but never the moderation fields); non-authors may
+        // only add a single report of themselves.
         allow update: if request.auth != null && (
-          resource.data.authorID == request.auth.uid || (
+          (resource.data.authorID == request.auth.uid && noModerationFieldChange()) || (
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['reportCount', 'reportedBy']) &&
             reportChangeValid(resource.data.reportCount, request.resource.data.reportCount,
@@ -175,7 +185,7 @@ service cloud.firestore {
         request.resource.data.saveCount == 0 &&
         request.resource.data.reportCount == 0;
       allow update: if request.auth != null && (
-        resource.data.authorID == request.auth.uid ||
+        (resource.data.authorID == request.auth.uid && noModerationFieldChange()) ||
         drillEngagementOnly()
       );
       allow delete: if request.auth != null && resource.data.authorID == request.auth.uid;

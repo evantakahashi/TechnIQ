@@ -237,6 +237,9 @@ struct ExerciseDetailView: View {
                         drillFeedbackSection
                         progressionSection
                     }
+
+                    // Safety disclaimer footer
+                    DrillSafetyDisclaimer()
                 }
                 .padding()
             }
