@@ -1,41 +1,25 @@
-# App Store Readiness v2 — FINAL STATUS (2026-07-08)
+# Product-Quality Push — Status (2026-09-03)
 
-Branch: `feature/app-store-readiness-v2` (11 commits, local only — NOT pushed). Full audit: `docs/audits/2026-07-06-full-audit.md` (121 findings) · Spec: `docs/superpowers/specs/2026-07-06-app-store-readiness-v2-design.md` · ASC package: `docs/appstore/app-store-listing.md`
+Branch `feature/app-store-readiness-v2` (16 commits, local, unpushed). Verified: 128/128 unit tests, 193/193 backend tests, build + archive green.
 
-## Done (all verified by build; suite green at every gate that ran)
-- [x] 8-domain audit, 121 findings, high-sev claims adversarially verified
-- [x] Cloud/data-integrity fixes: restore rollback+dedupe, clamped narrowing, store never auto-deleted, exercise links restored, arrayContainsAny guard, real recs endpoint (was 404ing silently)
-- [x] Sync architecture: ALL entities sync continuously (was: once at onboarding), updatedAt watermarks + persisted lastSync, uid-scoped fetches (cross-account leak closed), deletion tombstones (no resurrection), field parity + playerId stamping, conflict merge live, uniqueness constraints, round-trip tests
-- [x] Backend: IDOR fixed, bypass flag emulator-only, per-uid daily quotas, sanitized errors, full delete_account cascade, payload caps, sharedDrills+leaderboard rules (both features were default-denied!), deps pinned, 181 tests green
-- [x] UX: keep-alive tabs (state survives switching), wrong-tab routing fixed, error/empty/loading states, real paywall prices only, dead controls removed, skip-day confirm, forgot-password feedback, keyboard-safe tab content, pull-to-refresh
-- [x] Modernization: Firebase 11.15 + GoogleSignIn 8.0 (privacy-manifest mandate), 14 unused SDK products pruned, NavigationView×46→NavigationStack (zero left), onChange 2-param, Dynamic Type font mapping, @MainActor on YouTubeService (crash risk), Swift-6 warnings cleared
-- [x] A11y: shared A11yModifier; labels/hidden/44pt targets across all view dirs (from ~zero)
-- [x] Tooling: SwiftLint (139 warn/0 err), CI workflow, shared scheme, 4 dead views deleted, docs/CLAUDE.md refreshed
-- [x] App Store: icon generated (stadium-night kickoff circle), ITSAppUsesNonExemptEncryption, SceneDelegate ghost removed, iPhone-only v1, privacy manifest+policy updated, **unsigned Release ARCHIVE SUCCEEDED** (34 SDK privacy manifests aboard)
+## The verdict so far (vs. "ready for kids + would succeed on the App Store?")
+**Code: yes. Live product: not yet — blocked on 2 console/deploy actions only you can do.**
+The July audit found the core promise (find weakness → train it → see improvement) was NOT implemented for anyone; the Sept product wave closed it. But the App-Store-facing moderation pipeline and the guest path are dead until you flip two switches (below).
 
-## Known constraint (documented in CLAUDE.md + checklist)
-Every xcodebuild (build/test/archive) needs `SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO` — Xcode 26 vs FirebaseFirestoreInternal. GUI Archive fails; archive via CLI.
+## What the product wave shipped (commit 98da163 + 497e4af)
+- **Core loop closed:** per-skill scores (0-100) written after every session (both flows); sessions tagged with their focus weakness; trained weaknesses decay/flip to "improving"; kid-friendly weakness copy; position-based starter focus for brand-new kids; "Your Focus: Passing 56 → 68 ↗" section atop progress; weakest-first skill list.
+- **Engagement:** local notifications (daily reminder + streak-at-risk, asked AFTER first session's confetti); coins actually awarded (session/level-up/achievement) + visible; achievements browse grid (locked/progress/how-to-unlock); streak freezes earnable + 7/14/30 milestones; silent level-ups fixed; free tier = 1 AI drill/DAY (was lifetime); onboarding plan AUTO-ACTIVATED (was invisible!) → "Continue Plan" hook works; Skip keeps the goal step; guest name prefilled.
+- **Kid safety / Guideline 1.2:** profanity filter on posts/comments/drills; auto-hide Firestore triggers at 3 reports (+10 tests); clients can't unhide; visible Report everywhere (profiles, comments); one-time community rules agreement; public names → "Evan T." style everywhere community-facing; Community defaults to Drills not stranger feed; neutral age picker; AI drill prompt safety rules + warm-up/medical disclaimer; single-tap equal-weight free option on paywall.
+- **Auth:** one-screen layout; TRY WITHOUT AN ACCOUNT button; friendly error when a provider is disabled.
 
-## Final verification (2026-07-07 23:52)
-Full unit suite: **128/128 pass** (125 prior + 3 new CloudSyncRoundTripTests) · build green · unsigned Release archive SUCCEEDED · SwiftLint 139 warn/0 err · backend 181/181.
+## ⛔ YOUR 2 UNBLOCKERS (then I can finish visual verification in one pass)
+1. **Firebase Console → Authentication → Sign-in method → Anonymous → ENABLE.** Guest mode (and the whole kid-first flow + my walkthrough + App Review fast path) is dead until this. 30 seconds.
+2. **Deploy backend:** rotate keys in functions/.env.yaml, then `cd functions && firebase deploy --only functions` and `firebase deploy --only firestore`. Until deployed, production has: no IDOR fix, no rate limits, no auto-hide moderation (Guideline 1.2 exposure), broken sharedDrills/leaderboard rules.
 
-## User actions required (cannot be automated)
-- [ ] Review branch → PR/merge (nothing pushed)
-- [ ] Rotate keys in functions/.env.yaml, then `cd functions && firebase deploy --only functions` AND `firebase deploy --only firestore` (backend fixes + rules not live until deployed; validate rules in emulator first if possible)
-- [ ] Put real YouTube key in `Config/Secrets.xcconfig` before archiving (empty = YouTube features hidden)
-- [ ] GitHub repo secret `GOOGLE_SERVICE_INFO_PLIST_B64` (base64 of GoogleService-Info.plist) for CI
-- [ ] Host updated PRIVACY_POLICY.md; regenerate hosting/ HTML from it (hosted copy predates 2026-07-07 edits)
-- [ ] ASC: app record, StoreKit product (com.techniq.pro.monthly), screenshots (6.9"), nutrition labels per listing doc, demo account
-- [ ] Physical-device test: SIWA, Google sign-in, purchase, sync between two devices
-- [ ] Watch first TestFlight build for Core Data migration failures on old beta stores (uniqueness constraints; safe on fresh installs)
+## Then (me, next /loop): fresh-install guest walkthrough → screenshot review of onboarding/dashboard/tabs → fix any visual issues → confident-yes verdict.
 
-## Deferred post-1.0 (recorded in spec)
-@Observable migration · print→AppLogger sweep (283) · YouTube backend proxy (key off-device) · offline sync queue · iPad layout · localization · .foregroundColor/.cornerRadius style sweep (1,600 sites, cosmetic) · get_user_training_history legacy collection
+## Still open from July (unchanged)
+Merge/push branch · CI secret GOOGLE_SERVICE_INFO_PLIST_B64 · YouTube key in Config/Secrets.xcconfig · host updated privacy policy · ASC record + StoreKit product + screenshots + demo account (use demo.reviewer@techniq-demo.app / Demo1234! — created during testing, or make your own) · physical-device pass · bundle-ID decision.
 
-## Unresolved questions
-1. Bundle ID: keep `evan.TechnIQ`? (permanent at first upload)
-2. Privacy policy hosting URL?
-3. Paywall in v1 review — StoreKit products configured?
-4. Generated icon OK or brand assets coming?
-5. Rate limits (LLM 10/day, light 50/day) OK?
-6. Drop Player(firebaseUID) uniqueness constraint to de-risk old beta stores, or keep?
+## Environment notes (for whoever runs builds here)
+Background xcodebuild runs get killed on this box; run foreground. Box load spikes to 50-140 at times — schedule builds accordingly. All xcodebuild needs SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO.
