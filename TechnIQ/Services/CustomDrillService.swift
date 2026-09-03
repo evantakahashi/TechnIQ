@@ -539,8 +539,8 @@ enum CustomDrillError: LocalizedError {
             return "Please provide a valid skill description (at least 10 characters)"
         case .networkError:
             return "Network connection error. Please check your internet connection."
-        case .serverError(let message):
-            return "Server error: \(message)"
+        case .serverError:
+            return "Our drill builder hit a snag — give it another try in a minute."
         case .invalidResponse:
             return "Invalid response from server. Please try again."
         case .authenticationRequired:

@@ -84,6 +84,37 @@ final class WalkthroughUITests: XCTestCase {
         }
     }
 
+    func test_aiDrillLive() throws {
+        settle(3)
+        for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
+        shot("dash")
+        guard tapFirst(["Generate AI Drill"], timeout: 5) else { shot("no-hero"); return }
+        settle(2)
+        shot("generator")
+        let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
+        if field.waitForExistence(timeout: 3), field.isHittable {
+            field.tap()
+            field.typeText("get better at shooting with my weak foot")
+            if app.keyboards.buttons["return"].exists { app.keyboards.buttons["return"].tap() }
+            settle(0.5)
+        }
+        shot("generator-filled")
+        _ = tapFirst(["GENERATE DRILL", "Generate Drill", "Generate Custom Drill", "GENERATE CUSTOM DRILL"], timeout: 4)
+        // Live backend call — poll up to ~120s for a result or error.
+        for i in 1...12 {
+            settle(10)
+            shot("gen-wait-\(i)")
+            let errored = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'failed' OR label CONTAINS[c] 'error' OR label CONTAINS[c] 'try again'")).firstMatch.exists
+            // A generated drill shows a Start/Save action or a diagram; the form's Generate button is gone.
+            let done = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'start' OR label CONTAINS[c] 'save' OR label CONTAINS[c] 'begin'")).firstMatch.exists
+            if errored || done { break }
+        }
+        shot("drill-result")
+        app.swipeUp()
+        settle(1)
+        shot("drill-result-scrolled")
+    }
+
     func test_firstSession() throws {
         settle(3)
         // Clear any coach marks blocking taps.
