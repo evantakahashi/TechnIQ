@@ -123,6 +123,13 @@ final class WalkthroughUITests: XCTestCase {
                 settle(0.5)
             }
 
+            // Neutral age wheel requires an explicit selection before Continue.
+            let wheel = app.pickerWheels.firstMatch
+            if wheel.exists {
+                wheel.adjust(toPickerWheelValue: "13 years")
+                settle(0.5)
+            }
+
             if tapFirst(advanceLabels, timeout: 2) { continue }
             // Paywall / terminal step candidates
             if tapFirst(["Maybe Later", "Not Now", "Skip for now", "Continue Free", "Close", "Dismiss", "xmark", "Skip"], timeout: 2) {
