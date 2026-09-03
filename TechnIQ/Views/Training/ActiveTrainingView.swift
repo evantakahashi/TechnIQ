@@ -31,6 +31,36 @@ struct ActiveTrainingView: View {
     }
 
     var body: some View {
+        if manager.exercises.isEmpty {
+            emptySessionFallback
+        } else {
+            sessionBody
+        }
+    }
+
+    private var emptySessionFallback: some View {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            Image(systemName: "figure.run.circle")
+                .font(.system(size: 64))
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .a11yHidden()
+            Text("No drill loaded")
+                .font(DesignSystem.Typography.titleMedium)
+                .fontWeight(.bold)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+            Text("Head back and pick a drill to start training.")
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+            ModernButton("Close", style: .secondary) {
+                dismiss()
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AdaptiveBackground().ignoresSafeArea())
+    }
+
+    private var sessionBody: some View {
         ZStack {
             // Background
             AdaptiveBackground()

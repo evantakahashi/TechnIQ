@@ -84,6 +84,69 @@ final class WalkthroughUITests: XCTestCase {
         }
     }
 
+    func test_firstSession() throws {
+        settle(3)
+        // Clear any coach marks blocking taps.
+        for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
+        shot("dash-before-session")
+
+        // Start the fastest session path.
+        app.swipeUp()
+        settle(1)
+        if !tapFirst(["Surprise Me"], timeout: 3) {
+            app.swipeUp(); settle(1)
+            guard tapFirst(["Surprise Me", "START TRAINING", "Start Training"], timeout: 3) else {
+                shot("no-session-entry"); return
+            }
+        }
+        settle(3)
+        for _ in 0..<2 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
+        shot("active-training")
+
+        // Complete the exercise, rate it, advance to the summary.
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for step in 1...8 {
+            _ = tapFirst(["I've completed this drill", "COMPLETE EXERCISE", "Complete Exercise", "MARK COMPLETE", "COMPLETE", "Complete"], timeout: 3)
+            settle(1)
+            if app.buttons["Rate 4 stars"].waitForExistence(timeout: 3) {
+                app.buttons["Rate 4 stars"].tap()
+                settle(0.8)
+                shot("rated-\(step)")
+            }
+            _ = tapFirst(["Finish", "Next", "Done", "DONE", "NEXT EXERCISE", "Next Exercise", "FINISH SESSION", "Finish Session", "FINISH"], timeout: 3)
+            settle(2)
+            // Notification permission alert (springboard) may appear after the celebration.
+            if sb.buttons["Allow"].waitForExistence(timeout: 2) {
+                shot("notif-permission")
+                sb.buttons["Allow"].tap()
+                settle(1)
+            }
+            shot("post-step-\(step)")
+            if app.staticTexts["Session Complete!"].exists || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'XP'")).count > 2 { break }
+        }
+        shot("session-complete")
+        app.swipeUp()
+        settle(1)
+        shot("session-complete-scrolled")
+
+        // Dismiss back to the dashboard and capture the changed state.
+        _ = tapFirst(["Done", "DONE", "Continue", "CONTINUE", "Back to Home", "Close"], timeout: 4)
+        settle(3)
+        if sb.buttons["Allow"].waitForExistence(timeout: 2) { shot("notif-permission-2"); sb.buttons["Allow"].tap(); settle(1) }
+        shot("dash-after-session")
+
+        // Progress tab: focus numbers should now exist.
+        _ = tapFirst(["You"], timeout: 3)
+        settle(1.5)
+        for _ in 0..<2 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
+        _ = tapFirst(["Progress & Analytics"], timeout: 3)
+        settle(2.5)
+        shot("progress")
+        app.swipeUp()
+        settle(1)
+        shot("progress-scrolled")
+    }
+
     func test_walkthrough() throws {
         settle(3)
         shot("auth")

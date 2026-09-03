@@ -3,6 +3,11 @@ import CoreData
 import Foundation
 import Combine
 
+struct TrainingLaunch: Identifiable {
+    let id = UUID()
+    let exercises: [Exercise]
+}
+
 struct DashboardView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -54,8 +59,7 @@ struct DashboardView: View {
     @State private var currentWeekDay: (week: Int, day: Int)?
     @State private var showingQuickDrill = false
     @State private var quickDrillWeakness: SelectedWeakness? = nil
-    @State private var showingActiveTraining = false
-    @State private var quickStartExercises: [Exercise] = []
+    @State private var trainingLaunch: TrainingLaunch?
     @State private var aiDrillExercise: Exercise?
     @State private var showingAIDrill = false
 
@@ -145,14 +149,13 @@ struct DashboardView: View {
                     showingQuickDrill = false
                     quickDrillWeakness = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        quickStartExercises = [exercise]
-                        showingActiveTraining = true
+                        trainingLaunch = TrainingLaunch(exercises: [exercise])
                     }
                 }, prefilledWeakness: quickDrillWeakness)
             }
         }
-        .fullScreenCover(isPresented: $showingActiveTraining) {
-            ActiveTrainingView(exercises: quickStartExercises)
+        .fullScreenCover(item: $trainingLaunch) { launch in
+            ActiveTrainingView(exercises: launch.exercises)
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
@@ -253,8 +256,7 @@ struct DashboardView: View {
         }
 
         if let exercise = picked {
-            quickStartExercises = [exercise]
-            showingActiveTraining = true
+            trainingLaunch = TrainingLaunch(exercises: [exercise])
         }
     }
 
@@ -458,8 +460,7 @@ struct DashboardView: View {
             request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             request.fetchLimit = 1
             if let existing = try? viewContext.fetch(request).first {
-                quickStartExercises = [existing]
-                showingActiveTraining = true
+                trainingLaunch = TrainingLaunch(exercises: [existing])
                 return
             }
         }
@@ -477,8 +478,7 @@ struct DashboardView: View {
         exercise.player = player
 
         try? viewContext.save()
-        quickStartExercises = [exercise]
-        showingActiveTraining = true
+        trainingLaunch = TrainingLaunch(exercises: [exercise])
     }
 
     private func modernStatsOverview(player: Player) -> some View {
