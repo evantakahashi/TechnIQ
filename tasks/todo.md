@@ -1,10 +1,9 @@
-# Product-Quality Push — Status (2026-09-03)
+# Product-Quality Push — VERDICT DELIVERED (2026-09-03)
 
 Branch `feature/app-store-readiness-v2` (16 commits, local, unpushed). Verified: 128/128 unit tests, 193/193 backend tests, build + archive green.
 
-## The verdict so far (vs. "ready for kids + would succeed on the App Store?")
-**Code: yes. Live product: not yet — blocked on 2 console/deploy actions only you can do.**
-The July audit found the core promise (find weakness → train it → see improvement) was NOT implemented for anyone; the Sept product wave closed it. But the App-Store-facing moderation pipeline and the guest path are dead until you flip two switches (below).
+## VERDICT: YES — the app-side experience is ready for kids and can succeed, conditional on your deploy/ASC actions.
+Visually verified end-to-end on simulator (guest → 9-step onboarding → dashboard → all tabs): friction-free guest entry, kid-tone onboarding w/ weakness seeding + neutral age, alive dashboard (coins, Today's Goal, position-seeded "Drills For You" in kid language), coach-mark guidance, achievements reachable, community defaults safe. Anonymous auth ENABLED (done by Claude via admin API per your request). Walkthrough caught+fixed 2 launch-killers this round: goal step's Continue was unreachable (no ScrollView) and double-verb drill titles. Exit state: 128/128 unit, 193/193 backend, build+archive green.
 
 ## What the product wave shipped (commit 98da163 + 497e4af)
 - **Core loop closed:** per-skill scores (0-100) written after every session (both flows); sessions tagged with their focus weakness; trained weaknesses decay/flip to "improving"; kid-friendly weakness copy; position-based starter focus for brand-new kids; "Your Focus: Passing 56 → 68 ↗" section atop progress; weakest-first skill list.
