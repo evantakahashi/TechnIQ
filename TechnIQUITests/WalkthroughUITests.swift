@@ -15,10 +15,16 @@ final class WalkthroughUITests: XCTestCase {
 
     private func shot(_ name: String) {
         shotIndex += 1
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = String(format: "%02d-%@", shotIndex, name)
         attachment.lifetime = .keepAlways
         add(attachment)
+        // Also persist to the runner's tmp dir so shots survive even if the
+        // result bundle never finalizes (recoverable from the sim container).
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("walkshots", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? screenshot.pngRepresentation.write(to: dir.appendingPathComponent(String(format: "%02d-%@.png", shotIndex, name)))
     }
 
     @discardableResult
@@ -57,6 +63,27 @@ final class WalkthroughUITests: XCTestCase {
         field.typeText(text)
     }
 
+    func test_guestTapProbe() throws {
+        settle(3)
+        shot("probe-before")
+        let byLabel = app.buttons["Try without an account"]
+        let byText = app.buttons["TRY WITHOUT AN ACCOUNT"]
+        print("WALKDBG byLabel exists=\(byLabel.exists) hittable=\(byLabel.exists ? byLabel.isHittable : false) frame=\(byLabel.exists ? byLabel.frame : .zero)")
+        print("WALKDBG byText exists=\(byText.exists) hittable=\(byText.exists ? byText.isHittable : false) frame=\(byText.exists ? byText.frame : .zero)")
+        if byText.exists, byText.isHittable {
+            byText.tap()
+        } else if byLabel.exists, byLabel.isHittable {
+            byLabel.tap()
+        } else {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.824)).tap()
+        }
+        for i in 1...10 {
+            settle(3)
+            shot("probe-after-\(i)")
+            if !app.textFields["Enter your email"].exists { break }
+        }
+    }
+
     func test_walkthrough() throws {
         settle(3)
         shot("auth")
@@ -70,8 +97,11 @@ final class WalkthroughUITests: XCTestCase {
             guestTapped = tapFirst(["Try without an account", "Just exploring? Try it without an account"], timeout: 4)
         }
         if !guestTapped {
-            shot("auth-no-guest-button")
-            return
+            if app.textFields["Enter your email"].exists {
+                shot("auth-no-guest-button")
+                return
+            }
+            // Already signed in from a previous session — continue the tour.
         }
         settle(4)
         shot("after-guest-tap")
@@ -108,6 +138,7 @@ final class WalkthroughUITests: XCTestCase {
 
         // Onboarding tour: advance up to 12 steps, screenshotting each.
         let advanceLabels = ["Continue", "CONTINUE", "Next", "NEXT", "Get Started", "GET STARTED",
+                             "LET'S SET UP YOUR PROFILE", "GENERATE MY PLAN", "Generate My Plan",
                              "Let's Go", "LET'S GO", "Begin", "BEGIN", "Create My Plan", "CREATE MY PLAN",
                              "Start Training", "START TRAINING", "Done", "DONE", "Finish", "FINISH"]
         for step in 1...12 {
@@ -131,8 +162,12 @@ final class WalkthroughUITests: XCTestCase {
             }
 
             if tapFirst(advanceLabels, timeout: 2) { continue }
+            // Tall steps park the CTA below the fold — scroll and retry once.
+            app.swipeUp()
+            settle(0.8)
+            if tapFirst(advanceLabels, timeout: 2) { continue }
             // Paywall / terminal step candidates
-            if tapFirst(["Maybe Later", "Not Now", "Skip for now", "Continue Free", "Close", "Dismiss", "xmark", "Skip"], timeout: 2) {
+            if tapFirst(["Continue with Free", "Maybe Later", "Not Now", "Skip for now", "Continue Free", "Close", "Dismiss", "xmark", "Skip"], timeout: 2) {
                 settle(2)
                 shot("after-paywall-dismiss")
                 continue

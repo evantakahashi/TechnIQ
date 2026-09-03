@@ -344,6 +344,7 @@ struct UnifiedOnboardingView: View {
     }
 
     private var goalStep: some View {
+        ScrollView(showsIndicators: false) {
         VStack(spacing: DesignSystem.Spacing.xl) {
             Image(systemName: "target")
                 .font(.system(size: 96, weight: .regular))
@@ -433,6 +434,7 @@ struct UnifiedOnboardingView: View {
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        }
     }
 
     private func goalIcon(for goal: String) -> String {

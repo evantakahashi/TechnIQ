@@ -42,7 +42,7 @@ struct SmartDrillRecommendationsView: View {
         suggestions = profile.suggestedWeaknesses.prefix(3).map { weakness in
             DrillSuggestion(
                 weakness: weakness,
-                title: "Improve \(weakness.specific)",
+                title: weakness.specific,
                 description: drillDescription(for: weakness),
                 difficulty: difficultyForPlayer()
             )
