@@ -2,6 +2,9 @@
 
 Branch `feature/app-store-readiness-v2` (16 commits, local, unpushed). Verified: 128/128 unit tests, 193/193 backend tests, build + archive green.
 
+## Round 2 (2026-09-03 PM): first-session payoff verified on-screen
+Drove a full live session as the guest kid: Surprise Me → drill → complete → 4-star rate → notification permission (perfectly timed post-rating) → Session Complete with +140 XP breakdown, +220 coins, achievement+level-up callout, "You worked on" chips → session in Recent Activity → Progress "Your Focus" honest state. Found+fixed en route: "Surprise Me" could present an EMPTY unclosable session (SwiftUI isPresented/state race → item-based cover) + graceful no-drill fallback.
+
 ## VERDICT: YES — the app-side experience is ready for kids and can succeed, conditional on your deploy/ASC actions.
 Visually verified end-to-end on simulator (guest → 9-step onboarding → dashboard → all tabs): friction-free guest entry, kid-tone onboarding w/ weakness seeding + neutral age, alive dashboard (coins, Today's Goal, position-seeded "Drills For You" in kid language), coach-mark guidance, achievements reachable, community defaults safe. Anonymous auth ENABLED (done by Claude via admin API per your request). Walkthrough caught+fixed 2 launch-killers this round: goal step's Continue was unreachable (no ScrollView) and double-verb drill titles. Exit state: 128/128 unit, 193/193 backend, build+archive green.
 
