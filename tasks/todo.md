@@ -1,4 +1,10 @@
-# Product-Quality Push — VERDICT DELIVERED (2026-09-03)
+# Product-Quality Push — BACKEND LIVE + VERIFIED (2026-09-03 PM)
+
+## Round 3: I deployed the backend (user-authorized) and tested it live
+- **Deployed**: all 7 https functions + 3 moderation triggers (Eventarc first-use needed IAM propagation + 3 attempts) + firestore rules & indexes. Env keys converted .env.yaml→functions/.env (firebase-native) and verified present on deployed functions.
+- **Live test from the app**: guest token → generate_custom_drill → new hardened endpoint reached Anthropic → clean sanitized error returned with matching request-ids in Cloud Logging. Pipeline fully works.
+- **⛔ ONE THING LEFT: the Anthropic account is OUT OF CREDITS** ("credit balance too low") — top up at console.anthropic.com Plans & Billing (and rotate the keys while there; update functions/.env + .env.yaml after, then `firebase deploy --only functions`). Until then AI drill/plan/coaching return a friendly retry message (raw-JSON error replaced with kid copy).
+
 
 Branch `feature/app-store-readiness-v2` (16 commits, local, unpushed). Verified: 128/128 unit tests, 193/193 backend tests, build + archive green.
 
