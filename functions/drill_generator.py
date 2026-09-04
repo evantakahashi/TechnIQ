@@ -74,7 +74,8 @@ def generate_drill(
     llm_call is a function that takes a prompt and returns the raw LLM output.
     """
     weakness = request["weakness"]
-    level = request["experience_level"]
+    # Normalize once for the whole pipeline: app sends "Beginner", rules compare lowercase.
+    level = str(request["experience_level"] or "intermediate").strip().lower()
     age = int(request["player_age"])
     position = request["position"]
     equipment: list[str] = list(request["equipment"])

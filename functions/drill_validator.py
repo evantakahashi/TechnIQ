@@ -19,6 +19,27 @@ EQUIPMENT_TO_ELEMENT_TYPES: dict[str, set[str]] = {
 IMPLICIT_ELEMENT_TYPES: set[str] = {"player", "gate"}
 
 
+def _element_types_for_equipment(item: str) -> set[str]:
+    """Resolve one user/AI-supplied equipment string to authorized element types.
+
+    Tolerates case, whitespace, singular/plural, and compound names
+    ("Goal", "mini goals", "agility ladder") — exact-match lookups blocked
+    real drills whenever the wording drifted from the canonical keys.
+    """
+    key = item.strip().lower()
+    if key in EQUIPMENT_TO_ELEMENT_TYPES:
+        return EQUIPMENT_TO_ELEMENT_TYPES[key]
+    for variant in (key + "s", key.rstrip("s")):
+        if variant in EQUIPMENT_TO_ELEMENT_TYPES:
+            return EQUIPMENT_TO_ELEMENT_TYPES[variant]
+    resolved: set[str] = set()
+    for canonical, types in EQUIPMENT_TO_ELEMENT_TYPES.items():
+        stem = canonical.rstrip("s")
+        if stem and stem in key:
+            resolved.update(types)
+    return resolved
+
+
 class ValidationError(ValueError):
     """Raised when a drill fails a structural integrity check."""
 
@@ -68,7 +89,7 @@ def _check_equipment_consistency(
 ) -> None:
     allowed_types: set[str] = set(IMPLICIT_ELEMENT_TYPES)
     for item in equipment:
-        allowed_types.update(EQUIPMENT_TO_ELEMENT_TYPES.get(item, set()))
+        allowed_types.update(_element_types_for_equipment(item))
     for el in elements:
         t = el.get("type")
         if t not in allowed_types:

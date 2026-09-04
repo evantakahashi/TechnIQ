@@ -543,3 +543,20 @@ def test_built_prompt_carries_safety_rules(base_prompt_kwargs):
     low = _build_prompt(**base_prompt_kwargs).lower()
     assert "warm-up" in low or "warm up" in low or "warmup" in low
     assert "contact" in low
+
+
+def test_capitalized_level_reaches_pipeline_lowercased(monkeypatch):
+    """The iOS app sends 'Beginner'; the pipeline must normalize before rule checks."""
+    captured = {}
+    def fake_llm(prompt):
+        captured['prompt'] = prompt
+        raise RuntimeError("stop after capture")
+    import drill_generator as dg
+    try:
+        dg.generate_drill({
+            "weakness": "shooting", "experience_level": "Beginner",
+            "player_age": 13, "position": "Midfielder", "equipment": ["ball", "goal"],
+        }, fake_llm)
+    except Exception:
+        pass
+    assert 'beginner' in captured.get('prompt', '').lower()

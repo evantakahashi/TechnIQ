@@ -84,3 +84,36 @@ def test_player_without_role_does_not_count_as_worker():
     del drill["diagram"]["elements"][1]["role"]
     with pytest.raises(ValidationError, match="worker"):
         validate_drill(drill)
+
+
+class TestEquipmentNormalization:
+    """Equipment strings from users/AI drift from canonical keys — lookups must tolerate it."""
+
+    def _drill_with_goal(self, equipment):
+        return {
+            "equipment": equipment,
+            "diagram": {
+                "field": {"width": 20, "length": 15},
+                "elements": [
+                    {"label": "P1", "type": "player", "role": "worker", "x": 5, "y": 5},
+                    {"label": "B1", "type": "ball", "x": 6, "y": 5},
+                    {"label": "G1", "type": "goal", "x": 10, "y": 14},
+                ],
+                "paths": [{"step": 1, "from": "P1", "to": "G1", "type": "shot"}],
+            },
+        }
+
+    def test_singular_goal_authorizes_goal_element(self):
+        validate_drill(self._drill_with_goal(["ball", "goal"]))
+
+    def test_capitalized_and_padded(self):
+        validate_drill(self._drill_with_goal(["Ball", " Goals "]))
+
+    def test_compound_name(self):
+        validate_drill(self._drill_with_goal(["ball", "mini goal"]))
+
+    def test_unrelated_equipment_still_rejected(self):
+        import pytest as _pytest
+        from drill_validator import ValidationError
+        with _pytest.raises(ValidationError):
+            validate_drill(self._drill_with_goal(["ball", "cones"]))

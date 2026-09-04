@@ -84,6 +84,47 @@ final class WalkthroughUITests: XCTestCase {
         }
     }
 
+    func test_loginAndDrill() throws {
+        settle(4)
+        // Sign in with the seeded demo account if we're on the auth screen.
+        if app.textFields["Enter your email"].waitForExistence(timeout: 6) {
+            typeInto(placeholder: "Enter your email", text: "demo.reviewer@techniq-demo.app")
+            typeInto(placeholder: "Enter your password", text: "Demo1234!")
+            shot("login-filled")
+            _ = tapFirst(["LOGIN", "Login"], timeout: 3)
+            settle(8)
+        }
+        shot("after-login")
+        for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
+        // Wait for the dashboard hero, then generate.
+        var heroFound = false
+        for _ in 0..<10 {
+            if app.staticTexts["Generate AI Drill"].exists || app.buttons["Generate AI Drill"].exists { heroFound = true; break }
+            settle(4)
+        }
+        shot("dashboard-state")
+        guard heroFound, tapFirst(["Generate AI Drill"], timeout: 4) else { shot("hero-missing"); return }
+        settle(2)
+        let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
+        if field.waitForExistence(timeout: 3), field.isHittable {
+            field.tap()
+            field.typeText("get better at shooting with my weak foot")
+            if app.keyboards.buttons["return"].exists { app.keyboards.buttons["return"].tap() }
+        }
+        _ = tapFirst(["GENERATE DRILL", "Generate Drill", "Generate Custom Drill"], timeout: 4)
+        for i in 1...12 {
+            settle(10)
+            shot("live-wait-\(i)")
+            let errored = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'snag' OR label CONTAINS[c] 'failed' OR label CONTAINS[c] 'error'")).firstMatch.exists
+            let done = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'start' OR label CONTAINS[c] 'save' OR label CONTAINS[c] 'begin'")).firstMatch.exists
+            if errored || done { break }
+        }
+        shot("live-drill-final")
+        app.swipeUp()
+        settle(1)
+        shot("live-drill-final-2")
+    }
+
     func test_aiDrillLive() throws {
         settle(3)
         for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }

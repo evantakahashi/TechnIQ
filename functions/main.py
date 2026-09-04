@@ -386,11 +386,13 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             weakness = "Ball Control"
 
         # Periodization source of truth: requirements.difficulty wins, then profile, then default.
-        level = (
+        # The iOS app sends capitalized levels ("Beginner"); every downstream rule
+        # (quality carve-outs, exemplar filtering) compares lowercase.
+        level = str(
             requirements.get("difficulty")
             or player_profile.get("experienceLevel")
             or "intermediate"
-        )
+        ).strip().lower()
         age = max(4, min(int(player_profile.get("age") or 14), 99))
         position = _clip_str(player_profile.get("position", "midfielder"))
         equipment = _clip_list(requirements.get("equipment", ["ball", "cones"]))
