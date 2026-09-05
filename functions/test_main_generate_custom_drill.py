@@ -284,7 +284,7 @@ class TestResponseSynthesis:
             {"label": "P2", "type": "player", "role": "server", "x": 5, "y": 5}],
             "paths": [{"step": 1, "from": "P1", "to": "P2", "style": "pass"}]}}
         out = _synthesize_instructions(drill)
-        assert out == ["Step 1: P1 (worker) passes to P2."]
+        assert out == ["P1 (worker) passes to P2."]
 
     def test_shoot_style_renders_shoots_at(self):
         from main import _synthesize_instructions
@@ -292,7 +292,7 @@ class TestResponseSynthesis:
             {"label": "P1", "type": "player", "role": "worker", "x": 1, "y": 1},
             {"label": "GL", "type": "goal", "x": 10, "y": 5}],
             "paths": [{"step": 1, "from": "P1", "to": "GL", "style": "shoot"}]}}
-        assert _synthesize_instructions(drill) == ["Step 1: P1 (worker) shoots at GL."]
+        assert _synthesize_instructions(drill) == ["P1 (worker) shoots at GL."]
 
     def test_skill_tags_from_description(self):
         from main import _skill_tags_from_description

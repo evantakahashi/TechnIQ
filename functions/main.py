@@ -144,7 +144,8 @@ def _synthesize_instructions(drill: Dict) -> list:
         src_name = src.get("label") or p.get("from")
         role = src.get("role")
         who = f"{src_name} ({role})" if role else src_name
-        steps.append(f"Step {p.get('step')}: {who} {verb} {p.get('to')}.")
+        # No "Step N:" prefix — the app numbers the list itself.
+        steps.append(f"{who} {verb} {p.get('to')}.")
     return steps or ["Follow the diagram."]
 
 
