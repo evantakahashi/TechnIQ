@@ -239,6 +239,9 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
 
             #endif
             // Check for API quota error
+            if httpResponse.statusCode == 429 {
+                throw CustomDrillError.dailyLimitReached
+            }
             if httpResponse.statusCode == 500 && errorMessage.contains("insufficient_quota") {
                 throw CustomDrillError.quotaExceeded
             }
@@ -532,6 +535,7 @@ enum CustomDrillError: LocalizedError {
     case invalidResponse
     case authenticationRequired
     case quotaExceeded
+    case dailyLimitReached
 
     var errorDescription: String? {
         switch self {
@@ -547,6 +551,8 @@ enum CustomDrillError: LocalizedError {
             return "Authentication required to generate custom drills."
         case .quotaExceeded:
             return "AI service is temporarily unavailable due to usage limits. Please try again later or contact support."
+        case .dailyLimitReached:
+            return "You've used all your AI drills for today — new drills unlock tomorrow! Try one from your exercise library in the meantime."
         }
     }
 }

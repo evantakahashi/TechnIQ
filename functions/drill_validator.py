@@ -56,6 +56,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_step_targets_exist(elements, paths)
     _check_equipment_consistency(elements, equipment)
     _check_at_least_one_worker(elements)
+    _check_shot_targets(elements, paths)
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
@@ -103,3 +104,23 @@ def _check_at_least_one_worker(elements: list[dict[str, Any]]) -> None:
         if el.get("type") == "player" and el.get("role") == "worker":
             return
     raise ValidationError("drill must have at least one worker player")
+
+
+# What a shot may be aimed at. Without this, ball-only drills produced
+# "P1 shoots at B5" — a player shooting at another ball.
+SHOOTABLE_TARGET_TYPES: set[str] = {"goal", "gate", "wall"}
+
+
+def _check_shot_targets(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    types_by_label = {e.get("label"): e.get("type") for e in elements}
+    for p in paths:
+        if p.get("style") in ("shoot", "shot"):
+            target_type = types_by_label.get(p.get("to"))
+            if target_type not in SHOOTABLE_TARGET_TYPES:
+                raise ValidationError(
+                    f"step {p.get('step')}: shot target {p.get('to')!r} is a "
+                    f"{target_type or 'missing element'}; shots must aim at a "
+                    "goal, gate, or wall"
+                )

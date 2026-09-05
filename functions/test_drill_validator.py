@@ -47,6 +47,25 @@ def test_non_contiguous_step_raises():
         validate_drill(drill)
 
 
+def test_shot_at_ball_raises():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "ball", "x": 5, "y": 5, "label": "B5"})
+    drill["diagram"]["paths"].append(
+        {"from": "P1", "to": "B5", "style": "shoot", "step": 2}
+    )
+    with pytest.raises(ValidationError, match="shots must aim at a goal, gate, or wall"):
+        validate_drill(drill)
+
+
+def test_shot_at_gate_passes():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "gate", "x": 10, "y": 5, "label": "G1"})
+    drill["diagram"]["paths"].append(
+        {"from": "P1", "to": "G1", "style": "shoot", "step": 2}
+    )
+    validate_drill(drill)  # no exception
+
+
 def test_equipment_mismatch_raises():
     drill = make_valid_drill()
     drill["diagram"]["elements"].append(

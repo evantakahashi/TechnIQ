@@ -114,7 +114,10 @@ struct QuickDrillSheet: View {
             skillDescription: skillDescription.trimmingCharacters(in: .whitespacesAndNewlines),
             category: category,
             difficulty: difficulty,
-            equipment: [.ball],
+            // Quick Drill is one-tap with no equipment picker, so authorize the
+            // basics — ball-only meant shooting requests could never get a goal
+            // element and the AI improvised nonsense like "shoots at B5" (a ball).
+            equipment: [.ball, .cones, .goals],
             numberOfPlayers: 1,
             fieldSize: .medium,
             selectedWeaknesses: prefilledWeakness.map { [$0] } ?? []

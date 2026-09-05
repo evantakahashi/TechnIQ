@@ -141,19 +141,30 @@ final class WalkthroughUITests: XCTestCase {
         }
         shot("generator-filled")
         _ = tapFirst(["GENERATE DRILL", "Generate Drill", "Generate Custom Drill", "GENERATE CUSTOM DRILL"], timeout: 4)
-        // Live backend call — poll up to ~120s for a result or error.
+        // Live backend call — success dismisses the Quick Drill sheet and opens
+        // ActiveTrainingView full-screen, so poll for the sheet disappearing.
+        // (Matching buttons anywhere was a false positive: "START TRAINING"
+        // exists on the dashboard *behind* the sheet the whole time.)
         for i in 1...12 {
             settle(10)
             shot("gen-wait-\(i)")
             let errored = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'failed' OR label CONTAINS[c] 'error' OR label CONTAINS[c] 'try again'")).firstMatch.exists
-            // A generated drill shows a Start/Save action or a diagram; the form's Generate button is gone.
-            let done = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'start' OR label CONTAINS[c] 'save' OR label CONTAINS[c] 'begin'")).firstMatch.exists
-            if errored || done { break }
+            let sheetGone = !app.navigationBars["Quick Drill"].exists
+            if errored || sheetGone { break }
         }
+        settle(2)
+        for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
         shot("drill-result")
         app.swipeUp()
         settle(1)
         shot("drill-result-scrolled")
+        // Surface the full generated content (setup/instructions/coaching).
+        _ = tapFirst(["View Instructions", "Instructions", "Details", "How to do this drill"], timeout: 3)
+        settle(1)
+        shot("drill-instructions")
+        app.swipeUp()
+        settle(1)
+        shot("drill-instructions-2")
     }
 
     func test_firstSession() throws {
