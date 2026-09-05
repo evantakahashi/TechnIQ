@@ -556,7 +556,9 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
         guard let stats = player.stats as? Set<PlayerStats>,
               let latestStats = stats.sorted(by: { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }).first,
               let ratings = latestStats.skillRatings,
-              !ratings.isEmpty else { return false }
+              // "Well-rounded" needs breadth, not just quality — one highly-rated
+              // drill used to satisfy allSatisfy over its own 1-2 skills.
+              ratings.count >= 5 else { return false }
 
         return ratings.values.allSatisfy { $0 >= level }
     }
