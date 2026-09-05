@@ -343,6 +343,7 @@ struct PlanSessionCard: View {
                             .frame(width: 80, height: 60)
                             .cornerRadius(DesignSystem.CornerRadius.sm)
                             .allowsHitTesting(false)
+                            .a11yHidden()
                         }
 
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {

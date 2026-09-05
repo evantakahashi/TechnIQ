@@ -84,6 +84,7 @@ struct CommunityFeedView: View {
             FloatingActionButton(icon: "square.and.pencil") {
                 showingCreatePost = true
             }
+            .a11y(label: "Create post")
             .padding(.trailing, DesignSystem.Spacing.lg)
             .padding(.bottom, DesignSystem.Spacing.lg)
         }

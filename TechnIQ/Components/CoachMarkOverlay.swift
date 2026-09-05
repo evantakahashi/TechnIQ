@@ -53,6 +53,7 @@ struct CoachMarkModifier: ViewModifier {
                         Color.black.opacity(0.6)
                             .ignoresSafeArea()
                             .onTapGesture { dismiss() }
+                            .a11y(label: "Dismiss tip")
 
                         VStack(spacing: DesignSystem.Spacing.md) {
                             Text(info.text)

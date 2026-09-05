@@ -612,5 +612,6 @@ struct CompactPlayerStats: View {
             .fixedSize()
         }
         .fixedSize()
+        .accessibilityElement(children: .combine)
     }
 }

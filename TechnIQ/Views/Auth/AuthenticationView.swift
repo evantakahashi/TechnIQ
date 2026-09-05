@@ -84,6 +84,7 @@ struct ModernSignInView: View {
                                 HStack {
                                     Image(systemName: DesignSystem.Icons.xmark)
                                         .foregroundColor(DesignSystem.Colors.error)
+                                        .a11yHidden()
                                     Text(authManager.errorMessage)
                                         .font(DesignSystem.Typography.bodySmall)
                                         .foregroundColor(DesignSystem.Colors.error)
@@ -357,6 +358,7 @@ struct ModernSignUpView: View {
                 HStack {
                     Image(systemName: DesignSystem.Icons.xmark)
                         .foregroundColor(DesignSystem.Colors.error)
+                        .a11yHidden()
                     Text(authManager.errorMessage)
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.error)

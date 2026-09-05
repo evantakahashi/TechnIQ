@@ -49,6 +49,13 @@ struct AnimatedDrillDiagramView: View {
 
     private var hasSteps: Bool { totalSteps > 0 }
 
+    private var diagramAccessibilityLabel: String {
+        let players = diagram.elements.filter { $0.elementType == .player }.count
+        let cones = diagram.elements.filter { $0.elementType == .cone }.count
+        let goals = diagram.elements.filter { $0.elementType == .goal }.count
+        return "Drill diagram: \(players) player\(players == 1 ? "" : "s"), \(cones) cone\(cones == 1 ? "" : "s"), \(goals) goal\(goals == 1 ? "" : "s") on a \(Int(diagram.field.width)) by \(Int(diagram.field.length)) meter field"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Diagram
@@ -99,6 +106,8 @@ struct AnimatedDrillDiagramView: View {
                         .position(x: geometry.size.width / 2, y: offsetY + fieldHeight + fieldPadding / 2 + 2)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(diagramAccessibilityLabel)
 
             // Step controls
             if hasSteps && currentStep != nil {
@@ -683,6 +692,7 @@ struct AnimatedDrillDiagramView: View {
                         .background(DesignSystem.Colors.surfaceOverlay)
                         .clipShape(Circle())
                 }
+                .a11y(label: "Previous step")
                 .disabled((currentStep ?? 0) <= 1)
 
                 Spacer()
@@ -732,6 +742,7 @@ struct AnimatedDrillDiagramView: View {
                             .background(DesignSystem.Colors.surfaceOverlay)
                             .clipShape(Circle())
                     }
+                    .a11y(label: "Next step")
                     .disabled((currentStep ?? 0) >= totalSteps)
                 }
             }

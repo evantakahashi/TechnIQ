@@ -390,6 +390,7 @@ struct ExerciseLibraryView: View {
                     Image(systemName: "sparkles")
                         .font(.title2)
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .a11yHidden()
 
                     Text("Create AI Drill")
                         .font(DesignSystem.Typography.titleLarge)
@@ -474,6 +475,7 @@ struct ExerciseLibraryView: View {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         Image(systemName: "heart.fill")
                             .foregroundColor(.red)
+                            .a11yHidden()
                         Text("Favorites")
                             .font(DesignSystem.Typography.titleLarge)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -512,6 +514,7 @@ struct ExerciseLibraryView: View {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         Image(systemName: "clock")
                             .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .a11yHidden()
                         Text("Recently Used")
                             .font(DesignSystem.Typography.titleLarge)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -551,6 +554,7 @@ struct ExerciseLibraryView: View {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         Image(systemName: "star.fill")
                             .foregroundColor(DesignSystem.Colors.accentYellow)
+                            .a11yHidden()
                         Text("Recommended for You")
                             .font(DesignSystem.Typography.titleLarge)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -599,6 +603,7 @@ struct ExerciseLibraryView: View {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         Image(systemName: icon)
                             .foregroundColor(color)
+                            .a11yHidden()
                         Text(title)
                             .font(DesignSystem.Typography.titleLarge)
                             .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -660,6 +665,7 @@ struct ExerciseLibraryView: View {
             Image(systemName: "figure.soccer")
                 .font(.system(size: 64))
                 .foregroundColor(DesignSystem.Colors.primaryGreen.opacity(0.5))
+                .a11yHidden()
 
             Text("No Exercises Yet")
                 .font(DesignSystem.Typography.titleLarge)
@@ -859,6 +865,7 @@ struct ExerciseLibraryView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 48))
                         .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.5))
+                        .a11yHidden()
 
                     Text("No exercises found")
                         .font(DesignSystem.Typography.titleMedium)

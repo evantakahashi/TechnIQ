@@ -124,6 +124,7 @@ struct CustomDrillGeneratorView: View {
                     Image(systemName: "brain.head.profile")
                         .font(.title2)
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .a11yHidden()
                     
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                         Text("AI-Powered Drill Generator")
@@ -362,6 +363,7 @@ struct CustomDrillGeneratorView: View {
                     .font(.system(size: 60))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
                     .pulseAnimation()
+                    .a11yHidden()
                 
                 Text("Building your drill...")
                     .font(DesignSystem.Typography.bodySmall)

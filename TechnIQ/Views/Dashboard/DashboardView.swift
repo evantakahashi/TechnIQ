@@ -749,6 +749,7 @@ struct DashboardView: View {
                         Image(systemName: DesignSystem.Icons.calendar)
                             .font(.largeTitle)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .a11yHidden()
                         
                         Text("No training sessions yet")
                             .font(DesignSystem.Typography.titleSmall)
@@ -845,6 +846,7 @@ struct DashboardView: View {
                 .background(DesignSystem.Colors.cardBackground)
                 .cornerRadius(DesignSystem.CornerRadius.card)
                 .customShadow(DesignSystem.Shadow.small)
+                .accessibilityElement(children: .combine)
             }
 
             ModernCard {
@@ -853,6 +855,7 @@ struct DashboardView: View {
                         Image(systemName: "sportscourt")
                             .font(.largeTitle)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .a11yHidden()
 
                         Text("No matches logged yet")
                             .font(DesignSystem.Typography.titleSmall)
@@ -920,6 +923,7 @@ struct DashboardView: View {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.system(size: 32))
                                 .foregroundColor(DesignSystem.Colors.bloodOrange)
+                                .a11yHidden()
                             Text("Couldn't load recommendations")
                                 .font(DesignSystem.Typography.titleSmall)
                                 .foregroundColor(DesignSystem.Colors.textPrimary)
@@ -939,6 +943,7 @@ struct DashboardView: View {
                                 Image(systemName: "chart.line.uptrend.xyaxis")
                                     .font(.system(size: 32))
                                     .foregroundColor(DesignSystem.Colors.textSecondary)
+                                    .a11yHidden()
                                 Text("Train more to unlock recommendations")
                                     .font(DesignSystem.Typography.titleSmall)
                                     .foregroundColor(DesignSystem.Colors.textPrimary)

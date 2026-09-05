@@ -43,16 +43,19 @@ struct EditProfileView: View {
                             get: { Double(playerAge) },
                             set: { playerAge = Int($0) }
                         ), in: 10...16, step: 1)
+                        .a11yValue("\(playerAge)", label: "Age")
                     }
                     
                     VStack(alignment: .leading) {
                         Text("Height: \(Int(playerHeight)) cm")
                         Slider(value: $playerHeight, in: 120...180, step: 1)
+                        .a11yValue("\(Int(playerHeight)) cm", label: "Height")
                     }
                     
                     VStack(alignment: .leading) {
                         Text("Weight: \(Int(playerWeight)) kg")
                         Slider(value: $playerWeight, in: 25...80, step: 1)
+                        .a11yValue("\(Int(playerWeight)) kg", label: "Weight")
                     }
                 }
                 

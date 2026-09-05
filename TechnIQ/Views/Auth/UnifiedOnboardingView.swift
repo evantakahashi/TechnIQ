@@ -192,6 +192,7 @@ struct UnifiedOnboardingView: View {
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .a11yHidden()
 
             Text("Step \(currentStep + 1) of \(totalSteps)")
                 .font(DesignSystem.Typography.labelSmall)
@@ -260,6 +261,7 @@ struct UnifiedOnboardingView: View {
                         if currentStep == 3 {
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 14, weight: .semibold))
+                                .a11yHidden()
                         }
                     }
                     .foregroundColor(.white)
@@ -549,6 +551,7 @@ struct UnifiedOnboardingView: View {
                             set: { yearsPlaying = Int($0) }
                         ), in: 0...20, step: 1)
                         .tint(DesignSystem.Colors.primaryGreen)
+                        .a11yValue("\(yearsPlaying) years", label: "Years Playing")
                     }
                 }
             }

@@ -285,6 +285,7 @@ struct NewSessionView: View {
                     Toggle("", isOn: $useManualDuration)
                         .tint(DesignSystem.Colors.primaryGreen)
                         .scaleEffect(0.9)
+                        .accessibilityLabel("Duration mode")
                 }
                 
                 // Manual duration slider (only shown when manual mode is enabled)

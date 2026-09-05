@@ -284,6 +284,7 @@ struct ModernTextField: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                             .font(DesignSystem.Typography.bodyMedium)
                     }
+                    .a11y(label: isSecureVisible ? "Hide password" : "Show password")
                 }
             }
             .padding(DesignSystem.Spacing.textFieldPadding)
@@ -616,6 +617,7 @@ struct SoccerBallSpinner: View {
             .onAppear {
                 isRotating = true
             }
+            .a11yHidden()
     }
 }
 

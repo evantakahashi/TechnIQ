@@ -21,6 +21,7 @@ struct ExerciseYouTubePreview: View {
                             Image(systemName: "play.circle.fill")
                                 .font(.largeTitle)
                                 .foregroundColor(.white)
+                                .a11yHidden()
                         }
                     )
             } placeholder: {
@@ -35,6 +36,7 @@ struct ExerciseYouTubePreview: View {
                     Image(systemName: "play.rectangle.fill")
                         .font(.title)
                         .foregroundColor(.red)
+                        .a11yHidden()
                 )
         }
     }
@@ -57,6 +59,7 @@ struct ExerciseIconPreview: View {
                 Image(systemName: exercise.categoryIcon)
                     .font(.system(size: iconSize))
                     .foregroundColor(exercise.categoryColor)
+                    .a11yHidden()
             )
     }
 }
@@ -69,6 +72,7 @@ struct ExerciseTypeBadge: View {
             HStack(spacing: 4) {
                 Image(systemName: "brain.head.profile")
                     .font(.caption2)
+                    .a11yHidden()
                 Text("AI Generated")
                     .font(DesignSystem.Typography.labelSmall)
             }
@@ -77,6 +81,7 @@ struct ExerciseTypeBadge: View {
             HStack(spacing: 4) {
                 Image(systemName: "play.rectangle.fill")
                     .font(.caption2)
+                    .a11yHidden()
                 Text("YouTube")
                     .font(DesignSystem.Typography.labelSmall)
             }
@@ -107,6 +112,7 @@ struct RecommendedExerciseCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.caption2)
+                            .a11yHidden()
                         Text("\(matchPercentage)%")
                             .font(DesignSystem.Typography.labelSmall)
                             .fontWeight(.bold)
@@ -195,6 +201,7 @@ struct SimpleExerciseCard: View {
                         .background(Color.black.opacity(0.4))
                         .clipShape(Circle())
                 }
+                .a11y(label: isFavorite ? "Remove from favorites" : "Add to favorites")
                 .padding(8)
             }
         }
@@ -232,6 +239,7 @@ struct FavoriteExerciseCard: View {
                             .clipShape(Circle())
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
+                    .a11y(label: "Remove from favorites")
                     .padding(8)
                 }
                 .frame(height: 100)
@@ -329,6 +337,7 @@ struct ListExerciseCard: View {
                                 Image(systemName: exercise.categoryIcon)
                                     .font(.title3)
                                     .foregroundColor(exercise.categoryColor)
+                                    .a11yHidden()
                             )
                     }
                 }
@@ -341,11 +350,13 @@ struct ListExerciseCard: View {
                         if exercise.isAIGenerated {
                             Image(systemName: "brain.head.profile").font(.caption2)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
+                                .a11yHidden()
                             Text("AI").font(.caption2)
                                 .foregroundColor(DesignSystem.Colors.primaryGreen)
                         } else if exercise.isYouTubeExercise {
                             Image(systemName: "play.rectangle.fill").font(.caption2)
                                 .foregroundColor(.red)
+                                .a11yHidden()
                             Text("YouTube").font(.caption2)
                                 .foregroundColor(.red)
                         } else {
@@ -377,6 +388,7 @@ struct ListExerciseCard: View {
                         .font(.system(size: 18))
                         .foregroundColor(exercise.isFavorite ? .red : DesignSystem.Colors.textSecondary)
                 }
+                .a11y(label: exercise.isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
     }
@@ -401,6 +413,7 @@ struct FilterChip: View {
                     .font(.caption)
                     .foregroundColor(color.opacity(0.7))
             }
+            .a11y(label: "Remove \(text) filter")
         }
         .padding(.horizontal, DesignSystem.Spacing.sm)
         .padding(.vertical, 6)

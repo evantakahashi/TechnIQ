@@ -224,6 +224,7 @@ struct DrillWalkthroughView: View {
                                             : DesignSystem.Colors.textSecondary.opacity(0.4)
                                     )
                             }
+                            .a11y(label: "\(star) star\(star == 1 ? "" : "s")")
                         }
                     }
                     .frame(maxWidth: .infinity)
