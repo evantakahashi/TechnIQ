@@ -42,6 +42,14 @@ Rules:
 - The drill must TRAIN THE REQUESTED SKILL, not generic ball-work.
 - Prioritize game-relevant reps: every step should move the worker toward or through the requested skill.
 
+Geometry (draw it like a real pitch — a coach will see this diagram):
+- Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
+- Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
+- Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
+- Defenders start goal-side of the attacker they are defending, within pressing distance (2-6m).
+- Every element you declare must be used by at least one step or serve an obvious purpose (gate to dribble through, cone marking a turn). No decoration.
+- Only declare a ladder/hurdle pattern if you actually use tight cone spacing (0.75-1.5m gaps) for it.
+
 Safety (non-negotiable, applies to every drill):
 - Match intensity and complexity to the player's age and level; never prescribe adult training loads to young players.
 - Begin the coaching points with a 2-3 minute warm-up cue (light jogging + dynamic movement and easy ball touches) before any intense or high-skill work.

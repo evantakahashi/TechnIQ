@@ -77,8 +77,30 @@ def _new_request_id() -> str:
 
 _PATH_STYLE_VERBS = {
     "pass": "passes to", "dribble": "dribbles to", "shot": "shoots at",
-    "run": "runs to", "receive": "receives from",
+    "shoot": "shoots at", "run": "runs to", "receive": "receives from",
 }
+
+
+# Keyword → skill tag for analytics. First match wins, so more specific
+# skills (finishing, weak foot) come before broad ones (ball control).
+_SKILL_TAG_RULES: list[tuple[tuple[str, ...], str]] = [
+    (("weak foot", "weaker foot"), "Weak Foot"),
+    (("goalkeeper", "goalkeeping", "save", "catch", "handling", "distribution"), "Goalkeeping"),
+    (("finish", "shooting", "shot", "striking", "strike", "volley"), "Shooting Accuracy"),
+    (("cross", "crossing"), "Crossing"),
+    (("head", "heading", "aerial", "clearance"), "Heading"),
+    (("defend", "defending", "1v1", "tackle", "jockey", "press"), "Defending"),
+    (("pass", "passing", "one touch", "one-touch"), "Passing Accuracy"),
+    (("dribbl", "close control", "quick feet", "footwork", "ladder"), "Dribbling Skills"),
+    (("first touch", "receiving", "cushion", "trap"), "First Touch"),
+    (("speed", "agility", "faster", "sprint", "endurance", "stamina", "fitness"), "Speed & Agility"),
+]
+
+
+def _skill_tags_from_description(desc: str) -> list:
+    text = desc.lower()
+    tags = [tag for kws, tag in _SKILL_TAG_RULES if any(k in text for k in kws)]
+    return tags[:3] or ["Ball Control"]
 
 
 def _drill_display_name(focus_label: str) -> str:
@@ -507,13 +529,20 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         focus_label = skill_description or weakness
         duration_minutes = max(5, min(int(requirements.get("duration_minutes") or 15), 90))
         drill.setdefault("name", _drill_display_name(focus_label))
-        drill.setdefault("description", f"Custom drill for {focus_label}")
+        solo = "Solo" if number_of_players == 1 else f"{number_of_players}-player"
+        drill.setdefault(
+            "description",
+            f"{solo} {duration_minutes}-minute session targeting {focus_label}.",
+        )
         drill.setdefault("setup", _synthesize_setup(drill))
         drill.setdefault("instructions", _synthesize_instructions(drill))
         drill.setdefault("estimatedDuration", duration_minutes)
         drill.setdefault("difficulty", level)
         drill.setdefault("category", "technical")
-        drill.setdefault("targetSkills", [weakness])
+        if skill_description:
+            drill.setdefault("targetSkills", _skill_tags_from_description(skill_description))
+        else:
+            drill.setdefault("targetSkills", [weakness])
 
         return _json_response({
             "drill": drill,

@@ -286,6 +286,23 @@ class TestResponseSynthesis:
         out = _synthesize_instructions(drill)
         assert out == ["Step 1: P1 (worker) passes to P2."]
 
+    def test_shoot_style_renders_shoots_at(self):
+        from main import _synthesize_instructions
+        drill = {"diagram": {"elements": [
+            {"label": "P1", "type": "player", "role": "worker", "x": 1, "y": 1},
+            {"label": "GL", "type": "goal", "x": 10, "y": 5}],
+            "paths": [{"step": 1, "from": "P1", "to": "GL", "style": "shoot"}]}}
+        assert _synthesize_instructions(drill) == ["Step 1: P1 (worker) shoots at GL."]
+
+    def test_skill_tags_from_description(self):
+        from main import _skill_tags_from_description
+        assert _skill_tags_from_description("weak foot finishing accuracy") == ["Weak Foot", "Shooting Accuracy"]
+        assert _skill_tags_from_description("crossing and finishing combination") == ["Shooting Accuracy", "Crossing"]
+        assert _skill_tags_from_description("goalkeeper reaction saves off a wall") == ["Goalkeeping"]
+        assert _skill_tags_from_description("defending 1v1 without diving in") == ["Defending"]
+        assert _skill_tags_from_description("sharper one touch passing") == ["Passing Accuracy"]
+        assert _skill_tags_from_description("something totally unrelated") == ["Ball Control"]
+
     def test_setup_summary_counts(self):
         from main import _synthesize_setup
         drill = {"diagram": {"elements": [
