@@ -76,6 +76,8 @@ def generate_drill(
     weakness = request["weakness"]
     # Normalize once for the whole pipeline: app sends "Beginner", rules compare lowercase.
     level = str(request["experience_level"] or "intermediate").strip().lower()
+    if level in ("professional", "pro", "elite", "expert"):
+        level = "advanced"  # rule packs/exemplars/quality gates speak beginner/intermediate/advanced
     age = int(request["player_age"])
     position = request["position"]
     equipment: list[str] = list(request["equipment"])
@@ -229,10 +231,26 @@ def _build_prompt(
 
     # Prior attempt errors (typed as syntax|quality)
     if prior_errors:
-        lines.append("PRIOR ATTEMPT ERRORS:")
+        lines.append("PRIOR ATTEMPT ERRORS — FIX THESE EXACTLY:")
         for tag, msg in prior_errors:
             if tag == "quality":
                 lines.append(f"- [quality] PRIOR ATTEMPT WAS VALID DSL BUT NOT A USEFUL PRACTICE: {msg}")
+                if "measurable success metric" in msg:
+                    lines.append(
+                        "  FIX: add ONE coaching point stating a countable target, e.g. "
+                        "'Target: 8 of 10 strikes on frame', '10 clean reps in a row', or "
+                        "'complete 3 sets of 12'. Use a number + a unit."
+                    )
+                if "outcome element" in msg:
+                    lines.append(
+                        "  FIX: include a goal or gate element the worker finishes into, "
+                        "and end at least one path there (shoots at / passes to)."
+                    )
+                if "rep loop" in msg:
+                    lines.append(
+                        "  FIX: make the worker repeat the action — reuse the same element "
+                        "across at least two numbered steps so it clearly loops."
+                    )
             else:
                 lines.append(f"- [{tag}] {msg}")
         lines.append("")

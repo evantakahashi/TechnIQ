@@ -75,6 +75,57 @@ def _new_request_id() -> str:
     return uuid.uuid4().hex[:12]
 
 
+_PATH_STYLE_VERBS = {
+    "pass": "passes to", "dribble": "dribbles to", "shot": "shoots at",
+    "run": "runs to", "receive": "receives from",
+}
+
+
+def _drill_display_name(focus_label: str) -> str:
+    """A kid-facing title from the raw request text ('sharper one touch passing…' -> 'Sharper One Touch Passing')."""
+    words = [w for w in focus_label.strip().rstrip(".!?").split() if w]
+    trimmed: list[str] = []
+    for w in words:
+        trimmed.append(w)
+        if len(" ".join(trimmed)) > 42:
+            break
+    title = " ".join(trimmed).title()
+    if len(words) <= 2:
+        title += " Drill"
+    return title or "Custom Drill"
+
+
+def _synthesize_setup(drill: Dict) -> str:
+    elements = (drill.get("diagram") or {}).get("elements") or []
+    counts: Dict[str, int] = {}
+    for el in elements:
+        t = el.get("type") or "item"
+        counts[t] = counts.get(t, 0) + 1
+    if not counts:
+        return "See diagram."
+    order = ["player", "ball", "cone", "goal", "gate", "wall", "server", "defender"]
+    parts = []
+    for t in order + [t for t in counts if t not in order]:
+        if t in counts:
+            n = counts.pop(t)
+            parts.append(f"{n} {t}{'s' if n != 1 else ''}")
+    return "Set up as shown in the diagram: " + ", ".join(parts) + "."
+
+
+def _synthesize_instructions(drill: Dict) -> list:
+    diagram = drill.get("diagram") or {}
+    elements = {e.get("label"): e for e in diagram.get("elements") or []}
+    steps = []
+    for p in sorted(diagram.get("paths") or [], key=lambda x: x.get("step", 0)):
+        verb = _PATH_STYLE_VERBS.get(p.get("style"), "moves to")
+        src = elements.get(p.get("from"), {})
+        src_name = src.get("label") or p.get("from")
+        role = src.get("role")
+        who = f"{src_name} ({role})" if role else src_name
+        steps.append(f"Step {p.get('step')}: {who} {verb} {p.get('to')}.")
+    return steps or ["Follow the diagram."]
+
+
 def _json_response(body: Dict, status: int = 200) -> https_fn.Response:
     return https_fn.Response(json.dumps(body), status=status, headers=_JSON_HEADERS)
 
@@ -454,11 +505,12 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             drill.setdefault("coachingPoints", [])
 
         focus_label = skill_description or weakness
-        drill.setdefault("name", f"{focus_label} Drill")
+        duration_minutes = max(5, min(int(requirements.get("duration_minutes") or 15), 90))
+        drill.setdefault("name", _drill_display_name(focus_label))
         drill.setdefault("description", f"Custom drill for {focus_label}")
-        drill.setdefault("setup", "See diagram.")
-        drill.setdefault("instructions", ["Follow the diagram."])
-        drill.setdefault("estimatedDuration", 15)
+        drill.setdefault("setup", _synthesize_setup(drill))
+        drill.setdefault("instructions", _synthesize_instructions(drill))
+        drill.setdefault("estimatedDuration", duration_minutes)
         drill.setdefault("difficulty", level)
         drill.setdefault("category", "technical")
         drill.setdefault("targetSkills", [weakness])

@@ -19,10 +19,21 @@ _FOOTBALL_VERBS: frozenset[str] = frozenset({
     "accelerate", "sprint", "burst", "finish", "jockey", "carry",
 })
 
-# Detects measurable success targets in coaching points (e.g., "10 in 60 seconds").
+# Detects measurable success targets in coaching points. Kept broad on purpose:
+# a narrow pattern rejected legitimate targets ("hit 8 of 10 on target", "10 clean
+# strikes", "3 sets of 12") and forced good solo drills to burn all retries.
 _METRIC_RE = re.compile(
-    r"\b\d+\s*(?:reps?|times?|seconds?|sec|secs|in a row|consecutive|in\s*\d+\s*(?:seconds?|sec))",
-    re.IGNORECASE,
+    r"""(?ix)
+    \b\d+\s*/\s*\d+                                   # 8/10
+  | \b\d+\s+(?:out\s+of|of)\s+\d+                     # 8 out of 10 / 8 of 10
+  | \b\d+\s*x\s*\d+                                   # 3 x 12
+  | \b\d+[\s-]*(?:\w+[\s-])?                           # optional adjective/hyphen: "10 clean", "12-"
+        (?:reps?|times?|seconds?|secs?|minutes?|mins?|sets?|rounds?|
+        touches?|strikes?|shots?|passes?|reps?|goals?|balls?|attempts?|
+        successful|consecutive|in\s+a\s+row)          # 10 clean strikes / 12-touch / 3 sets
+  | \b(?:hit|score|complete|make|land|finish)\s+\d+   # hit 8 / score 5
+  | \bin\s*\d+\s*(?:seconds?|secs?|minutes?|mins?)     # in 60 seconds
+    """,
 )
 
 # Stopwords to strip when mining keywords from success_metric for C3.

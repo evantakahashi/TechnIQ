@@ -269,3 +269,42 @@ def test_handler_response_preserves_drill_shape():
     assert "coaching_points" not in drill  # no leak
     assert "estimatedDuration" in drill
     assert isinstance(drill["estimatedDuration"], int)
+
+
+class TestResponseSynthesis:
+    def test_display_name_trims_and_titles(self):
+        from main import _drill_display_name
+        assert _drill_display_name("sharper one touch passing with a partner") == "Sharper One Touch Passing With A Partner"
+        assert _drill_display_name("dribbling") == "Dribbling Drill"
+
+    def test_instructions_from_paths(self):
+        from main import _synthesize_instructions
+        drill = {"diagram": {"elements": [
+            {"label": "P1", "type": "player", "role": "worker", "x": 1, "y": 1},
+            {"label": "P2", "type": "player", "role": "server", "x": 5, "y": 5}],
+            "paths": [{"step": 1, "from": "P1", "to": "P2", "style": "pass"}]}}
+        out = _synthesize_instructions(drill)
+        assert out == ["Step 1: P1 (worker) passes to P2."]
+
+    def test_setup_summary_counts(self):
+        from main import _synthesize_setup
+        drill = {"diagram": {"elements": [
+            {"label": "P1", "type": "player"}, {"label": "C1", "type": "cone"},
+            {"label": "C2", "type": "cone"}, {"label": "B1", "type": "ball"}]}}
+        s = _synthesize_setup(drill)
+        assert "1 player" in s and "2 cones" in s and "1 ball" in s
+
+
+def test_professional_level_maps_to_advanced():
+    captured = {}
+    def fake_llm(prompt):
+        captured['prompt'] = prompt
+        raise RuntimeError("stop")
+    import drill_generator as dg
+    try:
+        dg.generate_drill({"weakness": "shooting", "experience_level": "Professional",
+                           "player_age": 17, "position": "Forward", "equipment": ["ball", "goals"]}, fake_llm)
+    except Exception:
+        pass
+    assert 'advanced' in captured.get('prompt', '').lower()
+    assert 'professional' not in captured.get('prompt', '').lower()
