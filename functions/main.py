@@ -1298,6 +1298,11 @@ IMPORTANT REQUIREMENTS:
         # Parse to JSON
         plan_data = json.loads(json_text)
 
+        # Deterministically enforce schedule prefs — the model treats them as
+        # suggestions (live test: Mon/Wed/Sat preference still produced 6
+        # training days). A kid who picked 3 days must get 3 days.
+        _enforce_schedule_prefs(plan_data, preferred_days, rest_days)
+
         logger.info(f"✅ Generated plan: {plan_data.get('name', 'Unknown')}")
         logger.info(f"📊 Plan structure: {len(plan_data.get('weeks', []))} weeks")
 
@@ -1307,6 +1312,27 @@ IMPORTANT REQUIREMENTS:
     except Exception as e:
         logger.exception(f"❌ Error in generate_training_plan [{request_id}]: {e}")
         return _error_response("Internal error", 500, request_id)
+
+
+def _enforce_schedule_prefs(plan_data, preferred_days, rest_days) -> None:
+    """Force plan days to honor the user's picked training/rest days in place.
+
+    - Any day named in rest_days becomes a rest day.
+    - If preferred_days is non-empty, every day NOT in it becomes a rest day.
+    Day-name matching is case-insensitive; unnamed days are left untouched.
+    """
+    preferred = {d.strip().lower() for d in (preferred_days or []) if isinstance(d, str)}
+    rest = {d.strip().lower() for d in (rest_days or []) if isinstance(d, str)}
+    if not preferred and not rest:
+        return
+    for week in plan_data.get("weeks") or []:
+        for day in week.get("days") or []:
+            name = str(day.get("day_of_week") or "").strip().lower()
+            if not name:
+                continue
+            if name in rest or (preferred and name not in preferred):
+                day["is_rest_day"] = True
+                day["sessions"] = []
 
 
 @https_fn.on_request(timeout_sec=60)

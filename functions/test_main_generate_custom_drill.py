@@ -325,3 +325,36 @@ def test_professional_level_maps_to_advanced():
         pass
     assert 'advanced' in captured.get('prompt', '').lower()
     assert 'professional' not in captured.get('prompt', '').lower()
+
+
+class TestSchedulePrefEnforcement:
+    def _plan(self):
+        days = [{"day_number": i + 1, "day_of_week": d, "is_rest_day": False,
+                 "sessions": [{"session_type": "Technical"}]}
+                for i, d in enumerate(["Monday", "Tuesday", "Wednesday", "Thursday",
+                                       "Friday", "Saturday", "Sunday"])]
+        return {"weeks": [{"week_number": 1, "days": days}]}
+
+    def test_preferred_days_rest_everything_else(self):
+        from main import _enforce_schedule_prefs
+        plan = self._plan()
+        _enforce_schedule_prefs(plan, ["Monday", "Wednesday", "Saturday"], [])
+        by_day = {d["day_of_week"]: d for d in plan["weeks"][0]["days"]}
+        assert not by_day["Monday"]["is_rest_day"]
+        assert by_day["Tuesday"]["is_rest_day"] and by_day["Tuesday"]["sessions"] == []
+        assert not by_day["Saturday"]["is_rest_day"]
+        assert by_day["Sunday"]["is_rest_day"]
+
+    def test_rest_days_enforced_case_insensitive(self):
+        from main import _enforce_schedule_prefs
+        plan = self._plan()
+        _enforce_schedule_prefs(plan, [], ["sunday"])
+        by_day = {d["day_of_week"]: d for d in plan["weeks"][0]["days"]}
+        assert by_day["Sunday"]["is_rest_day"]
+        assert not by_day["Monday"]["is_rest_day"]
+
+    def test_no_prefs_noop(self):
+        from main import _enforce_schedule_prefs
+        plan = self._plan()
+        _enforce_schedule_prefs(plan, [], [])
+        assert all(not d["is_rest_day"] for d in plan["weeks"][0]["days"])
