@@ -120,12 +120,11 @@ TechnIQ/
 | Settings | SettingsView, EditProfileView, SharePlanView |
 
 ## Deferred / Outstanding
-- App icon (1024px asset missing — archive/upload blocker)
-- SDK privacy-manifest bump (firebase-ios-sdk 10.18 → 10.24+/11.x, GoogleSignIn 7.0 → 7.1+) required before App Store upload (ITMS-91053/91061)
-- API key rotation (keys in functions/.env.yaml need revoking)
-- Accessibility labels (near-zero currently)
+- API key rotation (keys in functions/.env.yaml need revoking) — USER ACTION
+- Push/PR feature/app-store-readiness-v2 branch (local only) — USER ACTION
 - Localization (English only)
 - iPad-adaptive layout (device family is iPhone-only for v1.0)
 - Incremental sync (currently full-sync on each cycle)
+- Drill-gen spatial-sanity validator (positional-drill geometry variance; next milestone w/ drill animation)
 
-Recently completed: Sign in with Apple (AuthenticationManager), in-app account deletion (Settings → `delete_account` function), SwiftLint config + CI, dead-view cleanup.
+Recently completed: App icon (1024px, compliant), SDK privacy bump (firebase 11.15.0, GoogleSignIn 8.0.0), VoiceOver a11y pass (15 views), drill-gen quality push (shot targets, skill tags, duration, synthesized instructions, geometry prompt rules), Sign in with Apple, in-app account deletion, SwiftLint + CI.
