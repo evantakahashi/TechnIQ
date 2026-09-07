@@ -62,7 +62,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_gates_inside_goal_mouth(elements)
     _check_ball_continuity(elements, paths)
     _check_no_redundant_movement(paths)
-    _check_duel_not_overscripted(elements, paths)
+    _check_duel_not_overscripted(elements, paths, bool(drill.get("is_duel")))
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -322,16 +322,18 @@ def _check_shot_targets(
 
 
 def _check_duel_not_overscripted(
-    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]],
+    is_duel: bool = False,
 ) -> None:
-    """A drill containing a defender is a reactive duel — script only the
-    serve and engage. Prompt guidance was ignored twice; enforce a hard cap.
+    """Reactive duels — script only the serve and engage. Prompt guidance was
+    ignored twice; enforce a hard cap. Defending requests mark the WORKER as
+    the defender (no defender-role element), so the generator stamps is_duel.
     """
     has_defender = any(
         e.get("type") == "player" and e.get("role") == "defender"
         for e in elements
     )
-    if has_defender and len(paths) > 6:
+    if (has_defender or is_duel) and len(paths) > 6:
         raise ValidationError(
             f"duel drills (defender present) must script only the serve and "
             f"engage — max 6 steps, got {len(paths)}; put the possible "

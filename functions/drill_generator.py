@@ -156,6 +156,11 @@ def generate_drill(
             drill["diagram"]["field"] = {"width": width, "length": length}
             drill["equipment"] = equipment
             drill["category"] = category
+            blob = f"{skill_description} {weakness}".lower()
+            drill["is_duel"] = ("1v1" in blob) or (
+                category == "tactical" and number_of_players == 2
+                and "head" not in blob
+            )
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,
