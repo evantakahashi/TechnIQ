@@ -338,7 +338,7 @@ def test_generate_drill_accepts_new_fields(monkeypatch):
     # Stub llm_call to return a minimal valid drill DSL — pre-build a known-good drill.
     valid_dsl = '''player P1 at (5, 5) role "worker" label "P1"
 player P2 at (10, 5) role "server" label "P2"
-goal GL at (15, 7.5) width 7
+goal GL at (29, 10) width 7
 ball B1 at (5, 5)
 step 1: P1 passes to P2
 step 2: P2 passes to P1
@@ -382,7 +382,7 @@ def test_generate_drill_defaults_for_missing_new_fields(monkeypatch):
 
     valid_dsl = '''player P1 at (5, 5) role "worker" label "P1"
 player P2 at (10, 5) role "server" label "P2"
-goal GL at (15, 7.5) width 7
+goal GL at (29, 10) width 7
 ball B1 at (5, 5)
 step 1: P1 passes to P2
 step 2: P2 passes to P1
@@ -468,7 +468,7 @@ def test_generate_drill_field_size_large_propagates_to_diagram():
         'cone C2 at (40, 25)\n'
         'player P1 at (5, 5) role "worker"\n'
         'ball B1 at (5, 5)\n'
-        'goal GL at (45, 15) width 7\n'
+        'goal GL at (48, 15) width 7\n'
         'step 1: P1 dribbles to C1\n'
         'step 2: P1 dribbles to C2\n'
         'step 3: P1 shoots at GL\n'

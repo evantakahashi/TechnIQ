@@ -47,6 +47,21 @@ def test_non_contiguous_step_raises():
         validate_drill(drill)
 
 
+def test_goal_mid_field_raises():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "goal", "x": 10, "y": 7, "label": "GL"})
+    drill["equipment"].append("goals")
+    with pytest.raises(ValidationError, match="floats mid-field"):
+        validate_drill(drill)
+
+
+def test_goal_on_edge_passes():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "goal", "x": 19, "y": 7, "label": "GL"})
+    drill["equipment"].append("goals")
+    validate_drill(drill)  # no exception
+
+
 def test_shot_at_ball_raises():
     drill = make_valid_drill()
     drill["diagram"]["elements"].append({"type": "ball", "x": 5, "y": 5, "label": "B5"})

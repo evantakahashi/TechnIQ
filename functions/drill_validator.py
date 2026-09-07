@@ -50,6 +50,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     elements: list[dict[str, Any]] = diagram.get("elements", [])
     paths: list[dict[str, Any]] = diagram.get("paths", [])
     equipment: list[str] = drill.get("equipment", [])
+    field: dict[str, Any] = diagram.get("field", {})
 
     _check_at_least_one_step(paths)
     _check_step_numbers_contiguous(paths)
@@ -57,6 +58,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_equipment_consistency(elements, equipment)
     _check_at_least_one_worker(elements)
     _check_shot_targets(elements, paths)
+    _check_goals_on_edge(elements, field)
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
@@ -104,6 +106,34 @@ def _check_at_least_one_worker(elements: list[dict[str, Any]]) -> None:
         if el.get("type") == "player" and el.get("role") == "worker":
             return
     raise ValidationError("drill must have at least one worker player")
+
+
+def _check_goals_on_edge(
+    elements: list[dict[str, Any]], field: dict[str, Any]
+) -> None:
+    """Goals floating mid-pitch look unscoreable in the diagram.
+
+    Require every goal within 2.5m of a field edge so its mouth can face play.
+    """
+    try:
+        width = float(field.get("width") or 0)
+        length = float(field.get("length") or 0)
+    except (TypeError, ValueError):
+        return
+    if width <= 0 or length <= 0:
+        return
+    for el in elements:
+        if el.get("type") != "goal":
+            continue
+        try:
+            x, y = float(el.get("x")), float(el.get("y"))
+        except (TypeError, ValueError):
+            continue
+        if min(x, width - x, y, length - y) > 2.5:
+            raise ValidationError(
+                f"goal {el.get('label')!r} at ({x}, {y}) floats mid-field; "
+                "place goals on a field edge so shots can face them"
+            )
 
 
 # What a shot may be aimed at. Without this, ball-only drills produced

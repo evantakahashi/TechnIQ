@@ -216,6 +216,7 @@ struct AnimatedDrillDiagramView: View {
                 coneElementView(label: element.label)
             case .goal:
                 goalElementView(label: element.label)
+                    .rotationEffect(goalRotation(for: element))
             case .ball:
                 ballElementView()
             case .target:
@@ -378,6 +379,18 @@ struct AnimatedDrillDiagramView: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundColor(DesignSystem.Colors.textPrimary)
         }
+    }
+
+    /// Goals render horizontally by default; a goal sitting on the left/right
+    /// field edge must rotate 90° so its mouth faces the pitch — otherwise it
+    /// looks impossible to score in.
+    private func goalRotation(for element: DiagramElement) -> Angle {
+        let distLeft = element.x
+        let distRight = Double(diagram.field.width) - element.x
+        let distBottom = element.y
+        let distTop = Double(diagram.field.length) - element.y
+        let nearest = min(distLeft, distRight, distBottom, distTop)
+        return (nearest == distLeft || nearest == distRight) ? .degrees(90) : .degrees(0)
     }
 
     private func goalElementView(label: String) -> some View {
