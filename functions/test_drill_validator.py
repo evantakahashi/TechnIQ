@@ -288,3 +288,15 @@ def test_played_gate_passes():
     ]
     drill["diagram"]["paths"].append({"from": "P1", "to": "G9", "style": "dribble", "step": 2})
     validate_drill(drill)
+
+
+def test_lane_gate_crossed_by_pass_passes():
+    drill = make_valid_drill()
+    drill["equipment"].append("partner")
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "player", "x": 10, "y": 0, "label": "P2", "role": "server"},
+        {"type": "gate", "x": 4, "y": 0, "width": 2, "label": "G5"},  # on the P1-P2 lane
+    ]
+    drill["diagram"]["paths"].append({"from": "P1", "to": "P2", "style": "pass", "step": 2})
+    validate_drill(drill)  # pass crosses the lane gate

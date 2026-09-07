@@ -8,7 +8,9 @@ def test_pick_archetype_under_pressure_beginner_returns_gate_dribbling():
 
 
 def test_pick_archetype_under_pressure_advanced_returns_rondo():
-    assert pick_archetype("Under Pressure", "advanced") == "rondo"
+    # rondo needs 3+ players; 2-player default remaps to wall_passing
+    assert pick_archetype("Under Pressure", "advanced", number_of_players=3) == "rondo"
+    assert pick_archetype("Under Pressure", "advanced", number_of_players=2) == "wall_passing"
 
 
 def test_pick_archetype_finishing_beginner_returns_dribble_and_shoot():

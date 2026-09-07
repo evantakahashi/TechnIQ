@@ -60,9 +60,9 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_shot_targets(elements, paths)
     _check_goals_on_edge(elements, field)
     _check_gates_inside_goal_mouth(elements)
+    _check_duel_not_overscripted(elements, paths, bool(drill.get("is_duel")))
     _check_ball_continuity(elements, paths)
     _check_no_redundant_movement(paths)
-    _check_duel_not_overscripted(elements, paths, bool(drill.get("is_duel")))
     _check_gates_played_through(elements, paths, bool(drill.get("is_duel")))
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
@@ -409,14 +409,42 @@ def _check_gates_played_through(
     """
     if is_duel:
         return
-    gates = [e.get("label") for e in elements if e.get("type") == "gate"]
+    by_label = {e.get("label"): e for e in elements}
+    gates = [e for e in elements if e.get("type") == "gate"]
     if not gates:
         return
     played = {p.get("to") for p in paths if p.get("style") in BALL_ACTION_STYLES}
-    for g in gates:
-        if g not in played:
+
+    def _seg_dist(a, b, c):
+        ax, ay, bx, by, cx, cy = a["x"], a["y"], b["x"], b["y"], c["x"], c["y"]
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        if L2 == 0:
+            return ((ax - cx) ** 2 + (ay - cy) ** 2) ** 0.5
+        t = max(0.0, min(1.0, ((cx - ax) * dx + (cy - ay) * dy) / L2))
+        px, py = ax + t * dx, ay + t * dy
+        return ((px - cx) ** 2 + (py - cy) ** 2) ** 0.5
+
+    for gate in gates:
+        g = gate.get("label")
+        if g in played:
+            continue
+        # Lane gate: a pass whose flight line crosses the gate counts as
+        # playing it (gate BETWEEN passer and receiver — the standard
+        # passing-accuracy pattern).
+        gw = float(gate.get("width") or 1.5)
+        crossed = False
+        for p in paths:
+            if p.get("style") not in ("pass", "throw", "toss"):
+                continue
+            a, b = by_label.get(p.get("from")), by_label.get(p.get("to"))
+            if a and b and _seg_dist(a, b, gate) <= max(1.5, gw / 2 + 0.5):
+                crossed = True
+                break
+        if not crossed:
             raise ValidationError(
-                f"gate {g!r} is never played through — route at least one rep "
-                "into it (pass/dribble/shoot/head to it) or remove it; a "
-                "scored target the ball never visits is decoration"
+                f"gate {g!r} is never played through — either route a rep "
+                "into it (shoot/dribble/head to it) or place it ON a passing "
+                "lane so a pass crosses it; a scored target the ball never "
+                "visits is decoration"
             )

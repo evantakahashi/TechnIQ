@@ -166,8 +166,8 @@ def generate_drill(
             drill["equipment"] = equipment
             drill["category"] = category
             blob = f"{skill_description} {weakness}".lower()
-            drill["is_duel"] = ("1v1" in blob) or (
-                category == "tactical" and number_of_players == 2
+            drill["is_duel"] = ("1v1" in blob) or ("pressing" in blob) or (
+                category == "tactical" and number_of_players in (2, 3)
                 and "head" not in blob
             )
             drill, _warnings = post_process_drill(drill, player_age=age)
@@ -316,6 +316,12 @@ def _build_prompt(
                         "have it at their feet. After every shot or cross, the very next step "
                         "for that sequence must collect a ball. If a server restarts each rep, "
                         "give the server the balls (declare them at the server's feet)."
+                    )
+                if "never played through" in msg:
+                    lines.append(
+                        "  FIX: end each rep AT the named gate — the last ball action of the "
+                        "cycle is 'passes to <gate>' / 'shoots at <gate>' / 'dribbles to <gate>'. "
+                        "If the gate is only a live option (duel), remove it from scoring or the diagram."
                     )
                 if "redundant" in msg:
                     lines.append(

@@ -85,10 +85,19 @@ def _canonical_weakness(weakness: str) -> str:
     return weakness
 
 
+# Archetypes that need 3+ players, remapped for 2-player requests.
+_TWO_PLAYER_REMAP: Final[dict[str, str]] = {
+    "rondo": "wall_passing",
+    "triangle_passing": "wall_passing",
+}
+
+
 def pick_archetype(weakness: str, level: str, number_of_players: int = 2) -> str:
     """Archetype for (weakness, level), alias-tolerant and player-count aware."""
     key = _canonical_weakness(weakness)
     archetype = ARCHETYPE_TABLE.get((key, level), FALLBACK_ARCHETYPE)
     if number_of_players == 1:
         archetype = _SOLO_REMAP.get(archetype, archetype)
+    elif number_of_players == 2:
+        archetype = _TWO_PLAYER_REMAP.get(archetype, archetype)
     return archetype
