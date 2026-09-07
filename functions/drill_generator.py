@@ -63,7 +63,9 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - A pass moves the ball to the receiver; a shot leaves the ball at the target. After a shot, the next ball action requires collecting a ball first (run to the next ball, or to where it went).
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
-- Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-8 steps max — and put the possible outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
+- Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-6 steps max — and put the outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
+- Duel steps must CONVERGE: the attacker's first move goes AT the defender (`dribbles to <defender>`), the defender's move closes to the attacker — never two players on parallel paths to separate props who never meet.
+- Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
