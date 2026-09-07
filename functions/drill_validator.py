@@ -225,7 +225,7 @@ def _check_ball_continuity(
     for p in sorted(paths, key=lambda x: x.get("step", 0)):
         step, style = p.get("step"), p.get("style")
         src, dst = p.get("from"), p.get("to")
-        needs_ball = style in ("pass", "dribble", "shoot", "shot")
+        needs_ball = style in ("pass", "dribble", "shoot", "shot", "throw", "toss", "header")
 
         if needs_ball and holder != src:
             # Acquisition on the move: standing on / moving through a ball spot.
@@ -250,14 +250,19 @@ def _check_ball_continuity(
 
         if style == "dribble":
             pass  # ball travels with the holder
-        elif style in ("pass",):
+        elif style in ("pass", "throw", "toss", "header"):
             dst_el = by_label.get(dst, {})
             if dst_el.get("type") == "player":
                 holder = dst
-            else:  # wall/goal/gate — ball rests there until collected
+            elif dst_el.get("type") == "wall":
+                pass  # rebound — the ball comes straight back to the passer
+            else:  # goal/gate — ball rests there until collected
                 holder, resting_at = None, dst
         elif style in ("shoot", "shot"):
-            holder, resting_at = None, dst
+            if by_label.get(dst, {}).get("type") == "wall":
+                pass  # wall rebounds to the striker
+            else:
+                holder, resting_at = None, dst
         elif style == "receive":
             # "src receives from dst": dst surrenders the ball to src.
             if holder == dst or by_label.get(dst, {}).get("type") in ("wall", "ball") \

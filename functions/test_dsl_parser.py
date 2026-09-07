@@ -154,3 +154,19 @@ step 3: P2 shoots at GL
     players = [e for e in diagram["diagram"]["elements"] if e["type"] == "player"]
     roles = {p["label"]: p.get("role") for p in players}
     assert roles == {"P1": "server", "P2": "worker", "P3": "defender"}
+
+
+def test_new_verbs_parse():
+    from dsl_parser import parse_dsl
+    d = parse_dsl('''player P1 at (5, 5) role "worker"
+player P2 at (10, 5) role "server"
+ball B1 at (5, 5)
+wall W1 at (15, 5) width 5
+goal GL at (19, 5) width 7.32
+step 1: P1 throws to W1
+step 2: P2 tosses to P1
+step 3: P1 heads to GL
+point: a
+point: b''')
+    styles = [p["style"] for p in d["diagram"]["paths"]]
+    assert styles == ["throw", "toss", "header"]

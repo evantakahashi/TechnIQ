@@ -78,6 +78,7 @@ def _new_request_id() -> str:
 _PATH_STYLE_VERBS = {
     "pass": "passes to", "dribble": "dribbles to", "shot": "shoots at",
     "shoot": "shoots at", "run": "runs to", "receive": "receives from",
+    "throw": "throws to", "toss": "tosses to", "header": "heads to",
 }
 
 

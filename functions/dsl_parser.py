@@ -10,6 +10,9 @@ VERB_TO_STYLE = {
     "runs to": "run",
     "shoots at": "shoot",
     "receives from": "receive",
+    "throws to": "throw",    # GK distribution / hand serves
+    "heads to": "header",    # aerial finish/clearance off a served ball
+    "tosses to": "toss",     # underhand serve for heading/volley work
 }
 
 ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall"}
@@ -34,7 +37,7 @@ _ELEMENT_RE = re.compile(
     r"\s*$"
 )
 _STEP_RE = re.compile(
-    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from)\s+(?P<dst>\w+)\s*$"
+    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
 )
 _POINT_RE = re.compile(r"^point\s*:\s*(?P<text>.+?)\s*$")
 

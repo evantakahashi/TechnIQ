@@ -183,3 +183,49 @@ def test_free_standing_gate_far_from_goal_passes():
         {"type": "gate", "x": 5, "y": 5, "width": 2, "label": "G2"},
     ]
     validate_drill(drill)  # dribbling gate elsewhere is fine
+
+
+def test_wall_rebound_keeps_possession():
+    drill = make_valid_drill()
+    drill["equipment"].append("wall")
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "wall", "x": 8, "y": 0, "label": "W1"},
+    ]
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "W1", "style": "pass", "step": 1},
+        {"from": "P1", "to": "W1", "style": "pass", "step": 2},
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 3},
+    ]
+    validate_drill(drill)  # rebounds keep the ball at P1's feet
+
+
+def test_throw_and_header_continuity():
+    drill = make_valid_drill()
+    drill["equipment"] += ["wall", "goals"]
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "wall", "x": 8, "y": 0, "label": "W1"},
+        {"type": "goal", "x": 19, "y": 7, "label": "GL"},
+    ]
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "W1", "style": "throw", "step": 1},   # rebound back
+        {"from": "P1", "to": "GL", "style": "header", "step": 2},  # rests at GL
+        {"from": "P1", "to": "GL", "style": "run", "step": 3},     # collect
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 4},
+    ]
+    validate_drill(drill)
+
+
+def test_header_without_ball_raises():
+    drill = make_valid_drill()
+    drill["equipment"].append("goals")
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": 15, "y": 12, "label": "B1"},
+        {"type": "goal", "x": 19, "y": 7, "label": "GL"},
+    ]
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "GL", "style": "header", "step": 1},
+    ]
+    with pytest.raises(ValidationError, match="can only pass/dribble/shoot"):
+        validate_drill(drill)

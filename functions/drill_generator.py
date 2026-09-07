@@ -31,7 +31,8 @@ DSL grammar:
   `goal GL at (x, y) width 7.32`, `wall W1 at (x, y) width 5` (use ONLY when "wall" is in equipment),
   `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
   optional `label "..."` on players.
-- Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from}
+- Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from, throws to, tosses to, heads to}
+- `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
 - Valid `passes to` targets: player, server, defender, wall, goal. Never pass to a cone or gate.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
@@ -48,6 +49,8 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - A 7.32m goal's mouth spans its center ±3.66m. In-goal target gates must sit INSIDE that span (e.g. gate centers at goal center ±2.2m) — a gate outside the posts means "aim wide".
 - A target gate sits ON the line of the action it measures: a passing gate goes BETWEEN passer and receiver so the pass must split it, not beside the lane.
 - Defensive clearances/headers are aimed AWAY from the defender's own goal — clearance targets go upfield or wide, never between the defender and the goal they protect.
+- Targets must be REACHABLE: never place a gate or goal behind a wall or outside the play direction. Finishes happen at the END of a forward rep toward the target — never backward through the course just completed.
+- Cones never return the ball. A rebound needs a wall; a served ball needs a server or a self-serve (toss it up yourself).
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
