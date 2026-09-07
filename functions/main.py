@@ -488,8 +488,11 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         from drill_generator import generate_drill, DrillGenerationFailed
 
         def _llm_call(prompt: str) -> str:
+            # opus-4-8 won the 2026-09-06 model A/B: geometry 80.8 vs 71.7
+            # (sonnet-4-6), 6/6 reliability, ~4x faster wall-clock via fewer
+            # retries — see scratchpad model_ab results in session notes.
             msg = client.messages.create(
-                model="claude-sonnet-4-6",
+                model="claude-opus-4-8",
                 max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}],
             )
