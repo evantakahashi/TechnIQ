@@ -234,10 +234,13 @@ def _check_ball_continuity(
             # Acquisition on the move: standing on / moving through a ball spot.
             src_el, got = by_label.get(src), False
             if src_el is not None:
+                # A server's staged stack is "beside them" by convention; the
+                # post-processor's de-overlap can spread a tight cluster past
+                # arm's reach, so servers get a stack radius. Workers must
+                # still physically run to a ball.
+                reach = 6.0 if src_el.get("role") == "server" else 3.0
                 for bl in list(unclaimed):
-                    # 3.0m: a staged stack beside a server is within reach even
-                    # after the post-processor's de-overlap spreading.
-                    if near(src_el, by_label[bl], 3.0):
+                    if near(src_el, by_label[bl], reach):
                         holder, got = src, True
                         unclaimed.discard(bl)
                         break

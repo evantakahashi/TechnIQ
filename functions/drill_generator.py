@@ -52,7 +52,7 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - Targets must be REACHABLE: never place a gate or goal behind a wall or outside the play direction. Finishes happen at the END of a forward rep toward the target — never backward through the course just completed.
 - Cones never return the ball. A rebound needs a wall; a served ball needs a server or a self-serve (toss it up yourself).
 - Walls return GROUND balls at matching pace — never claim a wall serves bouncing or lofted balls; for aerial/bouncing receives use self-toss or a server.
-- With a server: stage the ball supply AT the server's feet (balls beside them) so they play the next ball immediately — the server never jogs to fetch mid-set; roles swap between sets.
+- With a server: stage the ball supply AT the server's feet (balls beside them) so they play the next ball immediately — the server never jogs to fetch mid-set; roles swap between sets. SCRIPT ONLY AS MANY SERVE CYCLES AS THERE ARE STAGED BALLS (3 balls = 3 serve-finish cycles); the coaching points say the set repeats after collecting.
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
