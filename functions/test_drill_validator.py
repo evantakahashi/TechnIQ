@@ -243,7 +243,7 @@ def test_duel_overscripted_raises():
         {"from": "P2", "to": "P1", "style": "run", "step": i + 1}
         for i in range(8)
     ]
-    with pytest.raises(ValidationError, match="max 6 steps"):
+    with pytest.raises(ValidationError, match="max 3 steps"):
         validate_drill(drill)
 
 

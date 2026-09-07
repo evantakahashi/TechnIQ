@@ -75,6 +75,9 @@ struct AnimatedDrillDiagramView: View {
                     fieldView(fieldWidth: fieldWidth, fieldHeight: fieldHeight)
                         .position(x: offsetX + fieldWidth / 2, y: offsetY + fieldHeight / 2)
 
+                    // Penalty areas in front of edge goals — reads like a real pitch
+                    penaltyAreas(scale: scale, offsetX: offsetX, offsetY: offsetY, fieldHeight: fieldHeight)
+
                     // Paths (behind elements)
                     if let paths = diagram.paths {
                         ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
@@ -186,6 +189,53 @@ struct AnimatedDrillDiagramView: View {
         }
     }
 
+    /// Draws an 18-yard box, 6-yard box and penalty spot in front of every
+    /// goal that sits on a field edge, oriented into the pitch.
+    private func penaltyAreas(scale: CGFloat, offsetX: CGFloat, offsetY: CGFloat, fieldHeight: CGFloat) -> some View {
+        let W = Double(diagram.field.width)
+        let L = Double(diagram.field.length)
+        let goals = diagram.elements.filter { $0.elementType == .goal }
+        return Path { p in
+            for g in goals {
+                let dists = [g.x, W - g.x, g.y, L - g.y]
+                guard let m = dists.min(), m <= 2.5 else { continue }
+                // Box dims in meters, clamped so small fields still look sane.
+                let bigD = min(16.5, L * 0.4, W * 0.4)     // depth into pitch
+                let bigW = min(40.3, (dists[0] == m || dists[1] == m ? L : W) * 0.85)
+                let smallD = bigD / 3, smallW = bigW * 0.45
+                let spotD = min(11.0, bigD * 0.66)
+                func pt(_ x: Double, _ y: Double) -> CGPoint {
+                    CGPoint(x: offsetX + CGFloat(x) * scale,
+                            y: offsetY + fieldHeight - CGFloat(y) * scale)
+                }
+                func box(cx: Double, cy: Double, depth: Double, halfW: Double, edge: Int) {
+                    // edge: 0=left,1=right,2=bottom,3=top — depth extends into the pitch
+                    var r: [CGPoint]
+                    switch edge {
+                    case 0: r = [pt(0, cy - halfW), pt(depth, cy - halfW), pt(depth, cy + halfW), pt(0, cy + halfW)]
+                    case 1: r = [pt(W, cy - halfW), pt(W - depth, cy - halfW), pt(W - depth, cy + halfW), pt(W, cy + halfW)]
+                    case 2: r = [pt(cx - halfW, 0), pt(cx - halfW, depth), pt(cx + halfW, depth), pt(cx + halfW, 0)]
+                    default: r = [pt(cx - halfW, L), pt(cx - halfW, L - depth), pt(cx + halfW, L - depth), pt(cx + halfW, L)]
+                    }
+                    p.move(to: r[0]); p.addLine(to: r[1]); p.addLine(to: r[2]); p.addLine(to: r[3])
+                }
+                let edge = dists.firstIndex(of: m) ?? 1
+                box(cx: g.x, cy: g.y, depth: bigD, halfW: bigW / 2, edge: edge)
+                box(cx: g.x, cy: g.y, depth: smallD, halfW: smallW / 2, edge: edge)
+                // Penalty spot
+                let spot: CGPoint
+                switch edge {
+                case 0: spot = pt(spotD, g.y)
+                case 1: spot = pt(W - spotD, g.y)
+                case 2: spot = pt(g.x, spotD)
+                default: spot = pt(g.x, L - spotD)
+                }
+                p.addEllipse(in: CGRect(x: spot.x - 1.5, y: spot.y - 1.5, width: 3, height: 3))
+            }
+        }
+        .stroke(Color.white.opacity(0.35), lineWidth: 1)
+    }
+
     // MARK: - Element Rendering
 
     @ViewBuilder
@@ -212,6 +262,7 @@ struct AnimatedDrillDiagramView: View {
                 mannequinElementView(label: element.label)
             case .wall:
                 wallElementView(label: element.label)
+                    .rotationEffect(goalRotation(for: element))
             case .cone:
                 coneElementView(label: element.label)
             case .goal:

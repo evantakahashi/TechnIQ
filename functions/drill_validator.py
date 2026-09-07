@@ -235,7 +235,9 @@ def _check_ball_continuity(
             src_el, got = by_label.get(src), False
             if src_el is not None:
                 for bl in list(unclaimed):
-                    if near(src_el, by_label[bl]):
+                    # 3.0m: a staged stack beside a server is within reach even
+                    # after the post-processor's de-overlap spreading.
+                    if near(src_el, by_label[bl], 3.0):
                         holder, got = src, True
                         unclaimed.discard(bl)
                         break
@@ -333,10 +335,10 @@ def _check_duel_not_overscripted(
         e.get("type") == "player" and e.get("role") == "defender"
         for e in elements
     )
-    if (has_defender or is_duel) and len(paths) > 6:
+    if (has_defender or is_duel) and len(paths) > 3:
         raise ValidationError(
-            f"duel drills (defender present) must script only the serve and "
-            f"engage — max 6 steps, got {len(paths)}; put the possible "
+            f"duel drills must show only positions and the attack direction — "
+            f"max 3 steps, got {len(paths)}; put the rules, scoring and "
             "outcomes and decision rules in the coaching points instead"
         )
 

@@ -51,6 +51,8 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - Defensive clearances/headers are aimed AWAY from the defender's own goal — clearance targets go upfield or wide, never between the defender and the goal they protect.
 - Targets must be REACHABLE: never place a gate or goal behind a wall or outside the play direction. Finishes happen at the END of a forward rep toward the target — never backward through the course just completed.
 - Cones never return the ball. A rebound needs a wall; a served ball needs a server or a self-serve (toss it up yourself).
+- Walls return GROUND balls at matching pace — never claim a wall serves bouncing or lofted balls; for aerial/bouncing receives use self-toss or a server.
+- With a server: stage the ball supply AT the server's feet (balls beside them) so they play the next ball immediately — the server never jogs to fetch mid-set; roles swap between sets.
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
@@ -64,7 +66,7 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
 - Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-6 steps max — and put the outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
-- Duel steps must CONVERGE: the attacker's first move goes AT the defender (`dribbles to <defender>`), the defender's move closes to the attacker — never two players on parallel paths to separate props who never meet.
+- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps showing positions and the attack direction; the coaching points state HOW IT WORKS (objective, what counts as a win for each player, when to swap roles, e.g. 'swap after 3 attacks'). State the attacker's objective explicitly (dribble through a gate? shoot?).
 - Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
@@ -339,6 +341,9 @@ def _build_prompt(
         player_directive = (
             "PLAYER COUNT: Use exactly 1 player (the worker). "
             "This is a SOLO drill — no partners (no server, no defender). "
+            "If the requested skill inherently needs an opponent or server (e.g. 'under pressure', 'receiving'), "
+            "train the closest solo-trainable version, say so honestly in the description, and add a coaching point "
+            "that the full version needs a partner. Never pretend cones apply pressure. "
             f"Use static obstacles ({', '.join(solo_obstacles)}) and a measurable success target instead of human pressure."
         )
     elif number_of_players == 2:

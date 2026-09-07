@@ -9,7 +9,7 @@ cone C1 at (0, 0)
 cone C2 at (3, 0)
 player P1 at (-2, 0) role "worker"
 player P2 at (5, 5) role "server"
-player P3 at (3, -3) role "defender"
+player P3 at (3, -3) role "server"
 ball B1 at (-2, 0)
 goal GL at (10, 0) width 5
 
@@ -269,7 +269,7 @@ point: Give 100%
     HIGH_QUALITY_ADVANCED = """\
 player P1 at (2, 7) role "server"
 player P2 at (8, 7) role "worker"
-player P3 at (13, 7) role "defender"
+player P3 at (13, 7) role "server"
 ball B1 at (2, 7)
 goal GL at (18, 7.5) width 7.32
 
