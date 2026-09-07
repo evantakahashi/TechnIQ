@@ -53,6 +53,8 @@ def test_exemplar_parses_post_processes_and_validates(exemplar):
     drill = parse_dsl(exemplar["dsl"])
     drill.setdefault("equipment", ["ball", "cones", "goals", "partner"])
     drill, _warnings = post_process_drill(drill, player_age=14)
+    if exemplar.get("is_duel"):
+        drill["is_duel"] = True
     validate_drill(drill)
 
 

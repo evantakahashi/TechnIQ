@@ -171,7 +171,9 @@ def test_gate_inside_goal_mouth_passes():
     drill["diagram"]["elements"] += [
         {"type": "goal", "x": 19, "y": 7.5, "width": 7.32, "label": "GL"},
         {"type": "gate", "x": 19, "y": 9.7, "width": 1.2, "label": "G1"},
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
     ]
+    drill["diagram"]["paths"].append({"from": "P1", "to": "G1", "style": "shoot", "step": 2})
     validate_drill(drill)  # no exception
 
 
@@ -181,7 +183,9 @@ def test_free_standing_gate_far_from_goal_passes():
     drill["diagram"]["elements"] += [
         {"type": "goal", "x": 19, "y": 7.5, "width": 7.32, "label": "GL"},
         {"type": "gate", "x": 5, "y": 5, "width": 2, "label": "G2"},
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
     ]
+    drill["diagram"]["paths"].append({"from": "P1", "to": "G2", "style": "dribble", "step": 2})
     validate_drill(drill)  # dribbling gate elsewhere is fine
 
 
@@ -267,3 +271,20 @@ def test_header_volume_cap_raises():
     drill["coaching_points"] = ["10 headers x 3 sets — attack the ball"]
     with pytest.raises(ValidationError, match="cap heading volume"):
         validate_drill(drill)
+
+
+def test_decorative_gate_raises():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "gate", "x": 15, "y": 5, "label": "G9"})
+    with pytest.raises(ValidationError, match="never played through"):
+        validate_drill(drill)
+
+
+def test_played_gate_passes():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "gate", "x": 15, "y": 5, "label": "G9"},
+    ]
+    drill["diagram"]["paths"].append({"from": "P1", "to": "G9", "style": "dribble", "step": 2})
+    validate_drill(drill)

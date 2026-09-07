@@ -164,8 +164,9 @@
   "id": "rondo_advanced_02",
   "archetype": "rondo",
   "pressure": "active",
-  "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\npoint: 3v1 keep-away until the defender forces a turnover \u2014 then transition immediately\npoint: HOW IT WORKS: after the setup shown, the duel is LIVE \u2014 attacker picks a side, defender reacts; swap roles after 3 attacks\npoint: On regain, attack the target gate within 5 seconds \u2014 no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
-  "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger"
+  "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\n\nstep 1: P1 passes to P2\nstep 2: P2 passes to P3\nstep 3: P3 passes to P1\npoint: 3v1 keep-away until the defender forces a turnover \u2014 then transition immediately\npoint: HOW IT WORKS: the rondo is LIVE after the passes shown \u2014 defender hunts, players keep the ball moving; swap the defender after each turnover\npoint: On regain, attack the target gate within 5 seconds \u2014 no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
+  "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger",
+  "is_duel": true
  },
  {
   "id": "solo_finishing_gates_adv",
@@ -192,7 +193,7 @@
   "id": "heading_clearance_adv",
   "archetype": "1v1_plus_server",
   "pressure": "active",
-  "dsl": "player P1 at (14, 10) role \"server\" label \"Server\"\nplayer P2 at (8, 10) role \"worker\" label \"Defender\"\nball B1 at (14, 10)\nball B2 at (16, 8)\nball B3 at (16, 12)\ngate G1 at (14, 3) width 2\ngate G2 at (14, 17) width 2\nstep 1: P1 tosses to P2\nstep 2: P2 heads to G1\nstep 3: P1 runs to B2\npoint: Warm up necks and shoulders first \u2014 easy jogging, arm circles, two gentle nod-headers of a held ball\npoint: HOW IT WORKS: after the setup shown, the duel is LIVE \u2014 attacker picks a side, defender reacts; swap roles after 3 attacks\npoint: Soft underhand serves from 6m \u2014 the server lofts to the defender's forehead, never drilled flat\npoint: Attack the ball at your highest point and punch it through a WIDE gate \u2014 high and wide, never back across your own goal\npoint: Alternate gates each rep so you clear off both sides; call LEFT or RIGHT before the serve\npoint: 12 headers total (3 rounds of 4) keeps you under the youth cap \u2014 quality over volume, rest between rounds while collecting balls\npoint: Progression: server takes one step back per round (max 8m); regression: catch and throw-clear instead of heading",
+  "dsl": "player P1 at (14, 10) role \"server\" label \"Server\"\nplayer P2 at (8, 10) role \"worker\" label \"Header\"\nball B1 at (14, 10)\nball B2 at (16, 8)\nball B3 at (16, 12)\ngate G1 at (14, 3) width 2\ngate G2 at (14, 17) width 2\nstep 1: P1 tosses to P2\nstep 2: P2 heads to G1\nstep 3: P1 runs to B2\nstep 4: P1 tosses to P2\nstep 5: P2 heads to G2\nstep 6: P1 runs to B3\nstep 7: P1 tosses to P2\nstep 8: P2 heads to G1\npoint: Warm up necks and shoulders first \u2014 easy jogging, arm circles, two gentle nod-headers of a held ball\npoint: Soft underhand serves from 6m \u2014 loft to the forehead, never drilled flat\npoint: Attack the ball at your highest point and punch it through a WIDE gate \u2014 high and wide, never back across your own goal\npoint: Alternate gates each rep; call LEFT or RIGHT before the serve\npoint: 12 headers total (3 rounds of 4) stays under the youth cap \u2014 collecting balls between rounds is the rest\npoint: Progression: server steps back to 8m max; regression: catch and throw-clear instead of heading",
   "notes": "Defensive heading with safe volume: 6m soft tosses, wide clearance gates away from own goal, server-held supply, 12-header cap."
  },
  {
@@ -200,6 +201,7 @@
   "archetype": "1v1_plus_server",
   "pressure": "active",
   "dsl": "player P1 at (15, 7.5) role \"server\" label \"Attacker\"\nplayer P2 at (10, 7.5) role \"worker\" label \"Defender\"\nball B1 at (15, 7.5)\ngate G1 at (3, 4) width 2\ngate G2 at (3, 11) width 2\nstep 1: P1 dribbles to P2\nstep 2: P1 dribbles to G1\npoint: Warm up 2-3 minutes \u2014 light jogging, side shuffles, a few easy 50% duels\npoint: HOW IT WORKS: the attacker drives at the defender and tries to dribble through EITHER gate \u2014 everything after the first touch is live, not scripted\npoint: Defender: close fast for the first 70%, then chop into a low side-on stance an arm's length away \u2014 never dive in\npoint: Read hips and touch, not the ball; force the weak foot and the sideline\npoint: Scoring: defender wins by stealing OR delaying 3+ seconds; attacker wins through a gate. First to 5\npoint: Swap roles after every 3 attacks; walking the ball back is the rest\npoint: Progression: move the gates 2m closer together; regression: attacker at walking pace",
-  "notes": "Duel as rules-of-the-game: 2 setup arrows only, everything else live. Swap after 3 attacks."
+  "notes": "Duel as rules-of-the-game: 2 setup arrows only, everything else live. Swap after 3 attacks.",
+  "is_duel": true
  }
 ]

@@ -69,6 +69,11 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - Duels are GAMES WITH RULES, not choreography: at most 2-3 steps showing positions and the attack direction; the coaching points state HOW IT WORKS (objective, what counts as a win for each player, when to swap roles, e.g. 'swap after 3 attacks'). State the attacker's objective explicitly (dribble through a gate? shoot?).
 - Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 
+TWO-PHASE SKILLS (receive-then-play-forward, control-then-escape, save-then-distribute):
+- DRAW PHASE TWO. If the skill ends with playing through a target, at least half the reps must show a ball path INTO that target — a gate named in the scoring that no ball ever visits is a broken drill.
+- One live ball per drill: a server never feeds a second ball until the first is dead and collected.
+- Role math must work: 'pressing as a pair' needs 2 pressers + a carrier (3) — with fewer players, redefine the drill honestly.
+
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
 - BALL SUPPLY: state how the next rep starts. Assume the player may own ONE ball — default to a one-ball loop: execute, collect at a jog, dribble back to the start (the retrieve IS the rest). Pre-place 3-6 ball elements ONLY as an optional upgrade, and say in a coaching point that one ball works fine by adding the collect-and-return jog. With a server, the server feeds. Never leave the player stranded after one rep.

@@ -63,6 +63,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_ball_continuity(elements, paths)
     _check_no_redundant_movement(paths)
     _check_duel_not_overscripted(elements, paths, bool(drill.get("is_duel")))
+    _check_gates_played_through(elements, paths, bool(drill.get("is_duel")))
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -389,4 +390,33 @@ def _check_header_volume(coaching_points: list) -> None:
             raise ValidationError(
                 f"coaching prescribes ~{total} headers — cap heading volume "
                 "at 15 per session for youth safety (fewer reps, quality serves)"
+            )
+
+
+BALL_ACTION_STYLES: set[str] = {"pass", "dribble", "shoot", "shot", "header", "toss", "throw"}
+
+
+def _check_gates_played_through(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]],
+    is_duel: bool = False,
+) -> None:
+    """Every declared gate must have a ball routed INTO it by some step.
+
+    Holdout review found the dominant novel failure: gates placed and named
+    in the countable target ("8 of 10 through the gate") while no ball path
+    ever ends there — the scored action is never depicted. Duels are exempt:
+    their gates are live alternatives, only one branch is illustrated.
+    """
+    if is_duel:
+        return
+    gates = [e.get("label") for e in elements if e.get("type") == "gate"]
+    if not gates:
+        return
+    played = {p.get("to") for p in paths if p.get("style") in BALL_ACTION_STYLES}
+    for g in gates:
+        if g not in played:
+            raise ValidationError(
+                f"gate {g!r} is never played through — route at least one rep "
+                "into it (pass/dribble/shoot/head to it) or remove it; a "
+                "scored target the ball never visits is decoration"
             )
