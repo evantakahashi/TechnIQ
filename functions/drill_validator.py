@@ -60,6 +60,8 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_shot_targets(elements, paths)
     _check_goals_on_edge(elements, field)
     _check_gates_inside_goal_mouth(elements)
+    _check_ball_continuity(elements, paths)
+    _check_no_redundant_movement(paths)
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
@@ -174,6 +176,121 @@ def _check_gates_inside_goal_mouth(elements: list[dict[str, Any]]) -> None:
                     f"{gw / 2:.1f}m exceeds goal half-width {ow / 2:.1f}m); "
                     "in-goal target gates must fit between the posts"
                 )
+
+
+def _check_ball_continuity(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Simulate ball possession across steps; reject impossible sequences.
+
+    User review found drills where a player passes a ball they don't have,
+    or keeps playing after a shot as if a fresh ball appeared. Model:
+    - A player holds a ball if they start within 1.5m of a ball element, or
+      within 2.5m at start (the post-processor separates overlapping
+      elements by ~2m), acquire one by running to a ball / its rest spot, or
+      by receiving a pass.
+    - pass/dribble/shoot REQUIRE holding the ball. A shot/pass releases it
+      (it rests at the target); running to that target re-collects it.
+    - "receives from X" gives the receiver the ball if X holds one (or X is
+      a wall/ball).
+    """
+    by_label = {e.get("label"): e for e in elements}
+    ball_labels = [e.get("label") for e in elements if e.get("type") == "ball"]
+    if not ball_labels:
+        return  # no declared balls — nothing to track
+
+    def near(a: dict, b: dict, r: float = 2.5) -> bool:
+        try:
+            return ((float(a["x"]) - float(b["x"])) ** 2
+                    + (float(a["y"]) - float(b["y"])) ** 2) ** 0.5 <= r
+        except (TypeError, ValueError, KeyError):
+            return False
+
+    unclaimed: set[str] = set(ball_labels)
+    holder: str | None = None          # label of the player holding a ball
+    resting_at: str | None = None      # element label where a live ball rests
+
+    # Initial possession: a player standing on a ball starts with it.
+    for e in elements:
+        if e.get("type") != "player":
+            continue
+        for bl in list(unclaimed):
+            if near(e, by_label[bl]):
+                holder = e.get("label")
+                unclaimed.discard(bl)
+                break
+        if holder:
+            break
+
+    for p in sorted(paths, key=lambda x: x.get("step", 0)):
+        step, style = p.get("step"), p.get("style")
+        src, dst = p.get("from"), p.get("to")
+        needs_ball = style in ("pass", "dribble", "shoot", "shot")
+
+        if needs_ball and holder != src:
+            # Acquisition on the move: standing on / moving through a ball spot.
+            src_el, got = by_label.get(src), False
+            if src_el is not None:
+                for bl in list(unclaimed):
+                    if near(src_el, by_label[bl]):
+                        holder, got = src, True
+                        unclaimed.discard(bl)
+                        break
+            if not got:
+                where = f"the ball is with {holder}" if holder else (
+                    f"the ball rests at {resting_at}" if resting_at
+                    else "no ball is at their feet")
+                verb = {"pass": "passes", "dribble": "dribbles",
+                        "shoot": "shoots", "shot": "shoots"}.get(style, style)
+                raise ValidationError(
+                    f"step {step}: {src} {verb} but {where}; a player can "
+                    "only pass/dribble/shoot a ball they have — collect one "
+                    "first (run to a ball, or to where it came to rest)"
+                )
+
+        if style == "dribble":
+            pass  # ball travels with the holder
+        elif style in ("pass",):
+            dst_el = by_label.get(dst, {})
+            if dst_el.get("type") == "player":
+                holder = dst
+            else:  # wall/goal/gate — ball rests there until collected
+                holder, resting_at = None, dst
+        elif style in ("shoot", "shot"):
+            holder, resting_at = None, dst
+        elif style == "receive":
+            # "src receives from dst": dst surrenders the ball to src.
+            if holder == dst or by_label.get(dst, {}).get("type") in ("wall", "ball") \
+               or resting_at == dst:
+                holder, resting_at = src, None
+        elif style == "run":
+            dst_el = by_label.get(dst, {})
+            if dst_el.get("type") == "ball" and dst in unclaimed:
+                unclaimed.discard(dst)
+                holder = src
+            elif holder is None:
+                # Collect the resting ball only when nobody holds one — with a
+                # held ball in play, a run past the goal is just movement.
+                rest_el = by_label.get(resting_at) if resting_at else None
+                near_rest = rest_el is not None and dst_el and near(dst_el, rest_el, 2.0)
+                if dst == resting_at or near_rest:
+                    holder, resting_at = src, None
+
+
+def _check_no_redundant_movement(paths: list[dict[str, Any]]) -> None:
+    """Consecutive steps must not move the same actor to the same target."""
+    prev: dict[str, Any] | None = None
+    for p in sorted(paths, key=lambda x: x.get("step", 0)):
+        if prev is not None and p.get("from") == prev.get("from") \
+           and p.get("to") == prev.get("to") \
+           and p.get("style") in ("run", "dribble") \
+           and prev.get("style") in ("run", "dribble"):
+            raise ValidationError(
+                f"steps {prev.get('step')} and {p.get('step')} both move "
+                f"{p.get('from')} to {p.get('to')} — redundant; combine them "
+                "or send the player somewhere new"
+            )
+        prev = p
 
 
 # What a shot may be aimed at. Without this, ball-only drills produced

@@ -55,6 +55,13 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - Every element you declare must be used by at least one step or serve an obvious purpose (gate to dribble through, cone marking a turn). No decoration.
 - Only declare a ladder/hurdle pattern if you actually use tight cone spacing (0.75-1.5m gaps) for it.
 
+BALL TRACKING (steps are a story a kid follows literally — the ball must be traceable):
+- A player can only pass/dribble/shoot a ball AT THEIR FEET. Start the worker on a ball, or make their first step "runs to <ball>".
+- A pass moves the ball to the receiver; a shot leaves the ball at the target. After a shot, the next ball action requires collecting a ball first (run to the next ball, or to where it went).
+- Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
+- Never have a player pass to someone who already has the ball.
+- Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-8 steps max — and put the possible outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
+
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
 - BALL SUPPLY: state how the next rep starts. Assume the player may own ONE ball — default to a one-ball loop: execute, collect at a jog, dribble back to the start (the retrieve IS the rest). Pre-place 3-6 ball elements ONLY as an optional upgrade, and say in a coaching point that one ball works fine by adding the collect-and-return jog. With a server, the server feeds. Never leave the player stranded after one rep.
@@ -284,6 +291,19 @@ def _build_prompt(
                     )
             else:
                 lines.append(f"- [{tag}] {msg}")
+                if "a player can only pass/dribble/shoot" in msg:
+                    lines.append(
+                        "  FIX: walk the ball like a movie scene. Before that step, insert "
+                        "'<player> runs to <the resting ball / next pre-placed ball>' so they "
+                        "have it at their feet. After every shot or cross, the very next step "
+                        "for that sequence must collect a ball. If a server restarts each rep, "
+                        "give the server the balls (declare them at the server's feet)."
+                    )
+                if "redundant" in msg:
+                    lines.append(
+                        "  FIX: one movement per intent — merge the duplicate steps or send "
+                        "the player to a different element."
+                    )
         lines.append("")
 
     lines += [

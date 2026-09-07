@@ -14,9 +14,9 @@ ball B1 at (-2, 0)
 goal GL at (10, 0) width 5
 
 step 1: P1 dribbles to C1
-step 2: P2 passes to P1
-step 3: P1 dribbles to C2
-step 4: P2 passes to P1
+step 2: P1 passes to P2
+step 3: P2 passes to P1
+step 4: P1 dribbles to C2
 step 5: P1 shoots at GL
 
 point: Keep the ball close under pressure
@@ -257,10 +257,11 @@ def test_retries_on_quality_error_then_succeeds():
     LOW_QUALITY_ADVANCED = """\
 player P1 at (5, 7) role "worker"
 cone C1 at (10, 7)
+cone C2 at (14, 7)
 ball B1 at (5, 7)
 
 step 1: P1 dribbles to C1
-step 2: P1 dribbles to C1
+step 2: P1 dribbles to C2
 
 point: Work hard
 point: Give 100%
@@ -275,8 +276,8 @@ goal GL at (18, 7.5) width 7.32
 step 1: P1 passes to P2
 step 2: P2 dribbles to P3
 step 3: P2 shoots at GL
-step 4: P1 passes to P2
-step 5: P2 shoots at GL
+step 4: P2 runs to GL
+step 5: P2 dribbles to P1
 
 point: Attack the defender's front foot to force them to turn
 point: Scan the keeper before the final touch, then drive through the ball

@@ -61,9 +61,12 @@ def get_exemplars(
 
     def _match(arch: str) -> list[dict[str, Any]]:
         hits = [e for e in EXEMPLARS if e.get("archetype") == arch]
-        if allowed is None:
-            return hits
-        return [e for e in hits if e.get("pressure", "none") in allowed]
+        if allowed is not None:
+            hits = [e for e in hits if e.get("pressure", "none") in allowed]
+        # Richer exemplars first — corpus order let thin 3-step samples fill
+        # the n slots and crowd out the detailed ones added later.
+        hits.sort(key=lambda e: e.get("dsl", "").count("step "), reverse=True)
+        return hits
 
     primary = _match(archetype)
     if primary:
