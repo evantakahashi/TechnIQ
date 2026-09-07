@@ -155,6 +155,7 @@ def generate_drill(
             drill = parse_dsl(raw)
             drill["diagram"]["field"] = {"width": width, "length": length}
             drill["equipment"] = equipment
+            drill["category"] = category
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,

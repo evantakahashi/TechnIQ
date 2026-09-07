@@ -62,6 +62,9 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_gates_inside_goal_mouth(elements)
     _check_ball_continuity(elements, paths)
     _check_no_redundant_movement(paths)
+    _check_duel_not_overscripted(elements, paths)
+    _check_serve_distances(elements, paths)
+    _check_header_volume(drill.get("coaching_points") or [])
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
@@ -316,3 +319,67 @@ def _check_shot_targets(
                     f"{target_type or 'missing element'}; shots must aim at a "
                     "goal, gate, or wall"
                 )
+
+
+def _check_duel_not_overscripted(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """A drill containing a defender is a reactive duel — script only the
+    serve and engage. Prompt guidance was ignored twice; enforce a hard cap.
+    """
+    has_defender = any(
+        e.get("type") == "player" and e.get("role") == "defender"
+        for e in elements
+    )
+    if has_defender and len(paths) > 6:
+        raise ValidationError(
+            f"duel drills (defender present) must script only the serve and "
+            f"engage — max 6 steps, got {len(paths)}; put the possible "
+            "outcomes and decision rules in the coaching points instead"
+        )
+
+
+def _check_serve_distances(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Heading serves must be soft and short: tosses travel ≤8m."""
+    by_label = {e.get("label"): e for e in elements}
+    for p in paths:
+        if p.get("style") != "toss":
+            continue
+        a, b = by_label.get(p.get("from")), by_label.get(p.get("to"))
+        if not a or not b:
+            continue
+        try:
+            d = ((float(a["x"]) - float(b["x"])) ** 2
+                 + (float(a["y"]) - float(b["y"])) ** 2) ** 0.5
+        except (TypeError, ValueError, KeyError):
+            continue
+        if d > 8.0:
+            raise ValidationError(
+                f"step {p.get('step')}: toss travels {d:.1f}m — heading "
+                "serves must be soft underhand tosses from ≤8m; move the "
+                "server closer"
+            )
+
+
+def _check_header_volume(coaching_points: list) -> None:
+    """Cap prescribed heading volume for youth safety (≤15 per session)."""
+    import re as _re
+    for cp in coaching_points:
+        text = str(cp).lower()
+        if "head" not in text:
+            continue
+        total = None
+        m = _re.search(r"(\d+)\s*(?:headers?|reps?)\s*(?:x|×|per set[, ]+)\s*(\d+)", text)
+        if m:
+            total = int(m.group(1)) * int(m.group(2))
+        else:
+            m = _re.search(r"(\d+)\s*headers?", text)
+            if m:
+                total = int(m.group(1))
+        if total is not None and total > 15:
+            raise ValidationError(
+                f"coaching prescribes ~{total} headers — cap heading volume "
+                "at 15 per session for youth safety (fewer reps, quality serves)"
+            )

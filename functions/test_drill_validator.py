@@ -229,3 +229,41 @@ def test_header_without_ball_raises():
     ]
     with pytest.raises(ValidationError, match="can only pass/dribble/shoot"):
         validate_drill(drill)
+
+
+def test_duel_overscripted_raises():
+    drill = make_valid_drill()
+    drill["equipment"].append("partner")
+    drill["diagram"]["elements"].append(
+        {"type": "player", "x": 8, "y": 4, "label": "P2", "role": "defender"}
+    )
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "C1", "style": "dribble", "step": i + 1}
+        if i % 2 == 0 else
+        {"from": "P2", "to": "P1", "style": "run", "step": i + 1}
+        for i in range(8)
+    ]
+    with pytest.raises(ValidationError, match="max 6 steps"):
+        validate_drill(drill)
+
+
+def test_long_toss_raises():
+    drill = make_valid_drill()
+    drill["equipment"].append("partner")
+    drill["diagram"]["elements"] += [
+        {"type": "player", "x": 15, "y": 0, "label": "P2", "role": "server"},
+        {"type": "ball", "x": -2, "y": 0, "label": "B0"},
+        {"type": "ball", "x": 15, "y": 0, "label": "B1"},
+    ]
+    drill["diagram"]["paths"].append(
+        {"from": "P2", "to": "P1", "style": "toss", "step": 2}
+    )
+    with pytest.raises(ValidationError, match="soft underhand tosses"):
+        validate_drill(drill)
+
+
+def test_header_volume_cap_raises():
+    drill = make_valid_drill()
+    drill["coaching_points"] = ["10 headers x 3 sets — attack the ball"]
+    with pytest.raises(ValidationError, match="cap heading volume"):
+        validate_drill(drill)
