@@ -151,3 +151,35 @@ class TestEquipmentNormalization:
         from drill_validator import ValidationError
         with _pytest.raises(ValidationError):
             validate_drill(self._drill_with_goal(["ball", "cones"]))
+
+
+def test_gate_outside_goal_mouth_raises():
+    drill = make_valid_drill()
+    drill["equipment"].append("goals")
+    drill["diagram"]["elements"] += [
+        {"type": "goal", "x": 19, "y": 7.5, "width": 7.32, "label": "GL"},
+        # goal mouth spans y 3.84-11.16; gate at y=13 is outside the posts
+        {"type": "gate", "x": 19, "y": 13, "width": 1.2, "label": "G1"},
+    ]
+    with pytest.raises(ValidationError, match="outside the goal mouth"):
+        validate_drill(drill)
+
+
+def test_gate_inside_goal_mouth_passes():
+    drill = make_valid_drill()
+    drill["equipment"].append("goals")
+    drill["diagram"]["elements"] += [
+        {"type": "goal", "x": 19, "y": 7.5, "width": 7.32, "label": "GL"},
+        {"type": "gate", "x": 19, "y": 9.7, "width": 1.2, "label": "G1"},
+    ]
+    validate_drill(drill)  # no exception
+
+
+def test_free_standing_gate_far_from_goal_passes():
+    drill = make_valid_drill()
+    drill["equipment"].append("goals")
+    drill["diagram"]["elements"] += [
+        {"type": "goal", "x": 19, "y": 7.5, "width": 7.32, "label": "GL"},
+        {"type": "gate", "x": 5, "y": 5, "width": 2, "label": "G2"},
+    ]
+    validate_drill(drill)  # dribbling gate elsewhere is fine

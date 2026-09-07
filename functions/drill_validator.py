@@ -59,6 +59,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_at_least_one_worker(elements)
     _check_shot_targets(elements, paths)
     _check_goals_on_edge(elements, field)
+    _check_gates_inside_goal_mouth(elements)
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
@@ -134,6 +135,45 @@ def _check_goals_on_edge(
                 f"goal {el.get('label')!r} at ({x}, {y}) floats mid-field; "
                 "place goals on a field edge so shots can face them"
             )
+
+
+def _check_gates_inside_goal_mouth(elements: list[dict[str, Any]]) -> None:
+    """Gates ON a goal's line must fit INSIDE the goal mouth.
+
+    Coach review found corner-target gates placed ~1m outside the posts —
+    "score through the gate" then means shooting wide. A gate is on the goal
+    line when its perpendicular distance to the goal (the small axis) is
+    ≤1.5m; its offset along the mouth must then fit within the goal width.
+    Free-standing gates in front of goal (perpendicular > 1.5m) are exempt.
+    """
+    goals = [e for e in elements if e.get("type") == "goal"]
+    if not goals:
+        return
+    for el in elements:
+        if el.get("type") != "gate":
+            continue
+        try:
+            gx, gy = float(el.get("x")), float(el.get("y"))
+            gw = float(el.get("width") or 1.5)
+        except (TypeError, ValueError):
+            continue
+        for goal in goals:
+            try:
+                ox, oy = float(goal.get("x")), float(goal.get("y"))
+                ow = float(goal.get("width") or 7.32)
+            except (TypeError, ValueError):
+                continue
+            dx, dy = abs(gx - ox), abs(gy - oy)
+            perp, along = (dx, dy) if dx <= dy else (dy, dx)
+            if perp > 1.5:
+                continue  # gate in front of / away from the goal line
+            if along + gw / 2 > ow / 2 + 0.1:
+                raise ValidationError(
+                    f"gate {el.get('label')!r} sits outside the goal mouth of "
+                    f"{goal.get('label')!r} (offset {along:.1f}m + half-width "
+                    f"{gw / 2:.1f}m exceeds goal half-width {ow / 2:.1f}m); "
+                    "in-goal target gates must fit between the posts"
+                )
 
 
 # What a shot may be aimed at. Without this, ball-only drills produced

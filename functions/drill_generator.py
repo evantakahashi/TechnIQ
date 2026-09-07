@@ -45,6 +45,9 @@ Rules:
 
 Geometry (draw it like a real pitch — a coach will see this diagram):
 - Goals sit ON a field edge (within 2.5m), mouth facing play. Never float a goal mid-pitch.
+- A 7.32m goal's mouth spans its center ±3.66m. In-goal target gates must sit INSIDE that span (e.g. gate centers at goal center ±2.2m) — a gate outside the posts means "aim wide".
+- A target gate sits ON the line of the action it measures: a passing gate goes BETWEEN passer and receiver so the pass must split it, not beside the lane.
+- Defensive clearances/headers are aimed AWAY from the defender's own goal — clearance targets go upfield or wide, never between the defender and the goal they protect.
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
@@ -63,6 +66,7 @@ Safety (non-negotiable, applies to every drill):
 - Match intensity and complexity to the player's age and level; never prescribe adult training loads to young players.
 - Begin the coaching points with a 2-3 minute warm-up cue (light jogging + dynamic movement and easy ball touches) before any intense or high-skill work.
 - For players under 13 (U13), avoid dangerous or high-impact movements and physical contact — no slide tackles, collisions, or heading drills.
+- Heading drills (13+): cap volume at 10-15 headers per session, soft underhand serves from ≤8m — never long lofted service for repeated heading.
 - Include at least one safe-technique cue (e.g., cushion the ball, land softly, keep the knee tracking over the toe) among the coaching points.
 """
 
