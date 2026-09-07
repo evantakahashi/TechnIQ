@@ -23,15 +23,15 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
     "Shooting": {
         "primary_action": "strike on goal after a setup touch, at volume — a supply of balls and a repeating strike cycle, with a target that defines success",
         "verb_keywords": ["shoot", "strike", "finish", "drive", "curl", "place"],
-        "must_include": ["goal element on the field edge", "target gate or cone inside the goal for accuracy", "ball supply (multiple pre-placed balls or a server feed)", "setup touch before the strike"],
-        "must_avoid": ["a single strike with no way to continue", "stationary ball placed in front of empty goal with no target", "identical presentation every rep — vary rolling toward, away, and across"],
+        "must_include": ["goal element on the field edge", "target gate or cone inside the goal for accuracy", "ball supply: a one-ball collect-and-return loop, pre-placed balls, or a server feed", "setup touch before the strike"],
+        "must_avoid": ["a single strike with no stated way to continue (no collect-and-return loop, no supply)", "stationary ball placed in front of empty goal with no target", "identical presentation every rep — vary rolling toward, away, and across"],
         "success_metric": "≥60% of strikes through the target within 2 seconds of the final touch, counted out loud",
         "perception_action_cue": "glance at the target between the prep touch and the strike; plant foot beside the ball, head still at contact",
     },
     "Weak Foot": {
         "primary_action": "repeated weak-foot execution forced by geometry and rules — approach angle, ball presentation, and target placement all open the weak-foot side",
         "verb_keywords": ["strike", "finish", "pass", "place", "prep touch"],
-        "must_include": ["layout that presents the ball to the weak-foot side (cut in from the strong side / ball rolling to the weak side)", "rule that only weak-foot executions count", "target gate or zone", "ball supply for repeated reps"],
+        "must_include": ["layout that presents the ball to the weak-foot side (cut in from the strong side / ball rolling to the weak side)", "rule that only weak-foot executions count", "target gate or zone", "repeatable rep flow: one-ball collect-and-return loop or pre-placed balls"],
         "must_avoid": ["a layout where the player can quietly use the strong foot every rep", "one-shot sequences with no volume"],
         "success_metric": "≥60% of weak-foot-only reps hit the target; a strong-foot touch on the final action counts as a miss",
         "perception_action_cue": "prep touch pushes the ball across the body into the weak-foot zone; eyes up at the target between touch and strike",

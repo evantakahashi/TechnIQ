@@ -54,7 +54,7 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
-- BALL SUPPLY: state where the next ball comes from. Solo = pre-place 4-8 ball elements the worker moves through; with a server = the server feeds. One ball and no reset is a failed drill.
+- BALL SUPPLY: state how the next rep starts. Assume the player may own ONE ball — default to a one-ball loop: execute, collect at a jog, dribble back to the start (the retrieve IS the rest). Pre-place 3-6 ball elements ONLY as an optional upgrade, and say in a coaching point that one ball works fine by adding the collect-and-return jog. With a server, the server feeds. Never leave the player stranded after one rep.
 - ACCURACY skills: the finish must beat a TARGET, not just enter a goal — place 1-2 gates inside the goal (e.g. bottom corners) or a cone target, and require reps through it.
 - 6-9 coaching points. The FIRST is the warm-up. Exactly one states a countable target ("8 of 10 through the gate"). One states set/rep volume and the rest pattern ("5 strikes per set, 4 sets; collecting balls is the rest"). One is a progression or regression ("hit 8/10 → move 2m back; miss 5 → bigger gate").
 - If the skill names a foot or surface (weak foot, outside of boot), force it with geometry and a rule ("only weak-foot finishes count"), not just advice.
@@ -355,7 +355,8 @@ def _build_prompt(
     # Final checklist — recency wins: restate the constraints that failures
     # showed get lost when they only appear mid-prompt.
     solo_line = (
-        "solo: pre-placed ball supply + stated reset; NO server/defender elements"
+        "solo: every rep flows into the next — one-ball collect-and-return loop "
+        "(or optional pre-placed supply); NO server/defender elements"
         if number_of_players == 1
         else f"exactly {number_of_players} players"
     )

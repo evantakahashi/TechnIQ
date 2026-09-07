@@ -178,7 +178,7 @@
   "id": "solo_finishing_gates_int",
   "archetype": "dribble_and_shoot",
   "pressure": "passive",
-  "dsl": "player P1 at (14, 10) role \"worker\"\nball B1 at (16, 8)\nball B2 at (16, 10)\nball B3 at (16, 12)\nball B4 at (16, 14)\ngate G1 at (29, 7.5) width 2\ngoal GL at (29, 10) width 7.32\nstep 1: P1 dribbles to B2\nstep 2: P1 shoots at G1\nstep 3: P1 runs to B3\nstep 4: P1 shoots at G1\nstep 5: P1 runs to B4\nstep 6: P1 shoots at G1\nstep 7: P1 runs to B1\nstep 8: P1 shoots at G1\npoint: Warm up first \u2014 two minutes of easy touches and side-foot passes against the balls\npoint: Place the ball through the low gate \u2014 accuracy beats power at this stage\npoint: Target: 6 of 8 through the gate, then take one step further back\npoint: Approach on a slight curve so your hips open to the target\npoint: Collect all four balls at a jog between sets \u2014 that jog is your rest",
-  "notes": "Intermediate solo placement block: single low gate, 4-ball supply, progression by distance."
+  "dsl": "player P1 at (14, 10) role \"worker\"\nball B1 at (16, 10)\ncone C1 at (16, 10)\ngate G1 at (29, 7.5) width 2\ngoal GL at (29, 10) width 7.32\nstep 1: P1 dribbles to C1\nstep 2: P1 shoots at G1\nstep 3: P1 runs to GL\nstep 4: P1 dribbles to C1\nstep 5: P1 shoots at G1\nstep 6: P1 runs to GL\nstep 7: P1 dribbles to C1\nstep 8: P1 shoots at G1\npoint: Warm up first \u2014 two minutes of easy touches and gentle side-foot passes\npoint: One ball is all you need \u2014 after each strike, jog to collect it and dribble back to the start cone; that jog is your rest\npoint: Place the ball through the low gate \u2014 accuracy beats power\npoint: Target: 6 of 8 through the gate, then take one big step further back\npoint: Approach on a slight curve so your hips open to the target",
+  "notes": "Single-ball solo placement loop: strike, collect at a jog, dribble back. No supply assumption; progression by distance."
  }
 ]
