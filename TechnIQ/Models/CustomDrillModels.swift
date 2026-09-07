@@ -214,12 +214,15 @@ enum DiagramElementType: String {
     case target = "target"
     case goal = "goal"
     case ball = "ball"
+    case gate = "gate"
 }
 
 enum DiagramPathStyle: String {
     case dribble = "dribble"  // Solid line (with ball)
     case run = "run"          // Dashed line (without ball)
     case pass = "pass"        // Arrow line (ball trajectory)
+    case shoot = "shoot"      // Bold arrow at the target
+    case receive = "receive"  // Thin line toward the receiver
 }
 
 struct DrillVariation: Codable {

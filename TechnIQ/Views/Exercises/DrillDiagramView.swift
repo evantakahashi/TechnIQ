@@ -217,6 +217,9 @@ struct AnimatedDrillDiagramView: View {
             case .goal:
                 goalElementView(label: element.label)
                     .rotationEffect(goalRotation(for: element))
+            case .gate:
+                gateElementView(label: element.label)
+                    .rotationEffect(goalRotation(for: element))
             case .ball:
                 ballElementView()
             case .target:
@@ -381,6 +384,29 @@ struct AnimatedDrillDiagramView: View {
         }
     }
 
+    /// Gate: two bright posts with a dashed opening — a target to play through,
+    /// visually distinct from a cone.
+    private func gateElementView(label: String) -> some View {
+        VStack(spacing: 1) {
+            HStack(spacing: 10) {
+                Capsule()
+                    .fill(DesignSystem.Colors.accentOrange)
+                    .frame(width: 3, height: 10)
+                Capsule()
+                    .fill(DesignSystem.Colors.accentOrange)
+                    .frame(width: 3, height: 10)
+            }
+            .overlay(
+                Rectangle()
+                    .fill(DesignSystem.Colors.accentOrange.opacity(0.5))
+                    .frame(width: 8, height: 1)
+            )
+            Text(label)
+                .font(.system(size: 7, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.7))
+        }
+    }
+
     /// Goals render horizontally by default; a goal sitting on the left/right
     /// field edge must rotate 90° so its mouth faces the pitch — otherwise it
     /// looks impossible to score in.
@@ -513,8 +539,8 @@ struct AnimatedDrillDiagramView: View {
                         )
                         .opacity(pathOpacity(for: path))
 
-                    // Arrowhead for pass
-                    if path.pathStyle == .pass {
+    // Arrowhead for ball-travel styles
+                    if path.pathStyle == .pass || path.pathStyle == .shoot || path.pathStyle == .receive {
                         arrowHeadView(from: fromPt, to: toPt, control: controlPt)
                             .fill(pathColor(path.pathStyle))
                             .opacity(pathOpacity(for: path))
@@ -547,6 +573,8 @@ struct AnimatedDrillDiagramView: View {
         case .dribble: return DesignSystem.Colors.secondaryBlue
         case .run: return DesignSystem.Colors.textSecondary
         case .pass: return DesignSystem.Colors.primaryGreen
+        case .shoot: return DesignSystem.Colors.accentOrange
+        case .receive: return DesignSystem.Colors.primaryGreen
         }
     }
 
@@ -558,6 +586,10 @@ struct AnimatedDrillDiagramView: View {
             return StrokeStyle(lineWidth: 2, lineCap: .round, dash: [6, 4])
         case .pass:
             return StrokeStyle(lineWidth: 2, lineCap: .round)
+        case .shoot:
+            return StrokeStyle(lineWidth: 3, lineCap: .round)
+        case .receive:
+            return StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [3, 3])
         }
     }
 
