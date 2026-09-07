@@ -37,6 +37,7 @@ def get_exemplars(
     archetype: str,
     level: str | None = None,
     n: int = 3,
+    number_of_players: int = 2,
 ) -> list[dict[str, Any]]:
     """Return up to n exemplars matching archetype (and level pressure, if given).
 
@@ -45,8 +46,13 @@ def get_exemplars(
       2. each neighbor archetype + allowed pressures (first hit wins)
       3. empty list — NO fallback to unfiltered (wrong-pressure) exemplars.
     """
-    if level is None or level == "":
-        allowed: set[str] | None = None
+    if number_of_players == 1:
+        # A solo drill has no human pressure. The level filter used to force
+        # advanced → {"active"} → cascade onto multi-player server/defender
+        # exemplars, showing the model the wrong shape for every solo request.
+        allowed: set[str] | None = {"none", "passive"}
+    elif level is None or level == "":
+        allowed = None
     elif level in _LEVEL_PRESSURE_ALLOW:
         allowed = _LEVEL_PRESSURE_ALLOW[level]
     else:

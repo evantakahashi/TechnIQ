@@ -30,7 +30,7 @@ def test_get_rule_pack_case_insensitive():
 
 
 def test_get_rule_pack_unknown_returns_none():
-    assert get_rule_pack("Stamina") is None
+    assert get_rule_pack("Juggling Flair") is None
     assert get_rule_pack("Positioning") is None
     assert get_rule_pack("") is None
     assert get_rule_pack("nonsense category") is None

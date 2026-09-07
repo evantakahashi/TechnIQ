@@ -44,12 +44,20 @@ Rules:
 - Prioritize game-relevant reps: every step should move the worker toward or through the requested skill.
 
 Geometry (draw it like a real pitch — a coach will see this diagram):
+- Goals sit ON a field edge (within 2.5m), mouth facing play. Never float a goal mid-pitch.
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
 - Defenders start goal-side of the attacker they are defending, within pressing distance (2-6m).
 - Every element you declare must be used by at least one step or serve an obvious purpose (gate to dribble through, cone marking a turn). No decoration.
 - Only declare a ladder/hurdle pattern if you actually use tight cone spacing (0.75-1.5m gaps) for it.
+
+SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
+- 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
+- BALL SUPPLY: state where the next ball comes from. Solo = pre-place 4-8 ball elements the worker moves through; with a server = the server feeds. One ball and no reset is a failed drill.
+- ACCURACY skills: the finish must beat a TARGET, not just enter a goal — place 1-2 gates inside the goal (e.g. bottom corners) or a cone target, and require reps through it.
+- 6-9 coaching points. The FIRST is the warm-up. Exactly one states a countable target ("8 of 10 through the gate"). One states set/rep volume and the rest pattern ("5 strikes per set, 4 sets; collecting balls is the rest"). One is a progression or regression ("hit 8/10 → move 2m back; miss 5 → bigger gate").
+- If the skill names a foot or surface (weak foot, outside of boot), force it with geometry and a rule ("only weak-foot finishes count"), not just advice.
 
 Safety (non-negotiable, applies to every drill):
 - Match intensity and complexity to the player's age and level; never prescribe adult training loads to young players.
@@ -99,8 +107,8 @@ def generate_drill(
     playing_style = request.get("playing_style") or ""
     skill_goals = request.get("skill_goals") or []
 
-    archetype = pick_archetype(weakness, level)
-    exemplars = get_exemplars(archetype, level=level, n=3)
+    archetype = pick_archetype(weakness, level, number_of_players)
+    exemplars = get_exemplars(archetype, level=level, n=3, number_of_players=number_of_players)
     rule_pack = get_rule_pack(weakness)
     age_cap = _age_cap(age)
 
@@ -189,6 +197,15 @@ For intermediate/advanced, the drill MUST include ALL of:
 - Scanning: the worker must look away from the ball at some point (e.g., reads a visual cue from the server before the next action).
 """
 
+# Solo variant — the standard block demands servers/defenders, which directly
+# contradicts a 1-player request and made the model flail between retries.
+_ELITE_REQUIREMENTS_SOLO = """\
+For intermediate/advanced SOLO drills, the drill MUST include ALL of:
+- Constraint pressure (replaces human resistance): a time cap per rep, a limited-touch rule, or an approach angle forced by cone/gate placement.
+- Directionality: a clear objective end (goal or gate) and a stated reset — how the player collects the next ball and restarts.
+- Scanning: a look-up moment built into each rep (e.g., glance at the target zone between the last touch and the strike).
+"""
+
 
 def _build_prompt(
     *,
@@ -222,9 +239,10 @@ def _build_prompt(
     peri = _PERIODIZATION_BY_LEVEL.get(level, _PERIODIZATION_BY_LEVEL["intermediate"])
     lines += ["PRACTICE TYPE BY LEVEL:", f"- {level} → {peri}", ""]
 
-    # Elite requirements for intermediate/advanced
+    # Elite requirements for intermediate/advanced (solo-aware)
     if level in ("intermediate", "advanced"):
-        lines += [_ELITE_REQUIREMENTS, ""]
+        block = _ELITE_REQUIREMENTS_SOLO if number_of_players == 1 else _ELITE_REQUIREMENTS
+        lines += [block, ""]
 
     # Category rule pack (only when covered)
     if rule_pack is not None:
@@ -280,10 +298,13 @@ def _build_prompt(
                 lines.append(f"  - {cat}: {spec}")
     # Player count directive
     if number_of_players == 1:
+        # Name only obstacles the equipment actually authorizes (+ gates, always legal).
+        solo_obstacles = [item for item in ("cones", "walls") if any(item.rstrip("s") in e.lower() for e in equipment)]
+        solo_obstacles.append("gates")
         player_directive = (
             "PLAYER COUNT: Use exactly 1 player (the worker). "
             "This is a SOLO drill — no partners (no server, no defender). "
-            "Use static obstacles (cones, gates, walls) and a measurable success target instead of human pressure."
+            f"Use static obstacles ({', '.join(solo_obstacles)}) and a measurable success target instead of human pressure."
         )
     elif number_of_players == 2:
         player_directive = "PLAYER COUNT: Use exactly 2 players (worker + 1 partner serving as server or defender)."
@@ -314,6 +335,7 @@ def _build_prompt(
     lines += [
         f"Starting archetype (a shape to adapt, not copy): {archetype}",
         f"Constraints: max area {width}x{length}m, max cone spacing {age_cap}m, equipment {equipment}",
+        f"COORDINATES: the field spans x 0-{width} (attacking direction) and y 0-{length}. Origin (0,0) is a corner; attack toward the x={width} line.",
         "Equipment is what's AVAILABLE, not a checklist — use only the pieces the drill actually needs. A great drill with just a ball beats a cluttered one that forces every item in.",
         "",
     ]
@@ -330,10 +352,23 @@ def _build_prompt(
             "Design from first principles using the skill-specific requirements and elite rules above."
         )
 
+    # Final checklist — recency wins: restate the constraints that failures
+    # showed get lost when they only appear mid-prompt.
+    solo_line = (
+        "solo: pre-placed ball supply + stated reset; NO server/defender elements"
+        if number_of_players == 1
+        else f"exactly {number_of_players} players"
+    )
     lines += [
         "",
         f"Design a drill that maximizes game-relevant reps of: {focus}",
         "Adapt or depart from the references as needed. The drill's purpose is the skill, not the shape.",
+        "",
+        "FINAL CHECK before you output:",
+        f"- {solo_line}",
+        "- 8-16 steps forming a repeating cycle; every declared element used",
+        "- goals ON a field edge; shots 8-18m; accuracy skills finish through a target gate",
+        "- 6-9 coaching points: warm-up FIRST, one countable target, one set/rep+rest line, one progression",
         "Output DSL only.",
     ]
     return "\n".join(lines)

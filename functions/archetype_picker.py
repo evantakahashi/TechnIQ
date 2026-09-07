@@ -54,6 +54,41 @@ ARCHETYPE_TABLE: Final[dict[tuple[str, str], str]] = {
 }
 
 
-def pick_archetype(weakness: str, level: str) -> str:
-    """Return archetype for (weakness, level) or FALLBACK_ARCHETYPE if unknown."""
-    return ARCHETYPE_TABLE.get((weakness, level), FALLBACK_ARCHETYPE)
+# Real labels drift from table keys ("Shooting Accuracy", "Weak Foot", "Quick
+# Feet"...). Exact tuple lookup sent finishing requests to cone_weave.
+_WEAKNESS_ALIASES: Final[dict[str, str]] = {
+    "shooting accuracy": "Shooting", "weak foot": "Shooting", "striking": "Shooting",
+    "finishing": "Finishing",
+    "passing accuracy": "Passing", "one touch": "Passing",
+    "dribbling skills": "Dribbling", "close control": "Dribbling",
+    "ball control": "Ball Control",
+    "first touch": "First Touch", "receiving": "First Touch",
+    "speed & agility": "Speed", "quick feet": "Speed", "agility": "Speed",
+    "under pressure": "Under Pressure",
+    "crossing": "Crossing",
+}
+
+# Archetypes that need a partner, remapped for solo (1-player) requests.
+_SOLO_REMAP: Final[dict[str, str]] = {
+    "1v1_plus_server": "dribble_and_shoot",
+    "rondo": "wall_passing",
+    "triangle_passing": "wall_passing",
+    "server_executor": "dribble_and_shoot",
+}
+
+
+def _canonical_weakness(weakness: str) -> str:
+    needle = (weakness or "").strip().lower()
+    for alias, name in _WEAKNESS_ALIASES.items():
+        if alias == needle or alias in needle:
+            return name
+    return weakness
+
+
+def pick_archetype(weakness: str, level: str, number_of_players: int = 2) -> str:
+    """Archetype for (weakness, level), alias-tolerant and player-count aware."""
+    key = _canonical_weakness(weakness)
+    archetype = ARCHETYPE_TABLE.get((key, level), FALLBACK_ARCHETYPE)
+    if number_of_players == 1:
+        archetype = _SOLO_REMAP.get(archetype, archetype)
+    return archetype

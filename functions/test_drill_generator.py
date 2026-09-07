@@ -196,7 +196,7 @@ def test_prompt_degrades_when_no_rule_pack():
         return VALID_DSL
 
     req = make_request()
-    req["weakness"] = "Stamina"  # uncovered category
+    req["weakness"] = "Juggling Flair"  # uncovered category
     req["experience_level"] = "advanced"
     generate_drill(req, llm_call=capture)
     prompt = captured[0]

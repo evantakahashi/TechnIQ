@@ -21,12 +21,20 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
         "perception_action_cue": "passer looks up before the pass; receiver opens body to next option before the ball arrives",
     },
     "Shooting": {
-        "primary_action": "strike on goal after a setup touch, with server service or a defender closing to force a quick decision",
+        "primary_action": "strike on goal after a setup touch, at volume — a supply of balls and a repeating strike cycle, with a target that defines success",
         "verb_keywords": ["shoot", "strike", "finish", "drive", "curl", "place"],
-        "must_include": ["goal element", "setup touch before the strike", "server feed OR defender pressure"],
-        "must_avoid": ["stationary ball placed in front of empty goal", "unlimited time with no pressure or service"],
-        "success_metric": "≥60% of shots on target within 2 seconds of the final touch",
-        "perception_action_cue": "scan keeper/goal before the final touch; plant foot next to ball, head still at contact",
+        "must_include": ["goal element on the field edge", "target gate or cone inside the goal for accuracy", "ball supply (multiple pre-placed balls or a server feed)", "setup touch before the strike"],
+        "must_avoid": ["a single strike with no way to continue", "stationary ball placed in front of empty goal with no target", "identical presentation every rep — vary rolling toward, away, and across"],
+        "success_metric": "≥60% of strikes through the target within 2 seconds of the final touch, counted out loud",
+        "perception_action_cue": "glance at the target between the prep touch and the strike; plant foot beside the ball, head still at contact",
+    },
+    "Weak Foot": {
+        "primary_action": "repeated weak-foot execution forced by geometry and rules — approach angle, ball presentation, and target placement all open the weak-foot side",
+        "verb_keywords": ["strike", "finish", "pass", "place", "prep touch"],
+        "must_include": ["layout that presents the ball to the weak-foot side (cut in from the strong side / ball rolling to the weak side)", "rule that only weak-foot executions count", "target gate or zone", "ball supply for repeated reps"],
+        "must_avoid": ["a layout where the player can quietly use the strong foot every rep", "one-shot sequences with no volume"],
+        "success_metric": "≥60% of weak-foot-only reps hit the target; a strong-foot touch on the final action counts as a miss",
+        "perception_action_cue": "prep touch pushes the ball across the body into the weak-foot zone; eyes up at the target between touch and strike",
     },
     "First Touch": {
         "primary_action": "receive a moving ball while a server feeds and a defender closes, control it directionally, play forward in ≤2 touches",
@@ -55,12 +63,40 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
 }
 
 
+# Real weakness labels rarely match pack names exactly ("Shooting Accuracy",
+# "Dribbling Skills", "Weak Foot"...). Exact-match lookup silently dropped the
+# packs — the richest guidance in the prompt — for most requests.
+_PACK_ALIASES: dict[str, str] = {
+    "shooting accuracy": "Shooting", "finishing": "Shooting",
+    "weak foot": "Weak Foot", "weaker foot": "Weak Foot",
+    "striking": "Shooting", "crossing": "Shooting",
+    "passing accuracy": "Passing", "one touch passing": "Passing",
+    "dribbling skills": "Dribbling", "ball control": "Dribbling", "close control": "Dribbling",
+    "first touch": "First Touch", "receiving": "First Touch",
+    "defending 1v1": "Defending", "tackling": "Defending",
+    "speed": "Speed & Agility", "agility": "Speed & Agility", "quick feet": "Speed & Agility",
+    "stamina": "Speed & Agility", "endurance": "Speed & Agility",
+}
+
+
 def get_rule_pack(category: str) -> dict[str, Any] | None:
-    """Case-insensitive lookup. Returns None for uncovered categories."""
+    """Tolerant lookup: exact name, alias, then substring. None if uncovered."""
     if not category:
         return None
     needle = category.strip().lower()
+    # Weak foot is cross-cutting: "weak foot finishing accuracy" must hit the
+    # Weak Foot pack, not lose to the "finishing" alias by insertion order.
+    if "weak foot" in needle or "weak-foot" in needle or "weaker foot" in needle:
+        return RULE_PACKS["Weak Foot"]
     for name, pack in RULE_PACKS.items():
         if name.lower() == needle:
+            return pack
+    if needle in _PACK_ALIASES:
+        return RULE_PACKS[_PACK_ALIASES[needle]]
+    for alias, name in _PACK_ALIASES.items():
+        if alias in needle or needle in alias:
+            return RULE_PACKS[name]
+    for name, pack in RULE_PACKS.items():
+        if name.lower() in needle:
             return pack
     return None
