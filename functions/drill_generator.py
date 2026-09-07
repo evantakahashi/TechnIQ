@@ -314,6 +314,7 @@ def _build_prompt(
     lines += [
         f"Starting archetype (a shape to adapt, not copy): {archetype}",
         f"Constraints: max area {width}x{length}m, max cone spacing {age_cap}m, equipment {equipment}",
+        "Equipment is what's AVAILABLE, not a checklist — use only the pieces the drill actually needs. A great drill with just a ball beats a cluttered one that forces every item in.",
         "",
     ]
 
