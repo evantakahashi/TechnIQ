@@ -12,6 +12,7 @@ struct CustomDrillGeneratorView: View {
     @State private var generatedExercise: Exercise?
     @State private var errorMessage = ""
     @State private var showingError = false
+    @State private var showingDrillDetail = false
     
     var body: some View {
         NavigationStack {
@@ -51,6 +52,9 @@ struct CustomDrillGeneratorView: View {
                     showingWarnings = true
                 }
             }
+            Button("Go to Drill") {
+                showingDrillDetail = true
+            }
             Button("OK") {
                 dismiss()
             }
@@ -59,6 +63,11 @@ struct CustomDrillGeneratorView: View {
                 Text("Your custom drill has been added to your exercise library!")
             } else {
                 Text("Your drill was created with minor quality notes. Tap 'View Warnings' for details.")
+            }
+        }
+        .sheet(isPresented: $showingDrillDetail, onDismiss: { dismiss() }) {
+            if let exercise = generatedExercise {
+                ExerciseDetailView(exercise: exercise)
             }
         }
         .alert("Quality Notes", isPresented: $showingWarnings) {

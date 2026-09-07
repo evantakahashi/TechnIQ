@@ -149,9 +149,11 @@ final class WalkthroughUITests: XCTestCase {
             settle(10)
             shot("gen-wait-\(i)")
             let errored = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'failed' OR label CONTAINS[c] 'error' OR label CONTAINS[c] 'try again'")).firstMatch.exists
-            let sheetGone = !app.navigationBars["Quick Drill"].exists
-            if errored || sheetGone { break }
+            let ready = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'go to drill'")).firstMatch.exists
+            if errored || ready { break }
         }
+        shot("drill-ready-card")
+        _ = tapFirst(["Go to Drill", "GO TO DRILL"], timeout: 4)
         settle(2)
         for _ in 0..<3 { if !tapFirst(["Got it"], timeout: 1) { break }; settle(0.5) }
         shot("drill-result")

@@ -12,6 +12,7 @@ struct QuickDrillSheet: View {
     @State private var skillDescription: String = ""
     @State private var errorMessage: String?
     @State private var generationTask: Task<Void, Never>?
+    @State private var generatedExercise: Exercise?
 
     private var isValid: Bool {
         skillDescription.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10 || prefilledWeakness != nil
@@ -33,6 +34,9 @@ struct QuickDrillSheet: View {
 
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.lg) {
+                        if let exercise = generatedExercise {
+                            successCard(for: exercise)
+                        } else {
                         // Description
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             Text("What do you want to work on?")
@@ -78,6 +82,7 @@ struct QuickDrillSheet: View {
                         }
                         .disabled(!isValid || drillService.isGenerating)
                         .opacity(!isValid || drillService.isGenerating ? 0.5 : 1.0)
+                        }
                     }
                     .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                     .padding(.top, DesignSystem.Spacing.lg)
@@ -94,6 +99,39 @@ struct QuickDrillSheet: View {
                 generationTask?.cancel()
             }
         }
+    }
+
+    @ViewBuilder
+    private func successCard(for exercise: Exercise) -> some View {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 56))
+                .foregroundColor(DesignSystem.Colors.primaryGreen)
+                .a11yHidden()
+
+            Text("Drill Ready!")
+                .font(DesignSystem.Typography.titleMedium)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .fontWeight(.bold)
+
+            Text(exercise.name ?? "Custom Drill")
+                .font(DesignSystem.Typography.bodyLarge)
+                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .multilineTextAlignment(.center)
+
+            Text("Saved to your exercise library")
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+
+            ModernButton("Go to Drill", icon: "figure.run", style: .primary) {
+                onGenerated(exercise)
+            }
+
+            Button("Done") { dismiss() }
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.textSecondary)
+        }
+        .padding(.vertical, DesignSystem.Spacing.xl)
     }
 
     private func generateDrill() {
@@ -129,7 +167,8 @@ struct QuickDrillSheet: View {
                 await MainActor.run {
                     guard !Task.isCancelled else { return }
                     SubscriptionManager.shared.markQuickDrillUsed()
-                    onGenerated(exercise)
+                    // Show the success card; the kid taps "Go to Drill" to start.
+                    generatedExercise = exercise
                 }
             } catch {
                 await MainActor.run {
