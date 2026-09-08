@@ -312,11 +312,11 @@ def _build_prompt(
                 lines.append(f"- [{tag}] {msg}")
                 if "a player can only pass/dribble/shoot" in msg:
                     lines.append(
-                        "  FIX: walk the ball like a movie scene. Before that step, insert "
-                        "'<player> runs to <the resting ball / next pre-placed ball>' so they "
-                        "have it at their feet. After every shot or cross, the very next step "
-                        "for that sequence must collect a ball. If a server restarts each rep, "
-                        "give the server the balls (declare them at the server's feet)."
+                        "  FIX: walk the ONE ball like a movie scene. To regain it after a "
+                        "shot/cross: '<player> runs to <where it rests>'. To hand it to a "
+                        "teammate: '<carrier> dribbles to <teammate>' THEN '<teammate> "
+                        "receives from <carrier>' — without the receives step the carrier "
+                        "still has it. A server can only serve after receiving it back."
                     )
                 if "never played through" in msg:
                     lines.append(

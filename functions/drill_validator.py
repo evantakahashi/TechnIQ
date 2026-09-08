@@ -61,7 +61,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_goals_on_edge(elements, field)
     _check_gates_inside_goal_mouth(elements)
     _check_duel_not_overscripted(elements, paths, bool(drill.get("is_duel")))
-    _check_ball_continuity(elements, paths)
+    _check_ball_continuity(elements, paths, bool(drill.get("is_duel")))
     _check_no_redundant_movement(paths)
     _check_gates_played_through(elements, paths, bool(drill.get("is_duel")))
     _check_single_ball(elements)
@@ -184,7 +184,8 @@ def _check_gates_inside_goal_mouth(elements: list[dict[str, Any]]) -> None:
 
 
 def _check_ball_continuity(
-    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]],
+    is_duel: bool = False,
 ) -> None:
     """Simulate ball possession across steps; reject impossible sequences.
 
@@ -259,7 +260,7 @@ def _check_ball_continuity(
                 )
 
         if style == "dribble":
-            pass  # ball travels with the holder
+            pass  # ball travels with the dribbler; handover needs "receives from"
         elif style in ("pass", "throw", "toss", "header"):
             dst_el = by_label.get(dst, {})
             if dst_el.get("type") == "player":

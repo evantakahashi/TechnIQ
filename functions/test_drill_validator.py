@@ -309,3 +309,18 @@ def test_multiple_balls_raise():
     ]
     with pytest.raises(ValidationError, match="exactly ONE ball"):
         validate_drill(drill)
+
+
+def test_dribble_then_receive_hands_over():
+    drill = make_valid_drill()
+    drill["equipment"].append("partner")
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "player", "x": 8, "y": 0, "label": "P2", "role": "server"},
+    ]
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "P2", "style": "dribble", "step": 1},
+        {"from": "P2", "to": "P1", "style": "receive", "step": 2},  # explicit handover
+        {"from": "P2", "to": "P1", "style": "pass", "step": 3},
+    ]
+    validate_drill(drill)

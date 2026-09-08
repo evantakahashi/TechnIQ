@@ -170,3 +170,17 @@ point: a
 point: b''')
     styles = [p["style"] for p in d["diagram"]["paths"]]
     assert styles == ["throw", "toss", "header"]
+
+
+def test_defender_server_shorthand():
+    from dsl_parser import parse_dsl
+    d = parse_dsl('''player P1 at (5, 5) role "worker"
+defender D1 at (8, 5)
+server S1 at (2, 5)
+ball B1 at (5, 5)
+step 1: P1 dribbles to D1
+point: a
+point: b''')
+    els = {e["label"]: e for e in d["diagram"]["elements"]}
+    assert els["D1"]["type"] == "player" and els["D1"]["role"] == "defender"
+    assert els["S1"]["type"] == "player" and els["S1"]["role"] == "server"

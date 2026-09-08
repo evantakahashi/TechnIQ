@@ -15,7 +15,7 @@ VERB_TO_STYLE = {
     "tosses to": "toss",     # underhand serve for heading/volley work
 }
 
-ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall"}
+ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall", "defender", "server"}
 
 
 class DSLParseError(ValueError):
@@ -29,7 +29,7 @@ class DSLParseError(ValueError):
 
 _COORD_RE = re.compile(r"\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)")
 _ELEMENT_RE = re.compile(
-    r"^(?P<kind>cone|gate|ball|goal|player|wall)\s+(?P<id>\w+)\s+at\s+"
+    r"^(?P<kind>cone|gate|ball|goal|player|wall|defender|server)\s+(?P<id>\w+)\s+at\s+"
     r"(?P<coord>\([^)]+\))"
     r"(?:\s+width\s+(?P<width>\d+(?:\.\d+)?))?"
     r"(?:\s+role\s+\"(?P<role>[^\"]*)\")?"
@@ -108,7 +108,7 @@ def _parse_element(line: str, idx: int) -> dict[str, Any]:
         raise DSLParseError(idx, "malformed coordinate")
 
     el: dict[str, Any] = {
-        "type": m.group("kind"),
+        "type": ("player" if m.group("kind") in ("defender", "server") else m.group("kind")),
         "x": float(coord_match.group(1)),
         "y": float(coord_match.group(2)),
         "label": m.group("id"),
@@ -117,6 +117,8 @@ def _parse_element(line: str, idx: int) -> dict[str, Any]:
         el["width"] = float(m.group("width"))
     if m.group("role") is not None:
         el["role"] = m.group("role")
+    elif m.group("kind") in ("defender", "server"):
+        el["role"] = m.group("kind")  # `defender D1 at (x,y)` shorthand
     if m.group("label") is not None:
         el["display_label"] = m.group("label")
     return el
