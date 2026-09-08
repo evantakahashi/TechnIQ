@@ -18,11 +18,19 @@ STYLE_TO_VERB = {
 TOUCH_WORD = {1: "one-touch", 2: "two-touch"}
 
 
+EXEMPLAR_W, EXEMPLAR_L = 20.0, 15.0
+
+
 def drill_to_dsl(drill: dict) -> str:
+    # Rescale to the corpus's standard 20x15 canvas — golden drills arrive in
+    # whatever (possibly cropped) field they were generated on.
+    field = drill["diagram"].get("field") or {}
+    sx = EXEMPLAR_W / float(field.get("width") or EXEMPLAR_W)
+    sy = EXEMPLAR_L / float(field.get("length") or EXEMPLAR_L)
     lines = []
     for e in drill["diagram"]["elements"]:
         kind = e["type"]
-        base = f'{kind} {e["label"]} at ({round(e["x"], 1)}, {round(e["y"], 1)})'
+        base = f'{kind} {e["label"]} at ({round(e["x"] * sx, 1)}, {round(e["y"] * sy, 1)})'
         if e.get("width"):
             base += f' width {e["width"]}'
         if kind == "player" and e.get("role"):
