@@ -318,6 +318,7 @@ def annotate_path_positions(drill: dict) -> None:
     ball_labels = {e.get("label") for e in elements if e.get("type") == "ball"}
     rest_at = None
     prev_reset = False
+    prev_was_collect = False
     for p in ordered_for_reset(paths):
         style, src, dst = p.get("style"), p.get("from"), p.get("to")
         dst_type = by_label.get(dst, {}).get("type")
@@ -325,14 +326,17 @@ def annotate_path_positions(drill: dict) -> None:
         if style == "run" and (dst in ball_labels or dst == rest_at
                                or dst_type in ("goal", "gate") and dst == rest_at):
             is_reset = True
+        elif style == "dribble" and prev_was_collect:
+            is_reset = True  # the walk-back right after collecting is plumbing
         elif style == "dribble" and prev_reset and dst_type == "player":
-            is_reset = True  # return leg after collecting
+            is_reset = True  # return leg delivering to the server
         elif style == "dribble" and dst in ball_labels:
             is_reset = True  # dribble back to the start marker
         elif style == "receive" and prev_reset:
             is_reset = True  # handover completing the return
         if is_reset:
             p["reset"] = True
+        prev_was_collect = is_reset and style == "run"
         prev_reset = is_reset
         if style in ("shoot", "shot") or (
                 style in ("pass", "toss", "throw", "header")

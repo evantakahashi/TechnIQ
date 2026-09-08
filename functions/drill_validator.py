@@ -68,6 +68,8 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_duel_shape(elements, paths, bool(drill.get("is_duel")))
     _check_no_coords_in_coaching(drill.get("coaching_points") or [])
     _check_no_zero_length_ball_actions(paths)
+    _check_solo_pass_targets(elements, paths)
+    _check_receive_sources(elements, paths)
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -575,4 +577,48 @@ def _check_no_zero_length_ball_actions(paths: list[dict[str, Any]]) -> None:
             raise ValidationError(
                 f"step {p.get('step')}: a {p.get('style')} of under 1m is a "
                 "nonsense action — separate the players or drop the step"
+            )
+
+
+def _check_solo_pass_targets(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Solo drills: a pass needs something that plays it back — a wall.
+
+    User review: solo drills passing to gates/cones ("no one is there")
+    are unusable. With one player, pass/toss targets must be a wall;
+    shots/headers at targets are still fine (you collect them).
+    """
+    players = [e for e in elements if e.get("type") == "player"]
+    if len(players) != 1:
+        return
+    by_label = {e.get("label"): e for e in elements}
+    for p in paths:
+        if p.get("style") not in ("pass", "toss", "throw") or p.get("alt"):
+            continue
+        if p.get("to") == p.get("from"):
+            continue  # self-toss is a legitimate solo serve
+        tgt = by_label.get(p.get("to"), {}).get("type")
+        if tgt != "wall":
+            raise ValidationError(
+                f"step {p.get('step')}: solo drill passes to a {tgt} — "
+                "nobody is there to receive it; solo passes go against a "
+                "wall (or redesign as dribble/shot reps)"
+            )
+
+
+def _check_receive_sources(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """'X receives from Y': Y must be able to deliver — a ball can't pass itself."""
+    by_label = {e.get("label"): e for e in elements}
+    for p in paths:
+        if p.get("style") != "receive":
+            continue
+        src = p.get("to")
+        src_type = by_label.get(src, {}).get("type")
+        if src_type not in ("player", "wall") and src != p.get("from"):
+            raise ValidationError(
+                f"step {p.get('step')}: receives from a {src_type} — the ball "
+                "cannot pass itself; receive from a player or a wall rebound"
             )

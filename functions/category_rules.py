@@ -15,7 +15,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
     "Passing": {
         "primary_action": "play a weighted, accurate pass between teammates under passive or active pressure, then reposition for the return",
         "verb_keywords": ["pass", "receive", "play", "open up", "support"],
-        "must_include": ["≥2 players exchanging passes", "explicit one-touch/two-touch tag on every pass step", "the cone-gate pattern: a cone in FRONT of each player — receive on one side of your cone, touch across, release on the other side (this shows the touches spatially)"],
+        "must_include": ["≥2 players exchanging passes", "explicit one-touch/two-touch tag on every pass step", "the BASE pattern is prop-free: two players, one ball, explicit touch tags; cones appear only in movement VARIATIONS (side-to-side shuffles between cones, one-touch through a cone channel)"],
         "must_avoid": ["two stationary players exchanging passes in a straight line with no off-ball movement"],
         "success_metric": "≥80% of passes arrive to the receiver's correct foot in ≤2 seconds with pressure applied",
         "perception_action_cue": "passer looks up before the pass; receiver opens body to next option before the ball arrives",
@@ -23,7 +23,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
     "Shooting": {
         "primary_action": "strike on goal after a setup touch, at volume — a repeating strike cycle with a target that defines success; a QUICK TURN means receiving with BACK TO GOAL from a server, turning with the ball, then finishing — not a cone skill-move",
         "verb_keywords": ["shoot", "strike", "finish", "drive", "curl", "place"],
-        "must_include": ["goal element on the field edge", "target gate or cone inside the goal for accuracy", "ball supply: a one-ball collect-and-return loop, pre-placed balls, or a server feed", "setup touch before the strike"],
+        "must_include": ["goal element on the field edge", "target gate or cone inside the goal for accuracy", "a one-ball collect-and-return loop or server feed", "prep movement flows TOWARD goal — cut in from wide and strike; never dribble away from goal to set up"],
         "must_avoid": ["a single strike with no stated way to continue (no collect-and-return loop, no supply)", "stationary ball placed in front of empty goal with no target", "identical presentation every rep — vary rolling toward, away, and across"],
         "success_metric": "≥60% of strikes through the target within 2 seconds of the final touch, counted out loud",
         "perception_action_cue": "glance at the target between the prep touch and the strike; plant foot beside the ball, head still at contact",
@@ -55,7 +55,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
     "Goalkeeping": {
         "primary_action": "react and save off a SERVER's throws/strikes — self-thrown wall rebounds cannot test reactions (the keeper knows where their own throw goes, and angled walls bounce away)",
         "verb_keywords": ["throw", "save", "parry", "catch", "distribute", "set"],
-        "must_include": ["a server/thrower for any REACTION work (2 players)", "solo GK drills limited to footwork/handling patterns, honestly labeled", "hand actions use 'throws to'"],
+        "must_include": ["a server/thrower for any REACTION work (2 players)", "solo GK = footwork/handling ONLY (shuffles, set-position, ball control in hands) — NEVER simulated saves or reactions; if the request is about saves/diving/reactions, say plainly it needs a partner to shoot or throw", "hand actions use 'throws to'"],
         "must_avoid": ["self-throw wall rebounds sold as reaction training", "targets behind the wall", "foot-pass language for hand throws"],
         "success_metric": "≥70% of rebounds held clean or parried wide of the danger zone; count catches out loud",
         "perception_action_cue": "set feet before the rebound arrives; hands ready at hip height, eyes through the ball into the catch",
