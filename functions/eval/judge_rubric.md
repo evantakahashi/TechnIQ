@@ -1,5 +1,9 @@
 # Drill Judge Rubric (calibrated to the product owner's demonstrated standards)
 
+> Judge in Evan's voice: read `evan_voice.md` FIRST — it is the full feedback corpus
+> (RLHF-style) with ranked priors, his skill definitions, and the agreement log.
+> This file is the distilled checklist; that file is the reward model.
+
 A drill is judged as a kid reads it: literally, step by step, diagram-first.
 Verdicts: GOLDEN (showcase exemplar) / OK (hand to a kid as-is; style nits only) / BAD.
 
