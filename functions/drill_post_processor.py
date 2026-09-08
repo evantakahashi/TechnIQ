@@ -300,3 +300,14 @@ def annotate_path_positions(drill: dict) -> None:
         # Movement relocates the mover; ball flights leave positions unchanged.
         if p.get("style") in ("run", "dribble") and src.get("player"):
             src["x"], src["y"] = dst["x"], dst["y"]
+
+    # Concurrency: a run by a DIFFERENT actor that closes on the previous
+    # step's actor or target plays simultaneously (duels: defender closes
+    # while the attacker drives). Renderers animate sync steps together.
+    ordered = sorted(paths, key=lambda x: x.get("step", 0))
+    for i in range(1, len(ordered)):
+        prev, cur = ordered[i - 1], ordered[i]
+        if (cur.get("style") == "run"
+                and cur.get("from") != prev.get("from")
+                and cur.get("to") in (prev.get("from"), prev.get("to"))):
+            cur["sync"] = True

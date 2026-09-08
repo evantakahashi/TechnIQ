@@ -52,7 +52,7 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - Targets must be REACHABLE: never place a gate or goal behind a wall or outside the play direction. Finishes happen at the END of a forward rep toward the target — never backward through the course just completed.
 - Cones never return the ball. A rebound needs a wall; a served ball needs a server or a self-serve (toss it up yourself).
 - Walls return GROUND balls at matching pace — never claim a wall serves bouncing or lofted balls; for aerial/bouncing receives use self-toss or a server.
-- With a server: stage the ball supply AT the server's feet (balls beside them) so they play the next ball immediately — the server never jogs to fetch mid-set; roles swap between sets. SCRIPT ONLY AS MANY SERVE CYCLES AS THERE ARE STAGED BALLS (3 balls = 3 serve-finish cycles); the coaching points say the set repeats after collecting.
+- With a server: script the full cycle — serve, action, collect, return (`runs to` the resting ball, `dribbles to` the server, server `receives from` them) — then the next serve. Two scripted cycles is enough; coaching says it repeats.
 - Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
@@ -76,7 +76,7 @@ TWO-PHASE SKILLS (receive-then-play-forward, control-then-escape, save-then-dist
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
-- BALL SUPPLY: state how the next rep starts. Assume the player may own ONE ball — default to a one-ball loop: execute, collect at a jog, dribble back to the start (the retrieve IS the rest). Pre-place 3-6 ball elements ONLY as an optional upgrade, and say in a coaching point that one ball works fine by adding the collect-and-return jog. With a server, the server feeds. Never leave the player stranded after one rep.
+- ONE BALL ON THE PITCH: declare exactly ONE ball element, at the feet of whoever starts with it. Extra supply balls are NEVER drawn — mention a stack in a coaching point if useful. Every cycle scripts the collect-and-return: after a shot/cross, someone runs to the ball and works it back (that jog is the rest). Use `receives from` to hand the ball over.
 - ACCURACY skills: the finish must beat a TARGET, not just enter a goal — place 1-2 gates inside the goal (e.g. bottom corners) or a cone target, and require reps through it.
 - 6-9 coaching points. The FIRST is the warm-up. Exactly one states a countable target ("8 of 10 through the gate"). One states set/rep volume and the rest pattern ("5 strikes per set, 4 sets; collecting balls is the rest"). One is a progression or regression ("hit 8/10 → move 2m back; miss 5 → bigger gate").
 - If the skill names a foot or surface (weak foot, outside of boot), force it with geometry and a rule ("only weak-foot finishes count"), not just advice.
