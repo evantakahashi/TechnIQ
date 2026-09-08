@@ -391,3 +391,29 @@ def test_reset_steps_tagged():
     annotate_path_positions(drill)
     tags = [bool(p.get("reset")) for p in drill["diagram"]["paths"]]
     assert tags == [False, False, True, True, False]
+
+
+def test_crop_field_to_content_shrinks_oversized_stage():
+    from drill_post_processor import crop_field_to_content
+    drill = {"diagram": {"field": {"width": 52.5, "length": 68.0}, "elements": [
+        {"type": "player", "x": 5.0, "y": 30.0, "label": "P1", "role": "worker"},
+        {"type": "wall", "x": 12.0, "y": 30.0, "label": "W1"},
+        {"type": "ball", "x": 5.0, "y": 30.0, "label": "B1"},
+    ]}}
+    crop_field_to_content(drill)
+    f = drill["diagram"]["field"]
+    assert f["width"] < 30 and f["length"] < 30
+    assert min(e["x"] for e in drill["diagram"]["elements"]) >= 0
+
+
+def test_crop_keeps_edge_goal_on_edge():
+    from drill_post_processor import crop_field_to_content
+    drill = {"diagram": {"field": {"width": 52.5, "length": 68.0}, "elements": [
+        {"type": "player", "x": 40.0, "y": 34.0, "label": "P1", "role": "worker"},
+        {"type": "goal", "x": 52.5, "y": 34.0, "label": "GL", "width": 7.32},
+        {"type": "ball", "x": 40.0, "y": 34.0, "label": "B1"},
+    ]}}
+    crop_field_to_content(drill)
+    f = drill["diagram"]["field"]
+    gl = [e for e in drill["diagram"]["elements"] if e["type"] == "goal"][0]
+    assert abs(gl["x"] - f["width"]) <= 0.01

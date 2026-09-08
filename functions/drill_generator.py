@@ -6,7 +6,7 @@ from typing import Any, Callable
 from archetype_picker import pick_archetype
 from category_rules import get_rule_pack
 from dsl_parser import DSLParseError, parse_dsl
-from drill_post_processor import post_process_drill, annotate_path_positions
+from drill_post_processor import post_process_drill, annotate_path_positions, crop_field_to_content
 from drill_quality import score_drill_quality
 from drill_validator import ValidationError, validate_drill
 from exemplars import get_exemplars
@@ -140,7 +140,8 @@ def generate_drill(
     skill_goals = request.get("skill_goals") or []
 
     blob_field = f"{skill_description} {weakness}".lower()
-    if any(k in blob_field for k in _HALF_FIELD_SKILLS) and field_size != "large":
+    if (any(k in blob_field for k in _HALF_FIELD_SKILLS)
+            and "goalkeep" not in blob_field and field_size != "large"):
         field_size = "half"
 
     archetype = pick_archetype(weakness, level, number_of_players)
@@ -184,6 +185,7 @@ def generate_drill(
                 and "head" not in blob
             )
             drill, _warnings = post_process_drill(drill, player_age=age)
+            crop_field_to_content(drill)
             annotate_path_positions(drill)
             validate_drill(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,
@@ -237,7 +239,7 @@ _FIELD_SIZE_DIMS = {
 }
 
 # Skills that live around the goal always get the half-field template.
-_HALF_FIELD_SKILLS = ("shoot", "finish", "strik", "cross", "volley", "chip", "goal")
+_HALF_FIELD_SKILLS = ("shoot", "finish", "strik", "cross", "volley", "chip")
 
 _ELITE_REQUIREMENTS = """\
 For intermediate/advanced, the drill MUST include ALL of:

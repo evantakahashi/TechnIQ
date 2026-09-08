@@ -351,3 +351,46 @@ def annotate_path_positions(drill: dict) -> None:
                 and cur.get("from") != prev.get("from")
                 and cur.get("to") in (prev.get("from"), prev.get("to"))):
             cur["sync"] = True
+
+
+def crop_field_to_content(drill: Dict, margin: float = 8.0,
+                          min_w: float = 15.0, min_l: float = 12.0) -> None:
+    """Shrink an oversized field to the drill's content plus a margin.
+
+    User review: tiny drills were staged on huge pitches ("a ton of green
+    grass"). Crop toward the content bbox; if a goal sits on an original
+    edge, crop TO that edge so it stays a goal-line goal.
+    """
+    diagram = drill.get("diagram") or {}
+    field = diagram.get("field") or {}
+    elements = diagram.get("elements") or []
+    if not elements:
+        return
+    try:
+        W, L = float(field["width"]), float(field["length"])
+        xs = [float(e["x"]) for e in elements]
+        ys = [float(e["y"]) for e in elements]
+    except (KeyError, TypeError, ValueError):
+        return
+    goal_edges = set()
+    for e in elements:
+        if e.get("type") != "goal":
+            continue
+        gx, gy = float(e["x"]), float(e["y"])
+        if gx <= 2.5: goal_edges.add("x0")
+        if W - gx <= 2.5: goal_edges.add("x1")
+        if gy <= 2.5: goal_edges.add("y0")
+        if L - gy <= 2.5: goal_edges.add("y1")
+    x0 = 0.0 if "x0" in goal_edges else max(0.0, min(xs) - margin)
+    x1 = W if "x1" in goal_edges else min(W, max(xs) + margin)
+    y0 = 0.0 if "y0" in goal_edges else max(0.0, min(ys) - margin)
+    y1 = L if "y1" in goal_edges else min(L, max(ys) + margin)
+    new_w, new_l = max(min_w, x1 - x0), max(min_l, y1 - y0)
+    if new_w >= W - 1 and new_l >= L - 1:
+        return  # nothing meaningful to crop
+    x0 = min(x0, W - new_w); y0 = min(y0, L - new_l)
+    for e in elements:
+        e["x"] = round(float(e["x"]) - x0, 2)
+        e["y"] = round(float(e["y"]) - y0, 2)
+    field["width"] = round(new_w, 1)
+    field["length"] = round(new_l, 1)
