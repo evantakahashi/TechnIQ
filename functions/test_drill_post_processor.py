@@ -369,3 +369,25 @@ def test_annotate_ball_flight_does_not_move_player():
     assert (p1["fx"], p1["fy"]) == (2.0, 5.0)  # pass leaves P1 in place
     assert (p2["fx"], p2["fy"]) == (2.0, 5.0)  # run starts from spawn too
     assert (p2["tx"], p2["ty"]) == (12.0, 5.0)
+
+
+def test_reset_steps_tagged():
+    from drill_post_processor import annotate_path_positions
+    drill = {"diagram": {
+        "elements": [
+            {"type": "player", "x": 15, "y": 10, "label": "P1", "role": "worker"},
+            {"type": "ball", "x": 15, "y": 10, "label": "B1"},
+            {"type": "gate", "x": 29, "y": 8, "label": "G1"},
+            {"type": "cone", "x": 21, "y": 10, "label": "C1"},
+        ],
+        "paths": [
+            {"step": 1, "from": "P1", "to": "C1", "style": "dribble"},
+            {"step": 2, "from": "P1", "to": "G1", "style": "shoot"},
+            {"step": 3, "from": "P1", "to": "G1", "style": "run"},      # collect
+            {"step": 4, "from": "P1", "to": "B1", "style": "dribble"},  # back to start
+            {"step": 5, "from": "P1", "to": "C1", "style": "dribble"},
+        ],
+    }}
+    annotate_path_positions(drill)
+    tags = [bool(p.get("reset")) for p in drill["diagram"]["paths"]]
+    assert tags == [False, False, True, True, False]

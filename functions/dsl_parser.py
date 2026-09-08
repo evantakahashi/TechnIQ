@@ -37,9 +37,10 @@ _ELEMENT_RE = re.compile(
     r"\s*$"
 )
 _STEP_RE = re.compile(
-    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
+    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)(?:\s+(?P<touch>one-touch|two-touch|first-time))?\s*$"
 )
 _POINT_RE = re.compile(r"^point\s*:\s*(?P<text>.+?)\s*$")
+_VARIATION_RE = re.compile(r"^variation\s*:\s*(?P<text>.+?)\s*$")
 _OPTION_RE = re.compile(
     r"^or\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
 )
@@ -53,6 +54,7 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
     elements: list[dict[str, Any]] = []
     paths: list[dict[str, Any]] = []
     coaching_points: list[str] = []
+    variations: list[str] = []
     seen_ids: set[str] = set()
     last_step = 0
 
@@ -97,6 +99,13 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
             })
             continue
 
+        if head == "variation":
+            mv = _VARIATION_RE.match(line)
+            if not mv:
+                raise DSLParseError(idx, "malformed variation")
+            variations.append(mv.group("text"))
+            continue
+
         if head == "point":
             m = _POINT_RE.match(line)
             if not m:
@@ -113,6 +122,7 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
             "paths": paths,
         },
         "coaching_points": coaching_points,
+        "variations": variations,
     }
 
 
@@ -157,4 +167,6 @@ def _parse_step(line: str, idx: int) -> tuple[dict[str, Any], int]:
         "style": style,
         "step": step_num,
     }
+    if m.group("touch"):
+        path["touches"] = 1 if m.group("touch") in ("one-touch", "first-time") else 2
     return path, step_num

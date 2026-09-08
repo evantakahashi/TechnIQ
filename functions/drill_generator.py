@@ -36,6 +36,8 @@ DSL grammar:
 - Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
 - Alternatives: `or: ID verb ID` right after a step shows another live option for that moment (drawn as a dashed 'or' arrow). Use in duels to show both gates.
+- Touch tags: append `one-touch` or `two-touch` to pass/receive steps in passing drills (`step 2: P2 passes to P1 one-touch`) — kids must SEE the touch count.
+- Variations: 2-3 `variation:` lines after the points (e.g. `variation: Weak foot only — every pass with the weak foot`, `variation: Inside-outside — alternate surfaces each rep`). These render as selectable chips.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
 
 Rules:
@@ -132,6 +134,10 @@ def generate_drill(
     playing_style = request.get("playing_style") or ""
     skill_goals = request.get("skill_goals") or []
 
+    blob_field = f"{skill_description} {weakness}".lower()
+    if any(k in blob_field for k in _HALF_FIELD_SKILLS) and field_size != "large":
+        field_size = "half"
+
     archetype = pick_archetype(weakness, level, number_of_players)
     exemplars = get_exemplars(archetype, level=level, n=3, number_of_players=number_of_players)
     rule_pack = get_rule_pack(weakness)
@@ -220,7 +226,13 @@ _FIELD_SIZE_DIMS = {
     "small":  (20, 15),
     "medium": (30, 20),
     "large":  (50, 30),
+    # Proper half-pitch, real proportions: regulation 7.32m goal reads right,
+    # 18yd/6yd boxes to scale. The default stage for finishing/crossing work.
+    "half":   (52.5, 68),
 }
+
+# Skills that live around the goal always get the half-field template.
+_HALF_FIELD_SKILLS = ("shoot", "finish", "strik", "cross", "volley", "chip", "goal")
 
 _ELITE_REQUIREMENTS = """\
 For intermediate/advanced, the drill MUST include ALL of:
@@ -389,7 +401,7 @@ def _build_prompt(
     lines += [
         f"Starting archetype (a shape to adapt, not copy): {archetype}",
         f"Constraints: max area {width}x{length}m, max cone spacing {age_cap}m, equipment {equipment}",
-        f"COORDINATES: the field spans x 0-{width} (attacking direction) and y 0-{length}. Origin (0,0) is a corner; attack toward the x={width} line.",
+        f"COORDINATES: the field spans x 0-{width} (attacking direction) and y 0-{length}. Origin (0,0) is a corner; attack toward the x={width} line. On the half-field (52.5x68) the goal sits centered at (52.5, 34) width 7.32 — place finishing work inside/around the 16.5m box like real training.",
         "Equipment is what's AVAILABLE, not a checklist — use only the pieces the drill actually needs. A great drill with just a ball beats a cluttered one that forces every item in.",
         "",
     ]

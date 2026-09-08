@@ -15,7 +15,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
     "Passing": {
         "primary_action": "play a weighted, accurate pass between teammates under passive or active pressure, then reposition for the return",
         "verb_keywords": ["pass", "receive", "play", "open up", "support"],
-        "must_include": ["≥2 players exchanging passes", "directional target or rotating position", "receiver repositioning between passes"],
+        "must_include": ["≥2 players exchanging passes", "directional target or rotating position", "receiver repositioning between passes", "explicit one-touch/two-touch tag on every pass step"],
         "must_avoid": ["two stationary players exchanging passes in a straight line with no off-ball movement"],
         "success_metric": "≥80% of passes arrive to the receiver's correct foot in ≤2 seconds with pressure applied",
         "perception_action_cue": "passer looks up before the pass; receiver opens body to next option before the ball arrives",

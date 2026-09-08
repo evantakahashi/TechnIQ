@@ -291,7 +291,7 @@ point: Scan the keeper before the final touch, then drive through the ball
         return HIGH_QUALITY_ADVANCED
 
     req = make_request()
-    req["weakness"] = "Shooting"
+    req["weakness"] = "Passing"  # avoid half-field auto-routing; fixture coords are small-field
     req["experience_level"] = "advanced"
     drill = generate_drill(req, llm_call=capture)
     assert drill is not None

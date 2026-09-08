@@ -278,6 +278,10 @@ def _check_equipment_consistency(equipment: List[str], elements: List[Dict]) -> 
     return warnings
 
 
+def ordered_for_reset(paths):
+    return sorted(paths, key=lambda x: (x.get("step", 0), bool(x.get("alt"))))
+
+
 def annotate_path_positions(drill: dict) -> None:
     """Bake real per-step coordinates onto each path (fx/fy/tx/ty).
 
@@ -307,6 +311,35 @@ def annotate_path_positions(drill: dict) -> None:
             continue
         if p.get("style") in ("run", "dribble") and src.get("player"):
             src["x"], src["y"] = dst["x"], dst["y"]
+
+    # Reset tagging: collect/return legs exist for ball logic but are not
+    # part of the practiced action — renderers hide them behind a fade.
+    by_label = {e.get("label"): e for e in elements}
+    ball_labels = {e.get("label") for e in elements if e.get("type") == "ball"}
+    rest_at = None
+    prev_reset = False
+    for p in ordered_for_reset(paths):
+        style, src, dst = p.get("style"), p.get("from"), p.get("to")
+        dst_type = by_label.get(dst, {}).get("type")
+        is_reset = False
+        if style == "run" and (dst in ball_labels or dst == rest_at
+                               or dst_type in ("goal", "gate") and dst == rest_at):
+            is_reset = True
+        elif style == "dribble" and prev_reset and dst_type == "player":
+            is_reset = True  # return leg after collecting
+        elif style == "dribble" and dst in ball_labels:
+            is_reset = True  # dribble back to the start marker
+        elif style == "receive" and prev_reset:
+            is_reset = True  # handover completing the return
+        if is_reset:
+            p["reset"] = True
+        prev_reset = is_reset
+        if style in ("shoot", "shot") or (
+                style in ("pass", "toss", "throw", "header")
+                and dst_type in ("goal", "gate")):
+            rest_at = dst
+        elif is_reset and style == "run":
+            rest_at = None
 
     # Concurrency: a run by a DIFFERENT actor that closes on the previous
     # step's actor or target plays simultaneously (duels: defender closes

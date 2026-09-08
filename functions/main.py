@@ -140,6 +140,8 @@ def _synthesize_instructions(drill: Dict) -> list:
     elements = {e.get("label"): e for e in diagram.get("elements") or []}
     steps = []
     for p in sorted(diagram.get("paths") or [], key=lambda x: x.get("step", 0)):
+        if p.get("reset") or p.get("alt"):
+            continue  # resets are hidden mechanics; alts render as or-arrows
         verb = _PATH_STYLE_VERBS.get(p.get("style"), "moves to")
         src = elements.get(p.get("from"), {})
         src_name = src.get("label") or p.get("from")
@@ -541,6 +543,12 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         )
         drill.setdefault("setup", _synthesize_setup(drill))
         drill.setdefault("instructions", _synthesize_instructions(drill))
+        raw_vars = drill.get("variations") or []
+        drill["variations"] = [
+            {"name": (v.split(" — ")[0] if " — " in v else v)[:40],
+             "description": v, "modification": v}
+            for v in raw_vars if isinstance(v, str)
+        ][:4]
         drill.setdefault("estimatedDuration", duration_minutes)
         drill.setdefault("difficulty", level)
         drill.setdefault("category", "technical")
