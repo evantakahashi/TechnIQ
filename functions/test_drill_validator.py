@@ -238,6 +238,7 @@ def test_header_without_ball_raises():
 def test_duel_overscripted_raises():
     drill = make_valid_drill()
     drill["equipment"].append("partner")
+    drill["is_duel"] = True
     drill["diagram"]["elements"].append(
         {"type": "player", "x": 8, "y": 4, "label": "P2", "role": "defender"}
     )

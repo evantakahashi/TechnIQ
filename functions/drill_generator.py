@@ -12,7 +12,7 @@ from drill_validator import ValidationError, validate_drill
 from exemplars import get_exemplars
 
 
-MAX_ATTEMPTS = 4
+MAX_ATTEMPTS = 5
 
 SYSTEM_PROMPT = """\
 You design soccer training drills. Your #1 job: make the player REPEATEDLY PRACTICE THE REQUESTED SKILL.
@@ -33,7 +33,7 @@ DSL grammar:
   optional `label "..."` on players.
 - Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from, throws to, tosses to, heads to}
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
-- Valid `passes to` targets: player, server, defender, wall, goal. Never pass to a cone or gate.
+- Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
 

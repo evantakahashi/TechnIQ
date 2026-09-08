@@ -73,15 +73,15 @@ def test_retries_include_prior_error_in_prompt():
 
 
 def test_fails_after_second_parse_error():
-    llm = make_llm(["broken1", "broken2", "broken3", "broken4"])
+    llm = make_llm(["broken1", "broken2", "broken3", "broken4", "broken5"])
     with pytest.raises(DrillGenerationFailed):
         generate_drill(make_request(), llm_call=llm)
-    assert llm.call_count == 4
+    assert llm.call_count == 5
 
 
 def test_fails_after_second_validation_error():
     invalid_dsl = "cone C1 at (0,0)\nplayer P1 at (5,0) role \"worker\"\nstep 1: P1 dribbles to GHOST\n"
-    llm = make_llm([invalid_dsl, invalid_dsl, invalid_dsl, invalid_dsl])
+    llm = make_llm([invalid_dsl] * 5)
     with pytest.raises(DrillGenerationFailed):
         generate_drill(make_request(), llm_call=llm)
 
@@ -301,7 +301,7 @@ point: Scan the keeper before the final touch, then drive through the ball
     assert "PRIOR ATTEMPT WAS VALID DSL BUT NOT A USEFUL PRACTICE" in second_prompt
 
 
-def test_exhausts_four_attempts_on_quality_failure():
+def test_exhausts_all_attempts_on_quality_failure():
     LOW_QUALITY = """\
 player P1 at (5, 7) role "worker"
 cone C1 at (10, 7)
@@ -311,18 +311,18 @@ step 1: P1 dribbles to C1
 
 point: Work hard
 """
-    llm = make_llm([LOW_QUALITY, LOW_QUALITY, LOW_QUALITY, LOW_QUALITY])
+    llm = make_llm([LOW_QUALITY] * 5)
     req = make_request()
     req["weakness"] = "Shooting"
     req["experience_level"] = "advanced"
     with pytest.raises(DrillGenerationFailed):
         generate_drill(req, llm_call=llm)
-    assert llm.call_count == 4
+    assert llm.call_count == 5
 
 
-def test_max_attempts_is_four():
+def test_max_attempts_is_five():
     from drill_generator import MAX_ATTEMPTS
-    assert MAX_ATTEMPTS == 4
+    assert MAX_ATTEMPTS == 5
 
 
 def test_generate_drill_accepts_new_fields(monkeypatch):

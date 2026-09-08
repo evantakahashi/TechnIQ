@@ -203,5 +203,12 @@
   "dsl": "player P1 at (15, 7.5) role \"server\" label \"Attacker\"\nplayer P2 at (10, 7.5) role \"worker\" label \"Defender\"\nball B1 at (15, 7.5)\ngate G1 at (3, 4) width 2\ngate G2 at (3, 11) width 2\nstep 1: P1 dribbles to P2\nstep 2: P1 dribbles to G1\npoint: Warm up 2-3 minutes \u2014 light jogging, side shuffles, a few easy 50% duels\npoint: HOW IT WORKS: the attacker drives at the defender and tries to dribble through EITHER gate \u2014 everything after the first touch is live, not scripted\npoint: Defender: close fast for the first 70%, then chop into a low side-on stance an arm's length away \u2014 never dive in\npoint: Read hips and touch, not the ball; force the weak foot and the sideline\npoint: Scoring: defender wins by stealing OR delaying 3+ seconds; attacker wins through a gate. First to 5\npoint: Swap roles after every 3 attacks; walking the ball back is the rest\npoint: Progression: move the gates 2m closer together; regression: attacker at walking pace",
   "notes": "Duel as rules-of-the-game: 2 setup arrows only, everything else live. Swap after 3 attacks.",
   "is_duel": true
+ },
+ {
+  "id": "pair_serve_return_oneball_adv",
+  "archetype": "wall_passing",
+  "pressure": "active",
+  "dsl": "player P1 at (2, 7.5) role \"server\" label \"Server\"\nplayer P2 at (10, 7.5) role \"worker\"\nball B1 at (2, 7.5)\ncone C1 at (14, 4.5)\ncone C2 at (14, 10.5)\ngate G1 at (6, 7.5) width 1.5\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 dribbles to P1\nstep 4: P1 receives from P2\nstep 5: P1 passes to P2\nstep 6: P2 dribbles to C2\nstep 7: P2 dribbles to P1\nstep 8: P1 receives from P2\npoint: Warm up \u2014 two minutes of easy short passing before working at pace\npoint: ONE ball: execute, then work it straight back to the server and hand it over \u2014 the return is your reset\npoint: Every serve must split the lane gate \u2014 a pass that misses the gate is a missed rep\npoint: Beat the clock: complete each rep (receive, action, return) inside 10 seconds \u2014 that's your pressure\npoint: Target: 8 of 10 serves through the gate; count out loud\npoint: Swap roles after each set of 5\npoint: Progression: server moves 3m deeper; regression: widen the gate to 2.5m",
+  "notes": "Canonical 2-player one-ball serve-execute-return shape with lane gate and time pressure. The few-shot for any pair skill."
  }
 ]

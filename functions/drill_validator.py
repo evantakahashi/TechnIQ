@@ -337,11 +337,9 @@ def _check_duel_not_overscripted(
     ignored twice; enforce a hard cap. Defending requests mark the WORKER as
     the defender (no defender-role element), so the generator stamps is_duel.
     """
-    has_defender = any(
-        e.get("type") == "player" and e.get("role") == "defender"
-        for e in elements
-    )
-    if (has_defender or is_duel) and len(paths) > 3:
+    # Only the generator's context-aware flag decides duel-ness; a passive
+    # defender obstacle (chip-over, shield-from) may appear in scripted drills.
+    if is_duel and len(paths) > 3:
         raise ValidationError(
             f"duel drills must show only positions and the attack direction — "
             f"max 3 steps, got {len(paths)}; put the rules, scoring and "
