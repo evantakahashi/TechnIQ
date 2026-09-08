@@ -381,3 +381,41 @@ def test_zero_length_pass_raises():
     ]
     with pytest.raises(ValidationError, match="under 1m"):
         validate_drill(drill)
+
+
+def _solo_pass_drill(target):
+    return {
+        "diagram": {
+            "field": {"width": 20, "length": 15},
+            "elements": [
+                target,
+                {"type": "ball", "x": 5, "y": 7, "label": "B1"},
+                {"type": "player", "x": 5, "y": 8, "label": "P1", "role": "worker"},
+            ],
+            "paths": [{"from": "P1", "to": target["label"], "style": "pass", "step": 1}],
+        },
+        "coaching_points": [],
+        "equipment": ["ball"],
+    }
+
+
+def test_solo_pass_to_cone_raises():
+    drill = _solo_pass_drill({"type": "cone", "x": 12, "y": 7, "label": "C1"})
+    drill["equipment"].append("cones")
+    with pytest.raises(ValidationError, match="nobody is there"):
+        validate_drill(drill)
+
+
+def test_solo_pass_to_wall_passes():
+    drill = _solo_pass_drill({"type": "wall", "x": 12, "y": 7, "label": "W1"})
+    drill["equipment"].append("wall")
+    validate_drill(drill)
+
+
+def test_solo_pass_through_gate_passes():
+    # The user's own 4-gate first-touch spec: gates ARE solo pass targets.
+    drill = _solo_pass_drill({"type": "gate", "x": 12, "y": 7, "label": "G1", "width": 2})
+    drill["equipment"].append("cones")
+    drill["diagram"]["paths"].append(
+        {"from": "P1", "to": "G1", "style": "run", "step": 2})
+    validate_drill(drill)

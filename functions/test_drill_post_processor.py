@@ -417,3 +417,43 @@ def test_crop_keeps_edge_goal_on_edge():
     f = drill["diagram"]["field"]
     gl = [e for e in drill["diagram"]["elements"] if e["type"] == "goal"][0]
     assert abs(gl["x"] - f["width"]) <= 0.01
+
+
+def _carrier_run_drill():
+    return {
+        "name": "n", "description": "d", "setup": "s", "instructions": ["i"],
+        "difficulty": 1, "category": "technical", "targetSkills": ["x"],
+        "equipment": ["ball", "cones"],
+        "diagram": {
+            "field": {"width": 20, "length": 15},
+            "elements": [
+                {"type": "ball", "x": 5, "y": 7, "label": "B1"},
+                {"type": "player", "x": 5, "y": 8, "label": "P1", "role": "worker"},
+                {"type": "cone", "x": 12, "y": 7, "label": "C1"},
+                {"type": "cone", "x": 16, "y": 7, "label": "C2"},
+            ],
+            "paths": [
+                {"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+                {"from": "P1", "to": "C2", "style": "run", "step": 2},
+            ],
+        },
+    }
+
+
+def test_carrier_run_rewritten_to_dribble():
+    drill, warnings = post_process_drill(_carrier_run_drill(), player_age=14)
+    assert drill["diagram"]["paths"][1]["style"] == "dribble"
+    assert any("rewrote as dribble" in w for w in warnings)
+
+
+def test_ball_free_run_untouched():
+    d = _carrier_run_drill()
+    # shot leaves the ball at the gate target — the follow-up run is a real run
+    d["diagram"]["elements"].append({"type": "gate", "x": 18, "y": 7, "label": "G1", "width": 2})
+    d["diagram"]["paths"] = [
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+        {"from": "P1", "to": "G1", "style": "shoot", "step": 2},
+        {"from": "P1", "to": "G1", "style": "run", "step": 3},
+    ]
+    drill, _ = post_process_drill(d, player_age=14)
+    assert drill["diagram"]["paths"][2]["style"] == "run"

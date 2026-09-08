@@ -103,6 +103,10 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
     paths, path_warnings = _validate_paths(paths, elements, instructions)
     warnings.extend(path_warnings)
 
+    # 3b. Carrier runs are dribbles — deterministic semantic repair
+    norm_warnings = _normalize_carrier_runs(elements, paths)
+    warnings.extend(norm_warnings)
+
     # 4. Equipment consistency
     equip_warnings = _check_equipment_consistency(equipment, elements)
     warnings.extend(equip_warnings)
@@ -258,6 +262,89 @@ def _check_age_spacing(elements: List[Dict], player_age: int) -> List[str]:
                     f"Cone spacing {dist:.1f}m between '{cones[i].get('label')}' and "
                     f"'{cones[j].get('label')}' exceeds {max_spacing}m max for age {player_age}"
                 )
+    return warnings
+
+
+def _normalize_carrier_runs(elements: List[Dict], paths: List[Dict]) -> List[str]:
+    """Rewrite 'runs to' into 'dribbles to' when the mover has the ball.
+
+    A carrier moving IS a dribble — the model habitually writes 'runs to'
+    for the jog back after a rep and never self-corrects across retries,
+    so repair it deterministically instead of failing the drill. The
+    walk-back dribble then gets reset-tagged (hidden) downstream. Mirrors
+    the validator's possession machine; the validator stays as backstop.
+    """
+    warnings: List[str] = []
+    by_label = {e.get("label"): e for e in elements}
+    unclaimed = {e["label"] for e in elements if e.get("type") == "ball"}
+
+    def near(a: Dict, b: Dict, dist: float) -> bool:
+        return math.hypot(a.get("x", 0) - b.get("x", 0),
+                          a.get("y", 0) - b.get("y", 0)) <= dist
+
+    holder = None
+    resting_at = None
+    # Initial possession, mirroring the validator: standing on a ball owns it.
+    for e in elements:
+        if e.get("type") != "player":
+            continue
+        for bl in list(unclaimed):
+            if near(e, by_label[bl], 2.5):
+                holder = e.get("label")
+                unclaimed.discard(bl)
+                break
+        if holder:
+            break
+    for p in sorted(paths, key=lambda x: x.get("step", 0) or 0):
+        if p.get("alt"):
+            continue
+        style, src, dst = p.get("style"), p.get("from"), p.get("to")
+
+        if style in ("pass", "dribble", "shoot", "shot", "throw", "toss", "header") \
+                and holder != src:
+            src_el = by_label.get(src)
+            if src_el is not None:
+                reach = 6.0 if src_el.get("role") == "server" else 3.0
+                for bl in list(unclaimed):
+                    if near(src_el, by_label[bl], reach):
+                        holder = src
+                        unclaimed.discard(bl)
+                        break
+
+        if style == "dribble":
+            pass  # ball travels with the dribbler
+        elif style in ("pass", "throw", "toss", "header"):
+            dst_el = by_label.get(dst, {})
+            if dst_el.get("type") == "player":
+                holder = dst
+            elif dst_el.get("type") == "wall":
+                pass  # rebound back to the passer
+            else:
+                holder, resting_at = None, dst
+        elif style in ("shoot", "shot"):
+            if by_label.get(dst, {}).get("type") == "wall":
+                pass
+            else:
+                holder, resting_at = None, dst
+        elif style == "receive":
+            if holder == dst or by_label.get(dst, {}).get("type") in ("wall", "ball") \
+                    or resting_at == dst:
+                holder, resting_at = src, None
+        elif style == "run":
+            if holder == src:
+                p["style"] = "dribble"  # the repair: carrier movement is a dribble
+                warnings.append(
+                    f"step {p.get('step')}: {src} ran while carrying — rewrote as dribble")
+                continue
+            dst_el = by_label.get(dst, {})
+            if dst_el.get("type") == "ball" and dst in unclaimed:
+                unclaimed.discard(dst)
+                holder = src
+            elif holder is None:
+                rest_el = by_label.get(resting_at) if resting_at else None
+                if dst == resting_at or (rest_el is not None and dst_el
+                                         and near(dst_el, rest_el, 2.0)):
+                    holder, resting_at = src, None
     return warnings
 
 

@@ -583,11 +583,13 @@ def _check_no_zero_length_ball_actions(paths: list[dict[str, Any]]) -> None:
 def _check_solo_pass_targets(
     elements: list[dict[str, Any]], paths: list[dict[str, Any]]
 ) -> None:
-    """Solo drills: a pass needs something that plays it back — a wall.
+    """Solo drills: a pass needs a target that makes sense alone.
 
-    User review: solo drills passing to gates/cones ("no one is there")
-    are unusable. With one player, pass/toss targets must be a wall;
-    shots/headers at targets are still fine (you collect them).
+    User review: solo drills passing at cones ("no one is there") are
+    unusable. With one player a pass goes against a wall (plays it back)
+    or through a gate (a window you play through, then collect — the
+    user's own 4-gate first-touch spec). Cones/mannequins are not
+    receivers; shots/headers at targets are still fine.
     """
     players = [e for e in elements if e.get("type") == "player"]
     if len(players) != 1:
@@ -599,11 +601,11 @@ def _check_solo_pass_targets(
         if p.get("to") == p.get("from"):
             continue  # self-toss is a legitimate solo serve
         tgt = by_label.get(p.get("to"), {}).get("type")
-        if tgt != "wall":
+        if tgt not in ("wall", "gate"):
             raise ValidationError(
                 f"step {p.get('step')}: solo drill passes to a {tgt} — "
                 "nobody is there to receive it; solo passes go against a "
-                "wall (or redesign as dribble/shot reps)"
+                "wall or through a gate (or redesign as dribble/shot reps)"
             )
 
 
