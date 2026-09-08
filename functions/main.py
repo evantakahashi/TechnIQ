@@ -499,6 +499,9 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                 max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}],
             )
+            u = msg.usage
+            logger.info(f"💰 drill-gen tokens in={u.input_tokens} out={u.output_tokens} "
+                        f"est=${(u.input_tokens*5 + u.output_tokens*25)/1e6:.4f}")
             return msg.content[0].text
 
         # Validate request data
