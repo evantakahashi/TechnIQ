@@ -77,7 +77,7 @@ def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:
 
 
 def _check_step_numbers_contiguous(paths: list[dict[str, Any]]) -> None:
-    nums = sorted(p.get("step", 0) for p in paths)
+    nums = sorted(p.get("step", 0) for p in paths if not p.get("alt"))
     expected = list(range(1, len(nums) + 1))
     if nums != expected:
         raise ValidationError(
@@ -231,6 +231,8 @@ def _check_ball_continuity(
             break
 
     for p in sorted(paths, key=lambda x: x.get("step", 0)):
+        if p.get("alt"):
+            continue  # hypothetical branch — no possession effect
         step, style = p.get("step"), p.get("style")
         src, dst = p.get("from"), p.get("to")
         needs_ball = style in ("pass", "dribble", "shoot", "shot", "throw", "toss", "header")
@@ -299,6 +301,8 @@ def _check_no_redundant_movement(paths: list[dict[str, Any]]) -> None:
     """Consecutive steps must not move the same actor to the same target."""
     prev: dict[str, Any] | None = None
     for p in sorted(paths, key=lambda x: x.get("step", 0)):
+        if p.get("alt"):
+            continue
         if prev is not None and p.get("from") == prev.get("from") \
            and p.get("to") == prev.get("to") \
            and p.get("style") in ("run", "dribble") \
@@ -341,7 +345,7 @@ def _check_duel_not_overscripted(
     """
     # Only the generator's context-aware flag decides duel-ness; a passive
     # defender obstacle (chip-over, shield-from) may appear in scripted drills.
-    if is_duel and len(paths) > 3:
+    if is_duel and sum(1 for p in paths if not p.get("alt")) > 3:
         raise ValidationError(
             f"duel drills must show only positions and the attack direction — "
             f"max 3 steps, got {len(paths)}; put the rules, scoring and "

@@ -301,7 +301,10 @@ def annotate_path_positions(drill: dict) -> None:
             continue
         p["fx"], p["fy"] = round(src["x"], 2), round(src["y"], 2)
         p["tx"], p["ty"] = round(dst["x"], 2), round(dst["y"], 2)
-        # Movement relocates the mover; ball flights leave positions unchanged.
+        # Movement relocates the mover; ball flights leave positions
+        # unchanged. Alt branches are hypothetical — they never relocate.
+        if p.get("alt"):
+            continue
         if p.get("style") in ("run", "dribble") and src.get("player"):
             src["x"], src["y"] = dst["x"], dst["y"]
 

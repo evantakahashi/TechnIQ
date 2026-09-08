@@ -35,6 +35,7 @@ DSL grammar:
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
 - Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
+- Alternatives: `or: ID verb ID` right after a step shows another live option for that moment (drawn as a dashed 'or' arrow). Use in duels to show both gates.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
 
 Rules:
@@ -66,7 +67,7 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
 - Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-6 steps max — and put the outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
-- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); an optional step 2 shows one break toward a gate. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks').
+- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); step 2 shows one break toward a gate, and an `or:` line shows each alternative (e.g. `or: P1 dribbles to G2`) so the kid SEES the choice. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks').
 - NEVER write raw coordinates like (5, 7.5) in coaching points — kids read those; use soccer language ('start on the halfway line').
 - Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 

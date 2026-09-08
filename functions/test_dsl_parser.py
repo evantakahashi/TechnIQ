@@ -184,3 +184,19 @@ point: b''')
     els = {e["label"]: e for e in d["diagram"]["elements"]}
     assert els["D1"]["type"] == "player" and els["D1"]["role"] == "defender"
     assert els["S1"]["type"] == "player" and els["S1"]["role"] == "server"
+
+
+def test_or_option_parses_as_alt():
+    from dsl_parser import parse_dsl
+    d = parse_dsl('''player P1 at (5, 5) role "worker"
+player P2 at (10, 5) role "server"
+ball B1 at (5, 5)
+gate G1 at (18, 3) width 2
+gate G2 at (18, 12) width 2
+step 1: P1 dribbles to P2
+step 2: P1 dribbles to G1
+or: P1 dribbles to G2
+point: a
+point: b''')
+    alts = [p for p in d["diagram"]["paths"] if p.get("alt")]
+    assert len(alts) == 1 and alts[0]["to"] == "G2" and alts[0]["step"] == 2

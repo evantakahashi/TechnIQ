@@ -588,9 +588,11 @@ struct AnimatedDrillDiagramView: View {
                     CurvedPathShape(from: fromPt, to: toPt, control: controlPt)
                         .stroke(
                             pathColor(path.pathStyle),
-                            style: pathStrokeStyle(path.pathStyle)
+                            style: path.alt == true
+                                ? StrokeStyle(lineWidth: 1.6, lineCap: .round, dash: [5, 5])
+                                : pathStrokeStyle(path.pathStyle)
                         )
-                        .opacity(pathOpacity(for: path))
+                        .opacity(pathOpacity(for: path) * (path.alt == true ? 0.55 : 1.0))
 
     // Arrowhead for ball-travel styles
                     if path.pathStyle == .pass || path.pathStyle == .shoot || path.pathStyle == .receive {

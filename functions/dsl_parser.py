@@ -40,6 +40,9 @@ _STEP_RE = re.compile(
     r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
 )
 _POINT_RE = re.compile(r"^point\s*:\s*(?P<text>.+?)\s*$")
+_OPTION_RE = re.compile(
+    r"^or\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
+)
 
 
 def parse_dsl(dsl: str) -> dict[str, Any]:
@@ -77,6 +80,21 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
                 )
             last_step = step_num
             paths.append(path)
+            continue
+
+        if head == "or":
+            m = _OPTION_RE.match(line)
+            if not m:
+                raise DSLParseError(idx, "malformed option (or: X verb Y)")
+            if last_step == 0:
+                raise DSLParseError(idx, "or: must follow a step")
+            paths.append({
+                "from": m.group("src"),
+                "to": m.group("dst"),
+                "style": VERB_TO_STYLE[m.group("verb")],
+                "step": last_step,
+                "alt": True,
+            })
             continue
 
         if head == "point":

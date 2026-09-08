@@ -197,13 +197,15 @@ struct DiagramPath: Codable {
     let fy: Double?
     let tx: Double?
     let ty: Double?
+    let alt: Bool?     // hypothetical "or" branch — drawn dashed, no possession effect
 
     var pathStyle: DiagramPathStyle {
         DiagramPathStyle(rawValue: style) ?? .run
     }
 
     init(from: String, to: String, style: String, step: Int? = nil,
-         fx: Double? = nil, fy: Double? = nil, tx: Double? = nil, ty: Double? = nil) {
+         fx: Double? = nil, fy: Double? = nil, tx: Double? = nil, ty: Double? = nil,
+         alt: Bool? = nil) {
         self.from = from
         self.to = to
         self.style = style
@@ -212,6 +214,7 @@ struct DiagramPath: Codable {
         self.fy = fy
         self.tx = tx
         self.ty = ty
+        self.alt = alt
     }
 }
 
