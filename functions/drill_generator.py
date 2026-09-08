@@ -78,6 +78,11 @@ TWO-PHASE SKILLS (receive-then-play-forward, control-then-escape, save-then-dist
 - One live ball per drill: a server never feeds a second ball until the first is dead and collected.
 - Role math must work: 'pressing as a pair' needs 2 pressers + a carrier (3) — with fewer players, redefine the drill honestly.
 
+STAGE & PRESENTATION (know how your output is shown, and design FOR it):
+- Finishing/crossing/volley work is staged on a HALF-FIELD (52.5x68, regulation goal at (52.5,34), real 16.5m box) — design around the box like real training.
+- Collect-and-return legs (running to the resting ball, working it back) are HIDDEN from the kid: the animation fades between reps. Script them for ball logic, but keep them minimal — they are plumbing, not content. The reps are what the kid sees.
+- Touch tags render as badges on the arrow; `or:` lines render as dashed choice-arrows; `variation:` lines render as selectable chips. Use all three deliberately.
+
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
 - ONE BALL ON THE PITCH: declare exactly ONE ball element, at the feet of whoever starts with it. Extra supply balls are NEVER drawn — mention a stack in a coaching point if useful. Every cycle scripts the collect-and-return: after a shot/cross, someone runs to the ball and works it back (that jog is the rest). Use `receives from` to hand the ball over.

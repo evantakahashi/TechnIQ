@@ -15,7 +15,7 @@ VERB_TO_STYLE = {
     "tosses to": "toss",     # underhand serve for heading/volley work
 }
 
-ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall", "defender", "server"}
+ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall", "defender", "server", "mannequin"}
 
 
 class DSLParseError(ValueError):
@@ -29,7 +29,7 @@ class DSLParseError(ValueError):
 
 _COORD_RE = re.compile(r"\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)")
 _ELEMENT_RE = re.compile(
-    r"^(?P<kind>cone|gate|ball|goal|player|wall|defender|server)\s+(?P<id>\w+)\s+at\s+"
+    r"^(?P<kind>cone|gate|ball|goal|player|wall|defender|server|mannequin)\s+(?P<id>\w+)\s+at\s+"
     r"(?P<coord>\([^)]+\))"
     r"(?:\s+width\s+(?P<width>\d+(?:\.\d+)?))?"
     r"(?:\s+role\s+\"(?P<role>[^\"]*)\")?"

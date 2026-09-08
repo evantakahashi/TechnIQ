@@ -16,7 +16,7 @@ EQUIPMENT_TO_ELEMENT_TYPES: dict[str, set[str]] = {
 }
 
 # Element types that do not require equipment authorization
-IMPLICIT_ELEMENT_TYPES: set[str] = {"player", "gate"}
+IMPLICIT_ELEMENT_TYPES: set[str] = {"player", "gate", "mannequin"}
 
 
 def _element_types_for_equipment(item: str) -> set[str]:

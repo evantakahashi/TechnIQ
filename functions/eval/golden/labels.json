@@ -1,0 +1,27 @@
+{
+  "governance": "Frozen + additive. Verdicts are Evan's words; goldens gate deploys.",
+  "cases": [
+    {"id": "tight-dribble", "verdict": "golden", "rubric_floor": 80, "evan": "i really like this one — show right foot/left foot variations",
+     "request": {"skill_description": "tight dribbling in small spaces", "weakness": "Dribbling Skills", "experience_level": "intermediate", "player_age": 13, "position": "Midfielder", "equipment": ["ball", "cones"], "number_of_players": 1, "category": "technical", "field_size": "small"}},
+    {"id": "speed-ball", "verdict": "golden", "rubric_floor": 95, "evan": "solid, no complaints — would like foot/surface variations",
+     "request": {"skill_description": "get way faster with the ball", "weakness": "Speed & Agility", "experience_level": "intermediate", "player_age": 11, "position": "Forward", "equipment": ["ball", "cones"], "number_of_players": 1, "category": "physical", "field_size": "small"}},
+    {"id": "defend-1v1", "verdict": "ok", "rubric_floor": 95, "evan": "pretty solid; interception could be a variation",
+     "request": {"skill_description": "defending 1v1 without diving in", "weakness": "Defending", "experience_level": "advanced", "player_age": 16, "position": "Defender", "equipment": ["ball", "cones", "partner"], "number_of_players": 2, "category": "tactical", "field_size": "small"}},
+    {"id": "crossing-finish", "verdict": "ok", "rubric_floor": 90, "evan": "solid but crosser must be wider; corner targets; half-field proportions; hide retrieval",
+     "request": {"skill_description": "crossing and finishing combination", "weakness": "Crossing", "experience_level": "intermediate", "player_age": 15, "position": "Forward", "equipment": ["ball", "cones", "partner", "goals"], "number_of_players": 2, "category": "technical", "field_size": "medium"}},
+    {"id": "heading-def", "verdict": "ok", "rubric_floor": 85, "evan": "good idea; variation: contested header; header back to server for one ball",
+     "request": {"skill_description": "defensive heading and clearances", "weakness": "Defending", "experience_level": "advanced", "player_age": 16, "position": "Defender", "equipment": ["ball", "partner", "goals"], "number_of_players": 2, "category": "tactical", "field_size": "medium"}},
+    {"id": "shoot-turn", "verdict": "ok", "rubric_floor": 95, "evan": "OK but not a turn — a turn is back-to-goal receive; this is a skill-move-and-shoot",
+     "request": {"skill_description": "finishing after a quick turn in the box", "weakness": "Shooting Accuracy", "experience_level": "intermediate", "player_age": 14, "position": "Forward", "equipment": ["ball", "cones", "goals"], "number_of_players": 1, "category": "technical", "field_size": "medium"}},
+    {"id": "first-touch-solo", "verdict": "bad", "rubric_floor": 0, "evan": "works turning, not bouncing-ball touch; bouncing = toss up, direct touch through a gate on any of 4 sides",
+     "request": {"skill_description": "cleaner first touch on bouncing balls", "weakness": "First Touch", "experience_level": "intermediate", "player_age": 12, "position": "Midfielder", "equipment": ["ball", "cones", "wall"], "number_of_players": 1, "category": "technical", "field_size": "small"}},
+    {"id": "first-touch", "verdict": "bad", "rubric_floor": 0, "evan": "under pressure = receiving with a defender/mannequin behind you, react and touch in the optimal direction",
+     "request": {"skill_description": "first touch under pressure then explode away", "weakness": "First Touch", "experience_level": "advanced", "player_age": 16, "position": "Midfielder", "equipment": ["ball", "cones"], "number_of_players": 1, "category": "technical", "field_size": "small"}},
+    {"id": "gk-wall", "verdict": "bad", "rubric_floor": 0, "evan": "angled wall bounces opposite; self-throw can't test reactions — GK drills need a thrower",
+     "request": {"skill_description": "goalkeeper reaction saves off a rebound wall", "weakness": "Goalkeeping", "experience_level": "advanced", "player_age": 16, "position": "Goalkeeper", "equipment": ["ball", "wall"], "number_of_players": 1, "category": "technical", "field_size": "small"}},
+    {"id": "passing-pair", "verdict": "bad", "rubric_floor": 0, "evan": "must SHOW one vs two touches; gate redundant — cones in front, receive one side touch across pass",
+     "request": {"skill_description": "sharper one touch passing with a partner", "weakness": "Passing Accuracy", "experience_level": "intermediate", "player_age": 13, "position": "Midfielder", "equipment": ["ball", "cones", "partner"], "number_of_players": 2, "category": "technical", "field_size": "small"}},
+    {"id": "2v-pressing", "verdict": "bad", "rubric_floor": 0, "evan": "terrible — why does the other player run to a cone; not game realistic",
+     "request": {"skill_description": "pressing as a pair to trap the ball carrier", "weakness": "Defending", "experience_level": "advanced", "player_age": 16, "position": "Forward", "equipment": ["ball", "partner", "cones"], "number_of_players": 3, "category": "tactical", "field_size": "medium"}}
+  ]
+}
