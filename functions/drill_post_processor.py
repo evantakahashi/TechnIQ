@@ -351,6 +351,14 @@ def annotate_path_positions(drill: dict) -> None:
                 and cur.get("from") != prev.get("from")
                 and cur.get("to") in (prev.get("from"), prev.get("to"))):
             cur["sync"] = True
+        # Timed delivery: a pass/toss to a player whose previous step was that
+        # player's run plays concurrently — the ball arrives as the run
+        # completes (a cross met by the finisher's run, a through-ball).
+        if (cur.get("style") in ("pass", "toss", "throw")
+                and prev.get("style") == "run"
+                and cur.get("to") == prev.get("from")
+                and not prev.get("reset")):
+            cur["sync"] = True
 
 
 def crop_field_to_content(drill: Dict, margin: float = 8.0,
