@@ -570,6 +570,8 @@ def _check_no_zero_length_ball_actions(paths: list[dict[str, Any]]) -> None:
     for p in paths:
         if p.get("alt") or p.get("style") not in ("pass", "shoot", "shot", "toss", "throw", "header"):
             continue
+        if p.get("style") == "toss" and p.get("to") == p.get("from"):
+            continue  # self-toss goes UP, not across — zero ground distance is the point
         fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
         if None in (fx, fy, tx, ty):
             continue

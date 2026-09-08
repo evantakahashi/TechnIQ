@@ -392,3 +392,28 @@ def test_c2_multi_player_default_path_unchanged():
     score_explicit, _ = score_drill_quality(drill, rule_pack=None, level="advanced",
                                              number_of_players=2)
     assert score_default == score_explicit
+
+
+def test_required_styles_enforced_in_paths():
+    """C1 must fail when the pack's required style never appears as a step."""
+    from category_rules import get_rule_pack
+    pack = get_rule_pack("First Touch")
+    assert "toss" in pack["required_styles"]
+    drill = {
+        "diagram": {"field": {"width": 20, "length": 15}, "elements": [],
+                    "paths": [{"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+                              {"from": "P1", "to": "G1", "style": "pass", "step": 2}]},
+        "coaching_points": ["cushion the ball", "soft first touch"],  # words alone must not pass
+    }
+    score, reasons = score_drill_quality(drill, pack, "intermediate", number_of_players=1)
+    assert any(r.startswith("C1") and "toss/receive" in r for r in reasons)
+    # add a toss step -> C1 satisfied
+    drill["diagram"]["paths"].append({"from": "P1", "to": "P1", "style": "toss", "step": 3})
+    _, reasons2 = score_drill_quality(drill, pack, "intermediate", number_of_players=1)
+    assert not any(r.startswith("C1") for r in reasons2)
+
+
+def test_gk_pack_requires_hand_action():
+    from category_rules import get_rule_pack
+    pack = get_rule_pack("Goalkeeping")
+    assert pack["required_styles"] == ["throw"]

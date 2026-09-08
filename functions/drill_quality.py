@@ -68,7 +68,11 @@ def score_drill_quality(
     c4_ok = _c4_rep_density(paths)
 
     if not c1_ok:
-        reasons.append("C1: drill does not surface the primary action (no verb_keyword in steps or coaching)")
+        required = (rule_pack or {}).get("required_styles") or []
+        hint = (f" — the STEP LIST itself must contain a {'/'.join(required)} action"
+                if required else "")
+        reasons.append("C1: drill does not surface the primary action "
+                       f"(no verb_keyword in steps or coaching){hint}")
     if not c2_ok:
         if number_of_players == 1:
             reasons.append("C2: solo drill needs outcome element + rep loop + a measurable success metric in coaching")
@@ -92,6 +96,15 @@ def _c1_forces_primary_action(
 ) -> bool:
     if rule_pack is None:
         return True
+    # Hard contract: required_styles must appear in the actual step data —
+    # coaching text alone can't make a drill on-skill (a "first touch"
+    # drill with zero receive/toss steps isn't one).
+    required = [s.lower() for s in rule_pack.get("required_styles", [])]
+    if required:
+        path_styles = {str(p.get("style", "")).lower()
+                       for p in drill.get("diagram", {}).get("paths", [])}
+        if not any(s in path_styles for s in required):
+            return False
     keywords = [k.lower() for k in rule_pack.get("verb_keywords", [])]
     if not keywords:
         return True
