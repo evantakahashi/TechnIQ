@@ -208,16 +208,16 @@ struct AnimatedDrillDiagramView: View {
     /// Draws an 18-yard box, 6-yard box and penalty spot in front of every
     /// goal that sits on a field edge, oriented into the pitch.
     private func penaltyAreas(scale: CGFloat, offsetX: CGFloat, offsetY: CGFloat, fieldHeight: CGFloat) -> some View {
-        let W = Double(diagram.field.width)
-        let L = Double(diagram.field.length)
+        let fieldW = Double(diagram.field.width)
+        let fieldL = Double(diagram.field.length)
         let goals = diagram.elements.filter { $0.elementType == .goal }
         return Path { p in
             for g in goals {
-                let dists = [g.x, W - g.x, g.y, L - g.y]
+                let dists = [g.x, fieldW - g.x, g.y, fieldL - g.y]
                 guard let m = dists.min(), m <= 2.5 else { continue }
                 // Box dims in meters, clamped so small fields still look sane.
-                let bigD = min(16.5, L * 0.4, W * 0.4)     // depth into pitch
-                let bigW = min(40.3, (dists[0] == m || dists[1] == m ? L : W) * 0.85)
+                let bigD = min(16.5, fieldL * 0.4, fieldW * 0.4)     // depth into pitch
+                let bigW = min(40.3, (dists[0] == m || dists[1] == m ? fieldL : fieldW) * 0.85)
                 let smallD = bigD / 3, smallW = bigW * 0.45
                 let spotD = min(11.0, bigD * 0.66)
                 func pt(_ x: Double, _ y: Double) -> CGPoint {
@@ -229,9 +229,9 @@ struct AnimatedDrillDiagramView: View {
                     var r: [CGPoint]
                     switch edge {
                     case 0: r = [pt(0, cy - halfW), pt(depth, cy - halfW), pt(depth, cy + halfW), pt(0, cy + halfW)]
-                    case 1: r = [pt(W, cy - halfW), pt(W - depth, cy - halfW), pt(W - depth, cy + halfW), pt(W, cy + halfW)]
+                    case 1: r = [pt(fieldW, cy - halfW), pt(fieldW - depth, cy - halfW), pt(fieldW - depth, cy + halfW), pt(fieldW, cy + halfW)]
                     case 2: r = [pt(cx - halfW, 0), pt(cx - halfW, depth), pt(cx + halfW, depth), pt(cx + halfW, 0)]
-                    default: r = [pt(cx - halfW, L), pt(cx - halfW, L - depth), pt(cx + halfW, L - depth), pt(cx + halfW, L)]
+                    default: r = [pt(cx - halfW, fieldL), pt(cx - halfW, fieldL - depth), pt(cx + halfW, fieldL - depth), pt(cx + halfW, fieldL)]
                     }
                     p.move(to: r[0]); p.addLine(to: r[1]); p.addLine(to: r[2]); p.addLine(to: r[3])
                 }
@@ -242,9 +242,9 @@ struct AnimatedDrillDiagramView: View {
                 let spot: CGPoint
                 switch edge {
                 case 0: spot = pt(spotD, g.y)
-                case 1: spot = pt(W - spotD, g.y)
+                case 1: spot = pt(fieldW - spotD, g.y)
                 case 2: spot = pt(g.x, spotD)
-                default: spot = pt(g.x, L - spotD)
+                default: spot = pt(g.x, fieldL - spotD)
                 }
                 p.addEllipse(in: CGRect(x: spot.x - 1.5, y: spot.y - 1.5, width: 3, height: 3))
             }
