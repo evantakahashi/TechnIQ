@@ -492,6 +492,27 @@ def _check_duel_shape(
             "duels use no cones — only the two players, one ball, and the "
             "target gates; remove the cones"
         )
+    # The defender must actually defend: positioned between the attacker
+    # and the gates at kickoff.
+    gates = [e for e in elements if e.get("type") == "gate"]
+    players = [e for e in elements if e.get("type") == "player"]
+    balls = [e for e in elements if e.get("type") == "ball"]
+    if gates and len(players) == 2 and balls:
+        b = balls[0]
+        att = min(players, key=lambda pl: (pl["x"] - b["x"]) ** 2 + (pl["y"] - b["y"]) ** 2)
+        dfd = players[0] if players[1] is att else players[1]
+        gx = sum(g["x"] for g in gates) / len(gates)
+        gy = sum(g["y"] for g in gates) / len(gates)
+        vx, vy = gx - att["x"], gy - att["y"]
+        wx, wy = dfd["x"] - att["x"], dfd["y"] - att["y"]
+        along = (vx * wx + vy * wy)
+        gate_d2 = vx * vx + vy * vy
+        if along <= 0 or along >= gate_d2:
+            raise ValidationError(
+                f"the defender ({dfd.get('label')}) must start BETWEEN the "
+                f"attacker and the gates — that is what defending means; "
+                "place them on the line from attacker to gates"
+            )
     by_label = {e.get("label"): e for e in elements}
     ordered = sorted(paths, key=lambda x: x.get("step", 0))
     if ordered:

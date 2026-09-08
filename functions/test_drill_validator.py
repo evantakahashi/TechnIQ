@@ -331,7 +331,24 @@ def test_duel_cone_rejected():
     drill = make_valid_drill()  # has a cone
     drill["is_duel"] = True
     drill["equipment"].append("partner")
+    drill["diagram"]["elements"].append(
+        {"type": "player", "x": 6, "y": 0, "label": "P2", "role": "server"}
+    )
     with pytest.raises(ValidationError, match="no cones"):
+        validate_drill(drill)
+
+
+def test_duel_defender_behind_attacker_rejected():
+    drill = {"diagram": {"field": {"width": 20, "length": 15}, "elements": [
+        {"type": "player", "x": 10, "y": 7.5, "label": "A", "role": "server"},
+        {"type": "player", "x": 16, "y": 7.5, "label": "D", "role": "worker"},
+        {"type": "ball", "x": 10, "y": 7.5, "label": "B1"},
+        {"type": "gate", "x": 2, "y": 4, "width": 2, "label": "G1"},
+        {"type": "gate", "x": 2, "y": 11, "width": 2, "label": "G2"},
+    ], "paths": [
+        {"from": "A", "to": "D", "style": "dribble", "step": 1, "fx": 10.0, "fy": 7.5, "tx": 16.0, "ty": 7.5},
+    ]}, "equipment": ["ball", "partner"], "coaching_points": [], "is_duel": True}
+    with pytest.raises(ValidationError, match="BETWEEN the"):
         validate_drill(drill)
 
 
