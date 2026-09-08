@@ -65,6 +65,8 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_no_redundant_movement(paths)
     _check_gates_played_through(elements, paths, bool(drill.get("is_duel")))
     _check_single_ball(elements)
+    _check_duel_shape(elements, paths, bool(drill.get("is_duel")))
+    _check_no_coords_in_coaching(drill.get("coaching_points") or [])
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -467,3 +469,63 @@ def _check_single_ball(elements: list[dict[str, Any]]) -> None:
             "mention a supply stack in a coaching point instead, and script "
             "the collect-and-return between reps"
         )
+
+
+def _check_duel_shape(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]],
+    is_duel: bool = False,
+) -> None:
+    """Duels illustrate an ENGAGEMENT: the drive goes AT the opponent.
+
+    Review found a 'duel' whose attacker dribbled 14m to a decorative cone
+    while both players converged on it. Rules: no cones in duels; the first
+    scripted action is a dribble at the other player from a realistic
+    engage distance (2-8m); any other dribble targets a gate.
+    """
+    if not is_duel:
+        return
+    n_players = sum(1 for e in elements if e.get("type") == "player")
+    if n_players != 2:
+        return  # rondos/pressing groups share the live-gates exemption only
+    if any(e.get("type") == "cone" for e in elements):
+        raise ValidationError(
+            "duels use no cones — only the two players, one ball, and the "
+            "target gates; remove the cones"
+        )
+    by_label = {e.get("label"): e for e in elements}
+    ordered = sorted(paths, key=lambda x: x.get("step", 0))
+    if ordered:
+        first = ordered[0]
+        tgt = by_label.get(first.get("to"), {})
+        if first.get("style") != "dribble" or tgt.get("type") != "player":
+            raise ValidationError(
+                "a duel's first step must be the attacker dribbling AT the "
+                "other player (the engage) — not to a cone, gate, or a run"
+            )
+        fx, fy, tx, ty = (first.get("fx"), first.get("fy"),
+                          first.get("tx"), first.get("ty"))
+        if None not in (fx, fy, tx, ty):
+            d = ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5
+            if not (2.0 <= d <= 8.0):
+                raise ValidationError(
+                    f"duel engage distance is {d:.1f}m — start the attacker "
+                    "2-8m from the defender so the drive is a real duel"
+                )
+    for p in ordered[1:]:
+        if p.get("style") == "dribble"            and by_label.get(p.get("to"), {}).get("type") not in ("gate", "player"):
+            raise ValidationError(
+                "in a duel, dribbles go AT the opponent or THROUGH a gate — "
+                f"step {p.get('step')} dribbles to a "
+                f"{by_label.get(p.get('to'), {}).get('type')}"
+            )
+
+
+def _check_no_coords_in_coaching(coaching_points: list) -> None:
+    """Coaching points are for kids — never leak raw coordinates."""
+    import re as _re
+    for cp in coaching_points:
+        if _re.search(r"\(\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*\)", str(cp)):
+            raise ValidationError(
+                "coaching points must not contain raw coordinates like "
+                "(5, 7.5) — describe positions in soccer language"
+            )

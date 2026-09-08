@@ -325,3 +325,18 @@ def test_dribble_then_receive_hands_over():
         {"from": "P2", "to": "P1", "style": "pass", "step": 3},
     ]
     validate_drill(drill)
+
+
+def test_duel_cone_rejected():
+    drill = make_valid_drill()  # has a cone
+    drill["is_duel"] = True
+    drill["equipment"].append("partner")
+    with pytest.raises(ValidationError, match="no cones"):
+        validate_drill(drill)
+
+
+def test_coords_in_coaching_rejected():
+    drill = make_valid_drill()
+    drill["coaching_points"] = ["start on the ball at (5, 7.5) and drive"]
+    with pytest.raises(ValidationError, match="raw coordinates"):
+        validate_drill(drill)

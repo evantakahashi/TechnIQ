@@ -66,7 +66,8 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
 - Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-6 steps max — and put the outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
-- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps showing positions and the attack direction; the coaching points state HOW IT WORKS (objective, what counts as a win for each player, when to swap roles, e.g. 'swap after 3 attacks'). State the attacker's objective explicitly (dribble through a gate? shoot?).
+- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); an optional step 2 shows one break toward a gate. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks').
+- NEVER write raw coordinates like (5, 7.5) in coaching points — kids read those; use soccer language ('start on the halfway line').
 - Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 
 TWO-PHASE SKILLS (receive-then-play-forward, control-then-escape, save-then-distribute):

@@ -144,6 +144,10 @@ def _resolve_overlaps(elements: List[Dict], width: float, length: float) -> Tupl
         moved = False
         for i in range(len(elements)):
             for j in range(i + 1, len(elements)):
+                # A ball belongs at a player's feet — never push them apart.
+                kinds = {elements[i].get("type"), elements[j].get("type")}
+                if kinds == {"ball", "player"}:
+                    continue
                 dx = elements[j]["x"] - elements[i]["x"]
                 dy = elements[j]["y"] - elements[i]["y"]
                 dist = math.sqrt(dx * dx + dy * dy)
