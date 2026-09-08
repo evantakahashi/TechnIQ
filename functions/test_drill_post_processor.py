@@ -328,3 +328,44 @@ class TestArchetypeDetection:
     def test_overlap_run_pattern_maps_to_server_executor(self):
         from drill_post_processor import map_pattern_to_archetype
         assert map_pattern_to_archetype("overlap_run") == "server_executor"
+
+
+def test_annotate_path_positions_chains_player_movement():
+    from drill_post_processor import annotate_path_positions
+    drill = {"diagram": {
+        "elements": [
+            {"type": "player", "x": 2.0, "y": 5.0, "label": "P1", "role": "worker"},
+            {"type": "cone", "x": 10.0, "y": 5.0, "label": "C1"},
+            {"type": "goal", "x": 19.0, "y": 7.5, "label": "GL"},
+        ],
+        "paths": [
+            {"step": 1, "from": "P1", "to": "C1", "style": "dribble"},
+            {"step": 2, "from": "P1", "to": "GL", "style": "shoot"},
+        ],
+    }}
+    annotate_path_positions(drill)
+    p1, p2 = drill["diagram"]["paths"]
+    assert (p1["fx"], p1["fy"]) == (2.0, 5.0)
+    assert (p1["tx"], p1["ty"]) == (10.0, 5.0)
+    # the shot originates from the cone P1 dribbled to, not the spawn point
+    assert (p2["fx"], p2["fy"]) == (10.0, 5.0)
+    assert (p2["tx"], p2["ty"]) == (19.0, 7.5)
+
+
+def test_annotate_ball_flight_does_not_move_player():
+    from drill_post_processor import annotate_path_positions
+    drill = {"diagram": {
+        "elements": [
+            {"type": "player", "x": 2.0, "y": 5.0, "label": "P1", "role": "worker"},
+            {"type": "player", "x": 12.0, "y": 5.0, "label": "P2", "role": "server"},
+        ],
+        "paths": [
+            {"step": 1, "from": "P1", "to": "P2", "style": "pass"},
+            {"step": 2, "from": "P1", "to": "P2", "style": "run"},
+        ],
+    }}
+    annotate_path_positions(drill)
+    p1, p2 = drill["diagram"]["paths"]
+    assert (p1["fx"], p1["fy"]) == (2.0, 5.0)  # pass leaves P1 in place
+    assert (p2["fx"], p2["fy"]) == (2.0, 5.0)  # run starts from spawn too
+    assert (p2["tx"], p2["ty"]) == (12.0, 5.0)

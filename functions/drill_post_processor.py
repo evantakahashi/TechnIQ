@@ -272,3 +272,31 @@ def _check_equipment_consistency(equipment: List[str], elements: List[Dict]) -> 
             warnings.append(f"Equipment '{item}' missing from diagram — no {'/'.join(expected_types)} element found")
 
     return warnings
+
+
+def annotate_path_positions(drill: dict) -> None:
+    """Bake real per-step coordinates onto each path (fx/fy/tx/ty).
+
+    Labels alone lie once players move: "P1 shoots at G1" after "P1 dribbles
+    to C1" happens FROM C1, but naive renderers draw from P1's spawn point.
+    Simulate the sequence once here so every client just draws the numbers.
+    """
+    diagram = drill.get("diagram") or {}
+    elements = diagram.get("elements") or []
+    paths = diagram.get("paths") or []
+    pos: dict = {}
+    for e in elements:
+        try:
+            pos[e.get("label")] = {"x": float(e["x"]), "y": float(e["y"]),
+                                   "player": e.get("type") == "player"}
+        except (KeyError, TypeError, ValueError):
+            continue
+    for p in sorted(paths, key=lambda x: x.get("step", 0)):
+        src, dst = pos.get(p.get("from")), pos.get(p.get("to"))
+        if not src or not dst:
+            continue
+        p["fx"], p["fy"] = round(src["x"], 2), round(src["y"], 2)
+        p["tx"], p["ty"] = round(dst["x"], 2), round(dst["y"], 2)
+        # Movement relocates the mover; ball flights leave positions unchanged.
+        if p.get("style") in ("run", "dribble") and src.get("player"):
+            src["x"], src["y"] = dst["x"], dst["y"]

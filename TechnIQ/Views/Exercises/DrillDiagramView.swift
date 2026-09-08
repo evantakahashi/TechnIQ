@@ -567,13 +567,15 @@ struct AnimatedDrillDiagramView: View {
         let toElement = diagram.elements.first { $0.label == path.to }
 
         if let from = fromElement, let to = toElement {
+            // Prefer server-baked step coordinates (players relocate during the
+            // sequence — labels alone would draw later actions from spawn points).
             let fromPt = CGPoint(
-                x: offsetX + CGFloat(from.x) * scale,
-                y: offsetY + fieldHeight - CGFloat(from.y) * scale
+                x: offsetX + CGFloat(path.fx ?? from.x) * scale,
+                y: offsetY + fieldHeight - CGFloat(path.fy ?? from.y) * scale
             )
             let toPt = CGPoint(
-                x: offsetX + CGFloat(to.x) * scale,
-                y: offsetY + fieldHeight - CGFloat(to.y) * scale
+                x: offsetX + CGFloat(path.tx ?? to.x) * scale,
+                y: offsetY + fieldHeight - CGFloat(path.ty ?? to.y) * scale
             )
             let controlPt = curveControlPoint(from: fromPt, to: toPt)
             let isStepPath = path.step != nil && path.step == currentStep

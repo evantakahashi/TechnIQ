@@ -6,7 +6,7 @@ from typing import Any, Callable
 from archetype_picker import pick_archetype
 from category_rules import get_rule_pack
 from dsl_parser import DSLParseError, parse_dsl
-from drill_post_processor import post_process_drill
+from drill_post_processor import post_process_drill, annotate_path_positions
 from drill_quality import score_drill_quality
 from drill_validator import ValidationError, validate_drill
 from exemplars import get_exemplars
@@ -172,6 +172,7 @@ def generate_drill(
             )
             drill, _warnings = post_process_drill(drill, player_age=age)
             validate_drill(drill)
+            annotate_path_positions(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,
                                                  number_of_players=number_of_players)
             c2_failed = any(r.startswith("C2:") for r in reasons)
