@@ -256,12 +256,11 @@ def test_long_toss_raises():
     drill["equipment"].append("partner")
     drill["diagram"]["elements"] += [
         {"type": "player", "x": 15, "y": 0, "label": "P2", "role": "server"},
-        {"type": "ball", "x": -2, "y": 0, "label": "B0"},
         {"type": "ball", "x": 15, "y": 0, "label": "B1"},
     ]
-    drill["diagram"]["paths"].append(
-        {"from": "P2", "to": "P1", "style": "toss", "step": 2}
-    )
+    drill["diagram"]["paths"] = [
+        {"from": "P2", "to": "P1", "style": "toss", "step": 1},
+    ]
     with pytest.raises(ValidationError, match="soft underhand tosses"):
         validate_drill(drill)
 
@@ -300,3 +299,13 @@ def test_lane_gate_crossed_by_pass_passes():
     ]
     drill["diagram"]["paths"].append({"from": "P1", "to": "P2", "style": "pass", "step": 2})
     validate_drill(drill)  # pass crosses the lane gate
+
+
+def test_multiple_balls_raise():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "ball", "x": 3, "y": 3, "label": "B2"},
+    ]
+    with pytest.raises(ValidationError, match="exactly ONE ball"):
+        validate_drill(drill)

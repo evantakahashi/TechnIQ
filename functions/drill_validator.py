@@ -64,6 +64,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_ball_continuity(elements, paths)
     _check_no_redundant_movement(paths)
     _check_gates_played_through(elements, paths, bool(drill.get("is_duel")))
+    _check_single_ball(elements)
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -448,3 +449,16 @@ def _check_gates_played_through(
                 "lane so a pass crosses it; a scored target the ball never "
                 "visits is decoration"
             )
+
+
+def _check_single_ball(elements: list[dict[str, Any]]) -> None:
+    """Exactly one drawn ball. Multiple ball glyphs confused reviewers and
+    made animations ambiguous; supply belongs in coaching text."""
+    balls = [e for e in elements if e.get("type") == "ball"]
+    if len(balls) > 1:
+        labels = [b.get("label") for b in balls]
+        raise ValidationError(
+            f"declare exactly ONE ball element (got {len(balls)}: {labels}); "
+            "mention a supply stack in a coaching point instead, and script "
+            "the collect-and-return between reps"
+        )
