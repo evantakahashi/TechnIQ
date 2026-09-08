@@ -67,6 +67,7 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_single_ball(elements)
     _check_duel_shape(elements, paths, bool(drill.get("is_duel")))
     _check_no_coords_in_coaching(drill.get("coaching_points") or [])
+    _check_no_zero_length_ball_actions(paths)
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
 
@@ -284,6 +285,12 @@ def _check_ball_continuity(
                or resting_at == dst:
                 holder, resting_at = src, None
         elif style == "run":
+            if holder == src:
+                raise ValidationError(
+                    f"step {step}: {src} runs while carrying the ball — a kid "
+                    "reads 'runs to' as leaving the ball behind; use "
+                    "'dribbles to' when the carrier moves"
+                )
             dst_el = by_label.get(dst, {})
             if dst_el.get("type") == "ball" and dst in unclaimed:
                 unclaimed.discard(dst)
@@ -553,4 +560,19 @@ def _check_no_coords_in_coaching(coaching_points: list) -> None:
             raise ValidationError(
                 "coaching points must not contain raw coordinates like "
                 "(5, 7.5) — describe positions in soccer language"
+            )
+
+
+def _check_no_zero_length_ball_actions(paths: list[dict[str, Any]]) -> None:
+    """A pass/shot/toss of ~0 meters is a nonsense step (co-located actors)."""
+    for p in paths:
+        if p.get("alt") or p.get("style") not in ("pass", "shoot", "shot", "toss", "throw", "header"):
+            continue
+        fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
+        if None in (fx, fy, tx, ty):
+            continue
+        if ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5 < 1.0:
+            raise ValidationError(
+                f"step {p.get('step')}: a {p.get('style')} of under 1m is a "
+                "nonsense action — separate the players or drop the step"
             )

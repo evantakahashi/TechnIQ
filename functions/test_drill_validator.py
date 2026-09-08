@@ -357,3 +357,27 @@ def test_coords_in_coaching_rejected():
     drill["coaching_points"] = ["start on the ball at (5, 7.5) and drive"]
     with pytest.raises(ValidationError, match="raw coordinates"):
         validate_drill(drill)
+
+
+def test_run_while_carrying_raises():
+    drill = make_valid_drill()
+    drill["diagram"]["elements"].append({"type": "ball", "x": -2, "y": 0, "label": "B1"})
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "C1", "style": "run", "step": 1},  # has ball at feet
+    ]
+    with pytest.raises(ValidationError, match="runs while carrying"):
+        validate_drill(drill)
+
+
+def test_zero_length_pass_raises():
+    drill = make_valid_drill()
+    drill["equipment"].append("partner")
+    drill["diagram"]["elements"] += [
+        {"type": "ball", "x": -2, "y": 0, "label": "B1"},
+        {"type": "player", "x": 8, "y": 0, "label": "P2", "role": "server"},
+    ]
+    drill["diagram"]["paths"] = [
+        {"from": "P1", "to": "P2", "style": "pass", "step": 1, "fx": 5.0, "fy": 0.0, "tx": 5.0, "ty": 0.0},
+    ]
+    with pytest.raises(ValidationError, match="under 1m"):
+        validate_drill(drill)

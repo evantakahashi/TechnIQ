@@ -343,7 +343,7 @@ goal GL at (29, 10) width 7
 ball B1 at (5, 5)
 step 1: P1 passes to P2
 step 2: P2 passes to P1
-step 3: P1 dribbles to GL
+step 3: P1 dribbles to C1
 step 4: P1 shoots at GL
 step 5: P1 runs to P1
 point: receive with the far foot
@@ -387,7 +387,7 @@ goal GL at (29, 10) width 7
 ball B1 at (5, 5)
 step 1: P1 passes to P2
 step 2: P2 passes to P1
-step 3: P1 dribbles to GL
+step 3: P1 dribbles to C1
 step 4: P1 shoots at GL
 step 5: P1 runs to P1
 point: receive with the far foot
