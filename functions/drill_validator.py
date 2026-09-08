@@ -437,16 +437,22 @@ def _check_gates_played_through(
         for p in paths:
             if p.get("style") not in ("pass", "throw", "toss"):
                 continue
-            a, b = by_label.get(p.get("from")), by_label.get(p.get("to"))
+            # Judge the flight on baked step positions (players move) —
+            # spawn coordinates lie about where the pass actually travels.
+            if p.get("fx") is not None:
+                a = {"x": p["fx"], "y": p["fy"]}
+                b = {"x": p["tx"], "y": p["ty"]}
+            else:
+                a, b = by_label.get(p.get("from")), by_label.get(p.get("to"))
             if a and b and _seg_dist(a, b, gate) <= max(1.5, gw / 2 + 0.5):
                 crossed = True
                 break
         if not crossed:
             raise ValidationError(
                 f"gate {g!r} is never played through — either route a rep "
-                "into it (shoot/dribble/head to it) or place it ON a passing "
-                "lane so a pass crosses it; a scored target the ball never "
-                "visits is decoration"
+                "into it (pass/shoot/dribble/head TO the gate label, or land a "
+                "chip in it) or place it ON a passing lane so a pass crosses "
+                "it; a scored target the ball never visits is decoration"
             )
 
 

@@ -171,8 +171,8 @@ def generate_drill(
                 and "head" not in blob
             )
             drill, _warnings = post_process_drill(drill, player_age=age)
-            validate_drill(drill)
             annotate_path_positions(drill)
+            validate_drill(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,
                                                  number_of_players=number_of_players)
             c2_failed = any(r.startswith("C2:") for r in reasons)

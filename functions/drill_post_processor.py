@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 logger = logging.getLogger(__name__)
 
 # Valid targets for "pass" style paths
-VALID_PASS_TARGETS = {"player", "server", "defender", "wall", "goal"}
+VALID_PASS_TARGETS = {"player", "server", "defender", "wall", "goal" , "gate"}
 
 # Equipment → element type mapping
 EQUIPMENT_TO_ELEMENT = {
@@ -209,7 +209,7 @@ def _validate_paths(
             if target_type not in VALID_PASS_TARGETS:
                 warnings.append(
                     f"Invalid pass target: pass to {target_type} '{to_label}' — "
-                    f"passes can only target player, server, defender, wall, or goal"
+                    f"passes can only target player, server, defender, wall, goal, or a landing-zone gate"
                 )
                 continue
 
