@@ -301,6 +301,13 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
             instructionsText += "\(index + 1). \(instruction)\n"
         }
         
+        if let variations = response.variations, !variations.isEmpty {
+            instructionsText += "\n**Variations:**\n"
+            for variation in variations {
+                instructionsText += "• \(variation.description)\n"
+            }
+        }
+
         if let coachingPoints = response.coachingPoints, !coachingPoints.isEmpty {
             instructionsText += "\n**Coaching Points:**\n"
             for point in coachingPoints {

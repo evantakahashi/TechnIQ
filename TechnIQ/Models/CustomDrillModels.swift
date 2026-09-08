@@ -198,6 +198,8 @@ struct DiagramPath: Codable {
     let tx: Double?
     let ty: Double?
     let alt: Bool?     // hypothetical "or" branch — drawn dashed, no possession effect
+    let reset: Bool?   // collect/return plumbing — hidden from kids, kept for ball logic
+    let touches: Int?  // 1 = one-touch, 2 = two-touch (badge on the arrow)
 
     var pathStyle: DiagramPathStyle {
         DiagramPathStyle(rawValue: style) ?? .run
@@ -205,7 +207,7 @@ struct DiagramPath: Codable {
 
     init(from: String, to: String, style: String, step: Int? = nil,
          fx: Double? = nil, fy: Double? = nil, tx: Double? = nil, ty: Double? = nil,
-         alt: Bool? = nil) {
+         alt: Bool? = nil, reset: Bool? = nil, touches: Int? = nil) {
         self.from = from
         self.to = to
         self.style = style
@@ -215,6 +217,8 @@ struct DiagramPath: Codable {
         self.tx = tx
         self.ty = ty
         self.alt = alt
+        self.reset = reset
+        self.touches = touches
     }
 }
 

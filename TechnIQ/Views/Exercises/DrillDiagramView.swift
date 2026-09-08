@@ -41,10 +41,24 @@ struct AnimatedDrillDiagramView: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var autoPlayTimer: Timer?
 
+    /// Original step numbers of the practiced (non-reset) actions, in order.
+    /// Resets are ball-logic plumbing the kid never watches.
+    private var visibleStepNumbers: [Int] {
+        guard let paths = diagram.paths else { return [] }
+        let nums = paths.filter { $0.reset != true && $0.alt != true }
+            .compactMap { $0.step }
+        return Array(Set(nums)).sorted()
+    }
+
     private var totalSteps: Int {
-        guard let paths = diagram.paths else { return 0 }
-        let maxStep = paths.compactMap { $0.step }.max() ?? 0
-        return max(maxStep, instructions.count)
+        max(visibleStepNumbers.count, instructions.count)
+    }
+
+    /// Maps the 1-based visible index the UI navigates to the original step number.
+    private func originalStep(forVisible index: Int) -> Int? {
+        let nums = visibleStepNumbers
+        guard index >= 1, index <= nums.count else { return nil }
+        return nums[index - 1]
     }
 
     private var hasSteps: Bool { totalSteps > 0 }
@@ -81,6 +95,7 @@ struct AnimatedDrillDiagramView: View {
                     // Paths (behind elements)
                     if let paths = diagram.paths {
                         ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
+                            if path.reset != true {
                             pathView(
                                 path,
                                 scale: scale,
@@ -88,6 +103,7 @@ struct AnimatedDrillDiagramView: View {
                                 offsetY: offsetY,
                                 fieldHeight: fieldHeight
                             )
+                            }
                         }
                     }
 
@@ -578,7 +594,7 @@ struct AnimatedDrillDiagramView: View {
                 y: offsetY + fieldHeight - CGFloat(path.ty ?? to.y) * scale
             )
             let controlPt = curveControlPoint(from: fromPt, to: toPt)
-            let isStepPath = path.step != nil && path.step == currentStep
+            let isStepPath = path.step != nil && currentStep != nil && path.step == originalStep(forVisible: currentStep!)
             let shouldAnimate = isStepPath
             let shouldShow = path.step == nil || path.step == currentStep
 
@@ -649,9 +665,9 @@ struct AnimatedDrillDiagramView: View {
     }
 
     private func pathOpacity(for path: DiagramPath) -> Double {
-        guard currentStep != nil else { return 1.0 }
+        guard let idx = currentStep else { return 1.0 }
         if path.step == nil { return 0.3 }
-        return path.step == currentStep ? 1.0 : 0.2
+        return path.step == originalStep(forVisible: idx) ? 1.0 : 0.2
     }
 
     private func arrowHeadView(from: CGPoint, to: CGPoint, control: CGPoint) -> Path {
@@ -696,10 +712,11 @@ struct AnimatedDrillDiagramView: View {
 
     // MARK: - Step Logic
 
-    private func activeElements(for step: Int) -> Set<String> {
-        guard let paths = diagram.paths else { return [] }
+    private func activeElements(for visibleIndex: Int) -> Set<String> {
+        guard let paths = diagram.paths,
+              let step = originalStep(forVisible: visibleIndex) else { return [] }
         var labels = Set<String>()
-        for path in paths where path.step == step {
+        for path in paths where path.step == step && path.reset != true {
             labels.insert(path.from)
             labels.insert(path.to)
         }
