@@ -44,9 +44,11 @@ ARCHETYPE_TABLE: Final[dict[tuple[str, str], str]] = {
     ("Crossing", "intermediate"): "server_executor",
     ("Crossing", "advanced"):     "server_executor",
 
-    ("First Touch", "beginner"):     "wall_passing",
-    ("First Touch", "intermediate"): "wall_passing",
-    ("First Touch", "advanced"):     "rondo",
+    # First touch = reception: a server feeds, the worker controls — never
+    # wall_passing (the router used to hand walls to requests without one).
+    ("First Touch", "beginner"):     "server_executor",
+    ("First Touch", "intermediate"): "server_executor",
+    ("First Touch", "advanced"):     "server_executor",
 
     ("Shooting", "beginner"):     "dribble_and_shoot",
     ("Shooting", "intermediate"): "dribble_and_shoot",

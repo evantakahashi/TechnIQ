@@ -561,3 +561,18 @@ def test_capitalized_level_reaches_pipeline_lowercased(monkeypatch):
     except Exception:
         pass
     assert 'beginner' in captured.get('prompt', '').lower()
+
+
+def test_partner_required_skills_escalate_to_two_players():
+    """Evan: 'a player receives from another player' — realism beats the solo request."""
+    from category_rules import get_rule_pack
+    for weakness, blob, expect in [
+        ("First Touch", "first touch under pressure then explode away", True),
+        ("Goalkeeping", "goalkeeper reaction saves off a rebound wall", True),
+        ("Shooting Accuracy", "finishing after a quick turn in the box", True),
+        ("Shooting Accuracy", "weak foot finishing accuracy", False),  # solo is fine
+        ("Dribbling Skills", "tight dribbling in small spaces", False),
+    ]:
+        pack = get_rule_pack(weakness) or {}
+        hit = any(k in blob.lower() for k in pack.get("partner_required_if", []))
+        assert hit is expect, f"{weakness}/{blob}: expected escalate={expect}"

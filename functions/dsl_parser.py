@@ -62,6 +62,8 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
         line = raw_line.strip()
         if not line:
             continue
+        if line.startswith("#"):
+            continue  # model's plan comment — kept in raw logs for debugging, not data
 
         head = line.split(None, 1)[0].rstrip(":")
 

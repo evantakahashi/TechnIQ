@@ -115,6 +115,22 @@ is still a bad drill. Judge the drill, not the effort.
   they are dribbling from wide inwards and then shooting instead of the reverse."
 - golden with no comment: crossing A, tight-dribble A+B, u8-dribble A+B.
 
+### On-skill regen round (first round judged WITH this doc)
+- first-touch: "a better more realistic variation is if a player receives from another
+  player, and then they take a touch into one of the four gates, the gates should be
+  closer. right now it just looks like the player passes through some gate, which works
+  on passing accuracy but not first touch at all."
+- gk-wall: "this is a very simple drill, not bad but i feel like needs improvements or
+  variation. for example another human throwing to the goalie in net while they work on
+  footwork. this is juist one example."
+- shoot-turn: "again this did not factor in my feedback, a TURN is if a defender
+  receives with their back turned to goal, and then they can turn with the ball while
+  receiving it and shoot."
+- weakfoot: "this is kind of okay but unrealistic, the person should dribble, maybe take
+  a touch to the left or right of the cone, and finish either far or near post. the
+  player shouldnt be shooting right when they get to the cone. needs to introduce like a
+  sudden touch inside towards the left or right and finish."
+
 ### Meta-feedback (how to judge)
 - "okay now you need to get better at judging these drills. you judge them too high for
   what they are. i want you to be able to singhle out bad drills and notice what is
@@ -160,6 +176,19 @@ is still a bad drill. Judge the drill, not the effort.
    (1T/2T), variations shown (foot/surface, side-to-side), simultaneous actions
    animated together.
 
+9. **Partner-required skills get the partner — realism wins over the request.** If the
+   skill needs a feed/opponent (pressure receiving, turns, GK reactions), generate the
+   2-player version even when the request says solo ("a player receives from another
+   player"). Don't fake it solo; a kid can grab a friend or parent.
+10. **A first touch is a TOUCH, not a pass.** The redirect after receiving goes through
+   a CLOSE gate (2-4m). A long redirect "works on passing accuracy but not first touch
+   at all."
+11. **Setup touch before the strike.** Never shoot from on top of the cone — "a sudden
+   touch inside towards the left or right", THEN finish near or far post.
+12. **Simple bases need real variations.** A plain solo base can be ok, but must carry
+   partner/progression variations ("another human throwing to the goalie in net while
+   they work on footwork").
+
 ## Voice guide (phrase critiques like him)
 - Blunt, lowercase, short. Concede then kill: "the concept is good, but…", "i like this
   idea though", "this is fine but not game realistic."
@@ -175,4 +204,5 @@ is still a bad drill. Judge the drill, not the effort.
 | Round | Drills both rated | Verdict match | Misses (all Claude-too-high?) |
 |---|---|---|---|
 | Blind A/B (baseline, pre-doc) | 11 | ~5/11 | yes — Claude 87-95 on four Evan-bads |
+| On-skill regens (first with doc) | 4 | 3/4 direction | no — the miss was too LOW (gk-wall: Claude bad, Evan "not bad, needs variation"). Don't overcorrect simple-but-functional to bad. |
 | next round | — | — | — |

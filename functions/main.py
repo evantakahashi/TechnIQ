@@ -488,20 +488,42 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         from anthropic import Anthropic
         client = Anthropic(api_key=anthropic_api_key)
 
-        from drill_generator import generate_drill, DrillGenerationFailed
+        from drill_generator import generate_drill, DrillGenerationFailed, SYSTEM_PROMPT
 
         def _llm_call(prompt: str) -> str:
             # opus-4-8 won the 2026-09-06 model A/B: geometry 80.8 vs 71.7
             # (sonnet-4-6), 6/6 reliability, ~4x faster wall-clock via fewer
             # retries — see scratchpad model_ab results in session notes.
+            #
+            # Prompt caching: static rulebook in a cached system block; the
+            # per-request body gets its own breakpoint so retries 2-5 (same
+            # body, errors appended at the tail) read it from cache.
+            body = prompt
+            system = None
+            if prompt.startswith(SYSTEM_PROMPT):
+                system = [{"type": "text", "text": SYSTEM_PROMPT,
+                           "cache_control": {"type": "ephemeral"}}]
+                body = prompt[len(SYSTEM_PROMPT):].lstrip("\n")
+            marker = "PRIOR ATTEMPT ERRORS"
+            if system and marker in body:
+                head, tail = body.split(marker, 1)
+                content = [{"type": "text", "text": head,
+                            "cache_control": {"type": "ephemeral"}},
+                           {"type": "text", "text": marker + tail}]
+            else:
+                content = [{"type": "text", "text": body}]
             msg = client.messages.create(
                 model="claude-opus-4-8",
                 max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}],
+                **({"system": system} if system else {}),
+                messages=[{"role": "user", "content": content}],
             )
             u = msg.usage
+            cr = getattr(u, "cache_read_input_tokens", 0) or 0
+            cw = getattr(u, "cache_creation_input_tokens", 0) or 0
             logger.info(f"💰 drill-gen tokens in={u.input_tokens} out={u.output_tokens} "
-                        f"est=${(u.input_tokens*5 + u.output_tokens*25)/1e6:.4f}")
+                        f"cache_read={cr} cache_write={cw} "
+                        f"est=${(u.input_tokens*5 + cr*0.5 + cw*6.25 + u.output_tokens*25)/1e6:.4f}")
             return msg.content[0].text
 
         # Validate request data

@@ -24,12 +24,21 @@ Before writing DSL, reason briefly (to yourself, not in output):
   2. How do I force that action many times in ~10-15 minutes?
   3. Which example comes closest, and what do I need to CHANGE to fit this skill?
 
-Then output ONLY valid DSL - no markdown, no prose, no code fences, no reasoning.
+Then output ONLY valid DSL. You may put your brief plan in ONE leading comment line starting with `#` (e.g. `# plan: server feeds, worker one-touches through side gates, run-back reset`) — the parser skips it. No markdown, no prose, no code fences beyond that line.
+
+SKILL DEFINITIONS (the coach's vocabulary — design to THESE meanings, not your own):
+- First touch under pressure: receive FROM A PLAYER with pressure behind (defender/mannequin at your back), control directionally, explode away from the pressure.
+- A TURN: receive a feed with your BACK TO GOAL, turn with the ball while receiving it, then play or shoot. No feed = no turn.
+- Bouncing-ball touch: ball tossed up (self or server), one DIRECT touch through a close gate (2-4m) — a long redirect is passing, not touch.
+- GK reaction saves: a partner shoots or throws at the keeper; the keeper dives/saves with HANDS. Self-serve rebounds are handling volume, not reactions.
+- Clearance header: headed UPFIELD or wide, away from own goal, back toward/past the server — never toward the goal you defend.
+- A cross: wide delivery from near the end line into the box for an arriving finisher (tell them one-touch or two-touch).
 
 DSL grammar:
 - Elements: `cone C1 at (x, y)`, `gate G1 at (x, y) width 2`, `ball B1 at (x, y)`,
   `goal GL at (x, y) width 7.32`, `wall W1 at (x, y) width 5` (use ONLY when "wall" is in equipment),
   `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
+  `mannequin M1 at (x, y)` (passive pressure-from-behind obstacle — use for "under pressure" work without a live defender),
   optional `label "..."` on players.
 - Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from, throws to, tosses to, heads to}
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
@@ -56,7 +65,7 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 - Cones never return the ball. A rebound needs a wall; a served ball needs a server or a self-serve (toss it up yourself).
 - Walls return GROUND balls at matching pace — never claim a wall serves bouncing or lofted balls; for aerial/bouncing receives use self-toss or a server.
 - With a server: script the full cycle — serve, action, collect, return (`runs to` the resting ball, `dribbles to` the server, server `receives from` them) — then the next serve. Two scripted cycles is enough; coaching says it repeats.
-- Shooting positions sit 8-18m from the goal (3-8m only for beginner mini-goal finishing). Never place a shot 0-3m from the goal line.
+- Shooting positions VARY — in distance (typically 5-20m; beginner mini-goal work closer) AND in angle: straight-on, wide-left, wide-right across reps. Never place a shot on top of the goal line.
 - Crosses are delivered from WIDE positions near the SAME end line as the goal, not from the opposite half or opposite corner.
 - Never route a dribble or run path through the goalmouth or through other cones/elements — go around.
 - Defenders start goal-side of the attacker they are defending, within pressing distance (2-6m).
@@ -68,8 +77,7 @@ BALL TRACKING (steps are a story a kid follows literally — the ball must be tr
 - A pass moves the ball to the receiver; a shot leaves the ball at the target. After a shot, the next ball action requires collecting a ball first (run to the next ball, or to where it went).
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
-- Reactive duels (1v1 defending, pressing): script only the SETUP (serve, engage) in steps — 4-6 steps max — and put the outcomes and decision rules in the coaching points. Do not choreograph both players' every move; a duel has many endings.
-- Duels are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); step 2 shows one break toward a gate, and an `or:` line shows each alternative (e.g. `or: P1 dribbles to G2`) so the kid SEES the choice. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks').
+- Duels (1v1 defending, pressing) are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); step 2 shows one break toward a gate, and an `or:` line shows each alternative (e.g. `or: P1 dribbles to G2`) so the kid SEES the choice. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks'). A duel has many endings — decision rules live in coaching, never in steps.
 - NEVER write raw coordinates like (5, 7.5) in coaching points — kids read those; use soccer language ('start on the halfway line').
 - Heading serves come from UPFIELD of the defender (in front, goal-side of the SERVER), never from the defender's own-goal side.
 
@@ -84,8 +92,9 @@ STAGE & PRESENTATION (know how your output is shown, and design FOR it):
 - Touch tags render as badges on the arrow; `or:` lines render as dashed choice-arrows; `variation:` lines render as selectable chips. Use all three deliberately.
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
-- 8-16 steps that form a REPEATING cycle: the worker does the skill, resets, does it again. Reuse the same targets across steps.
+- Steps form a REPEATING cycle — no fixed step count, use as many as the drill needs: the worker does the skill, resets, does it again. Reuse the same targets across steps.
 - ONE BALL ON THE PITCH: declare exactly ONE ball element, at the feet of whoever starts with it. Extra supply balls are NEVER drawn — mention a stack in a coaching point if useful. Every cycle scripts the collect-and-return: after a shot/cross, someone runs to the ball and works it back (that jog is the rest). Use `receives from` to hand the ball over.
+- WORKING SPOT: in server-feeds-worker loops, mark the worker's spot with a cone. After returning the ball to the server, the worker RUNS BACK to that cone BEFORE the next feed — never take a serve standing on top of the server (a 0m pass is invalid). The feed times with the run: serve arrives as they reach the spot.
 - ACCURACY skills: the finish must beat a TARGET, not just enter a goal — place 1-2 gates inside the goal (e.g. bottom corners) or a cone target, and require reps through it.
 - 6-9 coaching points. The FIRST is the warm-up. Exactly one states a countable target ("8 of 10 through the gate"). One states set/rep volume and the rest pattern ("5 strikes per set, 4 sets; collecting balls is the rest"). One is a progression or regression ("hit 8/10 → move 2m back; miss 5 → bigger gate").
 - If the skill names a foot or surface (weak foot, outside of boot), force it with geometry and a rule ("only weak-foot finishes count"), not just advice.
@@ -144,9 +153,16 @@ def generate_drill(
             and "goalkeep" not in blob_field and field_size != "large"):
         field_size = "half"
 
+    rule_pack = get_rule_pack(weakness)
+    # Realism wins over the request: skills that need a feed/opponent (pressure
+    # receiving, turns, GK reactions) get the partner even on a solo request —
+    # "a player receives from another player" beats a faked-solo version.
+    if number_of_players == 1 and any(
+            k in blob_field for k in (rule_pack or {}).get("partner_required_if", [])):
+        number_of_players = 2
+
     archetype = pick_archetype(weakness, level, number_of_players)
     exemplars = get_exemplars(archetype, level=level, n=3, number_of_players=number_of_players)
-    rule_pack = get_rule_pack(weakness)
     age_cap = _age_cap(age)
 
     errors: list[tuple[str, str]] = []
@@ -307,51 +323,6 @@ def _build_prompt(
             "",
         ]
 
-    # Prior attempt errors (typed as syntax|quality)
-    if prior_errors:
-        lines.append("PRIOR ATTEMPT ERRORS — FIX THESE EXACTLY:")
-        for tag, msg in prior_errors:
-            if tag == "quality":
-                lines.append(f"- [quality] PRIOR ATTEMPT WAS VALID DSL BUT NOT A USEFUL PRACTICE: {msg}")
-                if "measurable success metric" in msg:
-                    lines.append(
-                        "  FIX: add ONE coaching point stating a countable target, e.g. "
-                        "'Target: 8 of 10 strikes on frame', '10 clean reps in a row', or "
-                        "'complete 3 sets of 12'. Use a number + a unit."
-                    )
-                if "outcome element" in msg:
-                    lines.append(
-                        "  FIX: include a goal or gate element the worker finishes into, "
-                        "and end at least one path there (shoots at / passes to)."
-                    )
-                if "rep loop" in msg:
-                    lines.append(
-                        "  FIX: make the worker repeat the action — reuse the same element "
-                        "across at least two numbered steps so it clearly loops."
-                    )
-            else:
-                lines.append(f"- [{tag}] {msg}")
-                if "a player can only pass/dribble/shoot" in msg:
-                    lines.append(
-                        "  FIX: walk the ONE ball like a movie scene. To regain it after a "
-                        "shot/cross: '<player> runs to <where it rests>'. To hand it to a "
-                        "teammate: '<carrier> dribbles to <teammate>' THEN '<teammate> "
-                        "receives from <carrier>' — without the receives step the carrier "
-                        "still has it. A server can only serve after receiving it back."
-                    )
-                if "never played through" in msg:
-                    lines.append(
-                        "  FIX: end each rep AT the named gate — the last ball action of the "
-                        "cycle is 'passes to <gate>' / 'shoots at <gate>' / 'dribbles to <gate>'. "
-                        "If the gate is only a live option (duel), remove it from scoring or the diagram."
-                    )
-                if "redundant" in msg:
-                    lines.append(
-                        "  FIX: one movement per intent — merge the duplicate steps or send "
-                        "the player to a different element."
-                    )
-        lines.append("")
-
     lines += [
         "=" * 60,
         f"SKILL TO TRAIN (this is what matters most): {focus}",
@@ -437,12 +408,52 @@ def _build_prompt(
         "",
         f"Design a drill that maximizes game-relevant reps of: {focus}",
         "Adapt or depart from the references as needed. The drill's purpose is the skill, not the shape.",
-        "",
-        "FINAL CHECK before you output:",
-        f"- {solo_line}",
-        "- 8-16 steps forming a repeating cycle; every declared element used",
-        "- goals ON a field edge; shots 8-18m; accuracy skills finish through a target gate",
-        "- 6-9 coaching points: warm-up FIRST, one countable target, one set/rep+rest line, one progression",
-        "Output DSL only.",
     ]
+
+    # Prior attempt errors (typed as syntax|quality)
+    if prior_errors:
+        lines.append("PRIOR ATTEMPT ERRORS — FIX THESE EXACTLY:")
+        for tag, msg in prior_errors:
+            if tag == "quality":
+                lines.append(f"- [quality] PRIOR ATTEMPT WAS VALID DSL BUT NOT A USEFUL PRACTICE: {msg}")
+                if "measurable success metric" in msg:
+                    lines.append(
+                        "  FIX: add ONE coaching point stating a countable target, e.g. "
+                        "'Target: 8 of 10 strikes on frame', '10 clean reps in a row', or "
+                        "'complete 3 sets of 12'. Use a number + a unit."
+                    )
+                if "outcome element" in msg:
+                    lines.append(
+                        "  FIX: include a goal or gate element the worker finishes into, "
+                        "and end at least one path there (shoots at / passes to)."
+                    )
+                if "rep loop" in msg:
+                    lines.append(
+                        "  FIX: make the worker repeat the action — reuse the same element "
+                        "across at least two numbered steps so it clearly loops."
+                    )
+            else:
+                lines.append(f"- [{tag}] {msg}")
+                if "a player can only pass/dribble/shoot" in msg:
+                    lines.append(
+                        "  FIX: walk the ONE ball like a movie scene. To regain it after a "
+                        "shot/cross: '<player> runs to <where it rests>'. To hand it to a "
+                        "teammate: '<carrier> dribbles to <teammate>' THEN '<teammate> "
+                        "receives from <carrier>' — without the receives step the carrier "
+                        "still has it. A server can only serve after receiving it back."
+                    )
+                if "never played through" in msg:
+                    lines.append(
+                        "  FIX: end each rep AT the named gate — the last ball action of the "
+                        "cycle is 'passes to <gate>' / 'shoots at <gate>' / 'dribbles to <gate>'. "
+                        "If the gate is only a live option (duel), remove it from scoring or the diagram."
+                    )
+                if "redundant" in msg:
+                    lines.append(
+                        "  FIX: one movement per intent — merge the duplicate steps or send "
+                        "the player to a different element."
+                    )
+        lines.append("")
+
+    lines.append("Output DSL only.")
     return "\n".join(lines)
