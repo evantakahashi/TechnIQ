@@ -16,7 +16,9 @@ EQUIPMENT_TO_ELEMENT_TYPES: dict[str, set[str]] = {
 }
 
 # Element types that do not require equipment authorization
-IMPLICIT_ELEMENT_TYPES: set[str] = {"player", "gate", "mannequin"}
+IMPLICIT_ELEMENT_TYPES: set[str] = {"player", "gate", "mannequin", "cone"}
+# cone: a spot marker is always improvisable (shirt, bottle) — and gates,
+# which ARE two cones, were already implicit. Walls/goals stay gated.
 
 
 def _element_types_for_equipment(item: str) -> set[str]:
@@ -72,6 +74,72 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_receive_sources(elements, paths)
     _check_serve_distances(elements, paths)
     _check_header_volume(drill.get("coaching_points") or [])
+    _check_wall_shot_distance(elements, paths)
+    _check_setup_touch_before_shots(elements, paths)
+
+
+def _check_wall_shot_distance(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Serving a wall from point-blank looks fake — give the rebound room.
+    Applies to shots AND throws (the complaint reads the same either way)."""
+    by_label = {e.get("label"): e for e in elements}
+    for p in paths:
+        if p.get("alt") or p.get("style") not in ("shoot", "shot", "throw"):
+            continue
+        if by_label.get(p.get("to"), {}).get("type") != "wall":
+            continue
+        fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
+        if None in (fx, fy, tx, ty):
+            continue
+        if ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5 < 5.0:
+            raise ValidationError(
+                f"step {p.get('step')}: serving a wall from under 5m is "
+                "unrealistic — move the server back so the rebound has room"
+            )
+
+
+def _check_setup_touch_before_shots(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Never shoot from on top of the approach: a strike at a goal/gate needs
+    a short setup touch (≤4m dribble by the shooter) right before it — 'a
+    sudden touch inside towards the left or right and finish'. First-time
+    finishes off a pass/receive are exempt (that IS the touch).
+    """
+    if not any(e.get("type") == "goal" for e in elements):
+        return  # finishing context only
+    by_label = {e.get("label"): e for e in elements}
+    ordered = [p for p in sorted(paths, key=lambda x: x.get("step", 0))
+               if not p.get("alt")]
+    for i, p in enumerate(ordered):
+        if p.get("style") not in ("shoot", "shot"):
+            continue
+        if by_label.get(p.get("to"), {}).get("type") not in ("goal", "gate"):
+            continue
+        prev = ordered[i - 1] if i else None
+        if prev is None:
+            continue
+        if prev.get("style") in ("pass", "receive", "toss", "throw"):
+            continue  # first-time finish off a feed
+        if prev.get("style") == "dribble" and by_label.get(prev.get("to"), {}) \
+                .get("type") in ("player", "defender", "mannequin"):
+            continue  # beat the man, then strike — the duel IS the setup
+        if prev.get("style") == "dribble" and prev.get("from") == p.get("from"):
+            fx, fy = prev.get("fx"), prev.get("fy")
+            tx, ty = prev.get("tx"), prev.get("ty")
+            if None in (fx, fy, tx, ty):
+                continue  # no baked coords to measure (pre-annotate input)
+            # 5.5m baked = a ≤4m cut + the ~1m marker overshoot the
+            # post-processor adds; real approaches run 12m+.
+            if ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5 <= 5.5:
+                continue  # short cut before the strike — the setup touch
+        raise ValidationError(
+            f"step {p.get('step')}: {p.get('from')} shoots straight off the "
+            "approach — declare a touch cone 2-3m goal-side of the approach "
+            "cone and add the cut: `dribbles to <approach>` then `dribbles to "
+            "<touch cone>` (≤4m), THEN the shot"
+        )
 
 
 def _check_at_least_one_step(paths: list[dict[str, Any]]) -> None:

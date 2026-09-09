@@ -346,9 +346,9 @@ def test_annotate_path_positions_chains_player_movement():
     annotate_path_positions(drill)
     p1, p2 = drill["diagram"]["paths"]
     assert (p1["fx"], p1["fy"]) == (2.0, 5.0)
-    assert (p1["tx"], p1["ty"]) == (10.0, 5.0)
+    assert (p1["tx"], p1["ty"]) == (11.1, 5.0)  # cone is rounded, +1.1m overshoot
     # the shot originates from the cone P1 dribbled to, not the spawn point
-    assert (p2["fx"], p2["fy"]) == (10.0, 5.0)
+    assert (p2["fx"], p2["fy"]) == (11.1, 5.0)  # shot starts where the dribble ended (past the cone)
     assert (p2["tx"], p2["ty"]) == (19.0, 7.5)
 
 
@@ -457,3 +457,47 @@ def test_ball_free_run_untouched():
     ]
     drill, _ = post_process_drill(d, player_age=14)
     assert drill["diagram"]["paths"][2]["style"] == "run"
+
+
+def test_marker_targets_overshoot():
+    """Movement THROUGH gates / AROUND cones bakes ~1m past the marker."""
+    from drill_post_processor import annotate_path_positions
+    d = {"diagram": {"field": {"width": 20, "length": 15}, "elements": [
+        {"type": "player", "x": 2, "y": 7.5, "label": "P1"},
+        {"type": "cone", "x": 10, "y": 7.5, "label": "C1"},
+        {"type": "wall", "x": 18, "y": 7.5, "label": "W1"},
+    ], "paths": [
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+        {"from": "P1", "to": "W1", "style": "pass", "step": 2},
+    ]}}
+    annotate_path_positions(d)
+    p1, p2 = d["diagram"]["paths"]
+    assert p1["tx"] > 10.5  # past the cone, not on it
+    assert p2["fx"] == p1["tx"]  # next action starts from the overshoot spot
+    assert p2["tx"] == 18  # ball flight to a wall is NOT offset
+
+
+def test_setup_touch_cone_pulled_close():
+    """Model drew the cut cone 7m out — post-processor slides it to 3m."""
+    d = {
+        "name": "n", "description": "d", "setup": "s", "instructions": ["i"],
+        "difficulty": 1, "category": "technical", "targetSkills": ["x"],
+        "equipment": ["ball", "cones", "goals"],
+        "diagram": {"field": {"width": 30, "length": 20}, "elements": [
+            {"type": "player", "x": 4, "y": 10, "label": "P1", "role": "worker"},
+            {"type": "ball", "x": 4, "y": 10, "label": "B1"},
+            {"type": "cone", "x": 14, "y": 10, "label": "C1"},
+            {"type": "cone", "x": 21, "y": 13, "label": "T1"},  # 7.6m cut
+            {"type": "goal", "x": 29.5, "y": 10, "label": "GL", "width": 7.32},
+        ], "paths": [
+            {"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+            {"from": "P1", "to": "T1", "style": "dribble", "step": 2},
+            {"from": "P1", "to": "GL", "style": "shoot", "step": 3},
+        ]},
+    }
+    drill, warnings = post_process_drill(d, player_age=15)
+    t1 = [e for e in drill["diagram"]["elements"] if e["label"] == "T1"][0]
+    import math
+    c1 = [e for e in drill["diagram"]["elements"] if e["label"] == "C1"][0]
+    assert math.hypot(t1["x"] - c1["x"], t1["y"] - c1["y"]) <= 3.5
+    assert any("pulled to 3m" in w for w in warnings)

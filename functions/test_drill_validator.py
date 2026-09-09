@@ -173,6 +173,7 @@ def test_gate_inside_goal_mouth_passes():
         {"type": "gate", "x": 19, "y": 9.7, "width": 1.2, "label": "G1"},
         {"type": "ball", "x": -2, "y": 0, "label": "B1"},
     ]
+    drill["diagram"]["paths"][0].update({"fx": -2, "fy": 0, "tx": 0, "ty": 0})
     drill["diagram"]["paths"].append({"from": "P1", "to": "G1", "style": "shoot", "step": 2})
     validate_drill(drill)  # no exception
 
@@ -419,3 +420,65 @@ def test_solo_pass_through_gate_passes():
     drill["diagram"]["paths"].append(
         {"from": "P1", "to": "G1", "style": "run", "step": 2})
     validate_drill(drill)
+
+
+def _finish_drill(prev_step):
+    """Goal + shot, with a configurable step before the shot."""
+    return {
+        "diagram": {
+            "field": {"width": 30, "length": 20},
+            "elements": [
+                {"type": "player", "x": 8, "y": 10, "label": "P1", "role": "worker"},
+                {"type": "ball", "x": 8, "y": 10, "label": "B1"},
+                {"type": "cone", "x": 14, "y": 10, "label": "C1"},
+                {"type": "goal", "x": 29.5, "y": 10, "label": "GL", "width": 7.32},
+            ],
+            "paths": [
+                prev_step,
+                {"from": "P1", "to": "GL", "style": "shoot", "step": 2,
+                 "fx": 15, "fy": 10, "tx": 29.5, "ty": 10},
+            ],
+        },
+        "coaching_points": [], "equipment": ["ball", "cones", "goals"],
+    }
+
+
+def test_shot_off_long_approach_needs_setup_touch():
+    long_approach = {"from": "P1", "to": "C1", "style": "dribble", "step": 1,
+                     "fx": 2, "fy": 10, "tx": 15, "ty": 10}  # 13m — no cut
+    with pytest.raises(ValidationError, match="touch cone"):
+        validate_drill(_finish_drill(long_approach))
+
+
+def test_shot_after_short_cut_passes():
+    cut = {"from": "P1", "to": "C1", "style": "dribble", "step": 1,
+           "fx": 13, "fy": 12, "tx": 15, "ty": 10}  # 2.8m cut inside
+    validate_drill(_finish_drill(cut))
+
+
+def test_first_time_finish_off_feed_exempt():
+    d = _finish_drill({"from": "P1", "to": "C1", "style": "dribble", "step": 1,
+                       "fx": 2, "fy": 10, "tx": 15, "ty": 10})
+    d["diagram"]["elements"].append({"type": "player", "x": 4, "y": 4, "label": "P2", "role": "server"})
+    d["diagram"]["paths"][0] = {"from": "P2", "to": "P1", "style": "pass", "step": 1,
+                                "fx": 4, "fy": 4, "tx": 15, "ty": 10}
+    d["diagram"]["elements"][1]["x"] = 4; d["diagram"]["elements"][1]["y"] = 4  # ball w/ server
+    validate_drill(d)
+
+
+def test_wall_shot_under_5m_raises():
+    drill = {
+        "diagram": {
+            "field": {"width": 16, "length": 15},
+            "elements": [
+                {"type": "player", "x": 8, "y": 3, "label": "P1", "role": "worker"},
+                {"type": "ball", "x": 8, "y": 3, "label": "B1"},
+                {"type": "wall", "x": 8, "y": 1, "label": "W1", "width": 5},
+            ],
+            "paths": [{"from": "P1", "to": "W1", "style": "shoot", "step": 1,
+                       "fx": 8, "fy": 3, "tx": 8, "ty": 1}],
+        },
+        "coaching_points": [], "equipment": ["ball", "wall"],
+    }
+    with pytest.raises(ValidationError, match="under 5m"):
+        validate_drill(drill)

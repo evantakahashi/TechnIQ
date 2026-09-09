@@ -52,7 +52,7 @@
   "id": "dribble_and_shoot_intermediate_01",
   "archetype": "dribble_and_shoot",
   "pressure": "none",
-  "dsl": "cone C1 at (5, 5)\ncone C2 at (9, 5)\ncone C3 at (13, 9)\nplayer P1 at (2, 5) role \"worker\"\nball B1 at (2, 5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 shoots at GL\n\npoint: Cut inside off your stronger foot to open the shooting angle\npoint: Plant foot next to the ball, strike through the middle-upper third",
+  "dsl": "cone C1 at (5, 5)\ncone C2 at (9, 5)\ncone C3 at (12, 7.5)\nplayer P1 at (2, 5) role \"worker\"\nball B1 at (2, 5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 dribbles to C1\nstep 2: P1 dribbles to C2\nstep 3: P1 dribbles to C3\nstep 4: P1 shoots at GL\n\npoint: Cut inside off your stronger foot to open the shooting angle\npoint: Plant foot next to the ball, strike through the middle-upper third",
   "notes": "Dribble wide, cut inside diagonally, finish far post; angle-opening pattern"
  },
  {
@@ -66,7 +66,7 @@
   "id": "server_executor_intermediate_01",
   "archetype": "server_executor",
   "pressure": "passive",
-  "dsl": "player P1 at (1, 7.5) role \"server\"\nplayer P2 at (8, 4.5) role \"worker\"\ncone C1 at (12, 7.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 shoots at GL\n\npoint: Open hips before the ball arrives\npoint: First touch forward into the run, not into your feet",
+  "dsl": "player P1 at (1, 7.5) role \"server\"\nplayer P2 at (8, 4.5) role \"worker\"\ncone C1 at (10.5, 6.5)\ngoal GL at (18, 7.5) width 7.32\n\nstep 1: P1 passes to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 shoots at GL\n\npoint: Open hips before the ball arrives\npoint: First touch forward into the run, not into your feet",
   "notes": "Server feeds channel runner; attacking midfielder finishing pattern"
  },
  {
@@ -172,7 +172,7 @@
   "id": "solo_finishing_gates_adv",
   "archetype": "dribble_and_shoot",
   "pressure": "passive",
-  "dsl": "player P1 at (15, 10) role \"worker\"\ncone C1 at (21, 10)\nball B1 at (15, 10)\ngate G1 at (29, 7.2) width 1.2\ngate G2 at (29, 12.8) width 1.2\ngoal GL at (29, 10) width 7.32\nstep 1: P1 dribbles to C1\nstep 2: P1 shoots at G1\nstep 3: P1 runs to G1\nstep 4: P1 dribbles to C1\nstep 5: P1 shoots at G2\nstep 6: P1 runs to G2\nstep 7: P1 dribbles to C1\nstep 8: P1 shoots at G1\npoint: Warm up 2-3 minutes \u2014 light jog, leg swings, easy ball rolls before striking at pace\npoint: One ball: collect it from the goal after every strike and dribble back out \u2014 the jog back is your rest\npoint: Weak foot only \u2014 a strong-foot strike counts as a miss\npoint: Target: 8 of 10 strikes through a corner gate; count out loud\npoint: Prep touch pushes the ball across your body into the weak-foot zone; glance up at the gate between touch and strike\npoint: Keep the ankle locked and the knee of the striking leg over the ball to protect the joint and drive the shot low",
+  "dsl": "player P1 at (15, 10) role \"worker\"\ncone C1 at (23, 10)\nball B1 at (15, 10)\ngate G1 at (29, 7.2) width 1.2\ngate G2 at (29, 12.8) width 1.2\ngoal GL at (29, 10) width 7.32\nstep 1: P1 dribbles to C1\nstep 2: P1 shoots at G1\nstep 3: P1 runs to G1\nstep 4: P1 dribbles to C1\nstep 5: P1 shoots at G2\nstep 6: P1 runs to G2\nstep 7: P1 dribbles to C1\nstep 8: P1 shoots at G1\npoint: Warm up 2-3 minutes \u2014 light jog, leg swings, easy ball rolls before striking at pace\npoint: One ball: collect it from the goal after every strike and dribble back out \u2014 the jog back is your rest\npoint: Weak foot only \u2014 a strong-foot strike counts as a miss\npoint: Target: 8 of 10 strikes through a corner gate; count out loud\npoint: Prep touch pushes the ball across your body into the weak-foot zone; glance up at the gate between touch and strike\npoint: Keep the ankle locked and the knee of the striking leg over the ball to protect the joint and drive the shot low",
   "notes": "Single-ball weak-foot finishing loop: dribble in, strike a corner gate, collect, return. No supply clutter."
  },
  {

@@ -5,13 +5,13 @@ from drill_generator import generate_drill, DrillGenerationFailed
 
 
 VALID_DSL = """\
-cone C1 at (0, 0)
-cone C2 at (3, 0)
-player P1 at (-2, 0) role "worker"
-player P2 at (5, 5) role "server"
-player P3 at (3, -3) role "server"
-ball B1 at (-2, 0)
-goal GL at (10, 0) width 5
+cone C1 at (8, 7.5)
+cone C2 at (11.5, 9)
+player P1 at (3, 7.5) role "worker"
+player P2 at (6, 3) role "server"
+player P3 at (14, 4) role "server"
+ball B1 at (3, 7.5)
+goal GL at (19, 7.5) width 5
 
 step 1: P1 dribbles to C1
 step 2: P1 passes to P2
@@ -170,12 +170,31 @@ def test_prompt_injects_periodization_block():
     assert "Global practice" in captured[0]
 
 
+HALF_FIELD_DSL = """\
+cone C1 at (30, 30)
+cone C2 at (33, 31.5)
+player P1 at (24, 30) role "worker"
+player P2 at (28, 22) role "server"
+ball B1 at (24, 30)
+goal GL at (52, 34) width 7.32
+
+step 1: P1 dribbles to C1
+step 2: P1 passes to P2
+step 3: P2 passes to P1
+step 4: P1 dribbles to C2
+step 5: P1 shoots at GL
+
+point: Keep the ball close under pressure
+point: Cut inside, scan before the touch, drive through the shot
+"""
+
+
 def test_prompt_injects_rule_pack_when_covered():
     captured = []
 
     def capture(prompt: str) -> str:
         captured.append(prompt)
-        return VALID_DSL
+        return HALF_FIELD_DSL
 
     req = make_request()
     req["weakness"] = "Shooting"
@@ -467,12 +486,14 @@ def test_generate_drill_field_size_large_propagates_to_diagram():
     dsl = (
         'cone C1 at (5, 5)\n'
         'cone C2 at (40, 25)\n'
+        'cone C3 at (42, 22)\n'
         'player P1 at (5, 5) role "worker"\n'
         'ball B1 at (5, 5)\n'
         'goal GL at (48, 15) width 7\n'
         'step 1: P1 dribbles to C1\n'
         'step 2: P1 dribbles to C2\n'
-        'step 3: P1 shoots at GL\n'
+        'step 3: P1 dribbles to C3\n'
+        'step 4: P1 shoots at GL\n'
         'point: Push the ball into space ahead of you, accelerate after the third touch\n'
         'point: Aim 3 of 5 reps for the bottom corner — count successes\n'
     )
