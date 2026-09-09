@@ -164,8 +164,8 @@
   "id": "rondo_advanced_02",
   "archetype": "rondo",
   "pressure": "active",
-  "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\n\nstep 1: P1 passes to P2\nstep 2: P4 runs to P2\nstep 3: P2 passes to P3\nstep 4: P3 passes to P1\npoint: 3v1 keep-away until the defender forces a turnover \u2014 then transition immediately\npoint: HOW IT WORKS: the rondo is LIVE after the passes shown \u2014 defender hunts, players keep the ball moving; swap the defender after each turnover\npoint: On regain, attack the target gate within 5 seconds \u2014 no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
-  "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger Defender hunts the ball \u2014 the chase run plays simultaneously."
+  "dsl": "player P1 at (5, 5) role \"worker\"\nplayer P2 at (14, 5) role \"worker\"\nplayer P3 at (10, 11) role \"worker\"\nplayer P4 at (10, 8) role \"defender\"\ngate G1 at (18, 8) width 3\nball B1 at (5, 5)\n\n\nstep 1: P1 passes to P2\nstep 2: P4 runs to P2\nstep 3: P2 passes to P3\nstep 4: P3 passes to P1\nstep 5: P1 dribbles to G1\npoint: 3v1 keep-away until the defender forces a turnover \u2014 then transition immediately\npoint: HOW IT WORKS: the rondo is LIVE after the passes shown \u2014 defender hunts, players keep the ball moving; swap the defender after each turnover\npoint: On regain, attack the target gate within 5 seconds \u2014 no extra passes, no hesitation\npoint: Support angles adjust every pass; whoever's closest to the gate becomes the target carrier",
+  "notes": "3v1 keep-away with a transition-to-gate objective; active pressure plus decision trigger Defender hunts the ball \u2014 the chase run plays simultaneously. Transition through the gate shown once; live thereafter."
  },
  {
   "id": "solo_finishing_gates_adv",
