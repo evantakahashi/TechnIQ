@@ -501,3 +501,15 @@ def test_setup_touch_cone_pulled_close():
     c1 = [e for e in drill["diagram"]["elements"] if e["label"] == "C1"][0]
     assert math.hypot(t1["x"] - c1["x"], t1["y"] - c1["y"]) <= 3.5
     assert any("pulled to 3m" in w for w in warnings)
+
+
+def test_self_run_noop_dropped_and_renumbered():
+    d = _carrier_run_drill()
+    d["diagram"]["paths"] = [
+        {"from": "P1", "to": "P1", "style": "run", "step": 1},   # no-op
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 2},
+    ]
+    drill, warnings = post_process_drill(d, player_age=14)
+    assert len(drill["diagram"]["paths"]) == 1
+    assert drill["diagram"]["paths"][0]["step"] == 1  # renumbered
+    assert any("no-op" in w for w in warnings)

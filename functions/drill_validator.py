@@ -76,26 +76,71 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_header_volume(drill.get("coaching_points") or [])
     _check_wall_shot_distance(elements, paths)
     _check_setup_touch_before_shots(elements, paths)
+    _check_flight_through_players(elements, paths)
+
+
+def _check_flight_through_players(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """A served/struck ball must not fly through an uninvolved player's body."""
+    players = [e for e in elements if e.get("type") == "player"]
+    by_label_t = {e.get("label"): e.get("type") for e in elements}
+    for p in paths:
+        if p.get("alt"):
+            continue
+        style = p.get("style")
+        if style in ("pass", "toss", "throw", "shoot", "shot", "header"):
+            fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
+        elif style == "receive" and by_label_t.get(p.get("to")) == "wall":
+            # rebound leg: ball travels wall -> receiver
+            fx, fy, tx, ty = p.get("tx"), p.get("ty"), p.get("fx"), p.get("fy")
+        else:
+            continue
+        if None in (fx, fy, tx, ty):
+            continue
+        vx, vy = tx - fx, ty - fy
+        seg2 = vx * vx + vy * vy
+        if seg2 < 1e-9:
+            continue
+        for e in players:
+            if e.get("label") in (p.get("from"), p.get("to")):
+                continue
+            t = ((e["x"] - fx) * vx + (e["y"] - fy) * vy) / seg2
+            if not 0.12 <= t <= 0.95:
+                continue  # at the striker's shoulder / past the target isn't "through"
+            dx, dy = e["x"] - (fx + vx * t), e["y"] - (fy + vy * t)
+            if (dx * dx + dy * dy) ** 0.5 < 0.8:
+                raise ValidationError(
+                    f"step {p.get('step')}: the ball flies straight through "
+                    f"{e.get('label')} — offset that player from the "
+                    "flight line (they are not part of this action)"
+                )
 
 
 def _check_wall_shot_distance(
     elements: list[dict[str, Any]], paths: list[dict[str, Any]]
 ) -> None:
     """Serving a wall from point-blank looks fake — give the rebound room.
-    Applies to shots AND throws (the complaint reads the same either way)."""
+
+    Verb-agnostic: the model dodged a shots-only rule by renaming the serve
+    a 'pass'. Floors: strikes/throws 5m, passes/tosses 4m.
+    """
+    floors = {"shoot": 5.0, "shot": 5.0, "throw": 5.0,
+              "pass": 4.0, "toss": 4.0, "header": 4.0}
     by_label = {e.get("label"): e for e in elements}
     for p in paths:
-        if p.get("alt") or p.get("style") not in ("shoot", "shot", "throw"):
+        floor = floors.get(p.get("style"))
+        if p.get("alt") or floor is None:
             continue
         if by_label.get(p.get("to"), {}).get("type") != "wall":
             continue
         fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
         if None in (fx, fy, tx, ty):
             continue
-        if ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5 < 5.0:
+        if ((fx - tx) ** 2 + (fy - ty) ** 2) ** 0.5 < floor:
             raise ValidationError(
-                f"step {p.get('step')}: serving a wall from under 5m is "
-                "unrealistic — move the server back so the rebound has room"
+                f"step {p.get('step')}: serving a wall from under {floor:.0f}m "
+                "is unrealistic — move the server back so the rebound has room"
             )
 
 

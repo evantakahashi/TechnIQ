@@ -215,6 +215,13 @@ def _validate_paths(
             warnings.append(f"Removed path: label(s) {', '.join(missing)} not found in elements")
             continue
 
+        # Self-movement is a no-op ("P2 runs to P2") — drop it
+        if path.get("from") == path.get("to") \
+                and path.get("style") in ("run", "dribble"):
+            warnings.append(
+                f"Removed no-op step: {path.get('from')} {path.get('style')}s to itself")
+            continue
+
         # Check pass targets — invalid targets are removed
         if path.get("style") == "pass":
             target_type = label_to_type.get(to_label, "")
@@ -462,9 +469,11 @@ def annotate_path_positions(drill: dict) -> None:
     rest_at = None
     prev_reset = False
     prev_was_collect = False
-    for p in ordered_for_reset(paths):
+    seq = list(ordered_for_reset(paths))
+    for i, p in enumerate(seq):
         style, src, dst = p.get("style"), p.get("from"), p.get("to")
         dst_type = by_label.get(dst, {}).get("type")
+        nxt = seq[i + 1] if i + 1 < len(seq) else None
         is_reset = False
         if style == "run" and (dst in ball_labels or dst == rest_at
                                or dst_type in ("goal", "gate") and dst == rest_at):
@@ -473,6 +482,10 @@ def annotate_path_positions(drill: dict) -> None:
             is_reset = True  # the walk-back right after collecting is plumbing
         elif style == "dribble" and prev_reset and dst_type == "player":
             is_reset = True  # return leg delivering to the server
+        elif (style == "dribble" and dst_type == "player" and nxt is not None
+              and nxt.get("style") == "receive"
+              and nxt.get("from") == dst and nxt.get("to") == src):
+            is_reset = True  # direct handover: walking the ball to the server
         elif style == "dribble" and dst in ball_labels:
             is_reset = True  # dribble back to the start marker
         elif style == "receive" and prev_reset:

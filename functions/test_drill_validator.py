@@ -482,3 +482,20 @@ def test_wall_shot_under_5m_raises():
     }
     with pytest.raises(ValidationError, match="under 5m"):
         validate_drill(drill)
+
+
+def test_flight_through_uninvolved_player_raises():
+    drill = {
+        "diagram": {"field": {"width": 20, "length": 15}, "elements": [
+            {"type": "player", "x": 16, "y": 7.5, "label": "P1", "role": "worker"},
+            {"type": "player", "x": 8, "y": 7.5, "label": "P2", "role": "server"},
+            {"type": "ball", "x": 16, "y": 7.5, "label": "B1"},
+            {"type": "wall", "x": 1, "y": 7.5, "label": "W1", "width": 5},
+        ], "paths": [
+            {"from": "P1", "to": "W1", "style": "throw", "step": 1,
+             "fx": 16, "fy": 7.5, "tx": 1, "ty": 7.5},
+        ]},
+        "coaching_points": [], "equipment": ["ball", "wall", "partner"],
+    }
+    with pytest.raises(ValidationError, match="through P2"):
+        validate_drill(drill)
