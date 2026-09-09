@@ -514,11 +514,25 @@ def annotate_path_positions(drill: dict) -> None:
         # Timed delivery: a pass/toss to a player whose previous step was that
         # player's run plays concurrently — the ball arrives as the run
         # completes (a cross met by the finisher's run, a through-ball).
+        # ONLY when the run comes ONTO the ball from an angle: if the run
+        # origin sits on the passing lane (the handover loop's run-back-out),
+        # the receiver would chase the ball down its own flight — play those
+        # sequentially instead (run, get set, THEN the feed).
         if (cur.get("style") in ("pass", "toss", "throw")
                 and prev.get("style") == "run"
                 and cur.get("to") == prev.get("from")
                 and not prev.get("reset")):
-            cur["sync"] = True
+            ox, oy = prev.get("fx"), prev.get("fy")
+            fx, fy, tx, ty = (cur.get("fx"), cur.get("fy"),
+                              cur.get("tx"), cur.get("ty"))
+            off_line = None
+            if None not in (ox, oy, fx, fy, tx, ty):
+                vx, vy = tx - fx, ty - fy
+                seg = math.hypot(vx, vy)
+                if seg > 0.1:
+                    off_line = abs((ox - fx) * vy - (oy - fy) * vx) / seg
+            if off_line is None or off_line >= 2.5:
+                cur["sync"] = True
 
 
 def crop_field_to_content(drill: Dict, margin: float = 8.0,

@@ -513,3 +513,24 @@ def test_self_run_noop_dropped_and_renumbered():
     assert len(drill["diagram"]["paths"]) == 1
     assert drill["diagram"]["paths"][0]["step"] == 1  # renumbered
     assert any("no-op" in w for w in warnings)
+
+
+def test_sync_only_for_angled_runs():
+    """Run up the passing lane -> sequential; run onto the ball from an angle -> sync."""
+    from drill_post_processor import annotate_path_positions
+    def drill(run_origin):
+        return {"diagram": {"field": {"width": 20, "length": 15}, "elements": [
+            {"type": "player", "x": 3, "y": 7, "label": "S1", "role": "server"},
+            {"type": "player", "x": run_origin[0], "y": run_origin[1], "label": "P1", "role": "worker"},
+            {"type": "ball", "x": 3, "y": 7, "label": "B1"},
+            {"type": "cone", "x": 11, "y": 7, "label": "C1"},
+        ], "paths": [
+            {"from": "P1", "to": "C1", "style": "run", "step": 1},
+            {"from": "S1", "to": "P1", "style": "pass", "step": 2},
+        ]}}
+    d1 = drill((3.5, 7))   # starts on the lane (at the server) — chase
+    annotate_path_positions(d1)
+    assert not d1["diagram"]["paths"][1].get("sync")
+    d2 = drill((11, 13))   # cuts onto the ball from 6m off the lane
+    annotate_path_positions(d2)
+    assert d2["diagram"]["paths"][1].get("sync")

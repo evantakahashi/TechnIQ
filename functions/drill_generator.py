@@ -90,6 +90,7 @@ STAGE & PRESENTATION (know how your output is shown, and design FOR it):
 - Finishing/crossing/volley work is staged on a HALF-FIELD (52.5x68, regulation goal at (52.5,34), real 16.5m box) — design around the box like real training.
 - Collect-and-return legs (running to the resting ball, working it back) are HIDDEN from the kid: the animation fades between reps. Script them for ball logic, but keep them minimal — they are plumbing, not content. The reps are what the kid sees.
 - Touch tags render as badges on the arrow; `or:` lines render as dashed choice-arrows; `variation:` lines render as selectable chips. Use all three deliberately.
+- A timed feed is met by a run from an ANGLE — the receiver cuts ONTO the ball's line at the end (a cross met in the box, a through-ball run). Never have the receiver run up the same lane the ball travels; if their route back to the spot follows the passing lane, they get set FIRST and the feed comes after.
 
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - Steps form a REPEATING cycle — no fixed step count, use as many as the drill needs: the worker does the skill, resets, does it again. Reuse the same targets across steps.
