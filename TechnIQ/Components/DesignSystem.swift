@@ -1,57 +1,70 @@
 import SwiftUI
 
-// MARK: - Design System
+// MARK: - Design System (Touchline)
+//
+// Token NAMES are stable so call sites don't change; VALUES follow the Touchline handoff
+// (design_handoff_touchline, Sep 2026). Surfaces are near-black greens, one pitch-green hero per
+// screen, grass for the single primary action, condensed SF Pro for names and figures.
+// No shadows, no gradients, no glows: depth comes from surface steps (base → raised → pitch).
 struct DesignSystem {
-    
-    // MARK: - Colors (Stadium Night)
+
+    // MARK: - Colors
     struct Colors {
         // Surfaces (dark-only)
-        static let surfaceBase = Color(red: 0.051, green: 0.059, blue: 0.055)      // #0D0F0E
-        static let surfaceRaised = Color(red: 0.082, green: 0.098, blue: 0.090)    // #151917
-        static let surfaceOverlay = Color(red: 0.118, green: 0.137, blue: 0.125)   // #1E2320
-        static let surfaceHighlight = Color(red: 0.165, green: 0.184, blue: 0.173) // #2A2F2C
+        static let surfaceBase = Color(hex: 0x0E1210)       // screen background
+        static let surfaceRaised = Color(hex: 0x161C18)     // search field, segment track, tiles, idle chips
+        static let surfaceOverlay = Color(hex: 0x1F2722)    // 1 px rules and borders, skeleton blocks
+        static let surfaceHighlight = Color(hex: 0x2A342D)  // level-bar track, inactive ring, disabled
+        static let pitch = Color(hex: 0x173A26)             // the one tappable hero per screen
+        static let pitchLine = Color(hex: 0xEEF1EC).opacity(0.24) // pitch markings on pitch surfaces
 
         // Accents
-        static let accentLime = Color(red: 0.800, green: 1.000, blue: 0.000)       // #CCFF00
-        static let accentLimeDim = Color(red: 0.561, green: 0.702, blue: 0.000)    // #8FB300
-        static let bloodOrange = Color(red: 1.000, green: 0.294, blue: 0.122)      // #FF4B1F
+        static let accentLime = Color(hex: 0x5CCB5F)        // grass: primary button, selected, done, eyebrows
+        static let grass = accentLime
+        static let accentLimeDim = Color(hex: 0x3E9A48)     // pressed state of grass
+        static let grassPressed = accentLimeDim
+        static let bloodOrange = Color(hex: 0xF0A33A)       // cone: diagram cones, "Advanced" badge
+        static let cone = bloodOrange
+        static let error = Color(hex: 0xB23A3A)             // destructive, "Elite" badge, error banner
 
         // Text (chalk tones)
-        static let chalkWhite = Color(red: 0.949, green: 0.941, blue: 0.902)       // #F2F0E6
-        static let mutedIvory = Color(red: 0.659, green: 0.647, blue: 0.604)       // #A8A59A
-        static let dimIvory = Color(red: 0.420, green: 0.412, blue: 0.384)         // #6B6962
+        static let chalkWhite = Color(hex: 0xEEF1EC)        // primary text, inverse button fill
+        static let mutedIvory = Color(hex: 0xB9C1BB)        // body text on dark
+        static let dimIvory = Color(hex: 0x8E968F)          // secondary labels, figure units
+        static let textTertiary = Color(hex: 0x4E5651)      // idle tab icons, chevrons, disabled day letters
+        static let textOnPitch = Color(hex: 0xBFD3C4)       // meta / body on pitch surfaces
+        static let bodyOnPitch = Color(hex: 0xD7E3DA)       // coach copy on pitch surfaces
+        static let bannerText = Color(hex: 0xD7DDD8)        // banner message body
 
-        // MARK: - Semantic aliases (legacy token names → Stadium Night)
+        // MARK: Semantic aliases (legacy token names → Touchline)
 
-        // Primary brand (was emerald green)
+        // Primary brand
         static let primaryGreen = accentLime
         static let primaryGreenLight = accentLime
         static let primaryGreenDark = accentLimeDim
 
-        // Gold/secondary (collapsed to lime)
+        // Secondary / gold (collapsed to grass; orange → cone)
         static let secondaryBlue = accentLime
         static let secondaryBlueLight = accentLime
         static let accentGold = accentLime
-        static let accentOrange = bloodOrange
+        static let accentOrange = cone
         static let accentYellow = accentLime
 
-        // Gamification
+        // Gamification — demoted to one footer line; everything reads grass
         static let successGreen = accentLime
-        static let streakOrange = bloodOrange
+        static let streakOrange = accentLime
         static let xpGold = accentLime
         static let levelPurple = accentLime
         static let coinGold = accentLime
 
         // Semantic
         static let success = accentLime
-        static let warning = bloodOrange
-        static let error = bloodOrange
+        static let warning = cone
         static let info = accentLime
 
         // Text aliases
         static let textPrimary = chalkWhite
         static let textSecondary = mutedIvory
-        static let textTertiary = dimIvory
         static let textOnAccent = surfaceBase
         static let primaryDark = surfaceBase
 
@@ -60,7 +73,7 @@ struct DesignSystem {
         static let backgroundSecondary = surfaceRaised
         static let backgroundTertiary = surfaceOverlay
         static let cardBackground = surfaceRaised
-        static let cardBorder = chalkWhite.opacity(0.08)
+        static let cardBorder = surfaceOverlay
         static let darkModeBackground = surfaceBase
         static let cellBackground = surfaceRaised
 
@@ -71,10 +84,10 @@ struct DesignSystem {
         static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69)
         static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03)
 
-        // Legacy neutrals (aliases to chalk tones)
+        // Legacy neutrals (aliases to chalk tones / surfaces)
         static let neutral100 = chalkWhite
-        static let neutral200 = chalkWhite.opacity(0.12)
-        static let neutral300 = chalkWhite.opacity(0.08)
+        static let neutral200 = surfaceHighlight
+        static let neutral300 = surfaceOverlay
         static let neutral400 = mutedIvory
         static let neutral500 = mutedIvory
         static let neutral600 = dimIvory
@@ -82,71 +95,70 @@ struct DesignSystem {
         static let neutral800 = surfaceHighlight
         static let neutral900 = surfaceBase
 
-        // Confetti palette
+        // Confetti palette (session complete no longer uses confetti; kept for achievements)
         static let confettiColors: [Color] = [
             accentLime,
-            bloodOrange,
             chalkWhite,
+            cone,
             accentLimeDim
         ]
-
-        // Gradients (all collapsed to lime or blood orange)
-        static let primaryGradient = LinearGradient(
-            colors: [accentLime, accentLimeDim],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        static let secondaryGradient = primaryGradient
-        static let athleticGradient = primaryGradient
-        static let xpGradient = primaryGradient
-        static let levelUpGradient = primaryGradient
-        static let celebrationGradient = primaryGradient
-        static let streakGradient = LinearGradient(
-            colors: [bloodOrange, bloodOrange.opacity(0.7)],
-            startPoint: .bottom,
-            endPoint: .top
-        )
-        static let backgroundGradient = LinearGradient(
-            colors: [surfaceBase, surfaceRaised],
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
-    
-    // MARK: - Typography (Stadium Night: compressed, heavy, screaming)
-    struct Typography {
-        // Display — compressed, black-weight SF Pro (Nike Training hero feel)
-        static let heroDisplay = Font.system(size: 72, weight: .black).width(.compressed)
-        static let displayLarge = Font.system(size: 56, weight: .black).width(.compressed)
-        static let displayMedium = Font.system(size: 42, weight: .heavy).width(.compressed)
-        static let displaySmall = Font.system(.largeTitle).weight(.heavy).width(.compressed)
 
-        // Headlines — restrained, readable
-        static let headlineLarge = Font.system(.title2).weight(.bold)
-        static let headlineMedium = Font.system(.title3).weight(.semibold)
-        static let headlineSmall = Font.system(.headline).weight(.semibold)
+    // MARK: - Typography
+    //
+    // Display = SF Pro .width(.condensed) semibold/bold, uppercase at the call site.
+    // Text = SF Pro regular width. Numbers get .monospacedDigit(), never the monospaced design.
+    struct Typography {
+        // Display — condensed, uppercase
+        static let heroDisplay = Font.system(size: 60, weight: .bold).width(.condensed)      // sign-in headline
+        static let displayLarge = Font.system(size: 56, weight: .bold).width(.condensed)     // session complete
+        static let displayMedium = Font.system(size: 40, weight: .semibold).width(.condensed) // drill name in hero / detail / session
+        static let displayMediumLarge = Font.system(size: 46, weight: .semibold).width(.condensed) // larger hero titles
+        static let displaySmall = Font.system(size: 30, weight: .semibold).width(.condensed) // screen titles (Train, Plans, You)
+
+        // Headlines — text face, sentences and card titles
+        static let headlineLarge = Font.system(size: 22, weight: .bold)
+        static let headlineMedium = Font.system(size: 20, weight: .semibold)
+        static let headlineSmall = Font.system(size: 17, weight: .semibold)
 
         // Titles
-        static let titleLarge = Font.system(.title2).weight(.semibold)
-        static let titleMedium = Font.system(.callout).weight(.semibold)
-        static let titleSmall = Font.system(.subheadline).weight(.medium)
+        static let titleLarge = Font.system(size: 20, weight: .semibold)
+        static let titleMedium = Font.system(size: 15, weight: .semibold)   // row titles
+        static let titleSmall = Font.system(size: 13, weight: .medium)
 
-        // Labels — compressed/heavy for buttons, tags, uppercase metadata
-        static let labelLarge = Font.system(.subheadline).weight(.heavy).width(.compressed)
-        static let labelMedium = Font.system(.footnote).weight(.heavy).width(.compressed)
-        static let labelSmall = Font.system(.caption2).weight(.heavy).width(.compressed)
+        // Labels — condensed uppercase for buttons, chips, meta; eyebrow is the text face
+        static let labelLarge = Font.system(size: 19, weight: .bold).width(.condensed)       // primary button label
+        static let labelMedium = Font.system(size: 14, weight: .semibold).width(.condensed)  // chips, segment, row meta, WK 3 · DAY 2
+        static let labelSmall = Font.system(size: 12, weight: .bold)                         // eyebrow: TODAY'S SESSION, ACTIVE PLAN
+        static let labelCompact = Font.system(size: 16, weight: .bold).width(.condensed)     // compact button label
+        static let labelTile = Font.system(size: 13, weight: .bold).width(.condensed)        // TEC / PHY / TAC tiles, badges
 
-        // Body — stays clean and readable
-        static let bodyLarge = Font.system(.body).weight(.regular)
-        static let bodyMedium = Font.system(.subheadline).weight(.regular)
-        static let bodySmall = Font.system(.footnote).weight(.regular)
+        // Body — text face
+        static let bodyLarge = Font.system(size: 16, weight: .regular)
+        static let bodyMedium = Font.system(size: 14, weight: .regular)   // coach copy, descriptions, steps
+        static let bodySmall = Font.system(size: 13, weight: .regular)    // row subtitles, dates, footers
+        static let bodySmallStrong = Font.system(size: 13, weight: .semibold)
 
-        // Numbers — monospaced for stat alignment
-        static let numberLarge = Font.system(.largeTitle, design: .monospaced).weight(.black)
-        static let numberMedium = Font.system(.title2, design: .monospaced).weight(.black)
-        static let numberSmall = Font.system(.body, design: .monospaced).weight(.semibold)
+        // Numbers — condensed with tabular digits
+        static let numberHero = Font.system(size: 128, weight: .bold).width(.condensed).monospacedDigit()   // active-session clock
+        static let numberLarge = Font.system(size: 40, weight: .bold).width(.condensed).monospacedDigit()   // session-complete figures
+        static let numberMedium = Font.system(size: 26, weight: .semibold).width(.condensed).monospacedDigit() // stat rails
+        static let numberSmall = Font.system(size: 15, weight: .semibold).width(.condensed).monospacedDigit()  // figure units, meta numbers
+
+        // Letter spacing (apply with .tracking())
+        struct Tracking {
+            static let display: CGFloat = -1      // displayLarge / heroDisplay
+            static let displayTight: CGFloat = -0.4 // displayMedium
+            static let button: CGFloat = 1        // labelLarge
+            static let label: CGFloat = 0.6       // labelMedium
+            static let eyebrow: CGFloat = 1.2     // labelSmall
+            static let badge: CGFloat = 0.7       // TQBadge
+        }
+
+        // Line spacing (apply with .lineSpacing()) — body 14 at 1.5 line height
+        static let bodyLineSpacing: CGFloat = 14 * 0.5
     }
-    
+
     // MARK: - Spacing
     struct Spacing {
         static let xs: CGFloat = 4
@@ -156,15 +168,22 @@ struct DesignSystem {
         static let xl: CGFloat = 32
         static let xxl: CGFloat = 48
         static let xxxl: CGFloat = 64
-        
+
         // Specific use cases
+        static let screenPadding: CGFloat = 20
+        static let section: CGFloat = 16
+        static let sectionLarge: CGFloat = 18
+        static let rowVertical: CGFloat = 12
+        static let rowVerticalLarge: CGFloat = 14
+        static let rowGap: CGFloat = 12
+        static let heroPadding: CGFloat = 18
         static let cardPadding: CGFloat = md
-        static let screenPadding: CGFloat = lg
-        static let buttonPadding: EdgeInsets = EdgeInsets(top: md, leading: lg, bottom: md, trailing: lg)
-        static let textFieldPadding: EdgeInsets = EdgeInsets(top: md, leading: md, bottom: md, trailing: md)
+        static let hitTarget: CGFloat = 44
+        static let buttonPadding: EdgeInsets = EdgeInsets(top: md, leading: 20, bottom: md, trailing: 20)
+        static let textFieldPadding: EdgeInsets = EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12)
     }
-    
-    // MARK: - Corner Radius (Stadium Night: sharper)
+
+    // MARK: - Corner Radius
     struct CornerRadius {
         static let xs: CGFloat = 2
         static let sm: CGFloat = 4
@@ -174,25 +193,35 @@ struct DesignSystem {
         static let xxl: CGFloat = 16
 
         // Specific use cases
-        static let button: CGFloat = sm
-        static let card: CGFloat = lg
-        static let textField: CGFloat = sm
-        static let image: CGFloat = sm
+        static let button: CGFloat = 8
+        static let card: CGFloat = 12
+        static let pitchCard: CGFloat = 14
+        static let pitchCardCompact: CGFloat = 12
+        static let tile: CGFloat = 6
+        static let chip: CGFloat = 6
+        static let badge: CGFloat = 3
+        static let segmentTrack: CGFloat = 6
+        static let segmentInner: CGFloat = 4
+        static let banner: CGFloat = 6
+        static let textField: CGFloat = 8
+        static let image: CGFloat = 6
+        /// Touchline does not use pills. Kept so legacy call sites compile.
         static let pill: CGFloat = 999
     }
 
-    // MARK: - Shadows (Stadium Night: flat, hard edges; glow aliases are dead)
+    // MARK: - Shadows (Touchline: none — depth comes from surface steps)
     struct Shadow {
-        static let small = (color: Color.black.opacity(0.3), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
-        static let medium = (color: Color.black.opacity(0.4), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2))
-        static let large = (color: Color.black.opacity(0.5), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4))
-        static let xl = (color: Color.black.opacity(0.6), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(8))
+        static let none = (color: Color.clear, radius: CGFloat(0), x: CGFloat(0), y: CGFloat(0))
+        static let small = none
+        static let medium = none
+        static let large = none
+        static let xl = none
 
-        // Legacy glow aliases — flattened
-        static let glowSmall = small
-        static let glowMedium = medium
-        static let glowLarge = large
-        static let glowGold = medium
+        // Legacy glow aliases — dead
+        static let glowSmall = none
+        static let glowMedium = none
+        static let glowLarge = none
+        static let glowGold = none
     }
 
     // MARK: - Animation
@@ -203,38 +232,83 @@ struct DesignSystem {
         static let spring = SwiftUI.Animation.spring(response: 0.6, dampingFraction: 0.8)
         static let springBouncy = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.6)
 
-        // Athletic transition curves
+        // Athletic transition curves (kept)
         static let heroSpring = SwiftUI.Animation.spring(response: 0.5, dampingFraction: 0.82)
         static let staggerSpring = SwiftUI.Animation.spring(response: 0.45, dampingFraction: 0.85)
         static let tabMorph = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.86)
         static let microBounce = SwiftUI.Animation.spring(response: 0.3, dampingFraction: 0.7)
+
+        // Touchline
+        static let levelBar = SwiftUI.Animation.easeOut(duration: 0.8)
+        static let skeletonPulse = SwiftUI.Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true)
     }
-    
+
     // MARK: - Icons
     struct Icons {
         // Soccer-themed icons
         static let soccer = "soccerball"
         static let goal = "target"
-        static let training = "figure.run"
+        static let training = "figure.soccer"
         static let stats = "chart.bar.fill"
         static let trophy = "trophy.fill"
         static let star = "star.fill"
         static let time = "clock.fill"
         static let calendar = "calendar"
-        
-        // Navigation icons
+        static let streak = "flame.fill"
+        static let ai = "sparkles"
+        static let technical = "soccerball"
+        static let physical = "bolt.fill"
+        static let tactical = "brain"
+        static let video = "play.rectangle.fill"
+
+        // Navigation icons (outline idle / .fill selected — see Tab)
         static let home = "house.fill"
         static let sessions = "calendar"
-        static let exercises = "book.fill"
-        static let profile = "person.fill"
-        
+        static let exercises = "figure.soccer"
+        static let profile = "person.crop.circle.fill"
+
+        /// Tab bar symbol pairs (idle, selected). Icon only; the screen title names the tab.
+        enum Tab: Int, CaseIterable {
+            case home = 0, train, plans, community, you
+
+            var idle: String {
+                switch self {
+                case .home: return "house"
+                case .train: return "figure.soccer"
+                case .plans: return "calendar"
+                case .community: return "person.2"
+                case .you: return "person.crop.circle"
+                }
+            }
+
+            var selected: String {
+                switch self {
+                case .home: return "house.fill"
+                case .train: return "figure.soccer"
+                case .plans: return "calendar.fill"
+                case .community: return "person.2.fill"
+                case .you: return "person.crop.circle.fill"
+                }
+            }
+
+            var accessibilityLabel: String {
+                switch self {
+                case .home: return "Home"
+                case .train: return "Train"
+                case .plans: return "Plans"
+                case .community: return "Community"
+                case .you: return "You"
+                }
+            }
+        }
+
         // Action icons
         static let play = "play.fill"
         static let plus = "plus"
         static let edit = "pencil"
         static let settings = "gearshape.fill"
         static let menu = "ellipsis"
-        
+
         // Form icons
         static let email = "envelope.fill"
         static let password = "lock.fill"
@@ -245,90 +319,81 @@ struct DesignSystem {
     }
 }
 
+// MARK: - Color helpers
+extension Color {
+    /// Exact hex colour, e.g. `Color(hex: 0x5CCB5F)`.
+    init(hex: UInt32, opacity: Double = 1) {
+        let r = Double((hex >> 16) & 0xFF) / 255
+        let g = Double((hex >> 8) & 0xFF) / 255
+        let b = Double(hex & 0xFF) / 255
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: opacity)
+    }
+}
+
 // MARK: - View Extensions
 extension View {
-    // Apply shadow
+    // Shadows are clear in Touchline; kept so legacy call sites compile.
     func customShadow(_ shadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)) -> some View {
         self.shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
     }
-    
-    // Apply consistent card styling (adaptive glow in dark, shadow in light)
+
+    // Flat raised card
     func cardStyle() -> some View {
         self
             .background(DesignSystem.Colors.surfaceRaised)
             .cornerRadius(DesignSystem.CornerRadius.card)
-            .modifier(AdaptiveShadowModifier())
     }
-    
-    // Apply primary button styling
+
+    // Grass primary button
     func primaryButtonStyle() -> some View {
         self
-            .foregroundColor(.white)
+            .foregroundColor(DesignSystem.Colors.textOnAccent)
             .padding(DesignSystem.Spacing.buttonPadding)
-            .background(DesignSystem.Colors.primaryGradient)
+            .background(DesignSystem.Colors.accentLime)
             .cornerRadius(DesignSystem.CornerRadius.button)
-            .customShadow(DesignSystem.Shadow.medium)
     }
-    
-    // Apply secondary button styling
+
+    // Raised secondary button
     func secondaryButtonStyle() -> some View {
         self
-            .foregroundColor(DesignSystem.Colors.primaryGreen)
+            .foregroundColor(DesignSystem.Colors.chalkWhite)
             .padding(DesignSystem.Spacing.buttonPadding)
-            .background(DesignSystem.Colors.background)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .stroke(DesignSystem.Colors.primaryGreen, lineWidth: 2)
-            )
+            .background(DesignSystem.Colors.surfaceRaised)
             .cornerRadius(DesignSystem.CornerRadius.button)
     }
-    
-    // Apply modern text field styling
+
+    // Raised text field with a 1 px highlight border
     func modernTextFieldStyle() -> some View {
         self
             .padding(DesignSystem.Spacing.textFieldPadding)
-            .background(DesignSystem.Colors.backgroundSecondary)
+            .background(DesignSystem.Colors.surfaceRaised)
             .cornerRadius(DesignSystem.CornerRadius.textField)
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.textField)
-                    .stroke(DesignSystem.Colors.neutral300, lineWidth: 1)
+                    .stroke(DesignSystem.Colors.surfaceHighlight, lineWidth: 1)
             )
     }
-}
 
-// MARK: - Adaptive Shadow Modifier
-struct AdaptiveShadowModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        if colorScheme == .dark {
-            content.customShadow(DesignSystem.Shadow.glowMedium)
-        } else {
-            content.customShadow(DesignSystem.Shadow.medium)
-        }
+    /// Uppercase condensed display text with the Touchline display tracking.
+    func displayStyle(tracking: CGFloat = DesignSystem.Typography.Tracking.displayTight) -> some View {
+        self.textCase(.uppercase).tracking(tracking)
     }
 }
 
-// MARK: - Custom View Modifiers
-struct PulseAnimation: ViewModifier {
-    @State private var isPulsing = false
-    
+// MARK: - Adaptive Shadow Modifier (no-op; shadows are gone)
+struct AdaptiveShadowModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isPulsing ? 1.05 : 1.0)
-            .animation(DesignSystem.Animation.springBouncy.repeatForever(autoreverses: true), value: isPulsing)
-            .onAppear {
-                isPulsing = true
-            }
     }
 }
 
+// MARK: - Press animation
 struct PressAnimation: ViewModifier {
     @State private var isPressed = false
-    
+
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .scaleEffect(isPressed ? 0.97 : 1.0)
             .animation(DesignSystem.Animation.quick, value: isPressed)
             .onTapGesture {
                 isPressed = true
@@ -340,32 +405,20 @@ struct PressAnimation: ViewModifier {
 }
 
 extension View {
-    func pulseAnimation() -> some View {
-        self.modifier(PulseAnimation())
-    }
-
     func pressAnimation() -> some View {
         self.modifier(PressAnimation())
     }
 }
 
-// MARK: - Adaptive Background
+// MARK: - Adaptive Background (flat surfaceBase; the app is dark-only)
 struct AdaptiveBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
-        Group {
-            if colorScheme == .dark {
-                DesignSystem.Colors.surfaceBase
-            } else {
-                DesignSystem.Colors.backgroundGradient
-            }
-        }
+        DesignSystem.Colors.surfaceBase
     }
 }
 
 extension View {
-    /// Applies adaptive background: gradient in light mode, solid dark grey in dark mode
+    /// Applies the flat Touchline base surface behind a screen.
     func adaptiveBackground() -> some View {
         self.background(AdaptiveBackground().ignoresSafeArea())
     }

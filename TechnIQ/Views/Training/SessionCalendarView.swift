@@ -113,7 +113,7 @@ struct SessionCalendarView: View {
                         }
                         
                         Capsule()
-                            .fill(DesignSystem.Colors.primaryGradient)
+                            .fill(DesignSystem.Colors.accentLime)
                             .frame(width: 90, height: 36)
                             .customShadow((DesignSystem.Colors.primaryGreen.opacity(0.3), 4, 0, 2))
                             .animation(DesignSystem.Animation.spring, value: viewMode)

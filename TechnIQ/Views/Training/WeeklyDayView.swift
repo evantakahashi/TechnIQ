@@ -89,7 +89,7 @@ struct WeeklyDayView: View {
     private var premiumBackground: some View {
         Group {
             if isSelected {
-                DesignSystem.Colors.primaryGradient
+                DesignSystem.Colors.accentLime
             } else if isToday {
                 LinearGradient(
                     colors: [DesignSystem.Colors.primaryGreen.opacity(0.2), DesignSystem.Colors.primaryGreenLight.opacity(0.15)],

@@ -291,7 +291,7 @@ struct DashboardView: View {
                     .foregroundColor(DesignSystem.Colors.textOnAccent.opacity(0.6))
             }
             .padding(DesignSystem.Spacing.lg)
-            .background(DesignSystem.Colors.athleticGradient)
+            .background(DesignSystem.Colors.pitch)
             .cornerRadius(DesignSystem.CornerRadius.xl)
             .modifier(HeroBannerShadowModifier())
         }
@@ -1029,7 +1029,6 @@ struct DashboardView: View {
                 Image(systemName: DesignSystem.Icons.soccer)
                     .font(.system(size: 80))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .pulseAnimation()
                     .a11yHidden()
                 
                 Text("Welcome to TechnIQ")

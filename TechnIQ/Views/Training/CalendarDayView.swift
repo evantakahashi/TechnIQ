@@ -129,7 +129,7 @@ struct CalendarDayView: View {
         Group {
             if isSelected {
                 // Selected state with premium gradient
-                DesignSystem.Colors.primaryGradient
+                DesignSystem.Colors.accentLime
             } else if isToday {
                 // Today with subtle gradient
                 LinearGradient(

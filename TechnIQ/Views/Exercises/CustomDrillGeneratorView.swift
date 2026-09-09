@@ -371,7 +371,6 @@ struct CustomDrillGeneratorView: View {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 60))
                     .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .pulseAnimation()
                     .a11yHidden()
                 
                 Text("Building your drill...")

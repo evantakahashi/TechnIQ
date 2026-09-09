@@ -51,7 +51,6 @@ struct ModernSignInView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(DesignSystem.Colors.textPrimary)
                         }
-                        .pulseAnimation()
                         
                         Text("Master Your Soccer Skills")
                             .font(DesignSystem.Typography.bodyLarge)
@@ -111,9 +110,9 @@ struct ModernSignInView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(DesignSystem.Spacing.buttonPadding)
                                 .background(
-                                    isLoginEnabled 
-                                        ? DesignSystem.Colors.primaryGradient 
-                                        : LinearGradient(colors: [DesignSystem.Colors.neutral400], startPoint: .top, endPoint: .bottom)
+                                    isLoginEnabled
+                                        ? DesignSystem.Colors.accentLime
+                                        : DesignSystem.Colors.surfaceHighlight
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.button)
                                 .customShadow(DesignSystem.Shadow.medium)
@@ -295,7 +294,6 @@ struct ModernSignUpView: View {
                         .foregroundColor(DesignSystem.Colors.primaryGreen)
                         .a11yHidden()
                 }
-                .pulseAnimation()
                 
                 Text("Profile Setup")
                     .font(DesignSystem.Typography.headlineSmall)
