@@ -86,9 +86,9 @@
   },
   {
    "id": "heading-def",
-   "verdict": "ok",
+   "verdict": "golden",
    "rubric_floor": 85,
-   "evan": "good idea; variation: contested header; header back to server for one ball",
+   "evan": "golden (v3.2: toss-header-clear w/ contested variation)",
    "request": {
     "skill_description": "defensive heading and clearances",
     "weakness": "Defending",
@@ -227,6 +227,47 @@
     "number_of_players": 3,
     "category": "tactical",
     "field_size": "medium"
+   }
+  },
+  {
+   "id": "weakfoot-finish",
+   "verdict": "golden",
+   "rubric_floor": 90,
+   "evan": "AMAZING, although layout is pretty big",
+   "request": {
+    "skill_description": "weak foot finishing accuracy",
+    "weakness": "Shooting Accuracy",
+    "experience_level": "advanced",
+    "player_age": 15,
+    "position": "Forward",
+    "equipment": [
+     "ball",
+     "cones",
+     "goals"
+    ],
+    "number_of_players": 1,
+    "category": "technical",
+    "field_size": "medium"
+   }
+  },
+  {
+   "id": "u8-dribble",
+   "verdict": "golden",
+   "rubric_floor": 90,
+   "evan": "golden across three straight rounds",
+   "request": {
+    "skill_description": "fun easy dribbling for a little kid",
+    "weakness": "Dribbling Skills",
+    "experience_level": "beginner",
+    "player_age": 8,
+    "position": "Forward",
+    "equipment": [
+     "ball",
+     "cones"
+    ],
+    "number_of_players": 1,
+    "category": "technical",
+    "field_size": "small"
    }
   }
  ]

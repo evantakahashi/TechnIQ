@@ -27,10 +27,20 @@ def drill_to_dsl(drill: dict) -> str:
     field = drill["diagram"].get("field") or {}
     sx = EXEMPLAR_W / float(field.get("width") or EXEMPLAR_W)
     sy = EXEMPLAR_L / float(field.get("length") or EXEMPLAR_L)
+    # In-goal target gates keep their ORIGINAL offset from the goal center —
+    # scaling shrinks the offset under the 2m overlap threshold and the
+    # de-overlap resolver then shoves them outside the mouth.
+    goals = [e for e in drill["diagram"]["elements"] if e["type"] == "goal"]
+    def scaled(e):
+        for g in goals:
+            if e["type"] == "gate" and abs(e["x"] - g["x"]) < 1.5                     and abs(e["y"] - g["y"]) <= (g.get("width", 7.32) / 2):
+                return g["x"] * sx + (e["x"] - g["x"]), g["y"] * sy + (e["y"] - g["y"])
+        return e["x"] * sx, e["y"] * sy
     lines = []
     for e in drill["diagram"]["elements"]:
         kind = e["type"]
-        base = f'{kind} {e["label"]} at ({round(e["x"] * sx, 1)}, {round(e["y"] * sy, 1)})'
+        ex, ey = scaled(e)
+        base = f'{kind} {e["label"]} at ({round(ex, 1)}, {round(ey, 1)})'
         if e.get("width"):
             base += f' width {e["width"]}'
         if kind == "player" and e.get("role"):

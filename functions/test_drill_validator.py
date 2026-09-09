@@ -58,6 +58,7 @@ def test_goal_mid_field_raises():
 def test_goal_on_edge_passes():
     drill = make_valid_drill()
     drill["diagram"]["elements"].append({"type": "goal", "x": 19, "y": 7, "label": "GL"})
+    drill["diagram"]["paths"].append({"from": "P1", "to": "GL", "style": "shoot", "step": 2})
     drill["equipment"].append("goals")
     validate_drill(drill)  # no exception
 
@@ -187,6 +188,7 @@ def test_free_standing_gate_far_from_goal_passes():
         {"type": "ball", "x": -2, "y": 0, "label": "B1"},
     ]
     drill["diagram"]["paths"].append({"from": "P1", "to": "G2", "style": "dribble", "step": 2})
+    drill["diagram"]["paths"].append({"from": "P1", "to": "GL", "style": "shoot", "step": 3})
     validate_drill(drill)  # dribbling gate elsewhere is fine
 
 

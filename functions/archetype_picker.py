@@ -10,6 +10,7 @@ VALID_ARCHETYPES: Final[set[str]] = {
     "triangle_passing",
     "1v1_plus_server",
     "rondo",
+    "keeper_rebound",
 }
 
 FALLBACK_ARCHETYPE: Final[str] = "cone_weave"
@@ -49,6 +50,12 @@ ARCHETYPE_TABLE: Final[dict[tuple[str, str], str]] = {
     ("First Touch", "beginner"):     "server_executor",
     ("First Touch", "intermediate"): "server_executor",
     ("First Touch", "advanced"):     "server_executor",
+
+    # Goalkeeping had NO entry — GK requests fell back to cone_weave and were
+    # few-shot-taught by dribbling slaloms. keeper_rebound = wall mirror work.
+    ("Goalkeeping", "beginner"):     "keeper_rebound",
+    ("Goalkeeping", "intermediate"): "keeper_rebound",
+    ("Goalkeeping", "advanced"):     "keeper_rebound",
 
     ("Shooting", "beginner"):     "dribble_and_shoot",
     ("Shooting", "intermediate"): "dribble_and_shoot",

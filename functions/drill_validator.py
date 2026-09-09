@@ -77,6 +77,38 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_wall_shot_distance(elements, paths)
     _check_setup_touch_before_shots(elements, paths)
     _check_flight_through_players(elements, paths)
+    _check_major_props_used(elements, paths)
+
+
+def _check_major_props_used(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """A drawn wall/goal that no step touches is furniture, not equipment."""
+    used = {p.get("from") for p in paths} | {p.get("to") for p in paths}
+    goals = [e for e in elements if e.get("type") == "goal"]
+    for e in elements:
+        if e.get("type") == "wall" and e.get("label") not in used:
+            raise ValidationError(
+                f"wall {e.get('label')!r} is drawn but no step uses it — "
+                "serve it, rebound off it, or remove it"
+            )
+    for g in goals:
+        if g.get("label") in used:
+            continue
+        # a goal backing used in-goal target gates is legitimately "used"
+        def in_mouth(e):
+            dx = abs(e.get("x", 0) - g.get("x", 0))
+            dy = abs(e.get("y", 0) - g.get("y", 0))
+            half = g.get("width", 7.32) / 2
+            return (dx < 1.5 and dy <= half) or (dy < 1.5 and dx <= half)
+        has_used_gate = any(
+            e.get("type") == "gate" and e.get("label") in used and in_mouth(e)
+            for e in elements)
+        if not has_used_gate:
+            raise ValidationError(
+                f"goal {g.get('label')!r} is drawn but nothing is ever aimed "
+                "at it (or through its target gates) — shoot at it or remove it"
+            )
 
 
 def _check_flight_through_players(

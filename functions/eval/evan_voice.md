@@ -131,6 +131,16 @@ is still a bad drill. Judge the drill, not the effort.
   player shouldnt be shooting right when they get to the cone. needs to introduce like a
   sudden touch inside towards the left or right and finish."
 
+### Golden set v3.2 round (4 goldens, 0 bads — positional nits remain)
+- 2v-pressing: "not bad but needs to show dribbler getting past defenders."
+- first-touch-solo: "not bad but player should be in the middle of the gates not this far away."
+- first-touch: "i think this is good but g4 is unecessary, ideally it should be in fromt of p2."
+- gk-wall: "confusing"
+- passing-pair: "not bad, but maybe p1 should be standing in or slightly behind g1, and passing from there."
+- shoot-turn: "not bad" / speed-ball: "decent" / tight-dribble: golden "good"
+- heading-def: GOLDEN / u8-dribble: GOLDEN
+- weakfoot-finish: GOLDEN — "AMAZING, although layout is pretty big"
+
 ### Meta-feedback (how to judge)
 - "okay now you need to get better at judging these drills. you judge them too high for
   what they are. i want you to be able to singhle out bad drills and notice what is
@@ -189,6 +199,13 @@ is still a bad drill. Judge the drill, not the effort.
    partner/progression variations ("another human throwing to the goalie in net while
    they work on footwork").
 
+13. **Element placement is part of the drill.** Receiver stands at the CENTER of a
+   gate ring; exit gates fan IN FRONT (never behind); the lane-gate server stands
+   in/behind the gate and passes through it; duels must SHOW the beat (animate an
+   escape); walls rebound like mirrors — the catcher stands on the reflected line.
+14. **Layouts stay tight.** "AMAZING, although layout is pretty big" — trim dead
+   grass even on great drills.
+
 ## Voice guide (phrase critiques like him)
 - Blunt, lowercase, short. Concede then kill: "the concept is good, but…", "i like this
   idea though", "this is fine but not game realistic."
@@ -205,4 +222,5 @@ is still a bad drill. Judge the drill, not the effort.
 |---|---|---|---|
 | Blind A/B (baseline, pre-doc) | 11 | ~5/11 | yes — Claude 87-95 on four Evan-bads |
 | On-skill regens (first with doc) | 4 | 3/4 direction | no — the miss was too LOW (gk-wall: Claude bad, Evan "not bad, needs variation"). Don't overcorrect simple-but-functional to bad. |
+| Golden set v3.2 | 13 | ~9/13 direction | mixed: heading-def Claude ok → Evan GOLDEN (too low); weakfoot golden↔golden MATCH; 2v/gk-wall slightly high. Recurring lesson: Evan judges the animated whole; positional nits don't sink a drill, missing beats do. |
 | next round | — | — | — |

@@ -535,7 +535,7 @@ def annotate_path_positions(drill: dict) -> None:
                 cur["sync"] = True
 
 
-def crop_field_to_content(drill: Dict, margin: float = 8.0,
+def crop_field_to_content(drill: Dict, margin: float = 6.0,
                           min_w: float = 15.0, min_l: float = 12.0) -> None:
     """Shrink an oversized field to the drill's content plus a margin.
 
