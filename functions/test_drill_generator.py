@@ -107,9 +107,10 @@ def test_prompt_features_skill_description_prominently():
 
     def capture(prompt: str) -> str:
         captured.append(prompt)
-        return VALID_DSL
+        return HALF_FIELD_DSL  # Shooting weakness routes to the half-field stage
 
     req = make_request()
+    req["weakness"] = "Shooting"
     req["skill_description"] = "first touch under pressure receiving bouncing balls"
     generate_drill(req, llm_call=capture)
 

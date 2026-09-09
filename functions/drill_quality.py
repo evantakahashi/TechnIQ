@@ -69,9 +69,13 @@ def score_drill_quality(
 
     if not c1_ok:
         required = (rule_pack or {}).get("required_styles") or []
+        path_styles = {str(p.get("style", "")).lower()
+                       for p in drill.get("diagram", {}).get("paths", [])}
+        missing_required = required and not any(s in path_styles for s in required)
         hint = (f" — the STEP LIST itself must contain a {'/'.join(required)} action"
                 if required else "")
-        reasons.append("C1: drill does not surface the primary action "
+        tag = "C1-REQUIRED" if missing_required else "C1"
+        reasons.append(f"{tag}: drill does not surface the primary action "
                        f"(no verb_keyword in steps or coaching){hint}")
     if not c2_ok:
         if number_of_players == 1:

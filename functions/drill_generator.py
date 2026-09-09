@@ -1,6 +1,8 @@
 """Single-LLM-call orchestrator. Collapses Scout+Coach+Writer+Referee."""
 from __future__ import annotations
 
+import re as _re
+
 from typing import Any, Callable
 
 from archetype_picker import pick_archetype
@@ -44,7 +46,7 @@ DSL grammar:
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
 - Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
-- Alternatives: `or: ID verb ID` right after a step shows another live option for that moment (drawn as a dashed 'or' arrow). Use in duels to show both gates.
+- Alternatives: `or: ID verb ID` right after a step shows another live option (dashed arrow). DUELS ONLY — a live opponent forces the choice. Pattern drills never use `or:`; vary the target rep to rep instead (rep 1 through G1, rep 2 through G2) and put any "server calls it" rule in coaching.
 - Touch tags: append `one-touch` or `two-touch` to pass/receive steps in passing drills (`step 2: P2 passes to P1 one-touch`) — kids must SEE the touch count.
 - Variations: 2-3 `variation:` lines after the points (e.g. `variation: Weak foot only — every pass with the weak foot`, `variation: Inside-outside — alternate surfaces each rep`). These render as selectable chips.
 - Coaching points: `point: <freeform text>` - these must reinforce the requested skill.
@@ -162,7 +164,7 @@ def generate_drill(
             k in blob_field for k in (rule_pack or {}).get("partner_required_if", [])):
         number_of_players = 2
 
-    archetype = pick_archetype(weakness, level, number_of_players)
+    archetype = pick_archetype(weakness, level, number_of_players, skill_blob=blob_field)
     exemplars = get_exemplars(archetype, level=level, n=3, number_of_players=number_of_players)
     age_cap = _age_cap(age)
 
@@ -197,7 +199,7 @@ def generate_drill(
             drill["equipment"] = equipment
             drill["category"] = category
             blob = f"{skill_description} {weakness}".lower()
-            drill["is_duel"] = ("1v1" in blob) or ("pressing" in blob) or (
+            drill["is_duel"] = bool(_re.search(r"\b(1v1|1v2|2v1|press|pressing)\b", blob)) or (
                 category == "tactical" and number_of_players in (2, 3)
                 and "head" not in blob
             )
@@ -208,7 +210,8 @@ def generate_drill(
             score, reasons = score_drill_quality(drill, rule_pack, level,
                                                  number_of_players=number_of_players)
             c2_failed = any(r.startswith("C2:") for r in reasons)
-            if score < 3 or (level != "beginner" and c2_failed):
+            required_missing = any(r.startswith("C1-REQUIRED") for r in reasons)
+            if score < 3 or required_missing or (level != "beginner" and c2_failed):
                 raise QualityError(reasons)
             return drill
         except (DSLParseError, ValidationError) as e:

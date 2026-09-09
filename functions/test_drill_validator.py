@@ -265,7 +265,7 @@ def test_long_toss_raises():
     drill["diagram"]["paths"] = [
         {"from": "P2", "to": "P1", "style": "toss", "step": 1},
     ]
-    with pytest.raises(ValidationError, match="soft underhand tosses"):
+    with pytest.raises(ValidationError, match="soft underhand serve"):
         validate_drill(drill)
 
 

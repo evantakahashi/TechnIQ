@@ -101,10 +101,24 @@ _TWO_PLAYER_REMAP: Final[dict[str, str]] = {
 }
 
 
-def pick_archetype(weakness: str, level: str, number_of_players: int = 2) -> str:
+# Skill phrases that outrank the weakness table — the layout family follows
+# the ACTION, not the category (a volley is served, whatever the weakness).
+_SKILL_OVERRIDES: Final[dict[str, str]] = {
+    "volley": "server_executor",
+    "cross": "server_executor",
+    "juggl": "cone_weave",
+}
+
+
+def pick_archetype(weakness: str, level: str, number_of_players: int = 2,
+                   skill_blob: str = "") -> str:
     """Archetype for (weakness, level), alias-tolerant and player-count aware."""
     key = _canonical_weakness(weakness)
     archetype = ARCHETYPE_TABLE.get((key, level), FALLBACK_ARCHETYPE)
+    for phrase, arch in _SKILL_OVERRIDES.items():
+        if phrase in (skill_blob or "").lower():
+            archetype = arch
+            break
     if number_of_players == 1:
         archetype = _SOLO_REMAP.get(archetype, archetype)
     elif number_of_players == 2:

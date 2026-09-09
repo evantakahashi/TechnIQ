@@ -79,6 +79,25 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_flight_through_players(elements, paths)
     _check_major_props_used(elements, paths)
     _check_duel_escapes_are_choices(elements, paths, bool(drill.get("is_duel")))
+    _check_opponents_act(elements, paths)
+
+
+def _check_opponents_act(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Every drawn opponent has a job: a defender with no arrow is a statue.
+    (Servers act by serving; mannequins are allowed to be furniture-shaped.)"""
+    involved = {p.get("from") for p in paths} | {
+        p.get("to") for p in paths
+        if p.get("style") in ("dribble", "run")}  # engaged = attacked at
+    for e in elements:
+        if e.get("type") == "player" and e.get("role") == "defender" \
+                and e.get("label") not in involved:
+            raise ValidationError(
+                f"defender {e.get('label')!r} never moves — give them a "
+                "closing run (played simultaneously) or an engage step; "
+                "static pressure is a mannequin, not a defender"
+            )
 
 
 def _check_duel_escapes_are_choices(
@@ -555,9 +574,9 @@ def _check_serve_distances(
             continue
         if d > 8.0:
             raise ValidationError(
-                f"step {p.get('step')}: toss travels {d:.1f}m — heading "
-                "serves must be soft underhand tosses from ≤8m; move the "
-                "server closer"
+                f"step {p.get('step')}: toss travels {d:.1f}m — a toss is a "
+                "soft underhand serve, ≤8m for any aerial work (heading, "
+                "volleys); move the server closer"
             )
 
 

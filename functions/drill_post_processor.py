@@ -107,6 +107,27 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
     norm_warnings = _normalize_carrier_runs(elements, paths)
     warnings.extend(norm_warnings)
 
+    # 3a2. or-branches belong to DUELS (a live opponent forces the choice).
+    # In pattern drills the model uses them for "server calls the gate" and
+    # every rep sprouts 2-3 dashed arrows — spaghetti. Reps already alternate
+    # targets; the call lives in coaching. Drop non-duel alts.
+    if not drill.get("is_duel"):
+        drop = [q for q in paths if q.get("alt")
+                and q.get("style") not in ("shoot", "shot")]
+        if drop:
+            paths = [q for q in paths if q not in drop]
+            drill["diagram"]["paths"] = paths
+            # prune gates that only the dropped branches visited
+            still = {q.get("from") for q in paths} | {q.get("to") for q in paths}
+            orphans = [e for e in elements
+                       if e.get("type") == "gate" and e.get("label") not in still]
+            if orphans:
+                elements = [e for e in elements if e not in orphans]
+                drill["diagram"]["elements"] = elements
+            warnings.append(
+                f"Dropped {len(drop)} or-branch(es) — movement choices are "
+                "for duels (finish-shot options stay)")
+
     # 3b2. A cone where a player stands is clutter ("it could get in the way")
     players_sp = [(e.get("x"), e.get("y")) for e in elements if e.get("type") == "player"]
     keep = []
