@@ -141,6 +141,17 @@ is still a bad drill. Judge the drill, not the effort.
 - heading-def: GOLDEN / u8-dribble: GOLDEN
 - weakfoot-finish: GOLDEN — "AMAZING, although layout is pretty big"
 
+### v3.3 round (passing-pair GOLDEN "this is great"; 2v "yup this is good")
+- defend-1v1 (bad): "look at how the player goes from g1 to g2, it should be dashed
+  liones from p1 to g1 or g2." → duels: engage only; ALL escapes are or: lines.
+- first-touch-solo: "gates need to be more symetrical"
+- first-touch: "solid, but if there is a player 3 there, ther e shouldnt be a cone.
+  it could get in the way. remember a player cant stand at a cone or pass through a
+  cone or dribble through one."
+- heading-def: "the lines indicate running, but doesnt show like a header."
+- shoot-turn: "okay the player needs to stand in front of the cone for this, not
+  behind. also should show a slight touch for the turn."
+
 ### Meta-feedback (how to judge)
 - "okay now you need to get better at judging these drills. you judge them too high for
   what they are. i want you to be able to singhle out bad drills and notice what is
@@ -205,6 +216,15 @@ is still a bad drill. Judge the drill, not the effort.
    escape); walls rebound like mirrors — the catcher stands on the reflected line.
 14. **Layouts stay tight.** "AMAZING, although layout is pretty big" — trim dead
    grass even on great drills.
+
+15. **Duels never script the break.** Engage step + ALL escapes as dashed or-lines;
+   a scripted dribble to one gate makes the animation walk gate-to-gate. "dashed
+   lines from p1 to g1 or g2."
+16. **Cones are obstacles, not decoration near people.** No cone where a player
+   stands; nothing passes or dribbles THROUGH a cone. Ring gates sit symmetrical.
+17. **Every action must LOOK like itself** — a header can't render as a running
+   line; a turn needs its visible touch; the spot player stands in FRONT of the
+   marker cone.
 
 ## Voice guide (phrase critiques like him)
 - Blunt, lowercase, short. Concede then kill: "the concept is good, but…", "i like this

@@ -78,6 +78,28 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_setup_touch_before_shots(elements, paths)
     _check_flight_through_players(elements, paths)
     _check_major_props_used(elements, paths)
+    _check_duel_escapes_are_choices(elements, paths, bool(drill.get("is_duel")))
+
+
+def _check_duel_escapes_are_choices(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]],
+    is_duel: bool = False,
+) -> None:
+    """Duels show the CHOICE, never the outcome: a scripted (non-alt) dribble
+    to an escape gate animates the carrier walking gate-to-gate. Engage step
+    + ALL gates as or: lines ("dashed lines from p1 to g1 or g2")."""
+    if not is_duel:
+        return
+    by_label = {e.get("label"): e for e in elements}
+    for p in paths:
+        if p.get("alt") or p.get("style") != "dribble":
+            continue
+        if by_label.get(p.get("to"), {}).get("type") == "gate":
+            raise ValidationError(
+                f"step {p.get('step')}: duel escape to {p.get('to')} is "
+                "scripted — escapes must be `or:` lines (the kid sees the "
+                "choice; the duel decides the outcome)"
+            )
 
 
 def _check_major_props_used(
@@ -121,7 +143,9 @@ def _check_flight_through_players(
         if p.get("alt"):
             continue
         style = p.get("style")
-        if style in ("pass", "toss", "throw", "shoot", "shot", "header"):
+        if style in ("toss", "header"):
+            continue  # lofted balls arc over cones and heads — no ground check
+        if style in ("pass", "throw", "shoot", "shot"):
             fx, fy, tx, ty = p.get("fx"), p.get("fy"), p.get("tx"), p.get("ty")
         elif style == "receive" and by_label_t.get(p.get("to")) == "wall":
             # rebound leg: ball travels wall -> receiver
@@ -134,18 +158,24 @@ def _check_flight_through_players(
         seg2 = vx * vx + vy * vy
         if seg2 < 1e-9:
             continue
-        for e in players:
+        cones = [e for e in elements if e.get("type") == "cone"]
+        for e in players + cones:
             if e.get("label") in (p.get("from"), p.get("to")):
                 continue
+            radius = 0.8 if e.get("type") == "player" else 0.5
+            if e.get("type") == "cone" and \
+                    ((e["x"] - fx) ** 2 + (e["y"] - fy) ** 2) ** 0.5 < 1.5:
+                continue  # your own spot marker — the ball starts beside it
             t = ((e["x"] - fx) * vx + (e["y"] - fy) * vy) / seg2
             if not 0.12 <= t <= 0.95:
                 continue  # at the striker's shoulder / past the target isn't "through"
             dx, dy = e["x"] - (fx + vx * t), e["y"] - (fy + vy * t)
-            if (dx * dx + dy * dy) ** 0.5 < 0.8:
+            if (dx * dx + dy * dy) ** 0.5 < radius:
+                what = "player" if e.get("type") == "player" else "cone"
                 raise ValidationError(
                     f"step {p.get('step')}: the ball flies straight through "
-                    f"{e.get('label')} — offset that player from the "
-                    "flight line (they are not part of this action)"
+                    f"{what} {e.get('label')} — nothing passes through a "
+                    f"{what}; move it off the flight line"
                 )
 
 

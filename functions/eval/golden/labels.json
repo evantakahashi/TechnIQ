@@ -189,9 +189,9 @@
   },
   {
    "id": "passing-pair",
-   "verdict": "bad",
-   "rubric_floor": 0,
-   "evan": "must SHOW one vs two touches; gate redundant \u2014 cones in front, receive one side touch across pass",
+   "verdict": "golden",
+   "rubric_floor": 88,
+   "evan": "this is great (v3.3 prop-free 1T pair)",
    "request": {
     "skill_description": "sharper one touch passing with a partner",
     "weakness": "Passing Accuracy",

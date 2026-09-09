@@ -465,6 +465,8 @@ def test_first_time_finish_off_feed_exempt():
     d["diagram"]["paths"][0] = {"from": "P2", "to": "P1", "style": "pass", "step": 1,
                                 "fx": 4, "fy": 4, "tx": 15, "ty": 10}
     d["diagram"]["elements"][1]["x"] = 4; d["diagram"]["elements"][1]["y"] = 4  # ball w/ server
+    for e in d["diagram"]["elements"]:
+        if e["label"] == "C1": e["x"], e["y"] = 13, 13  # off the feed line
     validate_drill(d)
 
 
@@ -499,5 +501,5 @@ def test_flight_through_uninvolved_player_raises():
         ]},
         "coaching_points": [], "equipment": ["ball", "wall", "partner"],
     }
-    with pytest.raises(ValidationError, match="through P2"):
+    with pytest.raises(ValidationError, match="through player P2"):
         validate_drill(drill)

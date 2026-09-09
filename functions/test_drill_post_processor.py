@@ -534,3 +534,14 @@ def test_sync_only_for_angled_runs():
     d2 = drill((11, 13))   # cuts onto the ball from 6m off the lane
     annotate_path_positions(d2)
     assert d2["diagram"]["paths"][1].get("sync")
+
+
+def test_run_to_spot_cone_stops_in_front():
+    """'stand in front of the cone, not behind' — feeds arrive before the cone."""
+    from drill_post_processor import annotate_path_positions
+    d = {"diagram": {"field": {"width": 20, "length": 15}, "elements": [
+        {"type": "player", "x": 2, "y": 7.5, "label": "P1"},
+        {"type": "cone", "x": 10, "y": 7.5, "label": "C1"},
+    ], "paths": [{"from": "P1", "to": "C1", "style": "run", "step": 1}]}}
+    annotate_path_positions(d)
+    assert d["diagram"]["paths"][0]["tx"] < 10  # short of the cone, approach side

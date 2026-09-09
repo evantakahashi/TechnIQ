@@ -107,6 +107,24 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
     norm_warnings = _normalize_carrier_runs(elements, paths)
     warnings.extend(norm_warnings)
 
+    # 3b2. A cone where a player stands is clutter ("it could get in the way")
+    players_sp = [(e.get("x"), e.get("y")) for e in elements if e.get("type") == "player"]
+    keep = []
+    for e in elements:
+        if e.get("type") == "cone" and any(
+                math.hypot(e["x"] - px, e["y"] - py) < 0.7 for px, py in players_sp):
+            warnings.append(f"Removed cone {e.get('label')} — a player stands there")
+            continue
+        keep.append(e)
+    if len(keep) != len(elements):
+        used = {q.get("from") for q in paths} | {q.get("to") for q in paths}
+        dropped = {e.get("label") for e in elements} - {e.get("label") for e in keep}
+        if dropped & used:
+            keep = elements  # a path needs it — leave for the validator to arbitrate
+        else:
+            elements = keep
+            drill["diagram"]["elements"] = elements
+
     # 3c. Setup-touch cones drift long (the model can't do coordinate math) —
     # pull the touch cone to 3m so the cut is a SUDDEN touch, not a second leg
     warnings.extend(_normalize_setup_touch_cones(elements, paths))
@@ -234,12 +252,18 @@ def _validate_paths(
 
         valid_paths.append(path)
 
-    # Renumber paths so step numbers stay contiguous after drops.
-    # Preserves un-stepped paths (step=None). Validator requires [1..n].
+    # Renumber so NON-ALT steps run 1..n and every `or:` line attaches to
+    # its preceding base step (renderers group alts by base step number).
+    # Models legitimately number or-lines sequentially — normalize here.
     stepped = [p for p in valid_paths if p.get("step") is not None]
-    stepped.sort(key=lambda p: p["step"])
-    for new_step, path in enumerate(stepped, start=1):
-        path["step"] = new_step
+    stepped.sort(key=lambda p: (p["step"], bool(p.get("alt"))))
+    n = 0
+    for path in stepped:
+        if path.get("alt"):
+            path["step"] = max(n, 1)
+        else:
+            n += 1
+            path["step"] = n
 
     # Check step-instruction alignment
     # Un-stepped paths (step=None) show on all steps, so they cover every instruction
@@ -373,28 +397,40 @@ def _normalize_setup_touch_cones(elements: List[Dict], paths: List[Dict]) -> Lis
     moved: set = set()
     for i in range(len(ordered) - 2):
         a, b, c = ordered[i], ordered[i + 1], ordered[i + 2]
-        if not (a.get("style") == "dribble" and b.get("style") == "dribble"
+        if not (b.get("style") == "dribble"
                 and c.get("style") in ("shoot", "shot")
-                and a.get("from") == b.get("from") == c.get("from")
+                and b.get("from") == c.get("from")
                 and b.get("from") is not None):
             continue
-        approach = by_label.get(a.get("to"))
         touch = by_label.get(b.get("to"))
-        if not approach or not touch or touch.get("label") in moved:
+        if not touch or touch.get("type") != "cone" \
+                or touch.get("label") in moved:
             continue
-        if approach.get("type") != "cone" or touch.get("type") != "cone":
+        # anchor = where the cut starts: the approach cone (dribble-dribble-
+        # shoot) or the receiving spot (receive-turn-touch-shoot)
+        if a.get("style") == "dribble" and a.get("from") == b.get("from") \
+                and by_label.get(a.get("to"), {}).get("type") == "cone":
+            anchor = by_label[a.get("to")]
+            ax, ay = anchor["x"], anchor["y"]
+            pull = 3.0
+        elif a.get("style") == "receive" and a.get("from") == b.get("from"):
+            src = next((e for e in elements
+                        if e.get("label") == b.get("from")), None)
+            if src is None:
+                continue
+            ax, ay = src["x"], src["y"]
+            pull = 2.0  # the turning touch is shorter than a cut
+        else:
             continue
-        dx = touch["x"] - approach["x"]
-        dy = touch["y"] - approach["y"]
+        dx, dy = touch["x"] - ax, touch["y"] - ay
         dist = math.hypot(dx, dy)
         if dist <= 4.0 or dist == 0:
             continue
-        touch["x"] = round(approach["x"] + dx / dist * 3.0, 2)
-        touch["y"] = round(approach["y"] + dy / dist * 3.0, 2)
+        touch["x"] = round(ax + dx / dist * pull, 2)
+        touch["y"] = round(ay + dy / dist * pull, 2)
         moved.add(touch.get("label"))
         warnings.append(
-            f"touch cone {touch.get('label')} pulled to 3m from "
-            f"{approach.get('label')} (was {dist:.1f}m)")
+            f"touch cone {touch.get('label')} pulled to {pull:.0f}m (was {dist:.1f}m)")
     return warnings
 
 
@@ -444,16 +480,20 @@ def annotate_path_positions(drill: dict) -> None:
             continue
         p["fx"], p["fy"] = round(src["x"], 2), round(src["y"], 2)
         tx, ty = dst["x"], dst["y"]
-        # Cones and gates are MARKERS: a player turns AROUND a cone and plays
-        # THROUGH a gate — movement continues ~1m past along its direction.
-        # ("the player turns into the cone. they should turn around the cone")
+        # Markers are not stood on: a dribble ROUNDS a cone / plays THROUGH a
+        # gate (continue ~1m past); a RUN to a spot cone stops IN FRONT of it
+        # ("stand in front of the cone, not behind") so feeds arrive before
+        # the cone, never through it. Runs to gates still go through (collect).
         if (p.get("style") in ("run", "dribble") and src.get("player")
                 and dst.get("etype") in ("cone", "gate")):
             dx, dy = tx - src["x"], ty - src["y"]
             dist = math.hypot(dx, dy)
             if dist > 0.5:
-                tx += dx / dist * MARKER_OVERSHOOT
-                ty += dy / dist * MARKER_OVERSHOOT
+                stop_short = (p.get("style") == "run"
+                              and dst.get("etype") == "cone")
+                k = -0.9 if stop_short else MARKER_OVERSHOOT
+                tx += dx / dist * k
+                ty += dy / dist * k
         p["tx"], p["ty"] = round(tx, 2), round(ty, 2)
         # Movement relocates the mover; ball flights leave positions
         # unchanged. Alt branches are hypothetical — they never relocate.
