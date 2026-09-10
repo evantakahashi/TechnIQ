@@ -160,6 +160,58 @@ final class TouchlineHomeUITests: XCTestCase {
         shot("home-after-session")
     }
 
+    // MARK: - Active session → Session complete (5c, 6a)
+
+    func test_activeSession_repsPauseFinishAndEffort() throws {
+        launch([])
+        let start = app.buttons["Start session"]
+        XCTAssertTrue(start.waitForExistence(timeout: 40), "Home hero")
+        dismissCoachMarkIfPresent()
+        XCTAssertTrue(tapWhenHittable(start), "start hittable")
+
+        let plusReps = app.buttons["+ 10 reps"]
+        XCTAssertTrue(plusReps.waitForExistence(timeout: 15), "active session opened with the reps button")
+        XCTAssertTrue(text(containing: "Drill 1 of").exists, "drill counter")
+        XCTAssertTrue(text(containing: "reps").exists, "reps label")
+        XCTAssertTrue(text(containing: "effort").exists, "effort label")
+        shot("session-running")
+
+        plusReps.tap()
+        plusReps.tap()
+        XCTAssertTrue(app.staticTexts["20"].waitForExistence(timeout: 3), "reps counted to 20")
+
+        let pause = app.buttons["Pause"]
+        XCTAssertTrue(pause.exists, "pause button")
+        pause.tap()
+        XCTAssertTrue(app.buttons["Resume"].waitForExistence(timeout: 3), "clock paused")
+        app.buttons["Resume"].tap()
+        shot("session-reps")
+
+        let finish = app.buttons["Finish session"].exists ? app.buttons["Finish session"] : app.buttons["Next drill"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 3), "next/finish control")
+        finish.tap()
+        // Any further drills: keep finishing
+        var guardCount = 0
+        while app.buttons["Next drill"].waitForExistence(timeout: 2), guardCount < 5 {
+            app.buttons["Next drill"].tap(); guardCount += 1
+        }
+        if app.buttons["Finish session"].waitForExistence(timeout: 2) { app.buttons["Finish session"].tap() }
+
+        XCTAssertTrue(text(containing: "Full time").waitForExistence(timeout: 15), "session complete header")
+        XCTAssertTrue(text(containing: "Session").exists, "headline")
+        XCTAssertTrue(text(containing: "How did it feel").exists, "effort question")
+        shot("session-complete")
+
+        let hard = app.buttons["Hard"]
+        XCTAssertTrue(hard.waitForExistence(timeout: 3), "effort option")
+        hard.tap()
+        let done = app.buttons["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 3), "Done button")
+        done.tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 15), "back on Home")
+        shot("home-after-full-session")
+    }
+
     // MARK: - First-run Home (9b)
 
     func test_emptyHome_rowsOfferCreationRoutes() throws {

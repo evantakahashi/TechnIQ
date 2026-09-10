@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A0B2E8C8512C6C2E95846C93 /* ActiveSessionTouchlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */; };
+		6866936A7241804D54FA06B0 /* DrillContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */; };
+		EFFA7FF4F7A6DD27B8E84557 /* DrillContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C502A111655139990553D48 /* DrillContent.swift */; };
 		9FFD6978C1092160F0CC727B /* TouchlineHomeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */; };
 		3F79A4FBB62CE496654256EC /* TQDemoSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828D87395CB4F302732B7638 /* TQDemoSeed.swift */; };
 		81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */; };
@@ -76,7 +79,6 @@
 		6A7B8C9D0E1F2A3B4C5D6E7F /* OnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8C9D0E1F2A3B4C5D6E7F8A /* OnboardingComponents.swift */; };
 		7090DC3A80672B0935857A6F /* AvatarCustomizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */; };
 		71FBF257B98F7F55561A6ED9 /* AIRecommendationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B3DAEC18D917858DC31B68 /* AIRecommendationService.swift */; };
-		7299ACF0463A3A638D78B6BB /* ExerciseStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC23E8C800BADD0EB0E4EDDF /* ExerciseStepView.swift */; };
 		7B0F81A9A61CE7278E334FDC /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54E2888C57A13F11DDCBE113 /* EmptyStateView.swift */; };
 		7BE2844A41D75C06A897B355 /* CloudService+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E3577EDF9275A7B87ED02B /* CloudService+Upload.swift */; };
 		7F4976D664E85BCC1050A92F /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60E3C013A7BBDEAD77D0C72 /* LeaderboardView.swift */; };
@@ -246,6 +248,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSessionTouchlineTests.swift; sourceTree = "<group>"; };
+		7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillContentTests.swift; sourceTree = "<group>"; };
+		0C502A111655139990553D48 /* DrillContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillContent.swift; sourceTree = "<group>"; };
 		7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchlineHomeUITests.swift; sourceTree = "<group>"; };
 		828D87395CB4F302732B7638 /* TQDemoSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQDemoSeed.swift; sourceTree = "<group>"; };
 		F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachDrillsView.swift; sourceTree = "<group>"; };
@@ -350,7 +355,6 @@
 		AB1234567890ABCD12340017 /* CreateSeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateSeasonView.swift; sourceTree = "<group>"; };
 		AB1234567890ABCD12340018 /* MatchHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchHistoryView.swift; sourceTree = "<group>"; };
 		AB1234567890ABCD12340019 /* SeasonManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonManagementView.swift; sourceTree = "<group>"; };
-		AC23E8C800BADD0EB0E4EDDF /* ExerciseStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseStepView.swift; sourceTree = "<group>"; };
 		ACF905C9EA7B9866B20B2BF7 /* XPModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = XPModels.swift; sourceTree = "<group>"; };
 		ADA8D315ED2B34F1A6146BD2 /* XPServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = XPServiceProtocol.swift; sourceTree = "<group>"; };
 		AF56ACF65466BE2837D6786F /* ActiveSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSessionManager.swift; sourceTree = "<group>"; };
@@ -609,6 +613,7 @@
 				C31C301512D7EBA8397649E2 /* AICoachModels.swift */,
 				A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */,
 				ACF905C9EA7B9866B20B2BF7 /* XPModels.swift */,
+				0C502A111655139990553D48 /* DrillContent.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -791,7 +796,6 @@
 				6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */,
 				EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */,
 				QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */,
-				AC23E8C800BADD0EB0E4EDDF /* ExerciseStepView.swift */,
 				B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */,
 				2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */,
 				3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */,
@@ -865,6 +869,8 @@
 				87964F854E694D04A998F579 /* CloudSyncRoundTripTests.swift */,
 				4BECDA7A5C71C43AF22C8C5F /* Mocks */,
 				F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */,
+				7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */,
+				84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1212,7 +1218,6 @@
 				59C9BA907069951B8BFA63A6 /* ActiveSessionManager.swift in Sources */,
 				0B5961B19E006E3FF1F8AA88 /* ActiveTrainingView.swift in Sources */,
 				QDS00001AAAA00000000AAAA /* QuickDrillSheet.swift in Sources */,
-				7299ACF0463A3A638D78B6BB /* ExerciseStepView.swift in Sources */,
 				538C65AB427B2E42962B5B19 /* CommunityService.swift in Sources */,
 				0EF77C4BE52FE3A8A97B91C4 /* CommunityFeedView.swift in Sources */,
 				FD5024A47171F9981D988839 /* CreatePostView.swift in Sources */,
@@ -1288,6 +1293,7 @@
 				E7C7709E33DF32C51ADC2B01 /* HomeWeekModel.swift in Sources */,
 				81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */,
 				3F79A4FBB62CE496654256EC /* TQDemoSeed.swift in Sources */,
+				EFFA7FF4F7A6DD27B8E84557 /* DrillContent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1308,6 +1314,8 @@
 				9210FD6C8D904EECAFD2B41C /* CloudSyncRoundTripTests.swift in Sources */,
 				D29F7CA7496246BDB968E062 /* MockCoreDataManager.swift in Sources */,
 				F943ABCADF55C99BAAD95BF1 /* HomeWeekModelTests.swift in Sources */,
+				6866936A7241804D54FA06B0 /* DrillContentTests.swift in Sources */,
+				A0B2E8C8512C6C2E95846C93 /* ActiveSessionTouchlineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
