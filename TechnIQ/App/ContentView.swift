@@ -321,6 +321,13 @@ struct MainTabView: View {
                     .ignoresSafeArea(.keyboard)
             }
         }
+        #if DEBUG
+        .onAppear {
+            if TQDemoSeed.isRequested, let player = currentPlayer {
+                TQDemoSeed.apply(to: player, context: viewContext)
+            }
+        }
+        #endif
     }
 }
 

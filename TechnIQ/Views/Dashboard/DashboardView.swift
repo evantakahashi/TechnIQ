@@ -87,11 +87,22 @@ struct DashboardView: View {
 
     // MARK: Derived state
 
-    private var isOffline: Bool { !cloudService.isNetworkAvailable }
-    private var hasSessions: Bool { !recentSessions.isEmpty }
+    /// `-TQHomeState offline|loading|empty` forces a state for screenshot comparison (DEBUG only).
+    private var forcedState: String? {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard let index = args.firstIndex(of: "-TQHomeState"), index + 1 < args.count else { return nil }
+        return args[index + 1]
+        #else
+        return nil
+        #endif
+    }
+
+    private var isOffline: Bool { forcedState == "offline" || !cloudService.isNetworkAvailable }
+    private var hasSessions: Bool { forcedState != "empty" && !recentSessions.isEmpty }
     private var coachEnabled: Bool { subscriptionManager.isPro && !isOffline }
-    private var coachIsLoading: Bool { coachEnabled && aiCoachService.dailyCoaching == nil && aiCoachService.isLoading && !coachTimedOut }
-    private var coachFailed: Bool { coachEnabled && aiCoachService.dailyCoaching == nil && (coachTimedOut || (!aiCoachService.isLoading && aiCoachService.error != nil)) }
+    private var coachIsLoading: Bool { forcedState == "loading" || (coachEnabled && aiCoachService.dailyCoaching == nil && aiCoachService.isLoading && !coachTimedOut) }
+    private var coachFailed: Bool { forcedState != "loading" && coachEnabled && aiCoachService.dailyCoaching == nil && (coachTimedOut || (!aiCoachService.isLoading && aiCoachService.error != nil)) }
 
     // MARK: Body
 
@@ -455,7 +466,7 @@ struct DashboardView: View {
                 TQRow("Build a training plan", badge: TQBadge(.text("AI")), action: { showingPlanGenerator = true })
             }
 
-            if let match = recentMatches.first(where: { ($0.date ?? .distantFuture) <= Date() }) {
+            if forcedState != "empty", let match = recentMatches.first(where: { ($0.date ?? .distantFuture) <= Date() }) {
                 TQRow("Last match", meta: matchMeta(match), action: { route = .matchHistory })
             } else {
                 TQRow("Log a match", action: { showingMatchLog = true })
@@ -623,7 +634,7 @@ struct DashboardView: View {
 
     private func loadPlan() {
         guard let player = currentPlayer else { return }
-        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
+        activePlan = forcedState == "empty" ? nil : TrainingPlanService.shared.fetchActivePlan(for: player)
         guard let plan = activePlan else {
             currentWeekDay = nil
             planIsComplete = false
@@ -632,7 +643,8 @@ struct DashboardView: View {
             return
         }
         currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
-        planIsComplete = currentWeekDay == nil
+        // A plan with no schedule at all (empty prebuilt shell) is not "complete"; it just has nothing to start.
+        planIsComplete = currentWeekDay == nil && plan.totalDays > 0
         let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
         todaysSession = sessions.first { !$0.isCompleted } ?? sessions.first
         todaysExercises = sessions

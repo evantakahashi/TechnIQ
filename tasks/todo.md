@@ -1,5 +1,6 @@
 # Touchline UI revamp — plan (2026-09-09)
 
+Worktree: `/Users/evantakahashi/TechnIQ/.claude/worktrees/touchline` (branch feat/touchline-ui; the main checkout is shared with another session working on drill gen — never build or edit there).
 Source: `~/Downloads/Mobile app UI revamp help.zip` → unpacked at
 `/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/491bf823-711f-4f9a-b06f-6dfdcf375c9f/scratchpad/handoff/design_handoff_touchline/`
 (re-unzip if the scratchpad is gone). Read order: README.md → `TechnIQ Handoff.dc.html` (spec) →
@@ -7,6 +8,14 @@ Source: `~/Downloads/Mobile app UI revamp help.zip` → unpacked at
 inventory, lines 17–73) and #8b (tab symbols, lines 263–280). PNGs in `screens/` are 2× at 402×874 pt.
 Only anchors 4a 5a 5b 5c 6a 6b 6c 7a 7b 7c 8a 8b 9a 9b–9g are final; ignore turns 0–3, 4b, 4c.
 Values come from the HTML inline styles, never estimated from PNGs.
+
+## Status (2026-09-09 evening)
+- [x] 01 Tokens — commit 42652d8
+- [x] 02 Components — 8b3adb5, 618f5ef (+ `TQGallery` debug view; `scripts/add_to_pbxproj.py` registers files)
+- [x] 03 Home — 54e563d + review commit; all four states verified on the simulator with `-TQSeedDemo` / `-TQHomeState`
+- [ ] REVIEW STOP: Evan compares against screens/01-home.png (+12/13/14) before step 04
+- [ ] 04 Active session + Session complete
+- [ ] 05 Remaining screens · [ ] 06 Cleanup (delete SmartDrillRecommendationsView's unused view, WelcomeBackView, CompactActionButton/FloatingActionButton once unused; CLAUDE.md table; run full unit tests)
 
 ## Rules of the build
 - Token NAMES in DesignSystem.swift stay; VALUES change (spec §2–4). Shadows → clear. Gradients → removed.
@@ -67,28 +76,28 @@ FilterChip/ActionChip/PhysicalIndicatorChip/FrequencyChip→TQChip · Difficulty
 
 ## Order of work (spec §7) — build green after each numbered step
 ### 01 Tokens — DesignSystem.swift
-- [ ] Colors: new values; add `pitch`, `pitchLine`, `grass`, `cone`, `textOnPitch` (#BFD3C4), `bodyOnPitch` (#D7E3DA); error/warning/textTertiary get own values; streak/xp/coin/success → grass; gradients deleted (fix 11 call sites); confetti palette → grass/chalk/cone.
-- [ ] Typography per §3 (keep every existing name; extras mapped to condensed/text equivalents); heroDisplay = 60.
-- [ ] Spacing (screenPadding 20, section 16/18, rowVertical 12, hero 18, hitTarget 44) · CornerRadius (button 8, card 12, pitchCard 14, tile 6, chip 6, segmentInner 4, textField 8) · Shadow all clear · Animation drop pulse · Icons per #8b.
-- [ ] AdaptiveBackground → flat surfaceBase; cardStyle/primaryButtonStyle/secondaryButtonStyle/modernTextFieldStyle flat.
-- [ ] Remove `pulseAnimation()` uses (AuthenticationView, DashboardView, CustomDrillGeneratorView) and the modifier; drop 1.1× tab scale.
-- [ ] Build.
+- [x] Colors: new values; add `pitch`, `pitchLine`, `grass`, `cone`, `textOnPitch` (#BFD3C4), `bodyOnPitch` (#D7E3DA); error/warning/textTertiary get own values; streak/xp/coin/success → grass; gradients deleted (fix 11 call sites); confetti palette → grass/chalk/cone.
+- [x] Typography per §3 (keep every existing name; extras mapped to condensed/text equivalents); heroDisplay = 60.
+- [x] Spacing (screenPadding 20, section 16/18, rowVertical 12, hero 18, hitTarget 44) · CornerRadius (button 8, card 12, pitchCard 14, tile 6, chip 6, segmentInner 4, textField 8) · Shadow all clear · Animation drop pulse · Icons per #8b.
+- [x] AdaptiveBackground → flat surfaceBase; cardStyle/primaryButtonStyle/secondaryButtonStyle/modernTextFieldStyle flat.
+- [x] Remove `pulseAnimation()` uses (AuthenticationView, DashboardView, CustomDrillGeneratorView) and the modifier; drop 1.1× tab scale.
+- [x] Build.
 
 ### 02 Components — Components/Touchline/ (+ pbxproj group "Touchline")
-- [ ] pbxproj helper script; add group.
-- [ ] TQPitchMarkings, TQPitchCard, TQButton, TQRow, TQStatRail, TQWeekStrip(+Grid), TQControls, TQSearchField, TQBanner, TQSkeleton, TQTabBar, TQClock, TQLevelBar. (TQDiagram lands with Drill detail.)
-- [ ] Restyle ModernButton (wrapper→TQButton), ModernSegmentControl (wrapper→TQSegment), ModernCard, ModernTextField; delete TurfBackground/heroCard/CornerBracket/PitchDivider/ProgressRing/ActionChip/Pill selectors/ModernTabBar/AnimatedTabBar and fix call sites; MainTabView → TQTabBar on surfaceBase.
-- [ ] Preview file `TQPreviews.swift` (DEBUG) mirroring #9a so components can be eyeballed.
-- [ ] Build.
+- [x] pbxproj helper script; add group.
+- [x] TQPitchMarkings, TQPitchCard, TQButton, TQRow, TQStatRail, TQWeekStrip(+Grid), TQControls, TQSearchField, TQBanner, TQSkeleton, TQTabBar, TQClock, TQLevelBar. (TQDiagram lands with Drill detail.)
+- [x] Restyle ModernButton (wrapper→TQButton), ModernSegmentControl (wrapper→TQSegment), ModernCard, ModernTextField; delete TurfBackground/heroCard/CornerBracket/PitchDivider/ProgressRing/ActionChip/Pill selectors/ModernTabBar/AnimatedTabBar and fix call sites; MainTabView → TQTabBar on surfaceBase.
+- [x] Preview file `TQPreviews.swift` (DEBUG) mirroring #9a so components can be eyeballed.
+- [x] Build.
 
 ### 03 Home — DashboardView/DashboardComponents/TodaysFocusCard (#4a, #9b, #9c, #9d)
-- [ ] Header: subline "Tue 9 Sep · Matchday −n" (future match) / "· Day n" fallback; "NAME · #kit" condensed 30 (kit grass; "#—" when none); 40 pt avatar.
-- [ ] TQPitchCard hero "TODAY'S SESSION" + "WK n · DAY m": drill = DailyCoaching.recommendedDrill when Pro coaching loaded, else today's plan session's first exercise; figures min/reps/foot/lvl; coach reasoning one line; Start session (opens ActiveTrainingView with the day's exercises).
-- [ ] Loading (#9c): local data immediate; only coach slots pulse; 6 s timeout → plan drill + info banner. Offline (#9d): warning banner above hero w/ Retry, "· FROM PLAN" eyebrow suffix, italic "Coach's note unavailable offline.", Drills row disabled "needs connection". Empty (#9b): "YOUR FIRST SESSION / TEN MINUTES, ONE BALL, A WALL", Start quick drill (QuickDrillSheet flow), "or build a plan first" link; rows: Build a training plan (AI badge), Log a match, Drills from the coach disabled "after your first session"; week strip 0/—.
-- [ ] TQWeekStrip "THIS WEEK n / m" from this week's sessions + plan days.
-- [ ] Rows: active plan (WK n/8 · %) → Plan detail; Last match (vs opp · W/L/D · nG nA) → Match history; Drills from the coach (count badge) → SmartDrillRecommendationsView.
-- [ ] Footer "LVL n · n,nnn XP · n DAY STREAK" (labelMedium; streak grass). Remove CompactPlayerStats, xpProgressCard, DailyGoalCard, Quick Actions, Recent Activity/Matches/Recommended, FAB, coach marks re-anchored.
-- [ ] Build; compare to 01/12/13/14 PNGs on simulator.
+- [x] Header: subline "Tue 9 Sep · Matchday −n" (future match) / "· Day n" fallback; "NAME · #kit" condensed 30 (kit grass; "#—" when none); 40 pt avatar.
+- [x] TQPitchCard hero "TODAY'S SESSION" + "WK n · DAY m": drill = DailyCoaching.recommendedDrill when Pro coaching loaded, else today's plan session's first exercise; figures min/reps/foot/lvl; coach reasoning one line; Start session (opens ActiveTrainingView with the day's exercises).
+- [x] Loading (#9c): local data immediate; only coach slots pulse; 6 s timeout → plan drill + info banner. Offline (#9d): warning banner above hero w/ Retry, "· FROM PLAN" eyebrow suffix, italic "Coach's note unavailable offline.", Drills row disabled "needs connection". Empty (#9b): "YOUR FIRST SESSION / TEN MINUTES, ONE BALL, A WALL", Start quick drill (QuickDrillSheet flow), "or build a plan first" link; rows: Build a training plan (AI badge), Log a match, Drills from the coach disabled "after your first session"; week strip 0/—.
+- [x] TQWeekStrip "THIS WEEK n / m" from this week's sessions + plan days.
+- [x] Rows: active plan (WK n/8 · %) → Plan detail; Last match (vs opp · W/L/D · nG nA) → Match history; Drills from the coach (count badge) → SmartDrillRecommendationsView.
+- [x] Footer "LVL n · n,nnn XP · n DAY STREAK" (labelMedium; streak grass). Remove CompactPlayerStats, xpProgressCard, DailyGoalCard, Quick Actions, Recent Activity/Matches/Recommended, FAB, coach marks re-anchored.
+- [x] Build; compare to 01/12/13/14 PNGs on simulator.
 
 ### 04 Active session + Session complete (#5c, #6a)
 - [ ] ActiveSessionManager: add clock (countdown from estimatedDurationSeconds, count-up fallback), pause/resume, reps counter (+10), effort zone from metabolicLoad (Z1–Z5); persist reps/duration to SessionExercise; drop per-exercise rating phase (see Q2).

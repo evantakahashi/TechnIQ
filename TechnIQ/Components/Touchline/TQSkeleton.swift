@@ -19,12 +19,20 @@ struct TQSkeleton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        GeometryReader { proxy in
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(color)
-                .frame(width: resolvedWidth(in: proxy.size.width), height: height)
+        Group {
+            if let width {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(color)
+                    .frame(width: width, height: height)
+            } else {
+                GeometryReader { proxy in
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(color)
+                        .frame(width: resolvedWidth(in: proxy.size.width), height: height)
+                }
+                .frame(height: height)
+            }
         }
-        .frame(height: height)
         .opacity(isDim ? 0.5 : 1)
         .onAppear {
             guard !reduceMotion else { return }
