@@ -64,17 +64,41 @@ def _norm(dx: float, dy: float) -> list[float]:
     return [round(dx / n, 3), round(dy / n, 3)] if n > 1e-6 else [1.0, 0.0]
 
 
+_NOT_TECHNIQUE = ("target:", "per set", "one ball", "progression",
+                  "regression", "warm", "swap", "count", "sets", "score")
+
+
 def _cue_for(style: str, coaching: list[str], used: set) -> str | None:
+    """Only TECHNIQUE lines may narrate a phase — never volume/plumbing."""
     keys = _VERB_CUE_KEYS.get(style, ())
     for i, c in enumerate(coaching):
         if i in used:
             continue
         low = c.lower()
+        if any(b in low for b in _NOT_TECHNIQUE) or any(ch.isdigit() for ch in c):
+            continue
         if any(k in low for k in keys):
             used.add(i)
-            # keep captions one clause long
             clause = c.split(" — ")[0].split(";")[0].split(".")[0]
             return clause.strip()
+    return None
+
+
+def _situational(style, src, dst, by_label):
+    dt = by_label.get(dst, {}).get("type")
+    if style in ("pass", "toss", "throw"):
+        return f"Feed comes in from {src} — be set"
+    if style == "receive":
+        return "First touch — take it across your body"
+    if style == "dribble":
+        return f"Drive the ball to {dst}" if dt in ("cone", "gate") \
+            else f"Work it back to {dst}"
+    if style in ("shoot", "shot"):
+        return "Finish — low and firm through the target"
+    if style == "header":
+        return "Attack the ball — head it up and away"
+    if style == "run":
+        return "Move to your spot — set before the ball"
     return None
 
 
@@ -273,7 +297,8 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         cue = _cue_for(style, coaching, used_cues)
         src_el = by_label.get(src, {})
         role = f" ({src_el.get('role')})" if src_el.get("role") else ""
-        base = f"{src}{role} {_PLAIN.get(style, 'moves to')} {dst}"
+        base = _situational(style, src, dst, by_label) or \
+            f"{src}{role} {_PLAIN.get(style, 'moves to')} {dst}"
         steps_lit = [merged_step] + ([sync.get("step")] if sync is not None else [])
         phases.append({
             "d": _dur(style, dist),
