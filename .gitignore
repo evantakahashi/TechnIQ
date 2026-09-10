@@ -71,3 +71,6 @@ ENV/
 debug.log
 # Local secrets (xcconfig)
 Config/Secrets.xcconfig
+
+# Claude Code worktrees
+.claude/worktrees/
