@@ -143,6 +143,10 @@ enum FieldSize: String, CaseIterable {
 // MARK: - LLM Response Model
 
 struct CustomDrillResponse: Codable {
+    /// Raw phase-timeline JSON for the web animation player — attached after
+    /// decoding (passthrough, not part of Codable).
+    var animationJSON: String?
+
     let name: String
     let description: String
     let setup: String
@@ -158,6 +162,12 @@ struct CustomDrillResponse: Codable {
     let safetyNotes: String?
     let variations: [DrillVariation]?
     let validationWarnings: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case name, description, setup, instructions, diagram, progressions
+        case coachingPoints, estimatedDuration, difficulty, category
+        case targetSkills, equipment, safetyNotes, variations, validationWarnings
+    }
 }
 
 // MARK: - Drill Diagram Models

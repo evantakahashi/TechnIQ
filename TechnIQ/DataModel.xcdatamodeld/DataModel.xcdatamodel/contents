@@ -5,6 +5,7 @@
         <attribute name="communityAuthor" optional="YES" attributeType="String"/>
         <attribute name="communityDrillID" optional="YES" attributeType="String"/>
         <attribute name="diagramJSON" optional="YES" attributeType="String"/>
+        <attribute name="animationJSON" optional="YES" attributeType="String"/>
         <attribute name="difficulty" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="metabolicLoad" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="technicalComplexity" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>

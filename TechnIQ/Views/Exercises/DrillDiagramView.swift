@@ -1005,3 +1005,322 @@ struct CurvedPathShape: Shape {
     }
     .background(DesignSystem.Colors.surfaceBase)
 }
+
+
+// MARK: - Web Animation Player (Engine v4 — phase-timeline, follow-cam)
+// The same engine that renders review-page animations, embedded as a
+// self-contained document. Drill JSON (diagram + animation) is injected via
+// loadDrill(); no network, no remote code.
+
+import WebKit
+
+struct DrillWebAnimationView: UIViewRepresentable {
+    /// Composed JSON: {"diagram": ..., "animation": ...}
+    let drillJSON: String
+
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.backgroundColor = .clear
+        webView.navigationDelegate = context.coordinator
+        webView.loadHTMLString(Self.playerHTML, baseURL: nil)
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.pendingDrillJSON = drillJSON
+        context.coordinator.injectIfReady(into: webView)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        var pendingDrillJSON: String?
+        private var loaded = false
+        private var lastInjected: String?
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            loaded = true
+            injectIfReady(into: webView)
+        }
+
+        func injectIfReady(into webView: WKWebView) {
+            guard loaded, let json = pendingDrillJSON, json != lastInjected else { return }
+            lastInjected = json
+            webView.evaluateJavaScript("window.loadDrill(\(json));", completionHandler: nil)
+        }
+    }
+}
+
+extension DrillWebAnimationView {
+    /// Build the composed payload from persisted strings; nil if either is absent.
+    static func composedJSON(diagramJSON: String?, animationJSON: String?) -> String? {
+        guard let d = diagramJSON, let a = animationJSON,
+              !d.isEmpty, !a.isEmpty else { return nil }
+        return "{\"diagram\":\(d),\"animation\":\(a)}"
+    }
+
+    static let playerHTML: String = ##"""
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+html,body{margin:0;padding:0;background:transparent;-webkit-user-select:none;user-select:none;overflow:hidden}
+svg{width:100vw;height:auto;display:block;border-radius:10px}
+.animbar{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;padding:0 10px}
+.animbar button{font:700 14px/1 -apple-system,system-ui;border:1px solid rgba(128,140,128,.4);background:rgba(128,140,128,.14);color:inherit;border-radius:9px;padding:9px 16px}
+.animbar input{flex:1}
+.animcap{text-align:center;font:600 14px/1.45 -apple-system,system-ui;margin:8px 10px 4px;min-height:20px;color:inherit}
+body{color:#E8F0E8}
+@media (prefers-color-scheme: light){body{color:#1A211B}}
+</style></head><body>
+<div id="stage"></div>
+<script>
+const COLORS = { dribble:"#5CA8E8", run:"#B9C4BB", pass:"#79D97C", shoot:"#F2A33C", receive:"#79D97C", header:"#E86FC0", toss:"#8FD8E8", throw:"#8FD8E8" };
+const DASH = { run:"6 5", receive:"3 4", header:"2 6", toss:"2 6", throw:"2 6" };
+function el(t,a,c){const n=document.createElementNS("http://www.w3.org/2000/svg",t);for(const k in a)n.setAttribute(k,a[k]);(c||[]).forEach(x=>n.appendChild(x));return n;}
+function rot(e,W,L){const d=[e.x,W-e.x,e.y,L-e.y];const m=Math.min(...d);return (m===d[0]||m===d[1])?90:0;}
+function renderPitch(drill){
+  const dg=drill.diagram,f=dg.field,W=f.width,L=f.length,S=30,vw=W*S,vh=L*S;
+  const svg=el("svg",{viewBox:`-14 -14 ${vw+28} ${vh+28}`,role:"img","aria-label":"drill diagram"});
+  svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"var(--pitch)"}));
+  for(let i=0;i<Math.floor(L/3);i++){ if(i%2===0) svg.appendChild(el("rect",{x:0,y:i*3*S,width:vw,height:3*S,fill:"var(--stripe)"})); }
+  svg.appendChild(el("circle",{cx:vw/2,cy:vh/2,r:Math.min(vw,vh)*.16,fill:"none",stroke:"rgba(255,255,255,.35)","stroke-width":1.5}));
+  // Penalty areas in front of edge goals
+  dg.elements.filter(e=>e.type==="goal").forEach(g0=>{
+    const dists=[g0.x,W-g0.x,g0.y,L-g0.y]; const m=Math.min(...dists);
+    if(m>2.5) return;
+    const edge=dists.indexOf(m);
+    const vert=(edge===0||edge===1);
+    const bigD=Math.min(16.5,(vert?W:L)*0.4), bigW=Math.min(40.3,(vert?L:W)*0.85);
+    const smallD=bigD/3, smallW=bigW*0.45, spotD=Math.min(11,bigD*0.66);
+    const box=(depth,halfW)=>{
+      let x0,y0,w0,h0;
+      if(edge===0){x0=0;y0=vh-(g0.y+halfW)*S;w0=depth*S;h0=halfW*2*S;}
+      else if(edge===1){x0=vw-depth*S;y0=vh-(g0.y+halfW)*S;w0=depth*S;h0=halfW*2*S;}
+      else if(edge===2){x0=(g0.x-halfW)*S;y0=vh-depth*S;w0=halfW*2*S;h0=depth*S;}
+      else {x0=(g0.x-halfW)*S;y0=0;w0=halfW*2*S;h0=depth*S;}
+      svg.appendChild(el("rect",{x:x0,y:y0,width:w0,height:h0,fill:"none",stroke:"rgba(255,255,255,.35)","stroke-width":1}));
+    };
+    box(bigD,bigW/2); box(smallD,smallW/2);
+    let sx,sy;
+    if(edge===0){sx=spotD*S;sy=vh-g0.y*S;} else if(edge===1){sx=vw-spotD*S;sy=vh-g0.y*S;}
+    else if(edge===2){sx=g0.x*S;sy=vh-spotD*S;} else {sx=g0.x*S;sy=spotD*S;}
+    svg.appendChild(el("circle",{cx:sx,cy:sy,r:2,fill:"rgba(255,255,255,.5)"}));
+  });
+  const px=e=>e.x*S, py=e=>vh-e.y*S;
+  const by={}; dg.elements.forEach(e=>by[e.label]=e);
+  const simPos={}; dg.elements.forEach(e=>{ if(e.type==="player") simPos[e.label]={x:e.x,y:e.y}; });
+  const segs=[];
+  (dg.paths||[]).slice().sort((a,b)=>(a.step||0)-(b.step||0)).forEach(p=>{
+    const sP=simPos[p.from], dP=simPos[p.to];
+    const sEl=sP||by[p.from], tEl=dP||by[p.to];
+    if(!sEl||!tEl){segs.push(null);return;}
+    // Server-baked coordinates win; local sim is only a fallback for old drills.
+    const seg={step:p.step,style:p.style,alt:!!p.alt,reset:!!p.reset,touches:p.touches||null,
+      from:{x:(p.fx!=null?p.fx:sEl.x),y:(p.fy!=null?p.fy:sEl.y)},
+      to:{x:(p.tx!=null?p.tx:tEl.x),y:(p.ty!=null?p.ty:tEl.y)}};
+    segs.push(seg);
+    if(!p.alt&&(p.style==="run"||p.style==="dribble")&&sP){ simPos[p.from]={x:tEl.x,y:tEl.y}; }
+  });
+  svg.__segs=segs;
+  segs.forEach(sg=>{
+    if(!sg||sg.reset)return; // resets are hidden mechanics
+    const x1=sg.from.x*S,y1=vh-sg.from.y*S,x2=sg.to.x*S,y2=vh-sg.to.y*S;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;
+    const AER=["header","toss","throw"].includes(sg.style)?34:16;
+    let side=1;
+    if(sg.style==="dribble"){
+      // round the cone: curve to the OUTSIDE of the next turn
+      const i=segs.indexOf(sg);
+      for(let k=i+1;k<segs.length;k++){ const nx=segs[k];
+        if(!nx||nx.reset||nx.alt)continue;
+        const dx2=(nx.to.x-nx.from.x)*S,dy2=-(nx.to.y-nx.from.y)*S;
+        const cross=dx*dy2-dy*dx2;
+        if(Math.abs(cross)>1)side=cross>0?-1:1;
+        break;
+      }
+    }
+    const cx=mx-dy/len*AER*side,cy=my+dx/len*AER*side;
+    const col=COLORS[sg.style]||"#ccc";
+    const path=el("path",{d:`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`,fill:"none",stroke:col,"stroke-width":sg.style==="shoot"?3.4:(sg.alt?1.8:2.2),"stroke-linecap":"round","data-step":sg.step,class:"anim-path"});
+    if(sg.alt) path.setAttribute("stroke-dasharray","5 5"), path.setAttribute("opacity","0.55");
+    else if(DASH[sg.style]) path.setAttribute("stroke-dasharray",DASH[sg.style]);
+    svg.appendChild(path);
+    const ang=Math.atan2(y2-cy,x2-cx);
+    svg.appendChild(el("path",{d:`M ${x2} ${y2} L ${x2-9*Math.cos(ang-.45)} ${y2-9*Math.sin(ang-.45)} L ${x2-9*Math.cos(ang+.45)} ${y2-9*Math.sin(ang+.45)} Z`,fill:col,"data-step":sg.step,class:"anim-path"}));
+    const qx=.25*x1+.5*cx+.25*x2,qy=.25*y1+.5*cy+.25*y2;
+    if(sg.touches){
+      const bx=x1+(x2-x1)*0.18, by=y1+(y2-y1)*0.18;
+      svg.appendChild(el("rect",{x:bx-11,y:by-8,width:22,height:14,rx:4,fill:"rgba(0,0,0,.6)"}));
+      const tb=el("text",{x:bx,y:by+3,"text-anchor":"middle","font-size":8.5,"font-weight":800,fill:"#fff","font-family":"ui-monospace, monospace"});
+      tb.textContent=sg.touches+"T"; svg.appendChild(tb);
+    }
+    if(sg.alt){ // only the semantic "or" chip survives; step order lives in the animation + caption
+      svg.appendChild(el("circle",{cx:qx,cy:qy,r:9,fill:"rgba(0,0,0,.4)"}));
+      const t=el("text",{x:qx,y:qy+3.4,"text-anchor":"middle","font-size":7.5,"font-weight":700,fill:"#fff","font-family":"ui-monospace, monospace"});
+      t.textContent="or"; svg.appendChild(t);
+    }
+  });
+  dg.elements.forEach(e=>{
+    const x=px(e),y=py(e),g=el("g",{"data-label":e.label,"data-type":e.type});
+    if(e.type==="cone"){ g.appendChild(el("path",{d:`M ${x} ${y-7} L ${x-6.5} ${y+5} L ${x+6.5} ${y+5} Z`,fill:"#E8762C",stroke:"rgba(0,0,0,.3)","stroke-width":.8})); }
+    else if(e.type==="ball"){ g.appendChild(el("circle",{cx:x,cy:y,r:4.6,fill:"#fff",stroke:"#222","stroke-width":1})); }
+    else if(e.type==="goal"||e.type==="gate"){
+      const r=rot(e,W,L),wpx=((e.type==="goal"?(e.width||7.32):(e.width||1.6))*S);
+      const gg=el("g",{transform:`rotate(${r} ${x} ${y})`});
+      if(e.type==="goal"){ gg.appendChild(el("rect",{x:x-wpx/2,y:y-6,width:wpx,height:12,fill:"rgba(255,255,255,.16)",stroke:"#fff","stroke-width":2})); }
+      else { gg.appendChild(el("rect",{x:x-wpx/2-2,y:y-6,width:4,height:12,rx:2,fill:"#F2A33C"})); gg.appendChild(el("rect",{x:x+wpx/2-2,y:y-6,width:4,height:12,rx:2,fill:"#F2A33C"})); }
+      g.appendChild(gg);
+    }
+    else if(e.type==="wall"){ const wr=rot(e,W,L); const wg=el("g",{transform:`rotate(${wr} ${x} ${y})`}); wg.appendChild(el("rect",{x:x-26,y:y-4,width:52,height:8,rx:3,fill:"#9AA4A0",stroke:"rgba(0,0,0,.35)","stroke-width":1})); g.appendChild(wg); }
+    else { const fill=e.role==="defender"?"#E24B4A":e.role==="server"?"#F1EFE8":"#378ADD"; g.appendChild(el("circle",{cx:x,cy:y,r:11,fill,stroke:"rgba(0,0,0,.4)","stroke-width":1.2})); }
+    if(e.type==="player"){
+      const inTxt=e.role==="worker"?"You":(e.role==="defender"?"D":(e.display_label?e.display_label[0]:e.label[0]));
+      const inEl=el("text",{x,y:y+3.6,"text-anchor":"middle","font-size":9,"font-weight":600,fill:e.role==="server"?"#2C2C2A":"#FFFFFF","font-family":"sans-serif"});
+      inEl.textContent=inTxt; g.appendChild(inEl);
+      const under=e.display_label||(e.role==="server"?"Feeder":e.role==="defender"?"Defender":"");
+      if(under){ const u=el("text",{x,y:y+24,"text-anchor":"middle","font-size":9.5,fill:"rgba(255,255,255,.9)","font-family":"sans-serif"});
+        u.textContent=under; g.appendChild(u); }
+    } else {
+      const lbl=el("text",{x,y:y+16,"text-anchor":"middle","font-size":8.5,"font-weight":700,fill:"rgba(255,255,255,.92)","font-family":"ui-monospace, monospace"});
+      lbl.textContent=e.label; g.appendChild(lbl);
+    }
+    svg.appendChild(g);
+  });
+  return svg;
+}
+function loadDrill(drill){
+  const stage=document.getElementById('stage'); stage.innerHTML='';
+  const pw=document.createElement('div'); stage.appendChild(pw);
+  const svgEl=renderPitch(drill); pw.appendChild(svgEl);
+  // ---- Engine v2: phase-timeline player (Fable-style: continuous clock,
+  // ---- concurrent tracks, hips vectors, timed coaching captions) ----
+  const BALLK="__ball__";
+  const anim=drill.animation&&drill.animation.phases&&drill.animation.phases.length?drill.animation:null;
+  if(anim){
+    const f2=drill.diagram.field,S2=30,vh2=f2.length*S2;
+    const px=(m)=>({x:m[0]*S2,y:vh2-m[1]*S2});
+    const orig={}; drill.diagram.elements.forEach(e=>orig[e.label]={x:e.x*S2,y:vh2-e.y*S2,type:e.type});
+    svgEl.querySelectorAll('g[data-label]').forEach(g=>{
+      const lbl=g.getAttribute('data-label');
+      if(orig[lbl]&&orig[lbl].type==="player"){
+        g.appendChild(el("line",{x1:0,y1:0,x2:14,y2:0,stroke:"#10230F","stroke-width":3,"stroke-linecap":"round","data-h":lbl,opacity:0}));
+        g.appendChild(el("line",{x1:0,y1:0,x2:0,y2:0,stroke:"#FFFFFF","stroke-width":2,"stroke-linecap":"round","data-eye":lbl,opacity:0}));
+      }
+    });
+    // follow-cam: while playing, frame the live action; pause = full field
+    const VB0=svgEl.getAttribute("viewBox").split(" ").map(Number);
+    const cam={cx:VB0[0]+VB0[2]/2, cy:VB0[1]+VB0[3]/2, z:1};
+    function camTick(pts){
+      let tz=1, tcx=VB0[0]+VB0[2]/2, tcy=VB0[1]+VB0[3]/2;
+      if(playing&&pts.length){
+        let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+        pts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});
+        const pad=5*S2, bw=Math.max(x1-x0+2*pad, 14*S2), bh=Math.max(y1-y0+2*pad, 14*S2);
+        tz=Math.max(1, Math.min(2.6, Math.min(VB0[2]/bw, VB0[3]/bh)));
+        tcx=(x0+x1)/2; tcy=(y0+y1)/2;
+      }
+      cam.z+= (tz-cam.z)*0.07; cam.cx+=(tcx-cam.cx)*0.07; cam.cy+=(tcy-cam.cy)*0.07;
+      const w=VB0[2]/cam.z, h=VB0[3]/cam.z;
+      let vx=cam.cx-w/2, vy=cam.cy-h/2;
+      vx=Math.max(VB0[0],Math.min(VB0[0]+VB0[2]-w,vx));
+      vy=Math.max(VB0[1],Math.min(VB0[1]+VB0[3]-h,vy));
+      svgEl.setAttribute("viewBox",`${vx} ${vy} ${w} ${h}`);
+    }
+    const trail=el("path",{d:"",fill:"none",stroke:"#FFFFFF","stroke-width":1.5,"stroke-dasharray":"4 4",opacity:.65});
+    svgEl.appendChild(trail);
+    const ball=el("circle",{r:6.5,fill:"#fff",stroke:"#1a1a1a","stroke-width":1.6,opacity:0});
+    svgEl.appendChild(ball);
+    const main0=anim.phases.filter(q=>q.kind!=="outcome");
+    const outs=anim.phases.filter(q=>q.kind==="outcome");
+    let loopIdx=0;
+    const HOME_D=850;
+    const loopPhases=()=>outs.length
+      ?main0.concat([outs[loopIdx%outs.length],{kind:"homeglide",d:HOME_D,tracks:{},hips:{},label:"Reset — swap and go again",ease:"lin",step:null}])
+      :main0;
+    let phases=loopPhases(), total=phases.reduce((a,q)=>a+q.d,0);
+    const cap=document.createElement("div"); cap.className="animcap";
+    let t=0,last=null,playing=false,speed=1,raf=null;
+    const lastPos={};
+    const grp=(l)=>svgEl.querySelector(`g[data-label="${l}"]`);
+    function snapStart(){
+      for(const l in orig){const g=grp(l); if(g)g.setAttribute("transform","");}
+      svgEl.querySelectorAll('g[data-type="ball"]').forEach(g=>g.setAttribute("opacity",0.15));
+      ball.setAttribute("opacity",1);
+      delete lastPos[BALLK];
+    }
+    const easef=(k,e)=>e==="out"?1-Math.pow(1-k,3):k;
+    function render(){
+      let acc=0,i=0;
+      for(;i<phases.length;i++){ if(t<acc+phases[i].d)break; acc+=phases[i].d; }
+      if(i>=phases.length){i=phases.length-1;acc=total-phases[i].d;}
+      const q=phases[i], kRaw=Math.min(1,(t-acc)/q.d);
+      if(q.kind==="homeglide"&&!q._built){
+        q._built=true; q.tracks={}; let gmax=0;
+        for(const l in orig){ if(orig[l].type!=="player")continue;
+          const cur=lastPos[l]||orig[l];
+          q.tracks[l]=[[ (cur.x)/S2, (vh2-cur.y)/S2 ],[ orig[l].x/S2, (vh2-orig[l].y)/S2 ]]; }
+        const fb=(function(){for(const ph of main0){if(ph.tracks[BALLK])return ph.tracks[BALLK][0];}return null;})();
+        if(fb&&lastPos[BALLK]) q.tracks[BALLK]=[[lastPos[BALLK].x/S2,(vh2-lastPos[BALLK].y)/S2],fb];
+        for(const l in q.tracks){const tr=q.tracks[l];gmax=Math.max(gmax,Math.hypot(tr[1][0]-tr[0][0],tr[1][1]-tr[0][1]));}
+        q.d=Math.max(500,Math.min(2600,Math.round(gmax*85)));
+        total=phases.reduce((a,x)=>a+x.d,0);
+      }
+      const k=easef(kRaw,q.ease);
+      svgEl.style.opacity="1";
+      ball.setAttribute("r", q.kind==="tossup" ? 6.5+5*Math.sin(Math.PI*kRaw) : 6.5);
+      let ballSet=false,ballStart=null,ballNow=null;const camPts=[];
+      for(const lbl in q.tracks){
+        const tr=q.tracks[lbl],A=px(tr[0]),B=px(tr[1]);
+        const X=A.x+(B.x-A.x)*k,Y=A.y+(B.y-A.y)*k;
+        if(lbl===BALLK){ball.setAttribute("cx",X);ball.setAttribute("cy",Y);ballSet=true;lastPos[BALLK]={x:X,y:Y};ballStart=A;ballNow={x:X,y:Y};camPts.push({x:X,y:Y});camPts.push({x:B.x,y:B.y});}
+        else{const g=grp(lbl); if(g&&orig[lbl])g.setAttribute("transform",`translate(${X-orig[lbl].x} ${Y-orig[lbl].y})`); lastPos[lbl]={x:X,y:Y};camPts.push({x:X,y:Y});}
+      }
+      if(!ballSet&&lastPos[BALLK]){ball.setAttribute("cx",lastPos[BALLK].x);ball.setAttribute("cy",lastPos[BALLK].y);}
+      for(const lbl in (q.hips||{})){
+        const h=q.hips[lbl],hl=svgEl.querySelector(`line[data-h="${lbl}"]`);
+        if(hl){hl.setAttribute("opacity",1);hl.setAttribute("x2",14*h[0]);hl.setAttribute("y2",-14*h[1]);}
+      }
+      svgEl.querySelectorAll('line[data-eye]').forEach(e2=>e2.setAttribute("opacity",0));
+      for(const lbl in (q.eye||{})){
+        const h=q.eye[lbl],e2=svgEl.querySelector(`line[data-eye="${lbl}"]`);
+        if(e2){e2.setAttribute("opacity",1);e2.setAttribute("x2",18*h[0]);e2.setAttribute("y2",-18*h[1]);}
+      }
+      cap.textContent=q.label||"";
+      // cinema mode: the stage is clean while the movie plays; arrows are for study (pause)
+      const stepset=(q.steps||[q.step]).map(String);
+      svgEl.querySelectorAll(".anim-path").forEach(pp=>pp.setAttribute("opacity",
+        playing?0:(stepset.includes(pp.getAttribute("data-step"))?"1":"0.15")));
+      const flying=ballStart&&ballNow&&q.kind!=="fade"&&q.kind!=="tossup"
+        &&(Math.abs(ballNow.x-ballStart.x)+Math.abs(ballNow.y-ballStart.y)>2);
+      trail.setAttribute("d",playing&&flying?`M ${ballStart.x} ${ballStart.y} L ${ballNow.x} ${ballNow.y}`:"");
+      camTick(camPts);
+    }
+    function frame(now){
+      if(last===null)last=now;
+      if(playing){ t+=(now-last)*speed;
+        if(t>=total){ t=0; loopIdx++; phases=loopPhases(); total=phases.reduce((a,q)=>a+q.d,0); phases.forEach(q=>{if(q.kind==="homeglide")q._built=false;}); } }
+      last=now; render(); raf=requestAnimationFrame(frame);
+    }
+    const bar=document.createElement("div"); bar.className="animbar";
+    const btn=document.createElement("button"); btn.textContent="▶ Play";
+    btn.addEventListener("click",()=>{ playing=!playing; btn.textContent=playing?"⏸ Pause":"▶ Play";
+      if(raf===null){ snapStart(); raf=requestAnimationFrame(frame); } });
+    const spd=document.createElement("input"); Object.assign(spd,{type:"range",min:"0.5",max:"2",step:"0.25",value:"1"}); spd.style.flex="1";
+    const spdOut=document.createElement("span"); spdOut.textContent="1x"; spdOut.style.cssText="min-width:32px;font:600 12px ui-monospace,monospace;color:var(--muted)";
+    spd.addEventListener("input",()=>{speed=parseFloat(spd.value);spdOut.textContent=speed+"x";});
+    bar.appendChild(btn); bar.appendChild(spd); bar.appendChild(spdOut);
+    pw.appendChild(bar); pw.appendChild(cap);
+    snapStart(); render();
+  }
+  const playBtn=pw.querySelector('.animbar button');
+  if(playBtn) playBtn.click();  // autoplay in-app
+}
+window.loadDrill=loadDrill;
+</script></body></html>
+"""##
+}

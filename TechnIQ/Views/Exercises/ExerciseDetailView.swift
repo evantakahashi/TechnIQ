@@ -170,13 +170,21 @@ struct ExerciseDetailView: View {
                                     .foregroundColor(DesignSystem.Colors.primaryDark)
                             }
 
-                            AnimatedDrillDiagramView(
-                                diagram: diagram,
-                                instructions: parsedSteps,
-                                currentStep: $diagramStep,
-                                isAutoPlaying: $isDiagramAutoPlaying
-                            )
-                            .frame(height: 350)
+                            if let composed = DrillWebAnimationView.composedJSON(
+                                diagramJSON: exercise.diagramJSON,
+                                animationJSON: exercise.animationJSON) {
+                                DrillWebAnimationView(drillJSON: composed)
+                                    .frame(height: 420)
+                                    .accessibilityLabel("Animated drill walkthrough")
+                            } else {
+                                AnimatedDrillDiagramView(
+                                    diagram: diagram,
+                                    instructions: parsedSteps,
+                                    currentStep: $diagramStep,
+                                    isAutoPlaying: $isDiagramAutoPlaying
+                                )
+                                .frame(height: 350)
+                            }
                         }
                         .padding()
                         .background(
