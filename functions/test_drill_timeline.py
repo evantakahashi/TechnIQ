@@ -51,3 +51,33 @@ def test_outcome_phases_for_duels():
     d = _first('defend-1v1')
     tl = compile_timeline(d)
     assert sum(1 for p in tl['phases'] if p['kind'] == 'outcome') == 2
+
+
+def test_no_dead_action_phases():
+    for cid in ('shoot-turn', 'crossing-finish', 'passing-pair'):
+        tl = compile_timeline(_first(cid))
+        for p in tl['phases']:
+            if p['kind'] != 'action':
+                continue
+            import math
+            mx = max(math.hypot(t[1][0]-t[0][0], t[1][1]-t[0][1])
+                     for t in p['tracks'].values())
+            assert mx > 0.3, f"dead phase in {cid}: {p['label']}"
+
+
+def test_ball_continuity_across_phases():
+    """The ball never teleports between consecutive non-fade phases."""
+    import math
+    for cid in ('shoot-turn', 'passing-pair', 'gk-wall'):
+        tl = compile_timeline(_first(cid))
+        last = None
+        for p in tl['phases']:
+            if p['kind'] == 'outcome':
+                break
+            tr = p['tracks'].get(BALL)
+            if tr is None:
+                continue
+            if last is not None and p['kind'] == 'action':
+                jump = math.hypot(tr[0][0]-last[0], tr[0][1]-last[1])
+                assert jump < 0.2, f"{cid}: ball jumps {jump:.1f}m into '{p['label']}'"
+            last = tr[1]
