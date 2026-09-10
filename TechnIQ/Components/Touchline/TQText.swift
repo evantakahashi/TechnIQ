@@ -115,8 +115,8 @@ struct TQDisplayTitle: View {
         case .mediumLarge: return DesignSystem.Typography.displayMediumLarge // 44–46 onboarding question
         case .medium: return DesignSystem.Typography.displayMedium      // 40 drill names
         case .small: return DesignSystem.Typography.displaySmall        // 30 screen titles
-        case .card: return Font.system(size: 26, weight: .semibold).width(.condensed) // 26–28 card titles
-        case .strip: return Font.system(size: 22, weight: .semibold).width(.condensed) // 19–22 strip titles
+        case .card: return Font.system(size: 26, weight: .semibold).width(.condensed).leading(.tight) // 26–28 card titles
+        case .strip: return Font.system(size: 22, weight: .semibold).width(.condensed).leading(.tight) // 19–22 strip titles
         }
     }
 

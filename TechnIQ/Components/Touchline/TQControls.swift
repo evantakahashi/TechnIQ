@@ -156,6 +156,8 @@ struct TQBadge: View {
             .font(Font.system(size: fontSize, weight: .bold).width(.condensed).monospacedDigit())
             .textCase(.uppercase)
             .tracking(0.7)
+            .lineLimit(1)
+            .fixedSize()
             .foregroundColor(foreground)
             .padding(.vertical, verticalPadding)
             .padding(.horizontal, 6)

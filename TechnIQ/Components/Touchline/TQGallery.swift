@@ -25,8 +25,55 @@ struct TQGalleryView: View {
 
     private var page: Int? { Self.requestedPage }
 
+    /// `-TQGallerySnapshot` renders every section to <Documents>/tq_snapshots/section_n.png on appear.
+    static var wantsSnapshots: Bool {
+        ProcessInfo.processInfo.arguments.contains("-TQGallerySnapshot")
+    }
+
+    static let sectionCount = 8
+
     var body: some View {
-        ScrollView {
+        Group {
+            if fixedPage != nil {
+                sections
+            } else {
+                ScrollView { sections }
+            }
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .onAppear {
+            guard Self.wantsSnapshots else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { writeSnapshots() }
+        }
+    }
+
+    @MainActor
+    private func writeSnapshots() {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("tq_snapshots")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        for index in 0..<Self.sectionCount {
+            let view = TQGalleryView(fixedPage: index)
+                .frame(width: 402)
+                .background(DesignSystem.Colors.surfaceBase)
+                .environment(\.colorScheme, .dark)
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            renderer.proposedSize = ProposedViewSize(width: 402, height: nil)
+            if let image = renderer.uiImage, let data = image.pngData() {
+                try? data.write(to: dir.appendingPathComponent("section_\(index).png"))
+            }
+        }
+        try? "done".write(to: dir.appendingPathComponent("done.txt"), atomically: true, encoding: .utf8)
+    }
+
+    private var fixedPage: Int?
+
+    init(fixedPage: Int? = nil) {
+        self.fixedPage = fixedPage
+    }
+
+    private var sections: some View {
             VStack(alignment: .leading, spacing: 22) {
                 section("TQPitchCard · .hero .strip .pinned", index: 0) {
                     TQHeroCard(
@@ -153,15 +200,13 @@ struct TQGalleryView: View {
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.vertical, 40)
-        }
-        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
-        .preferredColorScheme(.dark)
+            .padding(.vertical, fixedPage == nil ? 40 : 16)
     }
 
     @ViewBuilder
     private func section<Content: View>(_ title: String, index: Int, @ViewBuilder content: () -> Content) -> some View {
-        if page == nil || page == index {
+        let wanted = fixedPage ?? page
+        if wanted == nil || wanted == index {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))

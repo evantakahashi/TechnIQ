@@ -111,11 +111,11 @@ struct DesignSystem {
     // Text = SF Pro regular width. Numbers get .monospacedDigit(), never the monospaced design.
     struct Typography {
         // Display — condensed, uppercase
-        static let heroDisplay = Font.system(size: 60, weight: .bold).width(.condensed)      // sign-in headline
-        static let displayLarge = Font.system(size: 56, weight: .bold).width(.condensed)     // session complete
-        static let displayMedium = Font.system(size: 40, weight: .semibold).width(.condensed) // drill name in hero / detail / session
-        static let displayMediumLarge = Font.system(size: 46, weight: .semibold).width(.condensed) // larger hero titles
-        static let displaySmall = Font.system(size: 30, weight: .semibold).width(.condensed) // screen titles (Train, Plans, You)
+        static let heroDisplay = Font.system(size: 60, weight: .bold).width(.condensed).leading(.tight)      // sign-in headline
+        static let displayLarge = Font.system(size: 56, weight: .bold).width(.condensed).leading(.tight)     // session complete
+        static let displayMedium = Font.system(size: 40, weight: .semibold).width(.condensed).leading(.tight) // drill name in hero / detail / session
+        static let displayMediumLarge = Font.system(size: 46, weight: .semibold).width(.condensed).leading(.tight) // larger hero titles
+        static let displaySmall = Font.system(size: 30, weight: .semibold).width(.condensed).leading(.tight) // screen titles (Train, Plans, You)
 
         // Headlines — text face, sentences and card titles
         static let headlineLarge = Font.system(size: 22, weight: .bold)
@@ -141,8 +141,8 @@ struct DesignSystem {
         static let bodySmallStrong = Font.system(size: 13, weight: .semibold)
 
         // Numbers — condensed with tabular digits
-        static let numberHero = Font.system(size: 128, weight: .bold).width(.condensed).monospacedDigit()   // active-session clock
-        static let numberLarge = Font.system(size: 40, weight: .bold).width(.condensed).monospacedDigit()   // session-complete figures
+        static let numberHero = Font.system(size: 128, weight: .bold).width(.condensed).monospacedDigit().leading(.tight)   // active-session clock
+        static let numberLarge = Font.system(size: 40, weight: .bold).width(.condensed).monospacedDigit().leading(.tight)   // session-complete figures
         static let numberMedium = Font.system(size: 26, weight: .semibold).width(.condensed).monospacedDigit() // stat rails
         static let numberSmall = Font.system(size: 15, weight: .semibold).width(.condensed).monospacedDigit()  // figure units, meta numbers
 
