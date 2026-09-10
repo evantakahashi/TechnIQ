@@ -27,8 +27,12 @@ def test_resets_become_fade_phases():
     tl = compile_timeline(d)
     kinds = [p['kind'] for p in tl['phases']]
     assert 'fade' in kinds
-    # consecutive hidden steps collapse: fades never adjacent
-    assert all(not (a == b == 'fade') for a, b in zip(kinds, kinds[1:]))
+    # per-leg resets: short runs of fade legs are expected, long chains are not
+    run = mx = 0
+    for k in kinds:
+        run = run + 1 if k == 'fade' else 0
+        mx = max(mx, run)
+    assert mx <= 3
 
 
 def test_durations_scale_with_distance():
@@ -81,3 +85,24 @@ def test_ball_continuity_across_phases():
                 jump = math.hypot(tr[0][0]-last[0], tr[0][1]-last[1])
                 assert jump < 0.2, f"{cid}: ball jumps {jump:.1f}m into '{p['label']}'"
             last = tr[1]
+
+
+def test_ball_never_glides_home_alone():
+    """In every fade leg that moves the ball, a player travels WITH it."""
+    import math
+    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
+                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+        d = json.load(open(f))
+        tl = compile_timeline(d)
+        for p in tl['phases']:
+            if p['kind'] != 'fade' or BALL not in p['tracks']:
+                continue
+            bt = p['tracks'][BALL]
+            if math.hypot(bt[1][0]-bt[0][0], bt[1][1]-bt[0][1]) < 1.0:
+                continue
+            carried = any(
+                lbl != BALL
+                and math.hypot(tr[0][0]-bt[0][0], tr[0][1]-bt[0][1]) < 1.8
+                and math.hypot(tr[1][0]-bt[1][0], tr[1][1]-bt[1][1]) < 1.8
+                for lbl, tr in p['tracks'].items())
+            assert carried, f"{d['_case']['id']}: ball glides alone in '{p['label']}'"
