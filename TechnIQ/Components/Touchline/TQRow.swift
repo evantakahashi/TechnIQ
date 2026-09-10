@@ -98,6 +98,7 @@ struct TQRow: View {
             if showsRule { TQRule() }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("row.\(title)")
     }
 
     private var rowContent: some View {

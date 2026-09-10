@@ -135,15 +135,16 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         // Update running skill ratings from this session's rated exercises
         recordSkillRatings(for: player, context: context)
 
-        // Fulfil the plan session this workout came from
-        if let planSession {
+        // Fulfil the plan session this workout came from (only when every drill was completed;
+        // ending early keeps the plan session open)
+        if let planSession, isFullCompletion {
             session.planSession = planSession
         }
 
         // Save
         CoreDataManager.shared.save()
 
-        if let planSession {
+        if let planSession, isFullCompletion {
             TrainingPlanService.shared.markSessionCompleted(
                 planSession.toModel(),
                 actualDuration: Int(session.duration),

@@ -146,7 +146,9 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingPlanGenerator, onDismiss: { loadPlan() }) {
             if let player = currentPlayer {
-                AITrainingPlanGeneratorView(player: player)
+                NavigationStack {
+                    AITrainingPlanGeneratorView(player: player)
+                }
             }
         }
         .sheet(isPresented: $showingLogPlanSession, onDismiss: { loadPlan() }) {
@@ -201,6 +203,9 @@ struct DashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
             DispatchQueue.main.async {
                 if currentPlayer == nil && !authManager.userUID.isEmpty { updateDataFilters() }
+                // Plan progress can change from other tabs (logging a session, activating a plan).
+                loadPlan()
+                loadCoachDrillCount()
             }
         }
     }

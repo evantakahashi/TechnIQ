@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9FFD6978C1092160F0CC727B /* TouchlineHomeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */; };
 		3F79A4FBB62CE496654256EC /* TQDemoSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828D87395CB4F302732B7638 /* TQDemoSeed.swift */; };
 		81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */; };
 		F943ABCADF55C99BAAD95BF1 /* HomeWeekModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */; };
@@ -245,6 +246,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchlineHomeUITests.swift; sourceTree = "<group>"; };
 		828D87395CB4F302732B7638 /* TQDemoSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQDemoSeed.swift; sourceTree = "<group>"; };
 		F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachDrillsView.swift; sourceTree = "<group>"; };
 		F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeekModelTests.swift; sourceTree = "<group>"; };
@@ -873,6 +875,7 @@
 				WALK0000FILEREF00000001A /* WalkthroughUITests.swift */,
 				DF1636162E133003001E8CF9 /* TechnIQUITests.swift */,
 				DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */,
+				7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */,
 			);
 			path = TechnIQUITests;
 			sourceTree = "<group>";
@@ -1315,6 +1318,7 @@
 				WALK0000BUILDFILE0000001 /* WalkthroughUITests.swift in Sources */,
 				DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */,
 				DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */,
+				9FFD6978C1092160F0CC727B /* TouchlineHomeUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

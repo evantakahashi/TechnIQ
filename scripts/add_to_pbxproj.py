@@ -17,6 +17,8 @@ PBX = "/Users/evantakahashi/TechnIQ/.claude/worktrees/touchline/TechnIQ.xcodepro
 APP_SOURCES_PHASE = "DF1635F42E133001001E8CF9"
 TESTS_SOURCES_PHASE = "DF1636042E133003001E8CF9"
 TESTS_GROUP = "DF16360B2E133003001E8CF9"
+UITESTS_SOURCES_PHASE = "DF16360E2E133003001E8CF9"
+UITESTS_GROUP = "DF1636152E133003001E8CF9"
 ROOT_GROUP_TECHNIQ = None  # resolved dynamically: the group with `path = TechnIQ;`
 
 
@@ -124,8 +126,12 @@ def main():
         open(PBX, "w").write(text)
         return
     tests = False
+    uitests = False
     if args[0] == "--tests":
         tests = True
+        args = args[1:]
+    elif args[0] == "--uitests":
+        uitests = True
         args = args[1:]
     group_path = args[0].strip("/")
     files = args[1:]
@@ -133,6 +139,8 @@ def main():
     if tests:
         # group_path must be "TechnIQTests"; files land in the tests root group / tests target
         gid, phase = TESTS_GROUP, TESTS_SOURCES_PHASE
+    elif uitests:
+        gid, phase = UITESTS_GROUP, UITESTS_SOURCES_PHASE
     else:
         text, gid = ensure_group(text, group_path.split("/"))
         phase = APP_SOURCES_PHASE
