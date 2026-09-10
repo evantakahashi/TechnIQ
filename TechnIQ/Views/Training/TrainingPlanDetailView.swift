@@ -1,451 +1,340 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Plan detail (Touchline 5b)
+//
+// Pushed, not a sheet. Eyebrow "ACTIVE · role · level", condensed title, one-line description,
+// a stat rail (% complete, week n/8, total h, sessions done), the whole schedule as a grid
+// (tap a cell → day sheet), and a pinned pitch card: "TODAY" with Start for the active plan,
+// or "START THIS PLAN" for any other.
+
 struct TrainingPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @ObservedObject private var planService = TrainingPlanService.shared
 
     let initialPlan: TrainingPlanModel
     let player: Player
 
     @State private var currentPlan: TrainingPlanModel?
+    @State private var currentWeekDay: (week: Int, day: Int)?
+    @State private var todaysExercises: [Exercise] = []
+    @State private var todaysSession: PlanSession?
     @State private var showingConfirmStart = false
-    @State private var expandedWeeks: Set<UUID> = []
     @State private var showingEditor = false
-
-    // Phase 4: Share and Duplicate
     @State private var showingShareSheet = false
-    @State private var showingDuplicateSuccess = false
-    @State private var duplicatedPlanName: String = ""
+    @State private var showingLogSession = false
+    @State private var duplicatedPlanName: String?
+    @State private var selectedDay: SelectedDay?
+    @State private var trainingLaunch: TrainingLaunch?
 
-    /// The plan to display (current or initial)
-    private var plan: TrainingPlanModel {
-        currentPlan ?? initialPlan
+    private struct SelectedDay: Identifiable {
+        let id = UUID()
+        let week: PlanWeekModel
+        let day: PlanDayModel
     }
 
+    private var plan: TrainingPlanModel { currentPlan ?? initialPlan }
+
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Header Card
-                    headerCard
-
-                    // Statistics Overview
-                    statsOverview
-
-                    // Weeks Breakdown
-                    weeksBreakdown
-
-                    // Action Button
-                    actionButton
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.bottom, DesignSystem.Spacing.xl)
-            }
-            .navigationTitle(plan.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        // More options menu
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
+                    TQNavBar("Plan") {
+                        TQBackButton { dismiss() }
+                    } trailing: {
                         Menu {
-                            // Edit button (only for non-prebuilt plans)
                             if !plan.isPrebuilt {
-                                Button {
-                                    showingEditor = true
-                                } label: {
-                                    Label("Edit Plan", systemImage: "pencil")
-                                }
+                                Button { showingEditor = true } label: { Label("Edit plan", systemImage: "pencil") }
                             }
-
-                            Button {
-                                duplicatePlan()
-                            } label: {
-                                Label("Duplicate Plan", systemImage: "doc.on.doc")
-                            }
-
-                            Button {
-                                showingShareSheet = true
-                            } label: {
-                                Label("Share to Community", systemImage: "square.and.arrow.up")
-                            }
+                            Button { duplicatePlan() } label: { Label("Duplicate plan", systemImage: "doc.on.doc") }
+                            Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
                         } label: {
-                            Image(systemName: "ellipsis.circle")
+                            Text("Edit")
+                                .font(Font.system(size: 14, weight: .semibold))
+                                .foregroundColor(DesignSystem.Colors.dimIvory)
+                                .frame(minHeight: DesignSystem.Spacing.hitTarget)
                         }
-                        .a11y(label: "More options")
+                        .accessibilityLabel("Plan options")
+                    }
+                    .padding(.top, 8)
 
-                        Button("Close") {
-                            dismiss()
+                    if let name = duplicatedPlanName {
+                        TQBanner(.info, lead: "Duplicated.", message: "\"\(name)\" is in My plans.", actionTitle: "OK") { duplicatedPlanName = nil }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        TQEyebrow(eyebrow, size: 11)
+                        TQDisplayTitle(plan.name, size: .medium)
+                        TQBody(plan.description)
+                    }
+
+                    TQStatRail(items: statItems)
+
+                    TQScheduleGrid(rows: gridRows) { rowIndex, dayIndex in
+                        guard rowIndex < plan.weeks.count else { return }
+                        let week = plan.weeks.sorted { $0.weekNumber < $1.weekNumber }[rowIndex]
+                        if let day = week.days.first(where: { ($0.dayOfWeek.map { $0.sortOrder } ?? ($0.dayNumber - 1)) == dayIndex }) {
+                            selectedDay = SelectedDay(week: week, day: day)
                         }
                     }
                 }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.lg)
             }
-            .sheet(isPresented: $showingEditor) {
-                PlanEditorView(plan: plan, player: player) {
-                    // Refresh plan data from Core Data after editing
-                    refreshPlanData()
+
+            pinnedCard
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, 16)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .onAppear { refreshPlanData() }
+        .sheet(isPresented: $showingEditor) {
+            PlanEditorView(plan: plan, player: player) { refreshPlanData() }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            SharePlanView(plan: plan)
+        }
+        .sheet(item: $selectedDay) { selection in
+            PlanDaySheet(week: selection.week, day: selection.day, isToday: isToday(selection.day, in: selection.week))
+        }
+        .sheet(isPresented: $showingLogSession, onDismiss: { refreshPlanData() }) {
+            if let session = todaysSession {
+                NewSessionView(player: player, planSession: session)
+            }
+        }
+        .fullScreenCover(item: $trainingLaunch, onDismiss: { refreshPlanData() }) { launch in
+            ActiveTrainingView(exercises: launch.exercises, planSession: launch.planSession)
+                .environment(\.managedObjectContext, viewContext)
+                .environmentObject(authManager)
+                .environmentObject(subscriptionManager)
+        }
+        .confirmationDialog("Start this plan?", isPresented: $showingConfirmStart, titleVisibility: .visible) {
+            Button("Start plan") { startPlan() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\"\(plan.name)\" becomes your active plan. Any active plan is paused.")
+        }
+    }
+
+    // MARK: - Header bits
+
+    private var eyebrow: String {
+        var parts: [String] = [plan.isActive ? "Active" : (plan.isPrebuilt ? "Pre-built" : "My plan")]
+        if let role = plan.targetRole, !role.isEmpty { parts.append(role) }
+        parts.append(plan.difficulty.displayName)
+        return parts.joined(separator: " · ")
+    }
+
+    private var statItems: [TQStatRail.Item] {
+        let totalMinutes = plan.weeks.flatMap { $0.days }.flatMap { $0.sessions }.reduce(0) { $0 + $1.duration }
+        let hours = Int((Double(totalMinutes) / 60).rounded())
+        let done = plan.weeks.reduce(0) { $0 + $1.completedSessions }
+        let week = currentWeekDay?.week ?? (plan.isCompleted ? plan.durationWeeks : max(plan.currentWeek, 1))
+        return [
+            .init("\(Int(plan.progressPercentage.rounded()))", unit: "%", label: "complete"),
+            .init("\(week)", unit: "/\(plan.durationWeeks)", label: "week"),
+            .init("\(hours)", unit: "h", label: "total"),
+            .init("\(done)", label: "done", accent: done > 0)
+        ]
+    }
+
+    // MARK: - Grid
+
+    private var gridRows: [TQScheduleGrid.Row] {
+        let weeks = plan.weeks.sorted { $0.weekNumber < $1.weekNumber }
+        return weeks.map { week in
+            var cells = Array(repeating: TQDayCell.rest, count: 7)
+            for day in week.days {
+                let index = day.dayOfWeek.map { $0.sortOrder } ?? (day.dayNumber - 1)
+                guard (0..<7).contains(index) else { continue }
+                if day.isRestDay { continue }
+                let state: TQDayCellState
+                if day.isCompleted || (!day.sessions.isEmpty && day.sessions.allSatisfy { $0.isCompleted }) {
+                    state = .done
+                } else if isToday(day, in: week) {
+                    state = .today
+                } else if day.isSkipped {
+                    state = .missed
+                } else {
+                    state = .planned
+                }
+                cells[index] = TQDayCell(state: state, sessions: day.sessions.count)
+            }
+            return TQScheduleGrid.Row(label: "WK \(week.weekNumber)", cells: cells, isCurrent: currentWeekDay?.week == week.weekNumber)
+        }
+    }
+
+    private func isToday(_ day: PlanDayModel, in week: PlanWeekModel) -> Bool {
+        guard plan.isActive, let current = currentWeekDay else { return false }
+        return current.week == week.weekNumber && current.day == day.dayNumber
+    }
+
+    // MARK: - Pinned card
+
+    @ViewBuilder
+    private var pinnedCard: some View {
+        if plan.isActive, let current = currentWeekDay {
+            TQPitchCard(.pinned, markings: .pinned) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        TQEyebrow("Today · WK \(current.week) Day \(current.day)", size: 11)
+                        TQDisplayTitle(todaysExercises.first?.name ?? "\(todaysSessionType) session", size: .strip)
+                            .lineLimit(2)
+                    }
+                    TQButton("Start", icon: "play.fill", size: .compact, fullWidth: false) { startToday() }
                 }
             }
-            .sheet(isPresented: $showingShareSheet) {
-                SharePlanView(plan: plan)
-            }
-            .alert("Plan Duplicated!", isPresented: $showingDuplicateSuccess) {
-                Button("OK") { }
-            } message: {
-                Text("\"\(duplicatedPlanName)\" has been created. You can find it in My Plans.")
-            }
-            .confirmationDialog("Start Training Plan?", isPresented: $showingConfirmStart) {
-                Button("Start Plan") {
-                    startPlan()
+        } else if plan.isActive {
+            TQPitchCard(.pinned, markings: .pinned) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        TQEyebrow("Plan complete", size: 11)
+                        TQDisplayTitle("Every session done", size: .strip)
+                    }
+                    Spacer()
                 }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This will set \"\(plan.name)\" as your active training plan. Any currently active plan will be deactivated.")
+            }
+        } else {
+            TQPitchCard(.pinned, markings: .pinned) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        TQEyebrow("\(plan.durationWeeks) weeks · \(sessionsPerWeek)×/wk", size: 11)
+                        TQDisplayTitle("Start this plan", size: .strip)
+                    }
+                    TQButton("Start", icon: "play.fill", size: .compact, fullWidth: false) { showingConfirmStart = true }
+                }
             }
         }
     }
 
-    /// Duplicates the current plan
+    private var sessionsPerWeek: Int {
+        plan.weeks.first.map { $0.days.filter { !$0.isRestDay }.count } ?? 0
+    }
+
+    private var todaysSessionType: String {
+        guard let current = currentWeekDay,
+              let week = plan.weeks.first(where: { $0.weekNumber == current.week }),
+              let day = week.days.first(where: { $0.dayNumber == current.day }),
+              let session = day.sessions.first else { return "Training" }
+        return session.sessionType.displayName
+    }
+
+    // MARK: - Actions
+
+    private func startToday() {
+        if todaysExercises.isEmpty {
+            showingLogSession = true
+        } else {
+            trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: todaysSession)
+        }
+    }
+
     private func duplicatePlan() {
         if let clonedPlan = TrainingPlanService.shared.clonePlan(plan, for: player) {
             duplicatedPlanName = clonedPlan.name ?? "Copy of \(plan.name)"
-            showingDuplicateSuccess = true
         }
     }
 
-    /// Refreshes plan data from Core Data
     private func refreshPlanData() {
         if let freshPlan = TrainingPlanService.shared.fetchPlan(byId: initialPlan.id) {
             currentPlan = freshPlan
         }
-    }
-
-    // MARK: - Header Card
-
-    private var headerCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: plan.category.icon)
-                        .font(.largeTitle)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                    Spacer()
-
-                    DifficultyBadge(difficulty: plan.difficulty)
-                }
-
-                if let targetRole = plan.targetRole {
-                    Text(targetRole)
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-
-                Text(plan.description)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .padding(.top, 4)
-
-                if plan.isActive {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(DesignSystem.Colors.success)
-
-                        Text("Active Plan")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.success)
-                    }
-                    .padding(.top, DesignSystem.Spacing.sm)
-                }
-            }
+        guard plan.isActive else {
+            currentWeekDay = nil
+            todaysExercises = []
+            todaysSession = nil
+            return
         }
-    }
-
-    // MARK: - Stats Overview
-
-    private var statsOverview: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            PlanStatCard(
-                icon: "calendar",
-                title: "Duration",
-                value: "\(plan.durationWeeks)",
-                subtitle: "weeks",
-                color: DesignSystem.Colors.secondaryBlue
-            )
-
-            PlanStatCard(
-                icon: "clock",
-                title: "Total Time",
-                value: String(format: "%.0f", plan.estimatedTotalHours),
-                subtitle: "hours",
-                color: DesignSystem.Colors.accentOrange
-            )
-
-            if plan.isActive {
-                PlanStatCard(
-                    icon: "chart.bar.fill",
-                    title: "Progress",
-                    value: "\(Int(plan.progressPercentage))",
-                    subtitle: "percent",
-                    color: DesignSystem.Colors.primaryGreen
-                )
-            } else {
-                PlanStatCard(
-                    icon: "figure.run",
-                    title: "Sessions",
-                    value: "\(plan.totalSessions)",
-                    subtitle: "total",
-                    color: DesignSystem.Colors.primaryGreen
-                )
-            }
-        }
-    }
-
-    // MARK: - Weeks Breakdown
-
-    private var weeksBreakdown: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            Text("Weekly Schedule")
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            if plan.weeks.isEmpty {
-                emptyWeeksView
-            } else {
-                ForEach(plan.weeks) { week in
-                    WeekCard(
-                        week: week,
-                        isExpanded: expandedWeeks.contains(week.id)
-                    ) {
-                        toggleWeekExpansion(week.id)
-                    }
-                }
-            }
-        }
-    }
-
-    private var emptyWeeksView: some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                Image(systemName: "calendar.badge.exclamationmark")
-                    .font(.largeTitle)
-                    .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.3))
-                    .a11yHidden()
-
-                Text("No weekly schedule yet")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                Text("This plan template will be populated with exercises when you start it")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.vertical, DesignSystem.Spacing.md)
-        }
-    }
-
-    // MARK: - Action Button
-
-    private var actionButton: some View {
-        ModernButton(
-            plan.isActive ? "View Progress" : "Start This Plan",
-            icon: plan.isActive ? "chart.line.uptrend.xyaxis" : "play.fill",
-            style: .primary
-        ) {
-            if plan.isActive {
-                // Navigate to active plan view
-                dismiss()
-            } else {
-                showingConfirmStart = true
-            }
-        }
-    }
-
-    // MARK: - Helper Methods
-
-    private func toggleWeekExpansion(_ weekId: UUID) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if expandedWeeks.contains(weekId) {
-                expandedWeeks.remove(weekId)
-            } else {
-                expandedWeeks.insert(weekId)
-            }
-        }
+        currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
+        todaysSession = sessions.first { !$0.isCompleted } ?? sessions.first
+        todaysExercises = sessions.filter { !$0.isCompleted }
+            .flatMap { ($0.exercises?.allObjects as? [Exercise]) ?? [] }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
     }
 
     private func startPlan() {
         if plan.isPrebuilt {
-            // Instantiate the prebuilt plan for the player
             if let newPlan = planService.instantiatePrebuiltPlan(plan, for: player) {
                 let model = newPlan.toModel()
                 planService.activatePlan(model, for: player)
+                currentPlan = model
             }
         } else {
-            // Activate existing custom plan
             planService.activatePlan(plan, for: player)
         }
-
-        dismiss()
+        HapticManager.shared.success()
+        refreshPlanData()
     }
 }
 
-// MARK: - Plan Stat Card
+// MARK: - Day sheet
 
-struct PlanStatCard: View {
-    let icon: String
-    let title: String
-    let value: String
-    let subtitle: String
-    let color: Color
-
-    var body: some View {
-        ModernCard(padding: DesignSystem.Spacing.sm) {
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(color)
-
-                Text(value)
-                    .font(DesignSystem.Typography.numberMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text(subtitle)
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-}
-
-// MARK: - Week Card
-
-struct WeekCard: View {
+struct PlanDaySheet: View {
+    @Environment(\.dismiss) private var dismiss
     let week: PlanWeekModel
-    let isExpanded: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                // Week Header
-                Button(action: onTap) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Week \(week.weekNumber)")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            if let focusArea = week.focusArea {
-                                Text(focusArea)
-                                    .font(DesignSystem.Typography.bodySmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        if week.isCompleted {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(DesignSystem.Colors.success)
-                        }
-
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                // Expanded Content
-                if isExpanded {
-                    Divider()
-                        .padding(.vertical, DesignSystem.Spacing.xs)
-
-                    if let notes = week.notes {
-                        Text(notes)
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .padding(.bottom, DesignSystem.Spacing.xs)
-                    }
-
-                    // Days in Week
-                    ForEach(week.days) { day in
-                        DayRow(day: day)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Day Row
-
-struct DayRow: View {
     let day: PlanDayModel
+    let isToday: Bool
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            Circle()
-                .fill(day.isCompleted ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary.opacity(0.3))
-                .frame(width: 8, height: 8)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            TQNavBar("Week \(week.weekNumber) · \(day.dayOfWeek?.displayName ?? "Day \(day.dayNumber)")") {
+                Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+            } trailing: {
+                TQNavAction("Done") { dismiss() }
+            }
+            .padding(.top, 8)
 
-            if let dayOfWeek = day.dayOfWeek {
-                Text(dayOfWeek.displayName)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .frame(width: 80, alignment: .leading)
-            } else {
-                Text("Day \(day.dayNumber)")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .frame(width: 80, alignment: .leading)
+            VStack(alignment: .leading, spacing: 8) {
+                TQEyebrow(isToday ? "Today" : (day.isCompleted ? "Done" : (day.isRestDay ? "Rest day" : "Planned")), size: 11)
+                TQDisplayTitle(week.focusArea ?? "Week \(week.weekNumber)", size: .card)
+                if let notes = week.notes, !notes.isEmpty { TQBody(notes) }
             }
 
             if day.isRestDay {
-                Text("Rest Day")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.accentYellow)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(DesignSystem.Colors.accentYellow.opacity(0.1))
-                    .cornerRadius(DesignSystem.CornerRadius.xs)
+                TQRowList {
+                    TQRow("Rest day", note: "recover").disabled(true)
+                }
             } else {
-                Text("\(day.sessions.count) session\(day.sessions.count == 1 ? "" : "s")")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                Spacer()
-
-                Text("\(day.totalDuration) min")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                TQRowList {
+                    ForEach(day.sessions) { session in
+                        TQRow(
+                            "\(session.sessionType.displayName) session",
+                            subtitle: "\(session.duration) min · intensity \(session.intensity)/5" + (session.exerciseIDs.isEmpty ? "" : " · \(session.exerciseIDs.count) drill\(session.exerciseIDs.count == 1 ? "" : "s")"),
+                            leading: .tile(TQTile.category(session.sessionType.rawValue)),
+                            badge: session.isCompleted ? TQBadge(.status("Done")) : nil,
+                            accessory: .none,
+                            verticalPadding: DesignSystem.Spacing.rowVertical
+                        )
+                    }
+                }
             }
+            Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .presentationDetents([.medium])
     }
 }
 
 #Preview {
-    TrainingPlanDetailView(
-        initialPlan: TrainingPlanModel(
-            id: UUID(),
-            name: "Striker Development",
-            description: "8-week program focused on finishing, positioning, and movement in the attacking third",
-            durationWeeks: 8,
-            difficulty: .intermediate,
-            category: .position,
-            targetRole: "Striker",
-            isPrebuilt: true,
-            isActive: false,
-            currentWeek: 1,
-            progressPercentage: 0.0,
-            startedAt: nil,
-            completedAt: nil,
-            createdAt: Date(),
-            updatedAt: Date(),
-            weeks: []
-        ),
-        player: Player()
-    )
+    NavigationStack {
+        TrainingPlanDetailView(
+            initialPlan: TrainingPlanService.shared.availablePlans.first ?? TrainingPlanModel(
+                id: UUID(), name: "Preview", description: "", durationWeeks: 4, difficulty: .beginner, category: .technical,
+                targetRole: nil, isPrebuilt: true, isActive: false, currentWeek: 1, progressPercentage: 0,
+                startedAt: nil, completedAt: nil, createdAt: Date(), updatedAt: Date(), weeks: []
+            ),
+            player: Player(context: CoreDataManager.shared.context)
+        )
+        .environment(\.managedObjectContext, CoreDataManager.shared.context)
+        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(SubscriptionManager.shared)
+    }
 }

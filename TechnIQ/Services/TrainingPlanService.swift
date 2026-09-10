@@ -935,6 +935,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         }
 
         plan.isPrebuilt = true
+        var existingExercises = (player.exercises as? Set<Exercise>).map(Array.init) ?? []
 
         // Create weeks based on template
         for weekTemplate in template.weeks {
@@ -948,9 +949,20 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                     continue
                 }
 
-                // Create sessions based on template (exercises will be added later)
+                // Create sessions based on template, filling each with two drills from the template library
                 for sessionTemplate in dayTemplate.sessions {
-                    _ = addSessionToDay(day, sessionType: sessionTemplate.sessionType, duration: sessionTemplate.duration, intensity: sessionTemplate.intensity, notes: sessionTemplate.notes, exercises: [])
+                    let picks = TemplateExerciseLibrary.shared.randomExercises(
+                        for: sessionTemplate.sessionType.rawValue,
+                        count: 2,
+                        difficulty: template.difficulty.displayName
+                    )
+                    let exercises = picks.compactMap { pick -> Exercise? in
+                        if let existing = existingExercises.first(where: { $0.name == pick.name }) { return existing }
+                        let created = createExerciseFromTemplate(pick, for: player)
+                        if let created { existingExercises.append(created) }
+                        return created
+                    }
+                    _ = addSessionToDay(day, sessionType: sessionTemplate.sessionType, duration: sessionTemplate.duration, intensity: sessionTemplate.intensity, notes: sessionTemplate.notes, exercises: exercises)
                 }
             }
         }
@@ -963,6 +975,39 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             print("Failed to save instantiated plan: \(error)")
             #endif
             return nil
+        }
+    }
+
+    // MARK: - Template schedules
+
+    /// Builds a weekly schedule for a prebuilt template: one session on each training day, rest days
+    /// elsewhere, the week's focus area cycling through `focus`. Exercises are attached from the
+    /// template library when the plan is instantiated.
+    static func templateWeeks(count: Int, trainingDays: [DayOfWeek], sessionType: SessionType, difficulty: PlanDifficulty, focus: [String]) -> [PlanWeekModel] {
+        let intensity: Int
+        switch difficulty {
+        case .beginner: intensity = 2
+        case .intermediate: intensity = 3
+        case .advanced: intensity = 4
+        case .elite: intensity = 5
+        }
+        let duration = difficulty == .beginner ? 30 : 45
+        return (1...max(count, 1)).map { weekNumber in
+            let days = DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }.enumerated().map { index, weekday -> PlanDayModel in
+                let isTraining = trainingDays.contains(weekday)
+                let session = PlanSessionModel(
+                    id: UUID(), sessionType: sessionType, duration: duration, intensity: intensity,
+                    orderIndex: 0, notes: nil, isCompleted: false, completedAt: nil,
+                    actualDuration: nil, actualIntensity: nil, exerciseIDs: []
+                )
+                return PlanDayModel(
+                    id: UUID(), dayNumber: index + 1, dayOfWeek: weekday, isRestDay: !isTraining,
+                    isSkipped: false, notes: nil, isCompleted: false, completedAt: nil,
+                    sessions: isTraining ? [session] : []
+                )
+            }
+            let focusArea = focus.isEmpty ? nil : focus[(weekNumber - 1) % focus.count]
+            return PlanWeekModel(id: UUID(), weekNumber: weekNumber, focusArea: focusArea, notes: nil, isCompleted: false, completedAt: nil, days: days)
         }
     }
 
@@ -985,7 +1030,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(
+                count: 8,
+                trainingDays: [.monday, .wednesday, .thursday, .saturday],
+                sessionType: .technical,
+                difficulty: .intermediate,
+                focus: ["Finishing fundamentals", "Movement off the ball", "Weak-foot finishing", "Aerial and first-time finishes", "Pressure finishing", "Combination play", "Match-speed repetition", "Taper and test"]
+            )
         )
     }
 
@@ -1006,7 +1057,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(count: 6, trainingDays: [.monday, .wednesday, .friday], sessionType: .technical, difficulty: .intermediate, focus: ["Passing range", "First touch under pressure", "Scanning and vision", "Box-to-box running", "Switching play", "Tempo control"])
         )
     }
 
@@ -1027,7 +1078,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(count: 6, trainingDays: [.monday, .wednesday, .friday], sessionType: .tactical, difficulty: .intermediate, focus: ["Body shape and positioning", "1v1 defending", "Aerial duels", "Recovery runs", "Playing out from the back", "Reading the game"])
         )
     }
 
@@ -1048,7 +1099,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(count: 4, trainingDays: [.monday, .tuesday, .thursday, .saturday], sessionType: .physical, difficulty: .advanced, focus: ["Acceleration", "Change of direction", "Reactive speed", "Match-speed repeats"])
         )
     }
 
@@ -1069,7 +1120,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(count: 8, trainingDays: [.monday, .tuesday, .thursday, .saturday], sessionType: .technical, difficulty: .intermediate, focus: ["Ball mastery", "First touch", "Dribbling in tight spaces", "Passing accuracy", "Receiving on the turn", "Weak foot", "Finishing", "Putting it together"])
         )
     }
 
@@ -1090,7 +1141,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: []
+            weeks: Self.templateWeeks(
+                count: 12,
+                trainingDays: [.tuesday, .thursday],
+                sessionType: .technical,
+                difficulty: .beginner,
+                focus: ["Ball familiarity", "Dribbling", "Passing", "First touch", "Shooting", "Small-sided play", "Defending basics", "Heading and aerials", "Movement", "Decision making", "Confidence", "Celebration week"]
+            )
         )
     }
 }

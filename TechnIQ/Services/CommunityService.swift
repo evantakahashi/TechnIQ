@@ -524,6 +524,13 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
 
     func fetchSharedDrills(refresh: Bool = false, category: String? = nil, difficulty: Int? = nil) async {
         guard !isLoadingDrills else { return }
+        #if DEBUG
+        if TQDemoSeed.isRequested {
+            sharedDrills = TQDemoSeed.sharedDrills(category: category)
+            hasMoreDrills = false
+            return
+        }
+        #endif
 
         if refresh {
             lastDrillDocument = nil

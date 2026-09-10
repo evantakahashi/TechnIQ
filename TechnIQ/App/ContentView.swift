@@ -275,7 +275,18 @@ struct MainTabView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
 
     @FetchRequest var players: FetchedResults<Player>
-    @State private var selectedTab = 0
+    @State private var selectedTab = MainTabView.initialTab
+
+    /// `-TQTab n` (DEBUG) opens the app on a given tab for screenshot comparison.
+    private static var initialTab: Int {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "-TQTab"), index + 1 < args.count, let tab = Int(args[index + 1]), (0..<5).contains(tab) {
+            return tab
+        }
+        #endif
+        return 0
+    }
 
     init() {
         // Fetch all players initially - currentPlayer filters by firebaseUID

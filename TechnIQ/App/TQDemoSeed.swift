@@ -38,6 +38,32 @@ enum TQDemoSeed {
         try? context.save()
     }
 
+    /// Community drills for the Drills tab: a "drill of the week" plus a handful of rows.
+    static func sharedDrills(category: String? = nil) -> [SharedDrill] {
+        let now = Date()
+        func drill(_ id: String, _ title: String, by author: String, level: Int, category cat: String, difficulty: Int,
+                   minutes: Int, saves: Int, daysAgo: Int, saved: Bool = false) -> SharedDrill {
+            SharedDrill(
+                id: id, authorID: "demo-\(id)", authorName: author, authorLevel: level, title: title,
+                description: "Shared by the community.", category: cat, difficulty: difficulty,
+                targetSkills: [cat], duration: minutes, equipment: ["Ball", "Cones"],
+                steps: ["Set up the cones five metres apart.", "Work through the pattern at pace.", "Switch feet halfway."],
+                sets: 3, reps: 10, timestamp: now.addingTimeInterval(-Double(daysAgo) * 86_400),
+                saveCount: saves, isSavedByCurrentUser: saved, reportCount: 0
+            )
+        }
+        let all = [
+            drill("d1", "Wall pass finishing", by: "Marco T.", level: 14, category: "technical", difficulty: 3, minutes: 15, saves: 1240, daysAgo: 3),
+            drill("d2", "Box-to-box shuttles", by: "Kai R.", level: 9, category: "physical", difficulty: 2, minutes: 12, saves: 412, daysAgo: 1),
+            drill("d3", "Third-man runs", by: "Leah P.", level: 21, category: "tactical", difficulty: 4, minutes: 20, saves: 388, daysAgo: 5),
+            drill("d4", "Cone weave turns", by: "Sam O.", level: 6, category: "technical", difficulty: 1, minutes: 10, saves: 251, daysAgo: 12),
+            drill("d5", "Pressing triggers", by: "Ana V.", level: 17, category: "tactical", difficulty: 3, minutes: 18, saves: 197, daysAgo: 2),
+            drill("d6", "Sprint ladder", by: "Dev K.", level: 11, category: "physical", difficulty: 2, minutes: 8, saves: 143, daysAgo: 20)
+        ]
+        guard let category else { return all }
+        return all.filter { $0.category == category }
+    }
+
     /// 8-week schedule mirroring the mock (Mon/Wed/Thu/Sat, two sessions on odd-week Saturdays);
     /// weeks 1–2 done, week 3 day 1 done.
     @MainActor

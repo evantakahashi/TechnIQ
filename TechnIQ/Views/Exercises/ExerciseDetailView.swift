@@ -1,5 +1,13 @@
 import SwiftUI
 import WebKit
+import CoreData
+
+// MARK: - Drill detail (Touchline 7c)
+//
+// Header: back, eyebrow "AI DRILL · category", heart + share. Condensed title + figures
+// (min, lvl, foot). Diagram on a pitch surface (legend, dimensions, Animate). Steps as numbered
+// rows with a collapsed "+n" for coaching points. Pinned Start drill + "+PLAN". Notes and
+// feedback sit below the fold; the video card only appears for video drills.
 
 struct ExerciseDetailView: View {
     let exercise: Exercise
@@ -7,16 +15,15 @@ struct ExerciseDetailView: View {
     var onExerciseDeleted: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var viewContext
     @State private var showingWebView = false
     @State private var isFavorite: Bool = false
     @State private var showingEditor = false
     @State private var personalNotes: String = ""
     @State private var isEditingNotes = false
     @State private var showingActiveTraining = false
-
-    // Animated diagram step controls
-    @State private var diagramStep: Int? = nil
-    @State private var isDiagramAutoPlaying: Bool = false
+    @State private var showingExtras = false
+    @State private var planNotice: String?
 
     // Drill feedback state (for AI-generated drills)
     @State private var feedbackRating: Int = 0
@@ -26,272 +33,93 @@ struct ExerciseDetailView: View {
     @State private var showingFeedbackSuccess: Bool = false
     @State private var showingShareSheet = false
 
-    // Check if this is an AI-generated drill
     private var isAIGeneratedDrill: Bool {
         exercise.exerciseDescription?.contains("AI-Generated") == true
     }
 
-    // Check if exercise is editable (not YouTube content)
-    private var isEditable: Bool {
-        exercise.exerciseDescription?.contains("YouTube Video") != true
+    private var isVideoDrill: Bool {
+        exercise.isYouTubeExercise || extractYouTubeVideoId() != nil
     }
-    
+
+    /// Editable = not YouTube content.
+    private var isEditable: Bool {
+        !isVideoDrill
+    }
+
+    private var content: DrillContent { DrillContent.parse(exercise.instructions) }
+
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Exercise Header
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                    navBar
+                        .padding(.top, 8)
+
+                    if let planNotice {
+                        TQBanner(.info, message: planNotice, actionTitle: "OK") { self.planNotice = nil }
+                    }
+
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(exercise.name ?? "Unknown Exercise")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.primaryDark)
-                        
-                        HStack {
-                            CategoryBadge(category: exercise.category ?? "General")
-                            DifficultyStars(difficulty: Int(exercise.difficulty))
+                        TQDisplayTitle(exercise.name ?? "Drill", size: .medium)
+                        TQFigureRow(figures, onPitch: false, valueSize: 18)
+                        if let skills = exercise.targetSkills, !skills.isEmpty {
+                            TQMeta(skills.joined(separator: " · "), tone: .muted, size: 13, weight: .regular)
                         }
                     }
 
-                    // Start Drill Button
-                    Button {
-                        showingActiveTraining = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "play.fill")
-                            Text("Start Drill")
-                                .fontWeight(.bold)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(DesignSystem.Colors.primaryGreen)
-                        .cornerRadius(DesignSystem.CornerRadius.button)
-                    }
-
-                    // Share to Community (AI drills only)
-                    if isAIGeneratedDrill {
-                        Button {
-                            showingShareSheet = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Share to Community")
-                                    .fontWeight(.semibold)
-                            }
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(DesignSystem.Colors.primaryGreen.opacity(0.12))
-                            .cornerRadius(DesignSystem.CornerRadius.button)
-                        }
-                    }
-
-                    // YouTube Video Section
-                    if let youtubeVideoId = extractYouTubeVideoId() {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Video Tutorial")
-                                .font(.headline)
-                                .foregroundColor(DesignSystem.Colors.primaryDark)
-                            
-                            // YouTube Thumbnail with Play Button
-                            Button(action: {
-                                showingWebView = true
-                            }) {
-                                AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(youtubeVideoId)/hqdefault.jpg")) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(16/9, contentMode: .fit)
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            Circle()
-                                                .fill(Color.red)
-                                                .frame(width: 60, height: 60)
-                                                .overlay(
-                                                    Image(systemName: "play.fill")
-                                                        .foregroundColor(.white)
-                                                        .font(.title2)
-                                                )
-                                        )
-                                } placeholder: {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .aspectRatio(16/9, contentMode: .fit)
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            VStack {
-                                                ProgressView()
-                                                Text("Loading video...")
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                        )
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .accessibilityLabel("Play video tutorial")
-
-                            // YouTube Link
-                            if let youtubeURL = URL(string: "https://youtube.com/watch?v=\(youtubeVideoId)") {
-                                Link("Open in YouTube", destination: youtubeURL)
-                                    .font(.caption)
-                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            }
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.1))
-                        )
-                    }
-                    
-                    // Description Section
-                    if let description = exercise.exerciseDescription, !description.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Description")
-                                .font(.headline)
-                                .foregroundColor(DesignSystem.Colors.primaryDark)
-                            
-                            Text(cleanDescription(description))
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    // Drill Diagram Section (for AI-generated drills)
                     if let diagram = parseDiagram() {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Image(systemName: "map")
-                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                    .accessibilityHidden(true)
-                                Text("Field Layout")
-                                    .font(.headline)
-                                    .foregroundColor(DesignSystem.Colors.primaryDark)
-                            }
-
-                            AnimatedDrillDiagramView(
-                                diagram: diagram,
-                                instructions: parsedSteps,
-                                currentStep: $diagramStep,
-                                isAutoPlaying: $isDiagramAutoPlaying
-                            )
-                            .frame(height: 350)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.1))
-                        )
+                        TQDiagram(diagram: diagram, steps: content.steps)
+                    } else if let videoId = extractYouTubeVideoId() {
+                        videoCard(videoId)
                     }
 
-                    // Instructions Section
-                    if let instructions = exercise.instructions, !instructions.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Instructions")
-                                .font(.headline)
-                                .foregroundColor(DesignSystem.Colors.primaryDark)
+                    stepsSection
 
-                            // Use rich markdown display for AI-generated drills and structured manual drills
-                            if exercise.exerciseDescription?.contains("AI-Generated Custom Drill") == true ||
-                               instructions.contains("**Setup:**") || instructions.contains("**Instructions:**") {
-                                DrillInstructionsView(instructions: instructions)
-                            } else {
-                                Text(instructions)
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    // Target Skills Section
-                    if let skills = exercise.targetSkills, !skills.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Target Skills")
-                                .font(.headline)
-                                .foregroundColor(DesignSystem.Colors.primaryDark)
-
-                            LazyVGrid(columns: [
-                                GridItem(.adaptive(minimum: 100))
-                            ], spacing: 8) {
-                                ForEach(skills, id: \.self) { skill in
-                                    Text(skill)
-                                        .font(.caption)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .fill(DesignSystem.Colors.primaryGreen.opacity(0.2))
-                                        )
-                                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                }
-                            }
-                        }
+                    if content.steps.isEmpty, let description = exercise.exerciseDescription, !cleanDescription(description).isEmpty {
+                        TQBody(cleanDescription(description))
                     }
 
-                    // Personal Notes Section
                     personalNotesSection
 
-                    // Drill Feedback Section (AI-generated drills only)
                     if isAIGeneratedDrill {
                         drillFeedbackSection
                         progressionSection
                     }
 
-                    // Safety disclaimer footer
                     DrillSafetyDisclaimer()
                 }
-                .padding()
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.lg)
             }
-            .navigationTitle("Exercise Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        toggleFavorite()
-                    } label: {
-                        Image(systemName: isFavorite ? "heart.fill" : "heart")
-                            .foregroundColor(isFavorite ? .red : DesignSystem.Colors.textSecondary)
-                    }
-                    .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        // Edit button (only for editable exercises)
-                        if isEditable {
-                            Button {
-                                showingEditor = true
-                            } label: {
-                                Image(systemName: "pencil.circle")
-                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            }
-                            .accessibilityLabel("Edit exercise")
-                        }
 
-                        Button("Done") {
-                            dismiss()
-                        }
-                    }
+            HStack(spacing: 10) {
+                TQButton("Start drill", icon: "play.fill") { showingActiveTraining = true }
+                TQLabelSquare(label: "+PLAN") { addToTodaysPlan() }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+            .background(DesignSystem.Colors.surfaceBase)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        .onAppear {
+            isFavorite = exercise.isFavorite
+            personalNotes = exercise.personalNotes ?? ""
+        }
+        .sheet(isPresented: $showingEditor) {
+            ExerciseEditorView(
+                exercise: exercise,
+                onSave: {
+                    isFavorite = exercise.isFavorite
+                    onFavoriteChanged?()
+                },
+                onDelete: {
+                    onExerciseDeleted?()
+                    dismiss()
                 }
-            }
-            .onAppear {
-                isFavorite = exercise.isFavorite
-                personalNotes = exercise.personalNotes ?? ""
-            }
-            .sheet(isPresented: $showingEditor) {
-                ExerciseEditorView(
-                    exercise: exercise,
-                    onSave: {
-                        // Refresh the detail view after save
-                        isFavorite = exercise.isFavorite
-                        onFavoriteChanged?()
-                    },
-                    onDelete: {
-                        onExerciseDeleted?()
-                        dismiss()
-                    }
-                )
-            }
+            )
         }
         .sheet(isPresented: $showingWebView) {
             if let youtubeVideoId = extractYouTubeVideoId() {
@@ -301,6 +129,7 @@ struct ExerciseDetailView: View {
         .fullScreenCover(isPresented: $showingActiveTraining) {
             ActiveTrainingView(exercises: [exercise])
                 .environment(\.managedObjectContext, CoreDataManager.shared.context)
+                .environmentObject(AuthenticationManager.shared)
                 .environmentObject(SubscriptionManager.shared)
         }
         .sheet(isPresented: $showingShareSheet) {
@@ -313,70 +142,190 @@ struct ExerciseDetailView: View {
             }
         }
     }
-    
+
+    // MARK: - Nav bar
+
+    private var navBar: some View {
+        TQNavBar(eyebrow, tone: .grass) {
+            TQBackButton { dismiss() }
+        } trailing: {
+            HStack(spacing: 2) {
+                TQIconAction(isFavorite ? "heart.fill" : "heart", tone: isFavorite ? .grass : .muted, accessibilityLabel: isFavorite ? "Remove from saved" : "Save drill") {
+                    toggleFavorite()
+                }
+                if isEditable {
+                    Menu {
+                        Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
+                        Button { showingEditor = true } label: { Label("Edit drill", systemImage: "pencil") }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(DesignSystem.Colors.dimIvory)
+                            .frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+                    }
+                    .accessibilityLabel("Share or edit")
+                } else {
+                    TQIconAction("square.and.arrow.up", accessibilityLabel: "Share") { showingShareSheet = true }
+                }
+            }
+        }
+    }
+
+    private var eyebrow: String {
+        let kind = isAIGeneratedDrill ? "AI drill" : (isVideoDrill ? "Video" : (exercise.isCommunityDrill ? "Community drill" : "Drill"))
+        return "\(kind) · \(exercise.category ?? "Technical")"
+    }
+
+    private var figures: [(String, String)] {
+        var items: [(String, String)] = []
+        if exercise.estimatedDurationSeconds > 0 {
+            items.append(("\(max(1, Int(exercise.estimatedDurationSeconds) / 60))", "min"))
+        } else if exercise.videoDuration > 0 {
+            items.append(("\(max(1, Int(exercise.videoDuration) / 60))", "min"))
+        }
+        if exercise.difficulty > 0 { items.append(("\(exercise.difficulty)", "lvl")) }
+        let mentionsWeakFoot = (exercise.targetSkills ?? []).contains { $0.localizedCaseInsensitiveContains("weak foot") }
+            || (exercise.weaknessCategories ?? "").localizedCaseInsensitiveContains("weak foot")
+        if mentionsWeakFoot {
+            switch exercise.player?.dominantFoot?.lowercased() {
+            case "right": items.append(("L", "foot"))
+            case "left": items.append(("R", "foot"))
+            default: break
+            }
+        }
+        return items
+    }
+
+    // MARK: - Video
+
+    private func videoCard(_ videoId: String) -> some View {
+        Button { showingWebView = true } label: {
+            AsyncImage(url: URL(string: "https://img.youtube.com/vi/\(videoId)/hqdefault.jpg")) { image in
+                image.resizable().aspectRatio(16 / 9, contentMode: .fill)
+            } placeholder: {
+                DesignSystem.Colors.surfaceRaised
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .clipped()
+            .overlay(
+                TQIconButton("play.fill", style: .primary, shape: .circle, size: 56, iconSize: 20, accessibilityLabel: "Play video") { showingWebView = true }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.pitchCardCompact, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Play video tutorial")
+    }
+
+    // MARK: - Steps
+
+    @ViewBuilder
+    private var stepsSection: some View {
+        let steps = content.steps
+        let extras = content.extras
+        if !steps.isEmpty || !extras.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                TQGroupHeader("Steps")
+                ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                    TQIndexRow(index: String(format: "%02d", index + 1), text: step)
+                }
+                if !extras.isEmpty {
+                    Button {
+                        HapticManager.shared.selectionChanged()
+                        withAnimation(DesignSystem.Animation.quick) { showingExtras.toggle() }
+                    } label: {
+                        TQIndexRow(index: showingExtras ? "–" : "+\(extras.count)",
+                                   text: showingExtras ? "Hide coaching points" : extrasSummary,
+                                   indexTone: .muted,
+                                   textColor: DesignSystem.Colors.dimIvory)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(showingExtras ? "Hides coaching points" : "Shows coaching points")
+                    if showingExtras {
+                        ForEach(Array(extras.enumerated()), id: \.offset) { _, point in
+                            TQIndexRow(index: "•", text: point, indexTone: .muted)
+                        }
+                    }
+                }
+                TQRule()
+            }
+        }
+    }
+
+    private var extrasSummary: String {
+        var parts: [String] = []
+        if !content.coachingPoints.isEmpty { parts.append("coaching points") }
+        if !content.variations.isEmpty { parts.append("variations") }
+        if !content.progressions.isEmpty { parts.append("progressions") }
+        if content.safetyNotes != nil { parts.append("safety") }
+        if let skills = exercise.targetSkills, !skills.isEmpty, parts.count < 2 { parts.append("target skills") }
+        return parts.prefix(2).joined(separator: ", ").capitalizingFirstLetter
+    }
+
+    // MARK: - +PLAN
+
+    private func addToTodaysPlan() {
+        guard let player = exercise.player,
+              let plan = TrainingPlanService.shared.fetchActivePlan(for: player) else {
+            planNotice = "Start a plan first to add drills to it."
+            return
+        }
+        let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
+        guard let session = sessions.first(where: { !$0.isCompleted }) ?? sessions.first else {
+            planNotice = "Nothing scheduled today in \(plan.name)."
+            return
+        }
+        if (session.exercises as? Set<Exercise>)?.contains(exercise) == true {
+            planNotice = "Already in today's session."
+            return
+        }
+        session.addToExercises(exercise)
+        CoreDataManager.shared.save()
+        HapticManager.shared.success()
+        planNotice = "Added to today's session in \(plan.name)."
+    }
+
+    // MARK: - Helpers
+
     private func extractYouTubeVideoId() -> String? {
         guard let instructions = exercise.instructions else { return nil }
-        
-        // Look for YouTube URL patterns in instructions
         let patterns = [
             "youtube\\.com/watch\\?v=([a-zA-Z0-9_-]{11})",
             "youtu\\.be/([a-zA-Z0-9_-]{11})",
             "Video ID: ([a-zA-Z0-9_-]{11})"
         ]
-        
         for pattern in patterns {
             if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
                 let range = NSRange(location: 0, length: instructions.utf16.count)
-                if let match = regex.firstMatch(in: instructions, options: [], range: range) {
-                    if let videoIdRange = Range(match.range(at: 1), in: instructions) {
-                        return String(instructions[videoIdRange])
-                    }
+                if let match = regex.firstMatch(in: instructions, options: [], range: range),
+                   let videoIdRange = Range(match.range(at: 1), in: instructions) {
+                    return String(instructions[videoIdRange])
                 }
             }
         }
-        
         return nil
     }
 
     private func parseDiagram() -> DrillDiagram? {
         guard let diagramJSON = exercise.diagramJSON,
-              let data = diagramJSON.data(using: .utf8) else {
-            return nil
-        }
-
-        let decoder = JSONDecoder()
-        return try? decoder.decode(DrillDiagram.self, from: data)
-    }
-
-    private var parsedSteps: [String] {
-        guard let instructions = exercise.instructions else { return [] }
-        return instructions.components(separatedBy: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { line in
-                let pattern = /^\d+\./
-                return line.contains(pattern)
-            }
-            .map { $0.replacingOccurrences(of: #"^\d+\.\s*"#, with: "", options: .regularExpression) }
+              let data = diagramJSON.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(DrillDiagram.self, from: data)
     }
 
     private func cleanDescription(_ description: String) -> String {
-        // Remove YouTube-specific metadata from description
         let lines = description.components(separatedBy: .newlines)
         var cleanLines: [String] = []
-
         var skipNextLines = false
         for line in lines {
-            if line.contains("YouTube Video") {
+            if line.contains("YouTube Video") || line.contains("AI-Generated Custom Drill") {
                 skipNextLines = true
                 continue
             }
-            if skipNextLines && (line.contains("Channel:") || line.contains("Video ID:")) {
-                continue
-            }
+            if skipNextLines && (line.contains("Channel:") || line.contains("Video ID:")) { continue }
             skipNextLines = false
             cleanLines.append(line)
         }
-
         return cleanLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -740,5 +689,12 @@ struct ExerciseDetailView_Previews: PreviewProvider {
         exercise.instructions = "1. Watch the YouTube video at: https://youtube.com/watch?v=dQw4w9WgXcQ\n2. Practice the technique shown"
         
         return ExerciseDetailView(exercise: exercise)
+    }
+}
+
+private extension String {
+    var capitalizingFirstLetter: String {
+        guard let first = first else { return self }
+        return first.uppercased() + dropFirst()
     }
 }

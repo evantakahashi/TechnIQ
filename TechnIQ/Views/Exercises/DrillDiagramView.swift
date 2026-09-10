@@ -26,6 +26,8 @@ struct AnimatedDrillDiagramView: View {
     var playbackSpeed: Double = 1.0
     var isTrainingMode: Bool = false
     var onStepCompleted: ((Int) -> Void)? = nil
+    /// false when embedded in TQDiagram: no card background, no dimension label, no step controls.
+    var chrome: Bool = true
 
     // Element sizes
     private let coneSize: CGFloat = 16
@@ -34,7 +36,7 @@ struct AnimatedDrillDiagramView: View {
     private let goalWidth: CGFloat = 32
     private let goalHeight: CGFloat = 12
     private let ballSize: CGFloat = 12
-    private let fieldPadding: CGFloat = 24
+    private var fieldPadding: CGFloat { chrome ? 24 : 16 }
 
     // Path animation
     @State private var pathAnimationProgress: CGFloat = 0
@@ -119,24 +121,26 @@ struct AnimatedDrillDiagramView: View {
                     }
 
                     // Dimension label
-                    Text("\(Int(diagram.field.width))m x \(Int(diagram.field.length))m")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .position(x: geometry.size.width / 2, y: offsetY + fieldHeight + fieldPadding / 2 + 2)
+                    if chrome {
+                        Text("\(Int(diagram.field.width))m x \(Int(diagram.field.length))m")
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .position(x: geometry.size.width / 2, y: offsetY + fieldHeight + fieldPadding / 2 + 2)
+                    }
                 }
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(diagramAccessibilityLabel)
 
             // Step controls
-            if hasSteps && currentStep != nil {
+            if chrome && hasSteps && currentStep != nil {
                 stepControls
                     .padding(.horizontal, DesignSystem.Spacing.md)
                     .padding(.bottom, DesignSystem.Spacing.sm)
             }
         }
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
+        .background(chrome ? DesignSystem.Colors.pitch : Color.clear)
+        .cornerRadius(chrome ? DesignSystem.CornerRadius.pitchCardCompact : 0)
         .onChange(of: currentStep) { _, newStep in
             if newStep != nil {
                 restartPathAnimation()
@@ -165,42 +169,28 @@ struct AnimatedDrillDiagramView: View {
     // MARK: - Field Rendering
 
     private func fieldView(fieldWidth: CGFloat, fieldHeight: CGFloat) -> some View {
-        let stripeHeight = fieldHeight / 8
-
         return ZStack {
-            // Dark green base
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
-                .fill(Color(red: 0.18, green: 0.42, blue: 0.18))
+            // Pitch surface
+            Rectangle()
+                .fill(DesignSystem.Colors.pitch)
                 .frame(width: fieldWidth, height: fieldHeight)
 
-            // Alternating grass stripes
-            VStack(spacing: 0) {
-                ForEach(0..<8, id: \.self) { i in
-                    Rectangle()
-                        .fill(i % 2 == 0 ? Color.clear : Color.white.opacity(0.04))
-                        .frame(width: fieldWidth, height: stripeHeight)
-                }
-            }
-            .frame(width: fieldWidth, height: fieldHeight)
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm))
-
-            // Center line
+            // Halfway line
             Rectangle()
-                .fill(Color.white.opacity(0.3))
-                .frame(width: fieldWidth * 0.85, height: 1)
-                .offset(y: 0)
+                .fill(DesignSystem.Colors.chalkWhite.opacity(0.28))
+                .frame(width: fieldWidth, height: 1.5)
 
-            // Center circle
+            // Centre circle
             Circle()
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                .stroke(DesignSystem.Colors.chalkWhite.opacity(0.28), lineWidth: 1.5)
                 .frame(
                     width: min(fieldWidth, fieldHeight) * 0.3,
                     height: min(fieldWidth, fieldHeight) * 0.3
                 )
 
-            // Touchline border
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
-                .stroke(Color.white.opacity(0.4), lineWidth: 1.5)
+            // Touchline
+            Rectangle()
+                .stroke(DesignSystem.Colors.chalkWhite.opacity(0.28), lineWidth: 1.5)
                 .frame(width: fieldWidth, height: fieldHeight)
         }
     }
@@ -249,7 +239,7 @@ struct AnimatedDrillDiagramView: View {
                 p.addEllipse(in: CGRect(x: spot.x - 1.5, y: spot.y - 1.5, width: 3, height: 3))
             }
         }
-        .stroke(Color.white.opacity(0.35), lineWidth: 1)
+        .stroke(DesignSystem.Colors.chalkWhite.opacity(0.28), lineWidth: 1)
     }
 
     // MARK: - Element Rendering
@@ -319,13 +309,12 @@ struct AnimatedDrillDiagramView: View {
             }
 
             Circle()
-                .fill(DesignSystem.Colors.primaryGreen)
+                .fill(DesignSystem.Colors.chalkWhite)
                 .frame(width: playerSize, height: playerSize)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
             Text(displayText)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.white)
+                .font(Font.system(size: 12, weight: .bold).width(.condensed))
+                .foregroundColor(DesignSystem.Colors.textOnAccent)
         }
     }
 
@@ -351,15 +340,14 @@ struct AnimatedDrillDiagramView: View {
             Circle()
                 .fill(DesignSystem.Colors.error)
                 .frame(width: playerSize, height: playerSize)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
             Text(displayText)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.white)
+                .font(Font.system(size: 12, weight: .bold).width(.condensed))
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
         }
     }
 
-    private static let serverBlue = Color(red: 0.13, green: 0.59, blue: 0.95)
+    private static let serverBlue = DesignSystem.Colors.grass
 
     private func serverElementView(label: String, isActive: Bool) -> some View {
         let displayText = String(label.prefix(2))
@@ -383,11 +371,10 @@ struct AnimatedDrillDiagramView: View {
             Circle()
                 .fill(Self.serverBlue)
                 .frame(width: playerSize, height: playerSize)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
             Text(displayText)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.white)
+                .font(Font.system(size: 12, weight: .bold).width(.condensed))
+                .foregroundColor(DesignSystem.Colors.textOnAccent)
         }
     }
 
@@ -406,48 +393,33 @@ struct AnimatedDrillDiagramView: View {
 
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.textOnPitch)
         }
     }
 
-    private static let wallGray = Color(red: 0.55, green: 0.55, blue: 0.58)
+    private static let wallGray = DesignSystem.Colors.surfaceHighlight
 
     private func wallElementView(label: String) -> some View {
         VStack(spacing: 2) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(Self.wallGray)
-                .frame(width: 40, height: 12)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
-                )
+                .fill(DesignSystem.Colors.chalkWhite)
+                .frame(width: 40, height: 10)
 
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.textOnPitch)
         }
     }
 
     private func coneElementView(label: String) -> some View {
         VStack(spacing: 2) {
             ConeTriangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            DesignSystem.Colors.accentOrange,
-                            DesignSystem.Colors.accentOrange.opacity(0.6)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .fill(DesignSystem.Colors.cone)
                 .frame(width: coneSize, height: coneSize)
-                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
 
             Text(label)
                 .font(.system(size: 9, weight: .bold))
-                .foregroundColor(DesignSystem.Colors.textPrimary)
+                .foregroundColor(DesignSystem.Colors.textOnPitch)
         }
     }
 
@@ -510,19 +482,19 @@ struct AnimatedDrillDiagramView: View {
 
                 // Left post
                 Rectangle()
-                    .fill(Color.white.opacity(0.9))
+                    .fill(DesignSystem.Colors.chalkWhite)
                     .frame(width: 2, height: goalHeight)
                     .offset(x: -goalWidth / 2 + 1)
 
                 // Right post
                 Rectangle()
-                    .fill(Color.white.opacity(0.9))
+                    .fill(DesignSystem.Colors.chalkWhite)
                     .frame(width: 2, height: goalHeight)
                     .offset(x: goalWidth / 2 - 1)
 
                 // Crossbar
                 Rectangle()
-                    .fill(Color.white.opacity(0.9))
+                    .fill(DesignSystem.Colors.chalkWhite)
                     .frame(width: goalWidth, height: 2)
                     .offset(y: -goalHeight / 2 + 1)
             }
@@ -530,41 +502,27 @@ struct AnimatedDrillDiagramView: View {
 
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.textOnPitch)
         }
     }
 
     private func ballElementView() -> some View {
-        ZStack {
-            // Shadow beneath
-            Ellipse()
-                .fill(Color.black.opacity(0.2))
-                .frame(width: ballSize, height: ballSize * 0.4)
-                .offset(y: ballSize * 0.45)
-
-            // White ball
-            Circle()
-                .fill(Color.white)
-                .frame(width: ballSize, height: ballSize)
-
-            // Pentagon overlay
-            PentagonShape()
-                .fill(Color.black.opacity(0.15))
-                .frame(width: ballSize * 0.45, height: ballSize * 0.45)
-        }
+        Circle()
+            .fill(DesignSystem.Colors.surfaceBase)
+            .frame(width: ballSize * 0.85, height: ballSize * 0.85)
+            .overlay(Circle().stroke(DesignSystem.Colors.chalkWhite, lineWidth: 1.5))
     }
 
     private func targetElementView(label: String) -> some View {
         VStack(spacing: 2) {
             Rectangle()
-                .fill(DesignSystem.Colors.secondaryBlue)
+                .fill(DesignSystem.Colors.grass)
                 .frame(width: targetSize, height: targetSize)
                 .rotationEffect(.degrees(45))
-                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
 
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(DesignSystem.Colors.textSecondary)
+                .foregroundColor(DesignSystem.Colors.textOnPitch)
                 .offset(y: 4)
         }
     }
@@ -641,11 +599,8 @@ struct AnimatedDrillDiagramView: View {
 
     private func pathColor(_ style: DiagramPathStyle) -> Color {
         switch style {
-        case .dribble: return DesignSystem.Colors.secondaryBlue
-        case .run: return DesignSystem.Colors.textSecondary
-        case .pass: return DesignSystem.Colors.primaryGreen
-        case .shoot: return DesignSystem.Colors.accentOrange
-        case .receive: return DesignSystem.Colors.primaryGreen
+        case .dribble, .pass, .shoot, .receive: return DesignSystem.Colors.grass
+        case .run: return DesignSystem.Colors.chalkWhite.opacity(0.7)
         }
     }
 
@@ -656,7 +611,7 @@ struct AnimatedDrillDiagramView: View {
         case .run:
             return StrokeStyle(lineWidth: 2, lineCap: .round, dash: [6, 4])
         case .pass:
-            return StrokeStyle(lineWidth: 2, lineCap: .round)
+            return StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5])
         case .shoot:
             return StrokeStyle(lineWidth: 3, lineCap: .round)
         case .receive:
@@ -706,7 +661,6 @@ struct AnimatedDrillDiagramView: View {
         return Circle()
             .fill(pathColor(style))
             .frame(width: 8, height: 8)
-            .shadow(color: pathColor(style).opacity(0.6), radius: 4)
             .position(x: dotX, y: dotY)
     }
 

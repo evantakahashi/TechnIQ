@@ -190,6 +190,20 @@ struct DashboardView: View {
             loadPlan()
             loadCoachDrillCount()
             if let player = currentPlayer { Task { await fetchCoaching(for: player, force: false) } }
+            #if DEBUG
+            // `-TQRoute planDetail|matchHistory|coachDrills` pushes a destination for screenshots.
+            let args = ProcessInfo.processInfo.arguments
+            if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    switch args[index + 1] {
+                    case "planDetail": if let plan = activePlan { route = .planDetail(plan) }
+                    case "matchHistory": route = .matchHistory
+                    case "coachDrills": route = .coachDrills
+                    default: break
+                    }
+                }
+            }
+            #endif
         }
         .onChange(of: authManager.userUID) { updateDataFilters() }
         .onChange(of: players.count) { _, count in

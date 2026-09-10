@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 
+/// Train tab shell: resolves the current player and shows the Touchline drill library.
 struct TrainHubView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -30,23 +31,8 @@ struct TrainHubView: View {
                 noProfileState
             }
         }
-        .coachMark(.train)
-        .navigationTitle("Train")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    SessionHistoryView()
-                } label: {
-                    Image(systemName: "calendar")
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .a11y(label: "Session history")
-            }
-        }
-        .onAppear {
-            updatePlayersFilter()
-        }
+        .toolbar(.hidden, for: .navigationBar)
+        .onAppear { updatePlayersFilter() }
         .sheet(isPresented: $showingProfileCreation) {
             UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
         }
@@ -60,15 +46,21 @@ struct TrainHubView: View {
     }
 
     private var noProfileState: some View {
-        ContentUnavailableView {
-            Label("No Player Profile", systemImage: "person.crop.circle.badge.plus")
-        } description: {
-            Text("Create your player profile to browse drills and start training.")
-        } actions: {
-            ModernButton("Create Profile", icon: "person.crop.circle.badge.plus", style: .primary) {
-                showingProfileCreation = true
+        TQScreen {
+            VStack(spacing: DesignSystem.Spacing.section) {
+                TQScreenTitle("Train")
+                    .padding(.top, 8)
+                TQHeroCard(
+                    eyebrow: "No player yet",
+                    title: "Set up your player",
+                    body: "Create your player profile to browse drills and start training.",
+                    actionTitle: "Create profile",
+                    actionIcon: nil,
+                    markings: .heroSimple,
+                    action: { showingProfileCreation = true }
+                )
+                Spacer()
             }
-            .padding(.horizontal, DesignSystem.Spacing.xl)
         }
     }
 

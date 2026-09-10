@@ -24,71 +24,60 @@ struct CommunityFeedView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                LazyVStack(spacing: DesignSystem.Spacing.md) {
-                    if communityService.isLoading && communityService.posts.isEmpty {
-                        LoadingStateView(message: "Loading community...")
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, DesignSystem.Spacing.xxl)
-                    } else if communityService.posts.isEmpty && !communityService.isLoading {
-                        EmptyStateView(
-                            context: .noPosts,
-                            actionTitle: "Create Post",
-                            action: { showingCreatePost = true }
+        ScrollView {
+            LazyVStack(spacing: DesignSystem.Spacing.md) {
+                if communityService.isLoading && communityService.posts.isEmpty {
+                    LoadingStateView(message: "Loading community...")
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, DesignSystem.Spacing.xxl)
+                } else if communityService.posts.isEmpty && !communityService.isLoading {
+                    EmptyStateView(
+                        context: .noPosts,
+                        actionTitle: "Create Post",
+                        action: { showingCreatePost = true }
+                    )
+                    .padding(.top, DesignSystem.Spacing.lg)
+                } else {
+                    ForEach(communityService.posts) { post in
+                        CommunityPostCard(
+                            post: post,
+                            isOwnPost: post.authorID == authManager.userUID,
+                            onLike: { likePost(post) },
+                            onComment: {
+                                selectedPost = post
+                                showingPostDetail = true
+                            },
+                            onReport: { reportPost(post) },
+                            onBlock: { blockUser(post.authorID) },
+                            onDelete: { deletePost(post) },
+                            onAuthorTap: {
+                                selectedPost = post
+                                showingPostDetail = true
+                            }
                         )
-                        .padding(.top, DesignSystem.Spacing.lg)
-                    } else {
-                        ForEach(communityService.posts) { post in
-                            CommunityPostCard(
-                                post: post,
-                                isOwnPost: post.authorID == authManager.userUID,
-                                onLike: { likePost(post) },
-                                onComment: {
-                                    selectedPost = post
-                                    showingPostDetail = true
-                                },
-                                onReport: { reportPost(post) },
-                                onBlock: { blockUser(post.authorID) },
-                                onDelete: { deletePost(post) },
-                                onAuthorTap: {
-                                    selectedPost = post
-                                    showingPostDetail = true
-                                }
-                            )
-                        }
+                    }
 
-                        // Load more trigger
-                        if communityService.isLoading {
-                            ProgressView()
-                                .tint(DesignSystem.Colors.primaryGreen)
-                                .padding()
-                        } else {
-                            Color.clear
-                                .frame(height: 1)
-                                .onAppear {
-                                    Task { await communityService.fetchPosts() }
-                                }
-                        }
+                    // Load more trigger
+                    if communityService.isLoading {
+                        ProgressView()
+                            .tint(DesignSystem.Colors.grass)
+                            .padding()
+                    } else {
+                        Color.clear
+                            .frame(height: 1)
+                            .onAppear {
+                                Task { await communityService.fetchPosts() }
+                            }
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.top, DesignSystem.Spacing.md)
-                .padding(.bottom, DesignSystem.Spacing.xxl)
             }
-            .refreshable {
-                await communityService.fetchPosts(refresh: true)
-            }
-
-            // FAB
-            FloatingActionButton(icon: "square.and.pencil") {
-                showingCreatePost = true
-            }
-            .a11y(label: "Create post")
-            .padding(.trailing, DesignSystem.Spacing.lg)
-            .padding(.bottom, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xxl)
         }
-        .background(AdaptiveBackground().ignoresSafeArea())
+        .refreshable {
+            await communityService.fetchPosts(refresh: true)
+        }
+        .background(DesignSystem.Colors.surfaceBase)
         .onAppear {
             updatePlayersFilter()
             Task { await communityService.fetchPosts(refresh: true) }

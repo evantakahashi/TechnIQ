@@ -286,7 +286,7 @@ struct DesignSystem {
                 switch self {
                 case .home: return "house.fill"
                 case .train: return "figure.soccer"
-                case .plans: return "calendar.fill"
+                case .plans: return "calendar"
                 case .community: return "person.2.fill"
                 case .you: return "person.crop.circle.fill"
                 }

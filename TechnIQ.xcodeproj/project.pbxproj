@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F2EF0CF15B9BC666D32F24C1 /* TQDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B4D2F42E87B546D59E5252 /* TQDiagram.swift */; };
 		A0B2E8C8512C6C2E95846C93 /* ActiveSessionTouchlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */; };
 		6866936A7241804D54FA06B0 /* DrillContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */; };
 		EFFA7FF4F7A6DD27B8E84557 /* DrillContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C502A111655139990553D48 /* DrillContent.swift */; };
@@ -214,7 +215,6 @@
 		EAF307129B77BE4DD4EB648D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 856A6FF7600118F39E05CA74 /* SettingsView.swift */; };
 		EB539CB86095C8D1A10D01B5 /* CoinDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B68C1149036359889CAE238 /* CoinDisplayView.swift */; };
 		EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */; };
-		EL00001B2E133100001E8CF9 /* ExerciseLibraryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */; };
 		ENHPROF01234567890ABCD01 /* EnhancedProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */; };
 		F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */; };
 		F84CA73C74DB2E3A95B451D9 /* CloudService+Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A71C35FEF2B592FCF38E1F /* CloudService+Sync.swift */; };
@@ -248,6 +248,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		46B4D2F42E87B546D59E5252 /* TQDiagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQDiagram.swift; sourceTree = "<group>"; };
 		84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSessionTouchlineTests.swift; sourceTree = "<group>"; };
 		7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillContentTests.swift; sourceTree = "<group>"; };
 		0C502A111655139990553D48 /* DrillContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillContent.swift; sourceTree = "<group>"; };
@@ -458,7 +459,6 @@
 		ED5BF99AFAF840151BFA38E4 /* AchievementService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AchievementService.swift; sourceTree = "<group>"; };
 		EDFF8FF555626C3A57587806 /* MatchServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchServiceProtocol.swift; sourceTree = "<group>"; };
 		EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DrillDiagramView.swift; sourceTree = "<group>"; };
-		EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryComponents.swift; sourceTree = "<group>"; };
 		ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnhancedProfileView.swift; sourceTree = "<group>"; };
 		F6F9F8DE69207E865A055833 /* ShareToCommunitySheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareToCommunitySheet.swift; sourceTree = "<group>"; };
 		F7927AF10E032D5DE23A1409 /* OwnedAvatarItem+CoreDataClass.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "OwnedAvatarItem+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -786,7 +786,6 @@
 			isa = PBXGroup;
 			children = (
 				DF16362A2E133100001E8CF9 /* ExerciseLibraryView.swift */,
-				EL00001A2E133100001E8CF9 /* ExerciseLibraryComponents.swift */,
 				DF5CB3142E4825F60085F3ED /* CustomDrillGeneratorView.swift */,
 				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
 				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
@@ -954,6 +953,7 @@
 				A3E9056290C52D1568AEC62B /* TQLevelBar.swift */,
 				1EE10F5B0BE9AF37175AC247 /* TQHeaders.swift */,
 				A37922B5E711DC4CF929592F /* TQGallery.swift */,
+				46B4D2F42E87B546D59E5252 /* TQDiagram.swift */,
 			);
 			path = Touchline;
 			sourceTree = "<group>";
@@ -1117,7 +1117,6 @@
 				DF48B9E62ED524A600F7AC05 /* PlanWeek+CoreDataClass.swift in Sources */,
 				DF48B9E22ED524A600F7AC05 /* PlanSession+CoreDataClass.swift in Sources */,
 				DF16362B2E133100001E8CF9 /* ExerciseLibraryView.swift in Sources */,
-				EL00001B2E133100001E8CF9 /* ExerciseLibraryComponents.swift in Sources */,
 				DF16362D2E133100001E8CF9 /* NewSessionView.swift in Sources */,
 				NS00001B2E133100001E8CF9 /* NewSessionComponents.swift in Sources */,
 				DFE9F2F22EAD9020007BBFFA /* ManualDrillCreatorView.swift in Sources */,
@@ -1294,6 +1293,7 @@
 				81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */,
 				3F79A4FBB62CE496654256EC /* TQDemoSeed.swift in Sources */,
 				EFFA7FF4F7A6DD27B8E84557 /* DrillContent.swift in Sources */,
+				F2EF0CF15B9BC666D32F24C1 /* TQDiagram.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

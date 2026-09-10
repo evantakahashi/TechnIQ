@@ -1,5 +1,10 @@
 import SwiftUI
-import CoreData
+
+// MARK: - Plans (Touchline 8a)
+//
+// Title row with "+ New plan" (AI / custom sheet), the active plan as a pitch card (name, WK n/8,
+// progress bar, next session line), a Pre-built / My plans segment, and flat plan rows with a
+// weeks tile, name, meta (category · role · frequency), level badge and chevron.
 
 struct TrainingPlansListView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -7,15 +12,15 @@ struct TrainingPlansListView: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @ObservedObject private var planService = TrainingPlanService.shared
 
-    @State private var selectedTab: PlanTab = .prebuilt
+    @State private var tabIndex = 0
     @State private var showingPaywall = false
-    @State private var selectedPlan: TrainingPlanModel?
-    @State private var showingPlanDetail = false
+    @State private var showingNewPlanMenu = false
     @State private var showingCustomBuilder = false
     @State private var showingAIGenerator = false
     @State private var showingShareSheet = false
     @State private var planToShare: TrainingPlanModel?
     @State private var myPlans: [TrainingPlanModel] = []
+    @State private var route: TrainingPlanModel?
 
     @FetchRequest var players: FetchedResults<Player>
 
@@ -27,33 +32,41 @@ struct TrainingPlansListView: View {
         )
     }
 
+    private var activePlan: TrainingPlanModel? { planService.activePlan }
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Tab Selector
-            tabSelector
-
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    // Active Plan Card
-                    if let activePlan = planService.activePlan {
-                        activePlanCard(activePlan)
-                            .padding(.horizontal, DesignSystem.Spacing.md)
-                            .padding(.top, DesignSystem.Spacing.md)
-                    }
-
-                    // Plans Grid
-                    if selectedTab == .prebuilt {
-                        prebuiltPlansGrid
-                    } else {
-                        myPlansGrid
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                TQScreenTitle("Plans") {
+                    TQButton("+ New plan", size: .compact, fullWidth: false) { showingNewPlanMenu = true }
                 }
-                .padding(.bottom, DesignSystem.Spacing.xl)
+
+                if let plan = activePlan {
+                    activePlanCard(plan)
+                }
+
+                TQSegment(options: ["Pre-built", myPlans.isEmpty ? "My plans" : "My plans · \(myPlans.count)"], selectedIndex: $tabIndex)
+
+                if tabIndex == 0 {
+                    planRows(planService.availablePlans)
+                } else if myPlans.isEmpty {
+                    emptyMyPlans
+                } else {
+                    planRows(myPlans, shareable: true)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 8)
+            .padding(.bottom, DesignSystem.Spacing.lg)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .coachMark(.plans)
+        .navigationDestination(item: $route) { plan in
+            if let player = players.first {
+                TrainingPlanDetailView(initialPlan: plan, player: player)
             }
         }
-        .coachMark(.plans)
-        .navigationTitle("Training Plans")
-        .navigationBarTitleDisplayMode(.large)
         .onAppear {
             updatePlayersFilter()
             loadMyPlans()
@@ -62,17 +75,23 @@ struct TrainingPlansListView: View {
             updatePlayersFilter()
             loadMyPlans()
         }
-        .sheet(isPresented: $showingPlanDetail) {
-            if let plan = selectedPlan, let player = players.first {
-                TrainingPlanDetailView(initialPlan: plan, player: player)
-            }
+        .sheet(isPresented: $showingNewPlanMenu) {
+            NewPlanSheet(
+                onAI: {
+                    showingNewPlanMenu = false
+                    if subscriptionManager.isPro { showingAIGenerator = true } else { showingPaywall = true }
+                },
+                onCustom: { showingNewPlanMenu = false; showingCustomBuilder = true }
+            )
+            .presentationDetents([.height(240)])
+            .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showingCustomBuilder) {
+        .sheet(isPresented: $showingCustomBuilder, onDismiss: { loadMyPlans() }) {
             if let player = players.first {
                 CustomPlanBuilderView(player: player)
             }
         }
-        .sheet(isPresented: $showingAIGenerator) {
+        .sheet(isPresented: $showingAIGenerator, onDismiss: { loadMyPlans() }) {
             if let player = players.first {
                 NavigationStack {
                     AITrainingPlanGeneratorView(player: player)
@@ -87,150 +106,116 @@ struct TrainingPlansListView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(feature: .trainingPlan)
         }
-        .onChange(of: showingAIGenerator) { _, newValue in
-            // Reload plans when AI generator is dismissed
-            if !newValue {
-                loadMyPlans()
-            }
-        }
-        .onChange(of: showingCustomBuilder) { _, newValue in
-            // Reload plans when custom builder is dismissed
-            if !newValue {
-                loadMyPlans()
-            }
-        }
     }
 
-    // MARK: - Tab Selector
-
-    private var tabSelector: some View {
-        let selectedIndex = Binding<Int>(
-            get: { PlanTab.allCases.firstIndex(of: selectedTab) ?? 0 },
-            set: { newIndex in selectedTab = PlanTab.allCases[newIndex] }
-        )
-        return ModernSegmentControl(
-            options: ["Pre-built", "My Plans"],
-            selectedIndex: selectedIndex,
-            icons: ["tray.full.fill", "doc.text.fill"]
-        )
-        .padding(.horizontal, DesignSystem.Spacing.md)
-        .padding(.vertical, DesignSystem.Spacing.sm)
-    }
-
-    // MARK: - Active Plan Card
+    // MARK: - Active plan card
 
     private func activePlanCard(_ plan: TrainingPlanModel) -> some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-
-                    Text("Active Plan")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-
-                    Spacer()
-                }
-
-                Text(plan.name)
-                    .font(DesignSystem.Typography.titleMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                ProgressView(value: plan.progressPercentage / 100.0)
-                    .tint(DesignSystem.Colors.primaryGreen)
-
-                HStack {
-                    Text("\(Int(plan.progressPercentage))% Complete")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    Spacer()
-
-                    Text("Week \(plan.currentWeek) of \(plan.durationWeeks)")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-            }
-        }
-        .onTapGesture {
-            selectedPlan = plan
-            showingPlanDetail = true
-        }
-    }
-
-    // MARK: - Pre-built Plans Grid
-
-    private var prebuiltPlansGrid: some View {
-        VStack(spacing: DesignSystem.Spacing.md) {
-            ForEach(planService.availablePlans) { plan in
-                PlanCard(plan: plan) {
-                    selectedPlan = plan
-                    showingPlanDetail = true
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-        }
-    }
-
-    // MARK: - My Plans Grid
-
-    private var myPlansGrid: some View {
-        VStack(spacing: DesignSystem.Spacing.md) {
-            // AI Generation Button
-            ModernButton("Generate with AI", icon: "sparkles", style: .primary) {
-                if subscriptionManager.isPro {
-                    showingAIGenerator = true
-                } else {
-                    showingPaywall = true
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-
-            // Create Custom Plan Button
-            ModernButton("Create Custom Plan", icon: "plus.circle.fill", style: .secondary) {
-                showingCustomBuilder = true
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-
-            if myPlans.isEmpty {
-                emptyMyPlansView
-            } else {
-                ForEach(myPlans) { plan in
-                    PlanCard(plan: plan, showShareButton: true) {
-                        selectedPlan = plan
-                        showingPlanDetail = true
-                    } onShare: {
-                        planToShare = plan
-                        showingShareSheet = true
+        let weekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        let week = weekDay?.week ?? max(plan.currentWeek, 1)
+        let progress = min(1, max(0, plan.progressPercentage / 100))
+        return Button {
+            HapticManager.shared.lightTap()
+            route = plan
+        } label: {
+            TQPitchCard(.card, markings: .plan) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        TQEyebrow("Active plan", size: 11)
+                        Spacer()
+                        TQMeta("WK \(week) / \(plan.durationWeeks)", tone: .onPitch)
+                    }
+                    TQDisplayTitle(plan.name, size: .card)
+                    HStack(spacing: 12) {
+                        TQProgressBar(progress: progress, height: 6)
+                        Text("\(Int((progress * 100).rounded()))%")
+                            .font(Font.system(size: 15, weight: .semibold).width(.condensed).monospacedDigit())
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    }
+                    HStack {
+                        Text(nextSessionLine(for: plan, weekDay: weekDay))
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.textOnPitch)
+                            .lineLimit(1)
+                        Spacer()
+                        TQChevron(color: DesignSystem.Colors.textOnPitch)
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.md)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the plan")
+    }
+
+    private func nextSessionLine(for plan: TrainingPlanModel, weekDay: (week: Int, day: Int)?) -> String {
+        guard let weekDay,
+              let week = plan.weeks.first(where: { $0.weekNumber == weekDay.week }),
+              let day = week.days.first(where: { $0.dayNumber == weekDay.day }) else {
+            return plan.isCompleted ? "Plan complete" : "Next: pick up where you left off"
+        }
+        let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
+        let exerciseName = sessions.first?.exercises?.allObjects.compactMap { ($0 as? Exercise)?.name }.sorted().first
+        let what = exerciseName ?? (day.sessions.first.map { "\($0.sessionType.displayName) session" } ?? "Training")
+        let when = day.dayOfWeek?.shortName ?? "Day \(day.dayNumber)"
+        return "Next: \(what) · \(when)"
+    }
+
+    // MARK: - Rows
+
+    private func planRows(_ plans: [TrainingPlanModel], shareable: Bool = false) -> some View {
+        TQRowList {
+            ForEach(plans) { plan in
+                TQRow(
+                    plan.name,
+                    subtitle: planMeta(plan),
+                    leading: .tile(TQTile(number: "\(plan.durationWeeks)", unit: "W", accent: plan.isActive)),
+                    badge: TQBadge(.level(level(for: plan.difficulty))),
+                    verticalPadding: 13,
+                    action: { route = plan }
+                )
+                .contextMenu {
+                    if shareable {
+                        Button {
+                            planToShare = plan
+                            showingShareSheet = true
+                        } label: {
+                            Label("Share plan", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
             }
         }
     }
 
-    private var emptyMyPlansView: some View {
-        VStack(spacing: DesignSystem.Spacing.md) {
-            Image(systemName: "doc.text.fill")
-                .font(.system(size: 60))
-                .foregroundColor(DesignSystem.Colors.textSecondary.opacity(0.3))
-                .a11yHidden()
-
-            Text("No Custom Plans Yet")
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            Text("Create your own training plan or choose a pre-built program")
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, DesignSystem.Spacing.xl)
+    private func planMeta(_ plan: TrainingPlanModel) -> String {
+        var parts: [String] = [plan.category == .position ? "Position" : plan.category.displayName]
+        if let role = plan.targetRole, !role.isEmpty {
+            parts.append(role)
+        } else {
+            parts.append(plan.category == .general ? "All ages" : "All positions")
         }
-        .padding(.vertical, DesignSystem.Spacing.xxl)
+        let perWeek = plan.weeks.first.map { $0.days.filter { !$0.isRestDay }.count } ?? 0
+        if perWeek > 0 { parts.append("\(perWeek)×/wk") }
+        return parts.joined(separator: " · ")
     }
 
-    // MARK: - Helper Methods
+    private func level(for difficulty: PlanDifficulty) -> TQBadge.Level {
+        switch difficulty {
+        case .beginner: return .beginner
+        case .intermediate: return .intermediate
+        case .advanced: return .advanced
+        case .elite: return .elite
+        }
+    }
+
+    private var emptyMyPlans: some View {
+        TQRowList {
+            TQRow("No plans of your own yet", note: "use + New plan").disabled(true)
+        }
+    }
+
+    // MARK: - Data
 
     private func updatePlayersFilter() {
         guard !authManager.userUID.isEmpty else { return }
@@ -240,147 +225,49 @@ struct TrainingPlansListView: View {
     private func loadMyPlans() {
         guard let player = players.first else { return }
         myPlans = planService.fetchAllPlans(for: player)
+        planService.activePlan = planService.fetchActivePlan(for: player)
     }
 }
 
-// MARK: - Plan Card
+// MARK: - New plan sheet (AI / custom)
 
-struct PlanCard: View {
-    let plan: TrainingPlanModel
-    var showShareButton: Bool = false
-    let onTap: () -> Void
-    var onShare: (() -> Void)? = nil
-
-    private var difficultyColor: Color {
-        switch plan.difficulty {
-        case .beginner: return DesignSystem.Colors.success
-        case .intermediate: return DesignSystem.Colors.secondaryBlue
-        case .advanced: return DesignSystem.Colors.warning
-        case .elite: return DesignSystem.Colors.error
-        }
-    }
+struct NewPlanSheet: View {
+    let onAI: () -> Void
+    let onCustom: () -> Void
 
     var body: some View {
-        ModernCard(padding: 0) {
-            HStack(spacing: 0) {
-                // Colored left accent bar
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(difficultyColor)
-                    .frame(width: 4)
-
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    // Header
-                    HStack(spacing: DesignSystem.Spacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(difficultyColor.opacity(0.15))
-                                .frame(width: 44, height: 44)
-                            Image(systemName: plan.category.icon)
-                                .font(.system(size: 20))
-                                .foregroundColor(difficultyColor)
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(plan.name)
-                                .font(DesignSystem.Typography.titleMedium)
-                                .fontWeight(.semibold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            if let targetRole = plan.targetRole {
-                                Text(targetRole)
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        if showShareButton {
-                            Button {
-                                onShare?()
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.title3)
-                                    .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                                    .frame(minWidth: 44, minHeight: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .a11y(label: "Share plan")
-                        }
-
-                        DifficultyBadge(difficulty: plan.difficulty)
-                    }
-
-                    // Description
-                    Text(plan.description)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .lineLimit(2)
-
-                    // Stats row
-                    HStack(spacing: DesignSystem.Spacing.lg) {
-                        StatItem(icon: "calendar", value: "\(plan.durationWeeks) weeks", color: DesignSystem.Colors.secondaryBlue)
-
-                        StatItem(icon: "clock", value: String(format: "%.0f hrs", plan.estimatedTotalHours), color: DesignSystem.Colors.accentOrange)
-
-                        Spacer()
-                    }
-                    .padding(.top, DesignSystem.Spacing.xs)
-                }
-                .padding(DesignSystem.Spacing.md)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            TQGroupHeader("New plan")
+                .padding(.top, 4)
+            TQRowList {
+                TQRow("Build it with the coach", subtitle: "Position, weak spots, schedule · Pro", leading: .tile(TQTile("AI", style: .ai)), verticalPadding: DesignSystem.Spacing.rowVertical, action: onAI)
+                TQRow("Build it yourself", subtitle: "Custom weeks and sessions", leading: .tile(TQTile(symbol: "plus")), verticalPadding: DesignSystem.Spacing.rowVertical, action: onCustom)
             }
+            Spacer(minLength: 0)
         }
-        .onTapGesture(perform: onTap)
+        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        .padding(.top, DesignSystem.Spacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
     }
 }
 
-// MARK: - Difficulty Badge
+// MARK: - Difficulty badge (legacy call sites)
 
+/// Deprecated: use TQBadge(.level(_:)). Kept for out-of-scope screens.
 struct DifficultyBadge: View {
     let difficulty: PlanDifficulty
 
     var body: some View {
-        Text(difficulty.displayName)
-            .font(DesignSystem.Typography.labelSmall)
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(badgeColor)
-            .cornerRadius(DesignSystem.CornerRadius.xs)
-    }
-
-    private var badgeColor: Color {
         switch difficulty {
-        case .beginner: return DesignSystem.Colors.success
-        case .intermediate: return DesignSystem.Colors.secondaryBlue
-        case .advanced: return DesignSystem.Colors.warning
-        case .elite: return DesignSystem.Colors.error
+        case .beginner: TQBadge(.level(.beginner))
+        case .intermediate: TQBadge(.level(.intermediate))
+        case .advanced: TQBadge(.level(.advanced))
+        case .elite: TQBadge(.level(.elite))
         }
     }
 }
-
-// MARK: - Stat Item
-
-struct StatItem: View {
-    let icon: String
-    let value: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(color)
-
-            Text(value)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-        }
-    }
-}
-
-// MARK: - Enums
 
 enum PlanTab: String, CaseIterable {
     case prebuilt = "Pre-built"
@@ -388,7 +275,10 @@ enum PlanTab: String, CaseIterable {
 }
 
 #Preview {
-    TrainingPlansListView()
-        .environment(\.managedObjectContext, CoreDataManager.shared.context)
-        .environmentObject(AuthenticationManager.shared)
+    NavigationStack {
+        TrainingPlansListView()
+            .environment(\.managedObjectContext, CoreDataManager.shared.context)
+            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(SubscriptionManager.shared)
+    }
 }
