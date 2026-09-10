@@ -63,9 +63,17 @@ def get_exemplars(
         hits = [e for e in EXEMPLARS if e.get("archetype") == arch]
         if allowed is not None:
             hits = [e for e in hits if e.get("pressure", "none") in allowed]
-        # Richer exemplars first — corpus order let thin 3-step samples fill
-        # the n slots and crowd out the detailed ones added later.
-        hits.sort(key=lambda e: e.get("dsl", "").count("step "), reverse=True)
+        # Rank: exact player-count match first (a 3-player request learns from
+        # 3-player shapes), then goldens, then richer step counts. Corpus
+        # order let a 2-player heading drill crowd out the 1v2 exemplar.
+        def player_count(e):
+            return sum(1 for ln in e.get("dsl", "").splitlines()
+                       if ln.strip().startswith("player "))
+        hits.sort(key=lambda e: (
+            player_count(e) != number_of_players,
+            not e.get("golden"),
+            -e.get("dsl", "").count("step "),
+        ))
         return hits
 
     primary = _match(archetype)
