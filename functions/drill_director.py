@@ -95,7 +95,12 @@ def direct_timeline(drill: dict[str, Any], timeline: dict[str, Any],
         if not isinstance(idx, int) or not 0 <= idx < len(phases):
             continue
         if isinstance(e.get("d"), (int, float)):
-            phases[idx]["d"] = int(max(300, min(2600, e["d"])))
+            mx = max((math.hypot(tr[1][0] - tr[0][0], tr[1][1] - tr[0][1])
+                      for tr in phases[idx].get("tracks", {}).values()),
+                     default=0.0)
+            floor = max(300, int(mx * (85 if phases[idx].get("kind") == "fade"
+                                       else 30)))
+            phases[idx]["d"] = int(max(floor, min(2600, e["d"])))
         if isinstance(e.get("label"), str) and e["label"].strip():
             lab = e["label"].strip()[:90]
             if not any(ch.isdigit() for ch in lab):

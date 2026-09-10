@@ -106,3 +106,17 @@ def test_ball_never_glides_home_alone():
                 and math.hypot(tr[1][0]-bt[1][0], tr[1][1]-bt[1][1]) < 1.8
                 for lbl, tr in p['tracks'].items())
             assert carried, f"{d['_case']['id']}: ball glides alone in '{p['label']}'"
+
+
+def test_zero_lint_findings_on_golden_set():
+    """The recursive audit's floor: compiled timelines lint clean."""
+    import sys
+    sys.path.insert(0, '.')
+    from eval.anim_lint import lint
+    total = []
+    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
+                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+        d = json.load(open(f))
+        d['animation'] = compile_timeline(d)
+        total += lint(d)
+    assert total == [], total

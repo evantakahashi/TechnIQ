@@ -27,7 +27,7 @@ from typing import Any
 BALL = "__ball__"
 
 # ms per meter by action, with floors/caps — a 3m touch snaps, a 20m jog lopes
-_SPEED = {"pass": 34, "throw": 34, "toss": 46, "shoot": 26, "shot": 26,
+_SPEED = {"pass": 42, "throw": 42, "toss": 46, "shoot": 28, "shot": 28,
           "header": 40, "dribble": 95, "run": 80, "receive": 46}
 _FLOOR, _CAP = 420, 2100
 _EASE = {"pass": "lin", "throw": "lin", "toss": "out", "shoot": "lin",
@@ -126,6 +126,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
     outcomes = [p for p in paths if p.get("alt")
                 and p.get("style") in ("dribble", "run", "shoot", "shot")]
     used_cues: set = set()
+    last_ball_style: str | None = None
     phases: list[dict[str, Any]] = []
     i = 0
     while i < len(ordered):
@@ -172,7 +173,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                 gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
                           for tr in leg_tracks.values()), default=0)
                 if gd > 0.4:
-                    phases.append({"d": int(max(280, min(1400, gd * 30))),
+                    phases.append({"d": int(max(420, min(2600, gd * 85))),
                                    "tracks": leg_tracks, "hips": {},
                                    "label": label, "ease": "lin",
                                    "kind": "fade", "step": r.get("step")})
@@ -216,14 +217,21 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                            "step": merged_step})
 
         if style in ("run", "dribble"):
-            tracks[src] = [list(pos.get(src, f)), t]
-            pos[src] = list(t)
+            t_end = list(t)
+            if style == "run" and by_label.get(dst, {}).get("type") == "player":
+                # close to arm's length, never into the body
+                gap = _dist(tuple(f), tuple(t))
+                if gap > 1.6:
+                    u = _norm(t[0] - f[0], t[1] - f[1])
+                    t_end = [t[0] - u[0] * 1.1, t[1] - u[1] * 1.1]
+            tracks[src] = [list(pos.get(src, f)), t_end]
+            pos[src] = list(t_end)
             hips[src] = _norm(t[0] - f[0], t[1] - f[1])
             if style == "dribble":
                 b0 = list(ball_pos) if ball_pos \
                     and _dist(tuple(ball_pos), tuple(f)) < 2.5 else f
-                tracks[BALL] = [b0, t]
-                ball_pos = list(t)
+                tracks[BALL] = [b0, t_end]
+                ball_pos = list(t_end)
         if style == "toss" and src == dst:
             spot = list(ball_pos) if ball_pos else list(pos.get(src, f))
             phases.append({"d": 650,
@@ -245,6 +253,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                            "ease": "lin", "kind": "action",
                            "step": merged_step})
         if style in ("pass", "toss", "throw", "shoot", "shot", "header"):
+            last_ball_style = style
             t_ball = t
             if by_label.get(dst, {}).get("type") == "player" \
                     and style in ("pass", "toss", "throw"):
@@ -265,15 +274,28 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             for lbl, xy in pos.items():
                 if lbl in (src, dst) or lbl in tracks:
                     continue  # actors already move
-                lean = _norm(t[0] - xy[0], t[1] - xy[1])
-                tracks[lbl] = [list(xy),
-                               [xy[0] + lean[0] * 0.35, xy[1] + lean[1] * 0.35]]
-                # sway only — position does not persist, no drift across reps
+                # breathe with the FACING only — position sway caused pops
+                hips.setdefault(lbl, _norm(t[0] - xy[0], t[1] - xy[1]))
         if style == "receive":
-            # the touch: carry the last meter into a control point on the
-            # exit side ("first touch across the body"), never a 0m stall
+            # a THROWN ball is CAUGHT (sticks in the hands); a passed ball is
+            # touched on — carried into a control point on the exit side
             start = list(ball_pos) if ball_pos else list(f)
             base_pt = list(pos.get(src, t))
+            if last_ball_style in ("throw", "toss") \
+                    and by_label.get(dst, {}).get("type") == "wall":
+                arrive = base_pt
+                tracks[BALL] = [start, arrive]
+                ball_pos = list(arrive)
+                hips[src] = _norm(start[0] - base_pt[0], start[1] - base_pt[1])
+                phases.append({"d": _dur("receive",
+                                         _dist(tuple(start), tuple(arrive))),
+                               "tracks": tracks, "hips": hips,
+                               "label": _cue_for("throw", coaching, used_cues)
+                               or "Catch it clean — soft hands, eyes through the ball",
+                               "ease": "out", "kind": "action",
+                               "step": merged_step})
+                i += 1
+                continue
             nxt_move = next((q for q in ordered[i + 1:]
                              if q.get("from") == src
                              and q.get("style") in ("dribble", "run", "pass",
@@ -293,8 +315,14 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             sf = [sync["fx"], sync["fy"]]
             st = [sync["tx"], sync["ty"]]
             if s_style in ("run", "dribble"):
-                tracks[s_src] = [sf, st]
-                pos[s_src] = list(st)
+                st_end = list(st)
+                if s_style == "run" and by_label.get(sync.get("to"), {}) \
+                        .get("type") == "player" \
+                        and _dist(tuple(sf), tuple(st)) > 1.6:
+                    u = _norm(st[0] - sf[0], st[1] - sf[1])
+                    st_end = [st[0] - u[0] * 1.1, st[1] - u[1] * 1.1]
+                tracks[s_src] = [sf, st_end]
+                pos[s_src] = list(st_end)
                 hips[s_src] = _norm(st[0] - sf[0], st[1] - sf[1])
                 if s_style == "dribble":
                     tracks.setdefault(BALL, [sf, st])
@@ -346,16 +374,31 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             "label": f"…or {oc['from']} breaks to {oc['to']}",
             "ease": "out", "kind": "outcome", "step": oc.get("step"),
         })
-    # seamless loop: glide everyone home if the last phase leaves them out.
-    # Drills WITH rotating outcomes skip this — the engine synthesizes the
-    # home-glide after the escape plays (else the escape runs post-reset).
-    if phases and phases[-1]["kind"] != "fade" and not outcomes:
-        home = {e["label"]: [float(e["x"]), float(e["y"])]
-                for e in elements if e.get("type") == "player"}
-        first_ball = next((ph["tracks"][BALL][0] for ph in phases
-                           if BALL in ph["tracks"]), None)
+    # seamless loop: glide home whenever the loop's end-state differs from
+    # its start-state (a trailing fade may still strand someone off-spawn).
+    # Drills WITH rotating outcomes skip this — the engine appends the glide
+    # after the escape plays.
+    home = {e["label"]: [float(e["x"]), float(e["y"])]
+            for e in elements if e.get("type") == "player"}
+
+    def _start_state():
+        st = dict(home)
+        first = phases[0] if phases else {"tracks": {}}
+        out = {}
+        for lbl, hx in st.items():
+            tr = first.get("tracks", {}).get(lbl)
+            out[lbl] = list(tr[0]) if tr else list(hx)
+        return out
+    first_ball = next((ph["tracks"][BALL][0] for ph in phases
+                       if BALL in ph.get("tracks", {})), None)
+    starts = _start_state()
+    mismatch = any(_dist(tuple(pos.get(l, starts[l])), tuple(starts[l])) > 0.6
+                   for l in starts)
+    if first_ball is not None and ball_pos is not None:
+        mismatch = mismatch or _dist(tuple(ball_pos), tuple(first_ball)) > 0.6
+    if phases and mismatch and not outcomes:
         ball_stray = (first_ball is not None and ball_pos is not None
-                      and _dist(tuple(ball_pos), tuple(first_ball)) > 1.5)
+                      and _dist(tuple(ball_pos), tuple(first_ball)) > 0.6)
         carrier = None
         if ball_stray:
             carrier = min(home, key=lambda l: _dist(
@@ -365,25 +408,27 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             # leg 1: nearest player collects; everyone else heads home
             leg1 = {carrier: [list(pos.get(carrier, home[carrier])),
                               list(ball_pos)]}
-            for lbl, hx in home.items():
+            for lbl in home:
                 if lbl != carrier:
+                    hx = starts[lbl]
                     leg1[lbl] = [list(pos.get(lbl, hx)), list(hx)]
                     pos[lbl] = list(hx)
             g1 = max(_dist(tuple(tr[0]), tuple(tr[1])) for tr in leg1.values())
-            phases.append({"d": int(max(280, min(1400, g1 * 30))),
+            phases.append({"d": int(max(420, min(2600, g1 * 85))),
                            "tracks": leg1, "hips": {},
                            "label": "Collect it — quick jog",
                            "ease": "lin", "kind": "fade", "step": None})
             pos[carrier] = list(ball_pos)
         end_tracks = {}
-        for lbl, hx in home.items():
+        for lbl in home:
+            hx = starts[lbl]
             end_tracks[lbl] = [list(pos.get(lbl, hx)), list(hx)]
         if ball_stray:
             end_tracks[BALL] = [list(ball_pos), list(first_ball)]
         gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
                   for tr in end_tracks.values()), default=0)
         if gd > 0.5:
-            phases.append({"d": int(max(650, min(1100, gd * 28))),
+            phases.append({"d": int(max(500, min(2600, gd * 85))),
                            "tracks": end_tracks, "hips": {},
                            "label": "Bring it back — go again",
                            "ease": "lin", "kind": "fade", "step": None})
