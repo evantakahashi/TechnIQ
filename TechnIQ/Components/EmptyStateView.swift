@@ -35,7 +35,7 @@ struct EmptyStateView: View {
                 .font(.system(size: 96, weight: .regular))
                 .foregroundColor(DesignSystem.Colors.chalkWhite.opacity(0.85))
 
-            PitchDivider(horizontalPadding: 48)
+            TQRule().padding(.horizontal, 48)
 
             Text(title)
                 .font(DesignSystem.Typography.displayMedium)
@@ -251,7 +251,7 @@ struct ErrorStateView: View {
                 .font(.system(size: 96, weight: .regular))
                 .foregroundColor(DesignSystem.Colors.bloodOrange)
 
-            PitchDivider(horizontalPadding: 48)
+            TQRule().padding(.horizontal, 48)
 
             Text(title)
                 .font(DesignSystem.Typography.displayMedium)
@@ -288,7 +288,7 @@ struct WelcomeBackView: View {
                 .font(.system(size: 120, weight: .regular))
                 .foregroundColor(DesignSystem.Colors.chalkWhite)
 
-            PitchDivider(horizontalPadding: 48)
+            TQRule().padding(.horizontal, 48)
 
             Text("WELCOME BACK")
                 .font(DesignSystem.Typography.displayLarge)

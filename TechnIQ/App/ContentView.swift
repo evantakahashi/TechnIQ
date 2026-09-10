@@ -294,7 +294,7 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            TurfBackground()
+            DesignSystem.Colors.surfaceBase.ignoresSafeArea()
             VStack(spacing: 0) {
                 AnimatedTabContent(selectedTab: $selectedTab) { tab in
                     Group {
@@ -317,7 +317,7 @@ struct MainTabView: View {
                     .environmentObject(authManager)
                 }
 
-                AnimatedTabBar(selectedTab: $selectedTab)
+                TQTabBar(selectedTab: $selectedTab)
                     .ignoresSafeArea(.keyboard)
             }
         }

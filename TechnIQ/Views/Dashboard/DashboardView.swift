@@ -483,7 +483,7 @@ struct DashboardView: View {
 
     private func modernStatsOverview(player: Player) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            PitchDivider(horizontalPadding: 0)
+            TQRule().padding(.horizontal, 0)
 
             Text("Your Progress")
                 .font(DesignSystem.Typography.displaySmall)

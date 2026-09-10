@@ -34,6 +34,7 @@ struct DesignSystem {
         static let textTertiary = Color(hex: 0x4E5651)      // idle tab icons, chevrons, disabled day letters
         static let textOnPitch = Color(hex: 0xBFD3C4)       // meta / body on pitch surfaces
         static let bodyOnPitch = Color(hex: 0xD7E3DA)       // coach copy on pitch surfaces
+        static let mutedOnPitch = Color(hex: 0x8FA896)      // italic "unavailable offline" note on pitch
         static let bannerText = Color(hex: 0xD7DDD8)        // banner message body
 
         // MARK: Semantic aliases (legacy token names → Touchline)

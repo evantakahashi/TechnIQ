@@ -55,12 +55,25 @@ struct TechnIQApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            rootView
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
                 .preferredColorScheme(.dark)
         }
+    }
+
+    @ViewBuilder
+    private var rootView: some View {
+        #if DEBUG
+        if TQGalleryView.isRequested {
+            TQGalleryView()
+        } else {
+            ContentView()
+        }
+        #else
+        ContentView()
+        #endif
     }
 }
