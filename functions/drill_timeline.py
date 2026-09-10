@@ -131,8 +131,11 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                       for lbl, xy in pos.items()}
             if ball_pos:
                 tracks[BALL] = [pre_ball or list(ball_pos), list(ball_pos)]
-            phases.append({"d": 650, "tracks": tracks, "hips": {},
-                           "label": "…reset — next rep", "ease": "lin",
+            gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
+                      for tr in tracks.values()), default=0)
+            phases.append({"d": int(max(600, min(1100, gd * 28))),
+                           "tracks": tracks, "hips": {},
+                           "label": "Reset — jog back, next rep", "ease": "lin",
                            "kind": "fade", "step": p.get("step")})
             i = j
             continue
@@ -148,6 +151,30 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         nxt = ordered[i + 1] if i + 1 < len(ordered) else None
         sync = nxt if (nxt and nxt.get("sync")) else None
 
+        # Anticipation: a still beat before every serve — the receiver scans.
+        if style in ("pass", "toss", "throw") \
+                and by_label.get(dst, {}).get("type") == "player" \
+                and (not phases or phases[-1]["kind"] == "fade"
+                     or BALL not in phases[-1]["tracks"]):
+            pressure = next((e for e in elements
+                             if e.get("type") in ("mannequin", "defender")
+                             or (e.get("type") == "player"
+                                 and e.get("role") == "defender")), None)
+            rp = pos.get(dst, t)
+            if pressure is not None:
+                eye_v = _norm(pressure["x"] - rp[0], pressure["y"] - rp[1])
+                a_lab = "Ball is coming — check your shoulder, find the pressure"
+            else:
+                eye_v = _norm(f[0] - rp[0], f[1] - rp[1])
+                a_lab = f"Ball is coming — be set, eyes on {src}"
+            still = {lbl: [list(xy), list(xy)] for lbl, xy in pos.items()}
+            if ball_pos:
+                still[BALL] = [list(ball_pos), list(ball_pos)]
+            phases.append({"d": 550, "tracks": still, "hips": dict(),
+                           "eye": {dst: eye_v}, "label": a_lab,
+                           "ease": "lin", "kind": "action",
+                           "step": merged_step})
+
         if style in ("run", "dribble"):
             tracks[src] = [list(pos.get(src, f)), t]
             pos[src] = list(t)
@@ -157,6 +184,17 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                     and _dist(tuple(ball_pos), tuple(f)) < 2.5 else f
                 tracks[BALL] = [b0, t]
                 ball_pos = list(t)
+        if style in ("shoot", "shot") and phases \
+                and phases[-1]["kind"] == "action" \
+                and BALL in phases[-1]["tracks"]:
+            bp = list(ball_pos) if ball_pos else list(f)
+            sp = list(pos.get(src, f))
+            plant = {src: [sp, sp], BALL: [bp, bp]}
+            phases.append({"d": 300, "tracks": plant,
+                           "hips": {src: _norm(t[0]-sp[0], t[1]-sp[1])},
+                           "label": "Plant beside the ball — head still",
+                           "ease": "lin", "kind": "action",
+                           "step": merged_step})
         if style in ("pass", "toss", "throw", "shoot", "shot", "header"):
             t_ball = t
             if by_label.get(dst, {}).get("type") == "player" \
@@ -175,6 +213,13 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                 # receiver squares up to the incoming ball
                 hips[dst] = _norm(f[0] - pos.get(dst, t)[0],
                                   f[1] - pos.get(dst, t)[1])
+            for lbl, xy in pos.items():
+                if lbl in (src, dst) or lbl in tracks:
+                    continue  # actors already move
+                lean = _norm(t[0] - xy[0], t[1] - xy[1])
+                tracks[lbl] = [list(xy),
+                               [xy[0] + lean[0] * 0.5, xy[1] + lean[1] * 0.5]]
+                pos[lbl] = list(tracks[lbl][1])
         if style == "receive":
             # the touch: carry the last meter into a control point on the
             # exit side ("first touch across the body"), never a 0m stall
