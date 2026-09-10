@@ -208,6 +208,15 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                     and _dist(tuple(ball_pos), tuple(f)) < 2.5 else f
                 tracks[BALL] = [b0, t]
                 ball_pos = list(t)
+        if style == "toss" and src == dst:
+            spot = list(ball_pos) if ball_pos else list(pos.get(src, f))
+            phases.append({"d": 650,
+                           "tracks": {BALL: [spot, spot],
+                                      src: [list(pos.get(src, f)), list(pos.get(src, f))]},
+                           "hips": {}, "label": "Toss it up — soft, just above head height",
+                           "ease": "out", "kind": "tossup", "step": merged_step})
+            i += 1
+            continue
         if style in ("shoot", "shot") and phases \
                 and phases[-1]["kind"] == "action" \
                 and BALL in phases[-1]["tracks"]:
@@ -242,8 +251,8 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                     continue  # actors already move
                 lean = _norm(t[0] - xy[0], t[1] - xy[1])
                 tracks[lbl] = [list(xy),
-                               [xy[0] + lean[0] * 0.5, xy[1] + lean[1] * 0.5]]
-                pos[lbl] = list(tracks[lbl][1])
+                               [xy[0] + lean[0] * 0.35, xy[1] + lean[1] * 0.35]]
+                # sway only — position does not persist, no drift across reps
         if style == "receive":
             # the touch: carry the last meter into a control point on the
             # exit side ("first touch across the body"), never a 0m stall
@@ -321,6 +330,26 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             "label": f"…or {oc['from']} breaks to {oc['to']}",
             "ease": "out", "kind": "outcome", "step": oc.get("step"),
         })
+    # seamless loop: glide everyone home if the last phase leaves them out
+    if phases and phases[-1]["kind"] != "fade":
+        home = {e["label"]: [float(e["x"]), float(e["y"])]
+                for e in elements if e.get("type") == "player"}
+        first_ball = next((ph["tracks"][BALL][0] for ph in phases
+                           if BALL in ph["tracks"]), None)
+        end_tracks = {}
+        for lbl, hx in home.items():
+            end_tracks[lbl] = [list(pos.get(lbl, hx)), list(hx)]
+        if first_ball is not None:
+            end_tracks[BALL] = [list(ball_pos) if ball_pos else list(first_ball),
+                                list(first_ball)]
+        gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
+                  for tr in end_tracks.values()), default=0)
+        if gd > 0.5:
+            phases.append({"d": int(max(650, min(1100, gd * 28))),
+                           "tracks": end_tracks, "hips": {},
+                           "label": "Reset — jog back, go again",
+                           "ease": "lin", "kind": "fade", "step": None})
+
     def _max_move(ph):
         return max((_dist(tuple(tr[0]), tuple(tr[1]))
                     for tr in ph["tracks"].values()), default=0.0)
