@@ -172,7 +172,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                 gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
                           for tr in leg_tracks.values()), default=0)
                 if gd > 0.4:
-                    phases.append({"d": int(max(280, min(650, gd * 24))),
+                    phases.append({"d": int(max(280, min(1400, gd * 30))),
                                    "tracks": leg_tracks, "hips": {},
                                    "label": label, "ease": "lin",
                                    "kind": "fade", "step": r.get("step")})
@@ -346,8 +346,10 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             "label": f"…or {oc['from']} breaks to {oc['to']}",
             "ease": "out", "kind": "outcome", "step": oc.get("step"),
         })
-    # seamless loop: glide everyone home if the last phase leaves them out
-    if phases and phases[-1]["kind"] != "fade":
+    # seamless loop: glide everyone home if the last phase leaves them out.
+    # Drills WITH rotating outcomes skip this — the engine synthesizes the
+    # home-glide after the escape plays (else the escape runs post-reset).
+    if phases and phases[-1]["kind"] != "fade" and not outcomes:
         home = {e["label"]: [float(e["x"]), float(e["y"])]
                 for e in elements if e.get("type") == "player"}
         first_ball = next((ph["tracks"][BALL][0] for ph in phases
@@ -368,7 +370,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                     leg1[lbl] = [list(pos.get(lbl, hx)), list(hx)]
                     pos[lbl] = list(hx)
             g1 = max(_dist(tuple(tr[0]), tuple(tr[1])) for tr in leg1.values())
-            phases.append({"d": int(max(280, min(650, g1 * 24))),
+            phases.append({"d": int(max(280, min(1400, g1 * 30))),
                            "tracks": leg1, "hips": {},
                            "label": "Collect it — quick jog",
                            "ease": "lin", "kind": "fade", "step": None})
