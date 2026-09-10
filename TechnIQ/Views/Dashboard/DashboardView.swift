@@ -6,141 +6,145 @@ import Combine
 struct TrainingLaunch: Identifiable {
     let id = UUID()
     let exercises: [Exercise]
+    /// Plan session this launch fulfils, so completion can be written back to the plan.
+    var planSession: PlanSession? = nil
 }
+
+// MARK: - Home (Touchline 4a / 9b / 9c / 9d)
+//
+// Home answers "what do I do today?" with one pitch card and one Start button. Everything else
+// is a row. Layout never changes between states — only the hero's slot content, the banner
+// above it, and the rows' enabled state.
 
 struct DashboardView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @FetchRequest var players: FetchedResults<Player>
     @FetchRequest var recentSessions: FetchedResults<TrainingSession>
     @FetchRequest var recentMatches: FetchedResults<Match>
     @Binding var selectedTab: Int
 
-    init(selectedTab: Binding<Int>) {
-        self._selectedTab = selectedTab
-        // Initialize with predicates that will be updated in onAppear
-        self._players = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true), // Allow all results initially
-            animation: .default
-        )
-
-        self._recentSessions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
-            predicate: NSPredicate(value: true), // Allow all results initially
-            animation: .default
-        )
-
-        self._recentMatches = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Match.date, ascending: false)],
-            predicate: NSPredicate(value: true), // Allow all results initially
-            animation: .default
-        )
-    }
-    
-    @EnvironmentObject private var subscriptionManager: SubscriptionManager
-    @State private var showingQuickDrillPaywall = false
-    @State private var showingNewSession = false
-    @State private var showingProfileCreation = false
-    @State private var showingMatchLog = false
-    @State private var isOnboardingComplete = false
-    @State private var smartRecommendations: [YouTubeService.DrillRecommendation] = []
-    @State private var mlRecommendations: [MLDrillRecommendation] = []
-    @ObservedObject private var cloudMLService = AIRecommendationService.shared
     @ObservedObject private var aiCoachService = AICoachService.shared
+    @ObservedObject private var cloudService = CloudService.shared
+    @ObservedObject private var avatarService = AvatarService.shared
 
-    // Welcome back detection
+    // Returning-player notice
     @State private var showWelcomeBack = false
     @State private var daysInactive: Int = 0
     @AppStorage("lastAppOpenDate") private var lastAppOpenDate: Double = Date().timeIntervalSince1970
 
-    // Quick start flow
+    // Plan + today's session
     @State private var activePlan: TrainingPlanModel?
     @State private var currentWeekDay: (week: Int, day: Int)?
+    @State private var planIsComplete = false
+    @State private var todaysSession: PlanSession?
+    @State private var todaysExercises: [Exercise] = []
+
+    // Coach (Pro)
+    @State private var coachTimedOut = false
+    @State private var coachAttempt = 0
+    @State private var coachDrillCount = 0
+
+    // Presentation
     @State private var showingQuickDrill = false
     @State private var quickDrillWeakness: SelectedWeakness? = nil
+    @State private var showingQuickDrillPaywall = false
+    @State private var showingMatchLog = false
+    @State private var showingPlanGenerator = false
+    @State private var showingLogPlanSession = false
+    @State private var showingProfileCreation = false
+    @State private var isOnboardingComplete = false
     @State private var trainingLaunch: TrainingLaunch?
-    @State private var aiDrillExercise: Exercise?
-    @State private var showingAIDrill = false
+    @State private var route: HomeRoute?
 
-    @State private var showingProgress = false
-
-    @State private var recommendationsState: RecommendationsState = .loading
-    @State private var recommendationsRetryToken = 0
-
-    private enum RecommendationsState: Equatable {
-        case loading, loaded, failed
+    private enum HomeRoute: Hashable {
+        case planDetail(TrainingPlanModel)
+        case matchHistory
+        case coachDrills
     }
 
-    var currentPlayer: Player? {
-        players.first
+    init(selectedTab: Binding<Int>) {
+        self._selectedTab = selectedTab
+        self._players = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
+            predicate: NSPredicate(value: true),
+            animation: .default
+        )
+        self._recentSessions = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
+            predicate: NSPredicate(value: true),
+            animation: .default
+        )
+        self._recentMatches = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Match.date, ascending: false)],
+            predicate: NSPredicate(value: true),
+            animation: .default
+        )
     }
-    
+
+    var currentPlayer: Player? { players.first }
+
+    // MARK: Derived state
+
+    private var isOffline: Bool { !cloudService.isNetworkAvailable }
+    private var hasSessions: Bool { !recentSessions.isEmpty }
+    private var coachEnabled: Bool { subscriptionManager.isPro && !isOffline }
+    private var coachIsLoading: Bool { coachEnabled && aiCoachService.dailyCoaching == nil && aiCoachService.isLoading && !coachTimedOut }
+    private var coachFailed: Bool { coachEnabled && aiCoachService.dailyCoaching == nil && (coachTimedOut || (!aiCoachService.isLoading && aiCoachService.error != nil)) }
+
+    // MARK: Body
+
     var body: some View {
-        ZStack {
-            // Adaptive background (gradient light, solid dark)
-            AdaptiveBackground()
-                .ignoresSafeArea()
-            
-            ScrollView {
-                LazyVStack(spacing: DesignSystem.Spacing.xl) {
-                    if let player = currentPlayer {
-                        modernHeaderSection(player: player)
-                        aiDrillHeroBanner()
-                        modernStatsOverview(player: player)
-                        todaysFocusSection(player: player)
-                        SmartDrillRecommendationsView(player: player) { weakness in
-                            quickDrillWeakness = weakness
-                            showingQuickDrill = true
-                        }
-                        continuePlanCard(player: player)
-                            .coachMark(.dashboard)
-                        modernQuickActions(player: player)
-                        modernRecentActivity
-                        modernMatchesSection(player: player)
-                        modernRecommendations(player: player)
-                    } else {
-                        emptyStateView
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.top, DesignSystem.Spacing.md)
-                .padding(.bottom, DesignSystem.Spacing.xl)
-            }
-            .refreshable {
-                updateDataFilters()
-                loadActivePlan()
-                recommendationsState = .loading
-                recommendationsRetryToken += 1
-                if let player = currentPlayer, subscriptionManager.isPro {
-                    await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.sectionLarge) {
+                if let player = currentPlayer {
+                    header(player: player)
+                    banners
+                    hero(player: player)
+                        .coachMark(.dashboard)
+                    weekSection
+                    rows(player: player)
+                    footer(player: player)
+                } else {
+                    noProfileState
                 }
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 8)
+            .padding(.bottom, DesignSystem.Spacing.lg)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .refreshable {
+            updateDataFilters()
+            loadPlan()
+            loadCoachDrillCount()
+            if let player = currentPlayer { await fetchCoaching(for: player, force: true) }
+        }
+        .navigationDestination(item: $route) { route in
+            destination(for: route)
         }
         .sheet(isPresented: $showingQuickDrillPaywall) {
             PaywallView(feature: .quickDrill)
         }
-        .sheet(isPresented: $showingNewSession) {
-            if let player = currentPlayer {
-                NewSessionView(player: player)
-            }
-        }
         .sheet(isPresented: $showingMatchLog) {
             if let player = currentPlayer {
-                MatchLogView(player: player, preselectedSeason: nil) {
-                    // Refresh data after logging
-                }
+                MatchLogView(player: player, preselectedSeason: nil) {}
+            }
+        }
+        .sheet(isPresented: $showingPlanGenerator, onDismiss: { loadPlan() }) {
+            if let player = currentPlayer {
+                AITrainingPlanGeneratorView(player: player)
+            }
+        }
+        .sheet(isPresented: $showingLogPlanSession, onDismiss: { loadPlan() }) {
+            if let player = currentPlayer, let session = todaysSession {
+                NewSessionView(player: player, planSession: session)
             }
         }
         .sheet(isPresented: $showingProfileCreation) {
             UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
-        }
-        .sheet(isPresented: $showingProgress) {
-            if let player = currentPlayer {
-                NavigationStack {
-                    PlayerProgressView(player: player)
-                }
-            }
         }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {
@@ -154,8 +158,8 @@ struct DashboardView: View {
                 }, prefilledWeakness: quickDrillWeakness)
             }
         }
-        .fullScreenCover(item: $trainingLaunch) { launch in
-            ActiveTrainingView(exercises: launch.exercises)
+        .fullScreenCover(item: $trainingLaunch, onDismiss: { loadPlan() }) { launch in
+            ActiveTrainingView(exercises: launch.exercises, planSession: launch.planSession)
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
@@ -164,308 +168,424 @@ struct DashboardView: View {
             if completed {
                 showingProfileCreation = false
                 isOnboardingComplete = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    updateDataFilters()
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { updateDataFilters() }
             }
         }
         .onAppear {
             updateDataFilters()
             checkWelcomeBack()
-            loadActivePlan()
-            if let player = currentPlayer, subscriptionManager.isPro {
-                Task {
-                    await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
-                }
-            }
+            loadPlan()
+            loadCoachDrillCount()
+            if let player = currentPlayer { Task { await fetchCoaching(for: player, force: false) } }
         }
-        .onChange(of: authManager.userUID) {
-            updateDataFilters()
-        }
+        .onChange(of: authManager.userUID) { updateDataFilters() }
         .onChange(of: players.count) { _, count in
             if count == 0 && !authManager.userUID.isEmpty {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    updateDataFilters()
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { updateDataFilters() }
             }
+        }
+        .onChange(of: cloudService.isNetworkAvailable) { _, available in
+            if available, let player = currentPlayer { Task { await fetchCoaching(for: player, force: false) } }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
             DispatchQueue.main.async {
-                if currentPlayer == nil && !authManager.userUID.isEmpty {
-                    updateDataFilters()
-                }
+                if currentPlayer == nil && !authManager.userUID.isEmpty { updateDataFilters() }
             }
         }
     }
-    
-    private func updateDataFilters() {
-        guard !authManager.userUID.isEmpty else { return }
 
-        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
-        recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-        recentMatches.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-    }
+    // MARK: - Header
 
-    private func checkWelcomeBack() {
-        let lastOpen = Date(timeIntervalSince1970: lastAppOpenDate)
-        let daysSinceLastOpen = Calendar.current.dateComponents([.day], from: lastOpen, to: Date()).day ?? 0
-
-        if daysSinceLastOpen >= 1 {
-            daysInactive = daysSinceLastOpen
-            showWelcomeBack = true
-        }
-
-        // Update last open date
-        lastAppOpenDate = Date().timeIntervalSince1970
-    }
-
-    private func dismissWelcomeBack() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            showWelcomeBack = false
-        }
-    }
-
-    private func loadActivePlan() {
-        guard let player = currentPlayer else { return }
-        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
-        if let plan = activePlan {
-            currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
-        }
-    }
-
-    private func surpriseMe(player: Player) {
-        guard let exercises = player.exercises?.allObjects as? [Exercise], !exercises.isEmpty else { return }
-
-        let weaknesses = player.playerProfile?.selfIdentifiedWeaknesses ?? []
-        var picked: Exercise?
-
-        if !weaknesses.isEmpty {
-            let matching = exercises.filter { ex in
-                guard let skills = ex.targetSkills else { return false }
-                return skills.contains(where: { skill in
-                    weaknesses.contains(where: { weakness in
-                        skill.localizedCaseInsensitiveContains(weakness) || weakness.localizedCaseInsensitiveContains(skill)
-                    })
-                })
+    private func header(player: Player) -> some View {
+        HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headerSubline)
+                    .font(Font.system(size: 13, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.dimIvory)
+                nameLine(player: player)
             }
-            picked = matching.randomElement()
-        }
-
-        if picked == nil {
-            picked = exercises.randomElement()
-        }
-
-        if let exercise = picked {
-            trainingLaunch = TrainingLaunch(exercises: [exercise])
+            Spacer(minLength: 8)
+            avatar(player: player)
         }
     }
 
-    // MARK: - AI Drill Hero Banner
-    private func aiDrillHeroBanner() -> some View {
-        Button {
-            if subscriptionManager.canUseQuickDrill() {
-                showingQuickDrill = true
+    private func nameLine(player: Player) -> some View {
+        let name = (player.name ?? "Player").uppercased()
+        let kit = player.kitNumberValue.map { "#\($0)" }
+        return HStack(alignment: .firstTextBaseline, spacing: 0) {
+            Text(name)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+            if let kit {
+                Text(" · ")
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                Text(kit)
+                    .foregroundColor(DesignSystem.Colors.grass)
+            }
+        }
+        .font(DesignSystem.Typography.displaySmall)
+        .tracking(-0.3)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var headerSubline: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE d MMM"
+        let today = formatter.string(from: Date())
+        let now = Date()
+        if let next = recentMatches.compactMap({ $0.date }).filter({ $0 > now }).min() {
+            let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: now), to: Calendar.current.startOfDay(for: next)).day ?? 0
+            return "\(today) · Matchday −\(days)"
+        }
+        let calendar = Calendar.current
+        let trainedDays = Set(recentSessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) })
+        let trainedToday = trainedDays.contains(calendar.startOfDay(for: now))
+        return "\(today) · Day \(trainedDays.count + (trainedToday ? 0 : 1))"
+    }
+
+    @ViewBuilder
+    private func avatar(player: Player) -> some View {
+        TQAvatarCircle {
+            if player.avatarConfiguration != nil {
+                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .small)
+                    .frame(width: 60, height: 90)
+                    .scaleEffect(1.05, anchor: .top)
+                    .offset(y: -2)
+                    .frame(width: 40, height: 40, alignment: .top)
             } else {
-                showingQuickDrillPaywall = true
+                Text(String((player.name ?? "P").prefix(1)).uppercased())
+                    .font(Font.system(size: 15, weight: .bold).width(.condensed))
+                    .foregroundColor(DesignSystem.Colors.dimIvory)
             }
-        } label: {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 30))
-                    .foregroundColor(DesignSystem.Colors.textOnAccent)
-
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Generate AI Drill")
-                        .font(DesignSystem.Typography.headlineLarge)
-                        .foregroundColor(DesignSystem.Colors.textOnAccent)
-
-                    Text("Describe any skill — get a personalized drill instantly")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textOnAccent.opacity(0.8))
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(DesignSystem.Colors.textOnAccent.opacity(0.6))
-            }
-            .padding(DesignSystem.Spacing.lg)
-            .background(DesignSystem.Colors.pitch)
-            .cornerRadius(DesignSystem.CornerRadius.xl)
-            .modifier(HeroBannerShadowModifier())
         }
-        .buttonStyle(.plain)
+        .accessibilityLabel("Your avatar")
     }
 
-    private struct HeroBannerShadowModifier: ViewModifier {
-        @Environment(\.colorScheme) private var colorScheme
+    // MARK: - Banners
 
-        func body(content: Content) -> some View {
-            if colorScheme == .dark {
-                content.customShadow(DesignSystem.Shadow.glowLarge)
-            } else {
-                content.customShadow(DesignSystem.Shadow.large)
+    @ViewBuilder
+    private var banners: some View {
+        if isOffline, activePlan != nil {
+            TQBanner(.warning,
+                     lead: "You're offline.",
+                     message: "Today's drill comes from your plan; the coach's note will update when you're back.",
+                     actionTitle: "Retry") {
+                if let player = currentPlayer { Task { await fetchCoaching(for: player, force: true) } }
+            }
+        } else if coachFailed, activePlan != nil {
+            TQBanner(.info,
+                     lead: "Coach is slow to answer.",
+                     message: "Today's drill comes from your plan.",
+                     actionTitle: "Retry") {
+                if let player = currentPlayer { Task { await fetchCoaching(for: player, force: true) } }
+            }
+        } else if showWelcomeBack && daysInactive >= 3 {
+            TQBanner(.info,
+                     lead: "Welcome back.",
+                     message: "\(daysInactive) days away. Pick up with today's session.",
+                     actionTitle: "Dismiss") {
+                withAnimation(DesignSystem.Animation.quick) { showWelcomeBack = false }
             }
         }
     }
 
-    private func modernHeaderSection(player: Player) -> some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            // Welcome Back Overlay (when returning after inactivity)
-            if showWelcomeBack && daysInactive >= 3 {
-                WelcomeBackView(daysInactive: daysInactive) {
-                    dismissWelcomeBack()
-                    showingNewSession = true
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
+    // MARK: - Hero
 
-            // Greeting Section with Avatar
-            HStack(spacing: DesignSystem.Spacing.md) {
-                // Player Avatar (compact)
-                ProgrammaticAvatarView(
-                    avatarState: AvatarService.shared.currentAvatarState,
-                    size: .small
-                )
-                .frame(width: 50, height: 75)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+    private var weekDayMeta: String? {
+        guard activePlan != nil, let wd = currentWeekDay else { return nil }
+        return "WK \(wd.week) · DAY \(wd.day)"
+    }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(getGreeting())
-                        .font(DesignSystem.Typography.labelMedium)
-                        .textCase(.uppercase)
-                        .tracking(1.0)
-                        .foregroundColor(DesignSystem.Colors.mutedIvory)
-
-                    Text((player.name ?? "Player").uppercased())
-                        .font(DesignSystem.Typography.displayLarge)
-                        .foregroundColor(DesignSystem.Colors.chalkWhite)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-
-                Spacer(minLength: 8)
-
-                // Compact stats
-                CompactPlayerStats(player: player)
-            }
-
-            // XP Progress Bar
-            xpProgressCard(player: player)
-
-            // Daily Goal Card with Progress Ring
-            DailyGoalCard(
-                sessionsToday: sessionsToday(for: player),
-                dailyGoal: 1,
-                onStartSession: { showingNewSession = true }
+    @ViewBuilder
+    private func hero(player: Player) -> some View {
+        if coachIsLoading {
+            TQHeroCard(eyebrow: "Today's session", trailingMeta: weekDayMeta, title: "", actionTitle: "", state: .loading, markings: .heroSimple, action: {})
+        } else if coachEnabled, let coaching = aiCoachService.dailyCoaching {
+            coachHero(coaching: coaching, player: player)
+        } else if let session = todaysSession {
+            planHero(session: session, player: player)
+        } else if planIsComplete, let plan = activePlan {
+            TQHeroCard(
+                eyebrow: "Plan complete",
+                title: plan.name,
+                body: "Every session done. Pick the next plan, or keep sharp with a quick drill.",
+                actionTitle: "Start quick drill",
+                linkTitle: "choose a new plan",
+                markings: .heroSimple,
+                action: { startQuickDrill() },
+                linkAction: { selectedTab = 2 }
+            )
+        } else if !hasSessions {
+            TQHeroCard(
+                eyebrow: "Your first session",
+                title: "Ten minutes, one ball, a wall",
+                body: "No plan yet. Start with a quick drill built for your position and the coach will learn from how it goes.",
+                actionTitle: "Start quick drill",
+                linkTitle: "build a plan first",
+                markings: .heroSimple,
+                action: { startQuickDrill() },
+                linkAction: { showingPlanGenerator = true }
+            )
+        } else {
+            TQHeroCard(
+                eyebrow: "Today's session",
+                title: "Quick drill for your weakest skill",
+                body: "No active plan. The coach builds a ten-minute drill around what needs work most.",
+                actionTitle: "Start quick drill",
+                linkTitle: "build a plan",
+                markings: .heroSimple,
+                action: { startQuickDrill() },
+                linkAction: { showingPlanGenerator = true }
             )
         }
     }
 
-    private func sessionsToday(for player: Player) -> Int {
-        guard let sessions = player.sessions as? Set<TrainingSession> else { return 0 }
-        let today = Calendar.current.startOfDay(for: Date())
-        return sessions.filter { ($0.date ?? Date.distantPast) >= today }.count
-    }
-    
-    private func getGreeting() -> String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 0..<12:
-            return "Good Morning"
-        case 12..<17:
-            return "Good Afternoon"
-        default:
-            return "Good Evening"
-        }
-    }
-    
-    
-    // MARK: - Today's Focus (AI Coach)
-
-    @ViewBuilder
-    private func todaysFocusSection(player: Player) -> some View {
-        if subscriptionManager.isPro {
-            if aiCoachService.isLoading {
-                TodaysFocusCardSkeleton()
-            } else if let coaching = aiCoachService.dailyCoaching {
-                TodaysFocusCard(
-                    coaching: coaching,
-                    isStale: aiCoachService.isCacheStale,
-                    onStartDrill: {
-                        launchAIDrill(coaching.recommendedDrill, focusArea: coaching.focusArea, for: player)
-                    },
-                    onBrowseLibrary: {
-                        selectedTab = 1
-                    }
-                )
-            }
-        } else if !hasSessions(player) {
-            firstDrillCard(player: player)
-        } else {
-            ProLockedCardView(feature: .dailyCoaching)
-        }
-    }
-
-    private func hasSessions(_ player: Player) -> Bool {
-        (player.sessions?.count ?? 0) > 0
-    }
-
-    private func firstDrillCard(player: Player) -> some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
-                            .frame(width: 50, height: 50)
-                        Image(systemName: "figure.soccer")
-                            .font(.title3)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
-
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Do your first drill")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Text("Start your streak today!")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-                }
-
-                ModernButton("Start", icon: "play.fill", style: .primary) {
-                    if subscriptionManager.canUseQuickDrill() {
-                        showingQuickDrill = true
-                    } else {
-                        showingQuickDrillPaywall = true
-                    }
-                }
-            }
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                .stroke(DesignSystem.Colors.primaryGreen.opacity(0.3), lineWidth: 1.5)
+    private func coachHero(coaching: DailyCoaching, player: Player) -> some View {
+        let drill = coaching.recommendedDrill
+        var figures: [(String, String)] = [("\(max(drill.duration, 1))", "min")]
+        if drill.difficulty > 0 { figures.append(("\(drill.difficulty)", "lvl")) }
+        if let foot = weakFootLabel(for: player, skills: drill.targetSkills, focus: coaching.focusArea) { figures.append((foot, "foot")) }
+        return TQHeroCard(
+            eyebrow: "Today's session",
+            trailingMeta: weekDayMeta,
+            title: drill.name,
+            figures: figures,
+            body: coaching.reasoning,
+            actionTitle: "Start session",
+            markings: .hero,
+            action: { launchAIDrill(drill, focusArea: coaching.focusArea, for: player) }
         )
     }
 
+    private func planHero(session: PlanSession, player: Player) -> some View {
+        let exercise = todaysExercises.first
+        let type = SessionType(rawValue: session.sessionType ?? "") ?? .technical
+        let title = exercise?.name ?? "\(type.displayName) session"
+        var figures: [(String, String)] = [("\(max(Int(session.duration), 1))", "min")]
+        if let exercise, exercise.difficulty > 0 { figures.append(("\(exercise.difficulty)", "lvl")) }
+        if let foot = weakFootLabel(for: player, skills: exercise?.targetSkills ?? [], focus: exercise?.weaknessCategories ?? "") { figures.append((foot, "foot")) }
+        if todaysExercises.count > 1 { figures.append(("\(todaysExercises.count)", "drills")) }
+
+        let bodyText: String?
+        let bodyTone: TQBody.Tone
+        if isOffline {
+            bodyText = "Coach's note unavailable offline."
+            bodyTone = .italicMuted
+        } else if let focus = currentWeekFocus {
+            bodyText = "This week: \(focus)."
+            bodyTone = .onPitch
+        } else {
+            bodyText = nil
+            bodyTone = .onPitch
+        }
+
+        return TQHeroCard(
+            eyebrow: isOffline ? "Today's session · from plan" : "Today's session",
+            trailingMeta: weekDayMeta,
+            title: title,
+            figures: figures,
+            body: bodyText,
+            bodyTone: bodyTone,
+            actionTitle: "Start session",
+            markings: isOffline ? .heroSimple : .hero,
+            action: { startPlanSession(session) }
+        )
+    }
+
+    private var currentWeekFocus: String? {
+        guard let plan = activePlan, let wd = currentWeekDay else { return nil }
+        let focus = plan.weeks.first { $0.weekNumber == wd.week }?.focusArea?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (focus?.isEmpty ?? true) ? nil : focus
+    }
+
+    private func weakFootLabel(for player: Player, skills: [String], focus: String) -> String? {
+        let mentionsWeakFoot = (skills + [focus]).contains { $0.localizedCaseInsensitiveContains("weak foot") || $0.localizedCaseInsensitiveContains("weak-foot") }
+        guard mentionsWeakFoot else { return nil }
+        switch player.dominantFoot?.lowercased() {
+        case "right": return "L"
+        case "left": return "R"
+        default: return nil
+        }
+    }
+
+    // MARK: - Week
+
+    private var week: HomeWeekModel.Week {
+        let sessionDates = recentSessions.compactMap { $0.date }
+        var planWeek: HomeWeekModel.PlanWeek? = nil
+        if let plan = activePlan, let wd = currentWeekDay, let weekModel = plan.weeks.first(where: { $0.weekNumber == wd.week }) {
+            planWeek = HomeWeekModel.PlanWeek(days: weekModel.days.map { day in
+                HomeWeekModel.PlanDay(
+                    weekday: day.dayOfWeek.map { $0.sortOrder + 1 },
+                    isRest: day.isRestDay,
+                    isCompleted: day.isCompleted || day.isSkipped,
+                    sessionCount: day.sessions.count
+                )
+            })
+        }
+        return HomeWeekModel.build(today: Date(), calendar: Calendar.current, sessionDates: sessionDates, plan: planWeek)
+    }
+
+    private var weekSection: some View {
+        let week = self.week
+        return VStack(spacing: DesignSystem.Spacing.rowGap) {
+            TQSectionHeader("This week") {
+                HStack(spacing: 0) {
+                    Text("\(week.done)")
+                        .foregroundColor(week.done > 0 ? DesignSystem.Colors.grass : DesignSystem.Colors.dimIvory)
+                    Text(week.target.map { " / \(max($0, week.done))" } ?? " / —")
+                        .foregroundColor(DesignSystem.Colors.dimIvory)
+                }
+                .font(Font.system(size: 16, weight: .semibold).width(.condensed).monospacedDigit())
+                .accessibilityLabel("\(week.done) of \(week.target.map(String.init) ?? "no target") sessions this week")
+            }
+            TQWeekStrip(cells: week.cells, todayIndex: week.todayIndex)
+        }
+    }
+
+    // MARK: - Rows
+
+    private func rows(player: Player) -> some View {
+        TQRowList {
+            if let plan = activePlan {
+                TQRow(plan.name, meta: .init(planRowMeta(plan)), action: { route = .planDetail(plan) })
+            } else {
+                TQRow("Build a training plan", badge: TQBadge(.text("AI")), action: { showingPlanGenerator = true })
+            }
+
+            if let match = recentMatches.first(where: { ($0.date ?? .distantFuture) <= Date() }) {
+                TQRow("Last match", meta: matchMeta(match), action: { route = .matchHistory })
+            } else {
+                TQRow("Log a match", action: { showingMatchLog = true })
+            }
+
+            coachRow
+        }
+    }
+
+    @ViewBuilder
+    private var coachRow: some View {
+        if !hasSessions {
+            TQRow("Drills from the coach", note: "after your first session").disabled(true)
+        } else if isOffline {
+            TQRow("Drills from the coach", note: "needs connection").disabled(true)
+        } else if coachIsLoading {
+            HStack(spacing: 12) {
+                Text("Drills from the coach")
+                    .font(DesignSystem.Typography.titleMedium)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                Spacer()
+                TQSkeleton(width: 22, height: 18, cornerRadius: 3)
+                TQChevron()
+            }
+            .padding(.vertical, DesignSystem.Spacing.rowVerticalLarge)
+            .overlay(alignment: .bottom) { TQRule() }
+        } else {
+            TQRow("Drills from the coach",
+                  badge: coachDrillCount > 0 ? TQBadge(.count(coachDrillCount)) : nil,
+                  action: { route = .coachDrills })
+        }
+    }
+
+    private func planRowMeta(_ plan: TrainingPlanModel) -> String {
+        let week = currentWeekDay?.week ?? max(plan.currentWeek, 1)
+        return "WK \(week)/\(plan.durationWeeks) · \(Int(plan.progressPercentage.rounded()))%"
+    }
+
+    private func matchMeta(_ match: Match) -> TQRow.Meta {
+        let opponent = (match.opponent ?? "").trimmingCharacters(in: .whitespaces)
+        var accent = match.result ?? ""
+        var stats: [String] = []
+        if match.goals > 0 { stats.append("\(match.goals)G") }
+        if match.assists > 0 { stats.append("\(match.assists)A") }
+        if !stats.isEmpty { accent += (accent.isEmpty ? "" : " ") + stats.joined(separator: " ") }
+        let lead = opponent.isEmpty ? "" : "vs \(opponent)" + (accent.isEmpty ? "" : " · ")
+        return TQRow.Meta(lead, accent: accent.isEmpty ? nil : accent)
+    }
+
+    // MARK: - Footer
+
+    private func footer(player: Player) -> some View {
+        var items: [TQFooterLine.Item] = [
+            .init(value: "\(max(Int(player.currentLevel), 1))", label: "LVL", valueLeading: true),
+            .init(value: player.totalXP.formatted(), label: "XP")
+        ]
+        if player.currentStreak > 0 {
+            items.append(.init(value: "\(player.currentStreak)", label: "day streak", accent: true))
+        }
+        return TQFooterLine(items: items)
+            .padding(.top, 2)
+    }
+
+    // MARK: - Destinations
+
+    @ViewBuilder
+    private func destination(for route: HomeRoute) -> some View {
+        switch route {
+        case .planDetail(let plan):
+            if let player = currentPlayer {
+                TrainingPlanDetailView(initialPlan: plan, player: player)
+            }
+        case .matchHistory:
+            if let player = currentPlayer {
+                MatchHistoryView(player: player)
+            }
+        case .coachDrills:
+            if let player = currentPlayer {
+                CoachDrillsView(player: player)
+            }
+        }
+    }
+
+    // MARK: - No profile
+
+    private var noProfileState: some View {
+        VStack(spacing: DesignSystem.Spacing.md) {
+            TQHeroCard(
+                eyebrow: "Welcome",
+                title: "Set up your player",
+                body: "Tell the coach your position and what you want to fix. It takes a minute.",
+                actionTitle: "Create profile",
+                actionIcon: nil,
+                markings: .heroSimple,
+                action: { showingProfileCreation = true }
+            )
+        }
+        .padding(.top, DesignSystem.Spacing.xl)
+    }
+
+    // MARK: - Actions
+
+    private func startQuickDrill() {
+        if subscriptionManager.canUseQuickDrill() {
+            quickDrillWeakness = nil
+            showingQuickDrill = true
+        } else {
+            showingQuickDrillPaywall = true
+        }
+    }
+
+    private func startPlanSession(_ session: PlanSession) {
+        if todaysExercises.isEmpty {
+            showingLogPlanSession = true
+        } else {
+            trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: session)
+        }
+    }
+
     private func launchAIDrill(_ drill: RecommendedDrill, focusArea: String, for player: Player) {
-        // If drill references a library exercise, fetch it
         if drill.isFromLibrary, let idString = drill.libraryExerciseID, let uuid = UUID(uuidString: idString) {
             let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
             request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             request.fetchLimit = 1
             if let existing = try? viewContext.fetch(request).first {
-                trainingLaunch = TrainingLaunch(exercises: [existing])
+                trainingLaunch = TrainingLaunch(exercises: [existing], planSession: todaysSession)
                 return
             }
         }
 
-        // Otherwise create a temporary exercise from the AI drill
         let exercise = Exercise(context: viewContext)
         exercise.id = UUID()
         exercise.name = drill.name
@@ -474,600 +594,86 @@ struct DashboardView: View {
         exercise.difficulty = Int16(drill.difficulty)
         exercise.targetSkills = drill.targetSkills
         exercise.weaknessCategories = focusArea
+        exercise.estimatedDurationSeconds = Int16(clamping: max(drill.duration, 1) * 60)
         exercise.instructions = drill.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
         exercise.player = player
 
         try? viewContext.save()
-        trainingLaunch = TrainingLaunch(exercises: [exercise])
+        trainingLaunch = TrainingLaunch(exercises: [exercise], planSession: todaysSession)
     }
 
-    private func modernStatsOverview(player: Player) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            TQRule().padding(.horizontal, 0)
+    // MARK: - Data
 
-            Text("Your Progress")
-                .font(DesignSystem.Typography.displaySmall)
-                .textCase(.uppercase)
-                .foregroundColor(DesignSystem.Colors.chalkWhite)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: DesignSystem.Spacing.md) {
-                StatCard(
-                    title: "Total Sessions",
-                    value: "\(player.sessions?.count ?? 0)",
-                    subtitle: "completed",
-                    icon: DesignSystem.Icons.calendar,
-                    color: DesignSystem.Colors.primaryGreen
-                )
-                
-                StatCard(
-                    title: "Training Hours",
-                    value: String(format: "%.1f", totalTrainingHours(for: player)),
-                    subtitle: "logged",
-                    icon: DesignSystem.Icons.time,
-                    color: DesignSystem.Colors.secondaryBlue
-                )
-                
-                StatCard(
-                    title: "This Week",
-                    value: "\(sessionsThisWeek(for: player))",
-                    subtitle: "sessions",
-                    icon: DesignSystem.Icons.stats,
-                    color: DesignSystem.Colors.accentOrange
-                )
-                
-                StatCard(
-                    title: "Streak",
-                    value: "\(player.currentStreak)",
-                    subtitle: "days",
-                    icon: DesignSystem.Icons.trophy,
-                    color: DesignSystem.Colors.accentYellow,
-                    progress: min(1.0, Double(player.currentStreak) / 7.0)
-                )
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Progress: \(player.sessions?.count ?? 0) sessions, \(String(format: "%.1f", totalTrainingHours(for: player))) hours, \(sessionsThisWeek(for: player)) this week, \(player.currentStreak) day streak")
+    private func updateDataFilters() {
+        guard !authManager.userUID.isEmpty else { return }
+        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
+        recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
+        recentMatches.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
+    }
+
+    private func checkWelcomeBack() {
+        let lastOpen = Date(timeIntervalSince1970: lastAppOpenDate)
+        let daysSinceLastOpen = Calendar.current.dateComponents([.day], from: lastOpen, to: Date()).day ?? 0
+        if daysSinceLastOpen >= 1 {
+            daysInactive = daysSinceLastOpen
+            showWelcomeBack = true
         }
+        lastAppOpenDate = Date().timeIntervalSince1970
     }
 
-    // MARK: - XP Progress Card
-
-    private func xpProgressCard(player: Player) -> some View {
-        let progress = XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
-        let tier = XPService.shared.tierForLevel(Int(player.currentLevel))
-        let nextLevelXP = XPService.shared.xpRequiredForLevel(Int(player.currentLevel) + 1)
-        let currentLevelXP = XPService.shared.xpRequiredForLevel(Int(player.currentLevel))
-        let xpInLevel = player.totalXP - currentLevelXP
-        let xpNeeded = nextLevelXP - currentLevelXP
-
-        return ModernCard(padding: DesignSystem.Spacing.md) {
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let tier = tier {
-                            Text(tier.title.uppercased())
-                                .font(DesignSystem.Typography.labelSmall)
-                                .tracking(1.0)
-                                .foregroundColor(DesignSystem.Colors.mutedIvory)
-                        }
-                        Text("\(player.totalXP) XP")
-                            .font(DesignSystem.Typography.displayMedium)
-                            .foregroundColor(DesignSystem.Colors.chalkWhite)
-                    }
-
-                    Spacer()
-
-                    // Streak flame
-                    if player.currentStreak > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .foregroundColor(DesignSystem.Colors.bloodOrange)
-                            Text("\(player.currentStreak)")
-                                .font(DesignSystem.Typography.displaySmall)
-                                .foregroundColor(DesignSystem.Colors.bloodOrange)
-                        }
-                    }
-                }
-
-                // XP Progress Bar
-                VStack(spacing: 4) {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color(.systemGray5))
-                                .frame(height: 8)
-
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(DesignSystem.Colors.primaryGreen)
-                                .frame(width: geometry.size.width * progress, height: 8)
-                        }
-                    }
-                    .frame(height: 8)
-
-                    HStack {
-                        Text("\(xpInLevel)/\(xpNeeded) to Level \(player.currentLevel + 1)")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        Spacer()
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func continuePlanCard(player: Player) -> some View {
-        if let plan = activePlan {
-            NavigationLink {
-                TodaysTrainingView(player: player, activePlan: plan)
-            } label: {
-                ModernCard(padding: DesignSystem.Spacing.md) {
-                    HStack(spacing: DesignSystem.Spacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
-                                .frame(width: 50, height: 50)
-                            Image(systemName: "play.fill")
-                                .font(.title3)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
-
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                            Text("Continue Plan")
-                                .font(DesignSystem.Typography.labelMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            Text(plan.name)
-                                .font(DesignSystem.Typography.titleSmall)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                                .fontWeight(.semibold)
-                                .lineLimit(1)
-                            if let wd = currentWeekDay {
-                                Text("Week \(wd.week), Day \(wd.day)")
-                                    .font(DesignSystem.Typography.bodySmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-
-                            // Progress bar
-                            VStack(spacing: 4) {
-                                GeometryReader { geo in
-                                    ZStack(alignment: .leading) {
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color(.systemGray5))
-                                            .frame(height: 6)
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(DesignSystem.Colors.primaryGreen)
-                                            .frame(width: geo.size.width * min(1.0, plan.progressPercentage / 100.0), height: 6)
-                                    }
-                                }
-                                .frame(height: 6)
-
-                                HStack {
-                                    Text("\(Int(plan.progressPercentage))% Complete")
-                                        .font(DesignSystem.Typography.labelSmall)
-                                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                                    Spacer()
-                                }
-                            }
-                        }
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                        .stroke(DesignSystem.Colors.primaryGreen.opacity(0.3), lineWidth: 1.5)
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Continue plan: \(plan.name), \(Int(plan.progressPercentage)) percent complete")
-            .accessibilityHint("Double tap to start today's training")
-        }
-    }
-
-    private func modernQuickActions(player: Player) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            Text("Quick Actions")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.bold)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: DesignSystem.Spacing.md) {
-                ModernActionCard(
-                    title: "New Session",
-                    icon: DesignSystem.Icons.plus,
-                    color: DesignSystem.Colors.primaryGreen
-                ) {
-                    showingNewSession = true
-                }
-                
-                ModernActionCard(
-                    title: "View Progress",
-                    icon: DesignSystem.Icons.stats,
-                    color: DesignSystem.Colors.secondaryBlue
-                ) {
-                    showingProgress = true
-                }
-                
-                ModernActionCard(
-                    title: "Quick Drill",
-                    icon: "bolt.fill",
-                    color: DesignSystem.Colors.accentOrange
-                ) {
-                    if subscriptionManager.canUseQuickDrill() {
-                        showingQuickDrill = true
-                    } else {
-                        showingQuickDrillPaywall = true
-                    }
-                }
-
-                let hasExercises = (player.exercises?.count ?? 0) > 0
-                ModernActionCard(
-                    title: "Surprise Me",
-                    icon: "shuffle",
-                    color: DesignSystem.Colors.accentYellow,
-                    subtitle: hasExercises ? nil : "Add exercises to unlock",
-                    disabled: !hasExercises
-                ) {
-                    surpriseMe(player: player)
-                }
-            }
-        }
-    }
-    
-    private var modernRecentActivity: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            HStack {
-                Text("Recent Activity")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                if !recentSessions.isEmpty {
-                    NavigationLink("View All") {
-                        SessionHistoryView()
-                    }
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-            }
-            
-            ModernCard {
-                if recentSessions.isEmpty {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        Image(systemName: DesignSystem.Icons.calendar)
-                            .font(.largeTitle)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .a11yHidden()
-                        
-                        Text("No training sessions yet")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        
-                        Text("Start your first session to begin tracking!")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .multilineTextAlignment(.center)
-                        
-                        ModernButton("START TRAINING", icon: DesignSystem.Icons.play, style: .primary) {
-                            showingNewSession = true
-                        }
-                    }
-                    .padding(.vertical, DesignSystem.Spacing.lg)
-                } else {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        ForEach(Array(recentSessions.prefix(3)), id: \.objectID) { session in
-                            ModernSessionRow(session: session)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func modernMatchesSection(player: Player) -> some View {
-        let stats = MatchService.shared.calculateStats(for: Array(recentMatches))
-
-        return VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            HStack {
-                Text("Recent Matches")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                if !recentMatches.isEmpty {
-                    NavigationLink("View All") {
-                        MatchHistoryView(player: player)
-                    }
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-            }
-
-            // Quick Stats Row
-            if !recentMatches.isEmpty {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    VStack(spacing: DesignSystem.Spacing.xs) {
-                        Text("\(stats.matchesPlayed)")
-                            .font(DesignSystem.Typography.numberMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        Text("Matches")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Divider().frame(height: 30)
-
-                    VStack(spacing: DesignSystem.Spacing.xs) {
-                        Text("\(stats.totalGoals)")
-                            .font(DesignSystem.Typography.numberMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        Text("Goals")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Divider().frame(height: 30)
-
-                    VStack(spacing: DesignSystem.Spacing.xs) {
-                        Text("\(stats.totalAssists)")
-                            .font(DesignSystem.Typography.numberMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                        Text("Assists")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Divider().frame(height: 30)
-
-                    VStack(spacing: DesignSystem.Spacing.xs) {
-                        Text(String(format: "%.0f%%", stats.winRate))
-                            .font(DesignSystem.Typography.numberMedium)
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                        Text("Win Rate")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.cardBackground)
-                .cornerRadius(DesignSystem.CornerRadius.card)
-                .customShadow(DesignSystem.Shadow.small)
-                .accessibilityElement(children: .combine)
-            }
-
-            ModernCard {
-                if recentMatches.isEmpty {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        Image(systemName: "sportscourt")
-                            .font(.largeTitle)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .a11yHidden()
-
-                        Text("No matches logged yet")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("Track your match performance and stats")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .multilineTextAlignment(.center)
-
-                        ModernButton("LOG MATCH", icon: "plus.circle", style: .primary) {
-                            showingMatchLog = true
-                        }
-                    }
-                    .padding(.vertical, DesignSystem.Spacing.lg)
-                } else {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        ForEach(Array(recentMatches.prefix(3)), id: \.objectID) { match in
-                            MatchHistoryRow(match: match)
-                        }
-
-                        // Log Match Button
-                        CompactActionButton(
-                            title: "Log Match",
-                            icon: "plus.circle",
-                            color: DesignSystem.Colors.primaryGreen
-                        ) {
-                            showingMatchLog = true
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func modernRecommendations(player: Player) -> some View {
-        if !subscriptionManager.isPro && !hasSessions(player) {
-            EmptyView()
-        } else {
-            recommendationsContent(player: player)
-        }
-    }
-
-    private func recommendationsContent(player: Player) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            Text("Recommended for You")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.bold)
-
-            if subscriptionManager.isPro {
-                ModernCard {
-                    switch recommendationsState {
-                    case .loading:
-                        VStack(spacing: DesignSystem.Spacing.md) {
-                            SoccerBallSpinner()
-                            Text("Finding drills for you...")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                        .padding(.vertical, DesignSystem.Spacing.lg)
-                    case .failed:
-                        VStack(spacing: DesignSystem.Spacing.md) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 32))
-                                .foregroundColor(DesignSystem.Colors.bloodOrange)
-                                .a11yHidden()
-                            Text("Couldn't load recommendations")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                            Text("Check your connection and try again.")
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                                .multilineTextAlignment(.center)
-                            ModernButton("Retry", icon: "arrow.clockwise", style: .secondary) {
-                                recommendationsState = .loading
-                                recommendationsRetryToken += 1
-                            }
-                        }
-                        .padding(.vertical, DesignSystem.Spacing.lg)
-                    case .loaded:
-                        if smartRecommendations.isEmpty {
-                            VStack(spacing: DesignSystem.Spacing.md) {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                                    .a11yHidden()
-                                Text("Train more to unlock recommendations")
-                                    .font(DesignSystem.Typography.titleSmall)
-                                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                                    .multilineTextAlignment(.center)
-                                Text("Complete a few sessions and we'll tailor drills to your game.")
-                                    .font(DesignSystem.Typography.bodySmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.vertical, DesignSystem.Spacing.lg)
-                        } else {
-                            VStack(spacing: DesignSystem.Spacing.md) {
-                                ForEach(Array(smartRecommendations.enumerated()), id: \.offset) { index, recommendation in
-                                    SmartRecommendationRow(
-                                        recommendation: recommendation
-                                    )
-
-                                    if index < smartRecommendations.count - 1 {
-                                        Divider()
-                                            .background(DesignSystem.Colors.neutral200)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .task(id: recommendationsRetryToken) {
-                    await loadSmartRecommendations(for: player)
-                }
-            } else {
-                ProLockedCardView(feature: .mlRecommendations)
-            }
-        }
-    }
-    
-    private func totalTrainingHours(for player: Player) -> Double {
-        guard let sessions = player.sessions as? Set<TrainingSession> else { return 0.0 }
-        let totalMinutes = sessions.reduce(0) { $0 + $1.duration }
-        return totalMinutes / 60.0 // Convert minutes to hours
-    }
-    
-    private func sessionsThisWeek(for player: Player) -> Int {
-        guard let sessions = player.sessions as? Set<TrainingSession> else { return 0 }
-        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        return sessions.filter { $0.date ?? Date.distantPast >= weekAgo }.count
-    }
-    
-    @MainActor
-    private func loadSmartRecommendations(for player: Player) async {
-        if recommendationsState == .loaded { return }
-
-        // Clean up any duplicate exercises first
-        YouTubeService.shared.removeDuplicateExercises(for: player)
-
-        do {
-            let mlRecs = try await cloudMLService.getCloudRecommendations(for: player, limit: 3)
-            if Task.isCancelled { return }
-            mlRecommendations = mlRecs
-            smartRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
-            recommendationsState = .loaded
-        } catch {
-            if Task.isCancelled { return }
-            let recommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: 3)
-            if recommendations.isEmpty {
-                recommendationsState = .failed
-            } else {
-                smartRecommendations = recommendations
-                recommendationsState = .loaded
-            }
-        }
-    }
-    
-    private func cleanDuplicateExercises() {
+    private func loadPlan() {
         guard let player = currentPlayer else { return }
-        Task {
-            YouTubeService.shared.removeDuplicateExercises(for: player)
+        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
+        guard let plan = activePlan else {
+            currentWeekDay = nil
+            planIsComplete = false
+            todaysSession = nil
+            todaysExercises = []
+            return
         }
-    }
-    
-    private var emptyStateView: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Image(systemName: DesignSystem.Icons.soccer)
-                    .font(.system(size: 80))
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .a11yHidden()
-                
-                Text("Welcome to TechnIQ")
-                    .font(DesignSystem.Typography.headlineLarge)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fontWeight(.bold)
-                
-                Text("Create your player profile to start tracking your soccer training journey")
-                    .font(DesignSystem.Typography.bodyLarge)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, DesignSystem.Spacing.xl)
-            }
-            
-            ModernCard {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    Text("Get Started")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    
-                    Text("Set up your profile and begin your training")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .multilineTextAlignment(.center)
-                    
-                    ModernButton("CREATE PROFILE", icon: "person.crop.circle.badge.plus") {
-                        showingProfileCreation = true
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-        }
-        .padding(DesignSystem.Spacing.screenPadding)
+        currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        planIsComplete = currentWeekDay == nil
+        let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
+        todaysSession = sessions.first { !$0.isCompleted } ?? sessions.first
+        todaysExercises = sessions
+            .filter { !$0.isCompleted }
+            .flatMap { ($0.exercises?.allObjects as? [Exercise]) ?? [] }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
     }
 
+    private func loadCoachDrillCount() {
+        guard let player = currentPlayer else { coachDrillCount = 0; return }
+        let profile = WeaknessAnalysisService.shared.getCachedProfile(for: player)
+            ?? WeaknessAnalysisService.shared.analyzeWeaknesses(for: player)
+        coachDrillCount = min(profile.suggestedWeaknesses.count, 3)
+    }
+
+    /// Fetches daily coaching for Pro players. Local data renders immediately; only the coach slots
+    /// wait. After 6 s with no answer the hero falls back to the plan's drill and a banner offers Retry.
+    @MainActor
+    private func fetchCoaching(for player: Player, force: Bool) async {
+        guard subscriptionManager.isPro, !isOffline else { return }
+        if !force, let cached = aiCoachService.dailyCoaching, Calendar.current.isDateInToday(cached.fetchDate) { return }
+        coachAttempt += 1
+        let attempt = coachAttempt
+        coachTimedOut = false
+
+        let fetch = Task { await aiCoachService.fetchDailyCoachingIfNeeded(for: player) }
+        Task {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            if attempt == coachAttempt, aiCoachService.dailyCoaching == nil {
+                coachTimedOut = true
+            }
+        }
+        await fetch.value
+    }
 }
 
 #Preview {
-    DashboardView(selectedTab: .constant(0))
-        .environment(\.managedObjectContext, CoreDataManager.shared.context)
-        .environmentObject(AuthenticationManager.shared)
+    NavigationStack {
+        DashboardView(selectedTab: .constant(0))
+            .environment(\.managedObjectContext, CoreDataManager.shared.context)
+            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(SubscriptionManager.shared)
+    }
 }

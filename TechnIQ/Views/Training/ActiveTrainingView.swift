@@ -19,8 +19,8 @@ struct ActiveTrainingView: View {
     @State private var currentRating: Int = 3
     @State private var currentNotes: String = ""
 
-    init(exercises: [Exercise]) {
-        _manager = StateObject(wrappedValue: ActiveSessionManager(exercises: exercises))
+    init(exercises: [Exercise], planSession: PlanSession? = nil) {
+        _manager = StateObject(wrappedValue: ActiveSessionManager(exercises: exercises, planSession: planSession))
     }
 
     private var currentPlayer: Player? {

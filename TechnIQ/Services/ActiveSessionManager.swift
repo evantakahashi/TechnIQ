@@ -27,6 +27,9 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
     let exercises: [Exercise]
 
+    /// Plan session this workout fulfils (Home "Start session"); completion is written back on finish.
+    let planSession: PlanSession?
+
     // MARK: Computed properties
 
     var currentExercise: Exercise? {
@@ -46,8 +49,9 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
     // MARK: Init
 
-    init(exercises: [Exercise]) {
+    init(exercises: [Exercise], planSession: PlanSession? = nil) {
         self.exercises = exercises
+        self.planSession = planSession
         self.exerciseRatings = Array(repeating: 0, count: exercises.count)
         self.exerciseNotes = Array(repeating: "", count: exercises.count)
     }
@@ -131,8 +135,21 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         // Update running skill ratings from this session's rated exercises
         recordSkillRatings(for: player, context: context)
 
+        // Fulfil the plan session this workout came from
+        if let planSession {
+            session.planSession = planSession
+        }
+
         // Save
         CoreDataManager.shared.save()
+
+        if let planSession {
+            TrainingPlanService.shared.markSessionCompleted(
+                planSession.toModel(),
+                actualDuration: Int(session.duration),
+                actualIntensity: Int(session.intensity)
+            )
+        }
 
         // Process XP
         let (breakdown, _) = XPService.shared.processSessionCompletion(

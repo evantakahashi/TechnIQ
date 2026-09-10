@@ -412,6 +412,7 @@ extension CloudService {
             "position": player.position ?? "",
             "experienceLevel": player.experienceLevel ?? "",
             "competitiveLevel": player.competitiveLevel ?? "",
+            "kitNumber": Int(player.kitNumber),
             "playerRoleModel": player.playerRoleModel ?? "",
             "playingStyle": player.playingStyle ?? "",
             "dominantFoot": player.dominantFoot ?? "",

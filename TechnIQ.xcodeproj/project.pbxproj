@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */; };
+		F943ABCADF55C99BAAD95BF1 /* HomeWeekModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */; };
+		E7C7709E33DF32C51ADC2B01 /* HomeWeekModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE75A7A57D42138857D6F95 /* HomeWeekModel.swift */; };
 		6715C0DAE923031A52632471 /* TQGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37922B5E711DC4CF929592F /* TQGallery.swift */; };
 		DFADFBCD83FCEC58A369F1B6 /* TQHeaders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE10F5B0BE9AF37175AC247 /* TQHeaders.swift */; };
 		4492F21AD20C7E2B9092BE96 /* TQLevelBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E9056290C52D1568AEC62B /* TQLevelBar.swift */; };
@@ -114,7 +117,6 @@
 		C6B103867C1F772570493297 /* WeaknessSuggestionsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D554749C241C3F97C0662040 /* WeaknessSuggestionsCard.swift */; };
 		C71341374BECA3DFB1821B87 /* CustomDrillServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B3A08D4395AA5F75B656BF4 /* CustomDrillServiceProtocol.swift */; };
 		C7B8C447AE481E429DC01BFF /* CloudServiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3B91FFE5AC4E05301010EE /* CloudServiceProtocols.swift */; };
-		CAE5FD05AC17D94AC2B4E0D8 /* TodaysFocusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */; };
 		CALDAY001234567890ABCD01 /* CalendarDayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CALDAY001234567890ABCDEF /* CalendarDayView.swift */; };
 		CDBF248EDB3102187ABC3E92 /* XPServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA8D315ED2B34F1A6146BD2 /* XPServiceProtocol.swift */; };
 		CEBF0F7AF6E0A2C55A6DC83C /* ActiveSessionManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5084D916F9F04E7A7077AA /* ActiveSessionManagerProtocol.swift */; };
@@ -127,7 +129,6 @@
 		D80B10729408A8596E6B0465 /* SubscriptionManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75A834C3935B479CF9C936C /* SubscriptionManagerProtocol.swift */; };
 		D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AD26664A9C012346D58B4E /* PlanEditorView.swift */; };
 		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
-		DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */; };
 		DD484A9B408252D569D21C7F /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D5A625F7496FCE67F7BB3F /* ConfettiView.swift */; };
 		DD586BC8F3974D45F3FA043D /* ProgrammaticAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F3E1028CA663C6CE35219E /* ProgrammaticAvatarView.swift */; };
 		DF1635FC2E133001001E8CF9 /* TechnIQApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */; };
@@ -243,6 +244,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachDrillsView.swift; sourceTree = "<group>"; };
+		F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeekModelTests.swift; sourceTree = "<group>"; };
+		5EE75A7A57D42138857D6F95 /* HomeWeekModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeekModel.swift; sourceTree = "<group>"; };
 		A37922B5E711DC4CF929592F /* TQGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQGallery.swift; sourceTree = "<group>"; };
 		1EE10F5B0BE9AF37175AC247 /* TQHeaders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQHeaders.swift; sourceTree = "<group>"; };
 		A3E9056290C52D1568AEC62B /* TQLevelBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQLevelBar.swift; sourceTree = "<group>"; };
@@ -330,7 +334,6 @@
 		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
 		A46BFAE362D84EE56A2328A8 /* MockCoreDataManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockCoreDataManager.swift; sourceTree = "<group>"; };
 		A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessModels.swift; sourceTree = "<group>"; };
-		A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodaysFocusCard.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressComponents.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE05FF09 /* ProgressModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressModels.swift; sourceTree = "<group>"; };
 		AA3B619E508C8D3AA87F169A /* ServiceError.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServiceError.swift; sourceTree = "<group>"; };
@@ -366,7 +369,6 @@
 		D554749C241C3F97C0662040 /* WeaknessSuggestionsCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessSuggestionsCard.swift; sourceTree = "<group>"; };
 		D75A834C3935B479CF9C936C /* SubscriptionManagerProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionManagerProtocol.swift; sourceTree = "<group>"; };
 		DB606D20EB0F9A45D449238F /* WeekEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekEditorView.swift; sourceTree = "<group>"; };
-		DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardComponents.swift; sourceTree = "<group>"; };
 		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
 		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -704,7 +706,8 @@
 			isa = PBXGroup;
 			children = (
 				DF1636262E133100001E8CF9 /* DashboardView.swift */,
-				DC0011AB2E200001001E8CF9 /* DashboardComponents.swift */,
+				5EE75A7A57D42138857D6F95 /* HomeWeekModel.swift */,
+				F25AFFCA75AA36E192F69C27 /* CoachDrillsView.swift */,
 			);
 			name = Dashboard;
 			path = Dashboard;
@@ -753,7 +756,6 @@
 				5B68C1149036359889CAE238 /* CoinDisplayView.swift */,
 				78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */,
 				E993CCC222121E16CC2F0587 /* TransitionSystem.swift */,
-				A8777F4BA94A1F03EAEF96E7 /* TodaysFocusCard.swift */,
 				EB3690DAD8AD126F299A1FEC /* ProLockedCardView.swift */,
 				543ED38229705BF69BBD79C4 /* Touchline */,
 			);
@@ -857,6 +859,7 @@
 				CDT01A0D59D4452739F8E7A1 /* CloudServicePersistenceTests.swift */,
 				87964F854E694D04A998F579 /* CloudSyncRoundTripTests.swift */,
 				4BECDA7A5C71C43AF22C8C5F /* Mocks */,
+				F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1093,7 +1096,6 @@
 				DF1636252E133100001E8CF9 /* CoreDataManager.swift in Sources */,
 				DF48B9E52ED524A600F7AC05 /* PlanSession+CoreDataProperties.swift in Sources */,
 				DF1636272E133100001E8CF9 /* DashboardView.swift in Sources */,
-				DC0011AA2E200001001E8CF9 /* DashboardComponents.swift in Sources */,
 				DF1636292E133100001E8CF9 /* EditProfileView.swift in Sources */,
 				DFE9F2FB2EAD9083007BBFFA /* YouTubeConfig.swift in Sources */,
 				DF48B9D72ED5244200F7AC05 /* TrainingPlanModels.swift in Sources */,
@@ -1214,7 +1216,6 @@
 				5E36B250ED840BC0C10003B4 /* TransitionSystem.swift in Sources */,
 				9D06AEC93234B277CCC67AE7 /* AICoachModels.swift in Sources */,
 				E2D2BEC5527618FA6329F05B /* AICoachService.swift in Sources */,
-				CAE5FD05AC17D94AC2B4E0D8 /* TodaysFocusCard.swift in Sources */,
 				EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */,
 				695960723F17A060BD23464D /* DrillMarketplaceView.swift in Sources */,
 				7F4976D664E85BCC1050A92F /* LeaderboardView.swift in Sources */,
@@ -1278,6 +1279,8 @@
 				4492F21AD20C7E2B9092BE96 /* TQLevelBar.swift in Sources */,
 				DFADFBCD83FCEC58A369F1B6 /* TQHeaders.swift in Sources */,
 				6715C0DAE923031A52632471 /* TQGallery.swift in Sources */,
+				E7C7709E33DF32C51ADC2B01 /* HomeWeekModel.swift in Sources */,
+				81C0147092EFD9C623CC35E6 /* CoachDrillsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1297,6 +1300,7 @@
 				CDT341374BECA3DFB1821B87 /* CloudServicePersistenceTests.swift in Sources */,
 				9210FD6C8D904EECAFD2B41C /* CloudSyncRoundTripTests.swift in Sources */,
 				D29F7CA7496246BDB968E062 /* MockCoreDataManager.swift in Sources */,
+				F943ABCADF55C99BAAD95BF1 /* HomeWeekModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -152,6 +152,7 @@ extension CloudService {
         player.position = data["position"] as? String
         player.experienceLevel = data["experienceLevel"] as? String
         player.competitiveLevel = data["competitiveLevel"] as? String
+        player.kitNumber = Self.int16Value(from: data["kitNumber"])
         player.playerRoleModel = data["playerRoleModel"] as? String
         player.playingStyle = data["playingStyle"] as? String
         player.dominantFoot = data["dominantFoot"] as? String
