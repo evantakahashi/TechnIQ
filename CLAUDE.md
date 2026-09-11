@@ -10,8 +10,8 @@ AI-powered soccer training app for iOS. Personalized programs, smart drills, pro
 
 ## Quick Commands
 All xcodebuild invocations (build/test/archive) MUST append `SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO` — Xcode 26's explicit modules can't precompile FirebaseFirestoreInternal, and project-level settings don't reach SPM targets. GUI Product>Archive will fail; archive from CLI.
-- **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO build`
-- **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO test`
+- **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 17' SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO build`
+- **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:TechnIQTests SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO test`
 - **Lint:** `swiftlint` (config `.swiftlint.yml`; ~140 warnings / 0 errors today, not yet `--strict`)
 - **CI:** `.github/workflows/ci.yml` — SwiftLint + build + unit tests on PR / push to main
 - **Deploy functions:** `cd functions && firebase deploy --only functions`
@@ -69,6 +69,9 @@ Supporting: `ServiceError.swift` (shared error enum), `CoreDataFetchRequests.swi
 ### Firebase Functions (functions/main.py)
 7 HTTPS endpoints: `get_youtube_recommendations`, `generate_custom_drill`, `get_advanced_recommendations`, `generate_training_plan`, `get_daily_coaching`, `get_plan_adaptation`, `delete_account`
 All require Firebase Auth in production.
+
+### Drill-gen pipeline (functions/, opus-4-8, prompt-cached)
+`generate_drill` (drill_generator.py): routing (archetype_picker + skill overrides, partner escalation) → open-verb DSL (dsl_parser: any soccer verb, 8 closed semantic classes, inline `verb X = class` declarations) → deterministic repairs (drill_post_processor: carrier-run fix, collect/handover/run-back INJECTION, or-drop, cone hygiene, marker overshoot/stop-short, sync/reset tagging, crop, baked coords) → ~28 validators (drill_validator) + quality gate (drill_quality, blocking required_styles) → ≤5 retries w/ error feedback. Animation: model-AUTHORED phase timeline (drill_animator, referee = eval/anim_lint 8 artifact classes + fidelity check; compiled fallback via drill_timeline + drill_director). Exemplars.json = few-shot corpus incl. user-rated goldens (frozen; gate deploys via eval/golden/labels.json). eval/evan_voice.md = the judging calibration corpus. Web player engine lives in the review-page template + embedded in-app (DrillWebAnimationView in DrillDiagramView.swift, WKWebView; wire-in deferred until Touchline). Exercise.animationJSON persists films.
 
 ---
 
