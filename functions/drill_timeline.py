@@ -321,7 +321,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                         and _dist(tuple(sf), tuple(st)) > 1.6:
                     u = _norm(st[0] - sf[0], st[1] - sf[1])
                     st_end = [st[0] - u[0] * 1.1, st[1] - u[1] * 1.1]
-                tracks[s_src] = [sf, st_end]
+                tracks[s_src] = [list(pos.get(s_src, sf)), st_end]
                 pos[s_src] = list(st_end)
                 hips[s_src] = _norm(st[0] - sf[0], st[1] - sf[1])
                 if s_style == "dribble":
@@ -363,11 +363,13 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
 
     # duel outcomes: alternating escape phases, played one per loop
     for oc in outcomes:
-        f = [oc["fx"], oc["fy"]]
+        f = list(pos.get(oc["from"], [oc["fx"], oc["fy"]]))
         t = [oc["tx"], oc["ty"]]
         tr = {oc["from"]: [f, t]}
         if oc.get("style") in ("dribble",):
-            tr[BALL] = [f, t]
+            b0 = list(ball_pos) if ball_pos \
+                and _dist(tuple(ball_pos), tuple(f)) < 2.5 else f
+            tr[BALL] = [b0, t]
         phases.append({
             "d": _dur(oc.get("style", "dribble"), _dist(tuple(f), tuple(t))),
             "tracks": tr, "hips": {oc["from"]: _norm(t[0]-f[0], t[1]-f[1])},
@@ -403,35 +405,40 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         if ball_stray:
             carrier = min(home, key=lambda l: _dist(
                 tuple(pos.get(l, home[l])), tuple(ball_pos)), default=None)
-        if ball_stray and carrier is not None and _dist(
-                tuple(pos.get(carrier, home[carrier])), tuple(ball_pos)) > 1.6:
-            # leg 1: nearest player collects; everyone else heads home
-            leg1 = {carrier: [list(pos.get(carrier, home[carrier])),
-                              list(ball_pos)]}
-            for lbl in home:
-                if lbl != carrier:
-                    hx = starts[lbl]
-                    leg1[lbl] = [list(pos.get(lbl, hx)), list(hx)]
-                    pos[lbl] = list(hx)
-            g1 = max(_dist(tuple(tr[0]), tuple(tr[1])) for tr in leg1.values())
-            phases.append({"d": int(max(420, min(2600, g1 * 85))),
-                           "tracks": leg1, "hips": {},
-                           "label": "Collect it — quick jog",
-                           "ease": "lin", "kind": "fade", "step": None})
-            pos[carrier] = list(ball_pos)
+
+        def _leg(tracks, label):
+            g = max((_dist(tuple(tr[0]), tuple(tr[1]))
+                     for tr in tracks.values()), default=0)
+            if g > 0.5:
+                phases.append({"d": int(max(420, min(2600, g * 85))),
+                               "tracks": tracks, "hips": {},
+                               "label": label, "ease": "lin",
+                               "kind": "fade", "step": None})
+
+        if ball_stray and carrier is not None:
+            cpos = list(pos.get(carrier, home[carrier]))
+            # leg 1: carrier collects (if apart); everyone else heads home
+            if _dist(tuple(cpos), tuple(ball_pos)) > 1.6:
+                leg1 = {carrier: [cpos, list(ball_pos)]}
+                for lbl in home:
+                    if lbl != carrier:
+                        hx = starts[lbl]
+                        leg1[lbl] = [list(pos.get(lbl, hx)), list(hx)]
+                        pos[lbl] = list(hx)
+                _leg(leg1, "Collect it — quick jog")
+                pos[carrier] = list(ball_pos)
+            # leg 2: carrier DELIVERS the ball to its start spot — together
+            _leg({carrier: [list(pos.get(carrier)), list(first_ball)],
+                  BALL: [list(ball_pos), list(first_ball)]},
+                 "Bring it back")
+            pos[carrier] = list(first_ball)
+            ball_pos = list(first_ball)
+        # final leg: everyone to the loop's start positions (ball is home)
         end_tracks = {}
         for lbl in home:
             hx = starts[lbl]
             end_tracks[lbl] = [list(pos.get(lbl, hx)), list(hx)]
-        if ball_stray:
-            end_tracks[BALL] = [list(ball_pos), list(first_ball)]
-        gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
-                  for tr in end_tracks.values()), default=0)
-        if gd > 0.5:
-            phases.append({"d": int(max(500, min(2600, gd * 85))),
-                           "tracks": end_tracks, "hips": {},
-                           "label": "Bring it back — go again",
-                           "ease": "lin", "kind": "fade", "step": None})
+        _leg(end_tracks, "Back to your spot — go again")
 
     def _max_move(ph):
         return max((_dist(tuple(tr[0]), tuple(tr[1]))

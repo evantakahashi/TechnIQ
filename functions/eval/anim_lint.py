@@ -41,6 +41,7 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
     elements = drill.get("diagram", {}).get("elements", [])
     home = {e["label"]: [float(e["x"]), float(e["y"])]
             for e in elements if e.get("type") == "player"}
+    defenders = {e["label"] for e in elements if e.get("role") == "defender"}
     main = [p for p in phases_all if p.get("kind") != "outcome"]
     outs = [p for p in phases_all if p.get("kind") == "outcome"]
     first_ball = next((p["tracks"][BALL][0] for p in main
@@ -77,6 +78,8 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
         labs = [l for l in tracks if l != BALL]
         for x in range(len(labs)):
             for y in range(x + 1, len(labs)):
+                if labs[x] in defenders and labs[y] in defenders:
+                    continue  # a closing trap converges by design
                 for k in (0.3, 0.5, 0.7):
                     pa = _lerp(*tracks[labs[x]], k)
                     pb = _lerp(*tracks[labs[y]], k)

@@ -181,6 +181,9 @@ def _check_flight_through_players(
         for e in players + cones:
             if e.get("label") in (p.get("from"), p.get("to")):
                 continue
+            if e.get("role") == "defender":
+                continue  # a defender contesting the lane is the game (rondos,
+                          # splitting passes) — not a staging error
             radius = 0.8 if e.get("type") == "player" else 0.5
             if e.get("type") == "cone" and \
                     ((e["x"] - fx) ** 2 + (e["y"] - fy) ** 2) ** 0.5 < 1.5:

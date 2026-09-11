@@ -104,6 +104,7 @@ _TWO_PLAYER_REMAP: Final[dict[str, str]] = {
 # Skill phrases that outrank the weakness table — the layout family follows
 # the ACTION, not the category (a volley is served, whatever the weakness).
 _SKILL_OVERRIDES: Final[dict[str, str]] = {
+    "press": "1v1_plus_server",
     "volley": "server_executor",
     "cross": "server_executor",
     "juggl": "cone_weave",

@@ -489,8 +489,7 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         client = Anthropic(api_key=anthropic_api_key)
 
         from drill_generator import generate_drill, DrillGenerationFailed, SYSTEM_PROMPT
-        from drill_timeline import compile_timeline
-        from drill_director import direct_timeline
+        from drill_animator import author_timeline
 
         def _llm_call(prompt: str) -> str:
             # opus-4-8 won the 2026-09-06 model A/B: geometry 80.8 vs 71.7
@@ -555,11 +554,11 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             # Animation: compile the phase timeline, then let the model direct
             # pacing + narration within rails (movement immutable, refereed).
             try:
-                drill["animation"] = direct_timeline(
-                    drill, compile_timeline(drill), _llm_call)
+                drill["animation"] = author_timeline(drill, _llm_call)
             except Exception as anim_err:  # animation is enhancement, never fatal
                 logger.warning(f"animation pass failed: {anim_err}")
                 try:
+                    from drill_timeline import compile_timeline
                     drill["animation"] = compile_timeline(drill)
                 except Exception:
                     pass

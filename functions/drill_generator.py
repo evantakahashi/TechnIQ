@@ -157,6 +157,10 @@ def generate_drill(
         field_size = "half"
 
     rule_pack = get_rule_pack(weakness)
+    if rule_pack and any(k in blob_field for k in
+                         rule_pack.get("required_styles_skip_if", [])):
+        rule_pack = {k: v for k, v in rule_pack.items()
+                     if k != "required_styles"}  # sub-skill exempts the contract
     # Realism wins over the request: skills that need a feed/opponent (pressure
     # receiving, turns, GK reactions) get the partner even on a solo request —
     # "a player receives from another player" beats a faked-solo version.
@@ -199,10 +203,11 @@ def generate_drill(
             drill["equipment"] = equipment
             drill["category"] = category
             blob = f"{skill_description} {weakness}".lower()
-            drill["is_duel"] = bool(_re.search(r"\b(1v1|1v2|2v1|press|pressing)\b", blob)) or (
-                category == "tactical" and number_of_players in (2, 3)
-                and "head" not in blob
-            )
+            # duel-ness comes from OPPOSITION SEMANTICS in the request, never
+            # guessed from category+count (an overlapping-fullback combination
+            # is tactical 2p and is NOT a duel)
+            drill["is_duel"] = bool(_re.search(
+                r"\b(1v1|1v2|2v1|press|pressing|duel|defend|defending)\b", blob))
             drill, _warnings = post_process_drill(drill, player_age=age)
             crop_field_to_content(drill)
             annotate_path_positions(drill)
