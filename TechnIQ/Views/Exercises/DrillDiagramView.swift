@@ -1086,7 +1086,7 @@ function rot(e,W,L){const d=[e.x,W-e.x,e.y,L-e.y];const m=Math.min(...d);return 
 function renderPitch(drill){
   const dg=drill.diagram,f=dg.field,W=f.width,L=f.length,S=30,vw=W*S,vh=L*S;
   const svg=el("svg",{viewBox:`-14 -14 ${vw+28} ${vh+28}`,role:"img","aria-label":"drill diagram"});
-  svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"var(--pitch)"}));
+  svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"#4E9B4B"}));
   for(let i=0;i<Math.floor(L/3);i++){ if(i%2===0) svg.appendChild(el("rect",{x:0,y:i*3*S,width:vw,height:3*S,fill:"var(--stripe)"})); }
   svg.appendChild(el("circle",{cx:vw/2,cy:vh/2,r:Math.min(vw,vh)*.16,fill:"none",stroke:"rgba(255,255,255,.35)","stroke-width":1.5}));
   // Penalty areas in front of edge goals
@@ -1167,7 +1167,7 @@ function renderPitch(drill){
   });
   dg.elements.forEach(e=>{
     const x=px(e),y=py(e),g=el("g",{"data-label":e.label,"data-type":e.type});
-    if(e.type==="cone"){ g.appendChild(el("path",{d:`M ${x} ${y-7} L ${x-6.5} ${y+5} L ${x+6.5} ${y+5} Z`,fill:"#E8762C",stroke:"rgba(0,0,0,.3)","stroke-width":.8})); }
+    if(e.type==="cone"){ g.appendChild(el("path",{d:`M ${x} ${y-7} L ${x-6.5} ${y+5} L ${x+6.5} ${y+5} Z`,fill:"#F2A623",stroke:"#8A4F0B","stroke-width":.8})); }
     else if(e.type==="ball"){ g.appendChild(el("circle",{cx:x,cy:y,r:4.6,fill:"#fff",stroke:"#222","stroke-width":1})); }
     else if(e.type==="goal"||e.type==="gate"){
       const r=rot(e,W,L),wpx=((e.type==="goal"?(e.width||7.32):(e.width||1.6))*S);
@@ -1208,8 +1208,9 @@ function loadDrill(drill){
     svgEl.querySelectorAll('g[data-label]').forEach(g=>{
       const lbl=g.getAttribute('data-label');
       if(orig[lbl]&&orig[lbl].type==="player"){
-        g.appendChild(el("line",{x1:0,y1:0,x2:14,y2:0,stroke:"#10230F","stroke-width":3,"stroke-linecap":"round","data-h":lbl,opacity:0}));
-        g.appendChild(el("line",{x1:0,y1:0,x2:0,y2:0,stroke:"#FFFFFF","stroke-width":2,"stroke-linecap":"round","data-eye":lbl,opacity:0}));
+        const wedge=el("path",{d:"M 9 0 L 15 3.4 L 15 -3.4 Z",fill:"rgba(0,0,0,.38)","data-h":lbl,opacity:0,transform:`translate(${x} ${y})`});
+        wedge.setAttribute("data-cx",x); wedge.setAttribute("data-cy",y);
+        g.appendChild(wedge);
       }
     });
     // follow-cam: while playing, frame the live action; pause = full field
@@ -1281,15 +1282,16 @@ function loadDrill(drill){
         else{const g=grp(lbl); if(g&&orig[lbl])g.setAttribute("transform",`translate(${X-orig[lbl].x} ${Y-orig[lbl].y})`); lastPos[lbl]={x:X,y:Y};camPts.push({x:X,y:Y});}
       }
       if(!ballSet&&lastPos[BALLK]){ball.setAttribute("cx",lastPos[BALLK].x);ball.setAttribute("cy",lastPos[BALLK].y);}
-      for(const lbl in (q.hips||{})){
-        const h=q.hips[lbl],hl=svgEl.querySelector(`line[data-h="${lbl}"]`);
-        if(hl){hl.setAttribute("opacity",1);hl.setAttribute("x2",14*h[0]);hl.setAttribute("y2",-14*h[1]);}
-      }
-      svgEl.querySelectorAll('line[data-eye]').forEach(e2=>e2.setAttribute("opacity",0));
-      for(const lbl in (q.eye||{})){
-        const h=q.eye[lbl],e2=svgEl.querySelector(`line[data-eye="${lbl}"]`);
-        if(e2){e2.setAttribute("opacity",1);e2.setAttribute("x2",18*h[0]);e2.setAttribute("y2",-18*h[1]);}
-      }
+      svgEl.querySelectorAll('path[data-h]').forEach(w=>{w.setAttribute("opacity",0);w.setAttribute("fill","rgba(0,0,0,.38)");});
+      const face=(lbl,h,bright)=>{
+        const w=svgEl.querySelector(`path[data-h="${lbl}"]`); if(!w)return;
+        const ang=Math.atan2(-h[1],h[0])*180/Math.PI;
+        w.setAttribute("transform",`translate(${w.getAttribute("data-cx")} ${w.getAttribute("data-cy")}) rotate(${ang})`);
+        w.setAttribute("opacity",1);
+        if(bright)w.setAttribute("fill","#FFFFFF");
+      };
+      for(const lbl in (q.hips||{})) face(lbl,q.hips[lbl],false);
+      for(const lbl in (q.eye||{}))  face(lbl,q.eye[lbl],true);
       cap.textContent=q.label||"";
       // cinema mode: the stage is clean while the movie plays; arrows are for study (pause)
       const stepset=(q.steps||[q.step]).map(String);
@@ -1318,7 +1320,7 @@ function loadDrill(drill){
     snapStart(); render();
   }
   const playBtn=pw.querySelector('.animbar button');
-  if(playBtn) playBtn.click();  // autoplay in-app
+  if(playBtn) playBtn.click();
 }
 window.loadDrill=loadDrill;
 </script></body></html>
