@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7CA808CDC7AA98F81A0847E0 /* TouchlineLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D13195CD252EB8003999BD4 /* TouchlineLogicTests.swift */; };
+		9EE9E99BA3253B5174DD1120 /* OnboardingMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694822F7BDD6D0D2D4D628DC /* OnboardingMapping.swift */; };
+		A772383B1EE43DFBF610B6FE /* SharedDrillRanking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C92E3779BF97F15BFBF4903 /* SharedDrillRanking.swift */; };
 		9E5121D5EF0270A1C92AA4CD /* TouchlineScreensUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */; };
 		D59ADC92C64D3042CA586E2C /* DrillSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */; };
 		D67A3F022C3AA937B4832F13 /* TQFormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596560DE22A4069FB36A800D /* TQFormField.swift */; };
@@ -247,6 +250,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6D13195CD252EB8003999BD4 /* TouchlineLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchlineLogicTests.swift; sourceTree = "<group>"; };
+		694822F7BDD6D0D2D4D628DC /* OnboardingMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMapping.swift; sourceTree = "<group>"; };
+		1C92E3779BF97F15BFBF4903 /* SharedDrillRanking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDrillRanking.swift; sourceTree = "<group>"; };
 		EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchlineScreensUITests.swift; sourceTree = "<group>"; };
 		DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillSuggestion.swift; sourceTree = "<group>"; };
 		596560DE22A4069FB36A800D /* TQFormField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQFormField.swift; sourceTree = "<group>"; };
@@ -613,6 +619,8 @@
 				ACF905C9EA7B9866B20B2BF7 /* XPModels.swift */,
 				0C502A111655139990553D48 /* DrillContent.swift */,
 				DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */,
+				1C92E3779BF97F15BFBF4903 /* SharedDrillRanking.swift */,
+				694822F7BDD6D0D2D4D628DC /* OnboardingMapping.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -865,6 +873,7 @@
 				F29E7BB414F2BB58E87BC736 /* HomeWeekModelTests.swift */,
 				7728AC670FF8F32DAE6AC1F2 /* DrillContentTests.swift */,
 				84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */,
+				6D13195CD252EB8003999BD4 /* TouchlineLogicTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1289,6 +1298,8 @@
 				F2EF0CF15B9BC666D32F24C1 /* TQDiagram.swift in Sources */,
 				D67A3F022C3AA937B4832F13 /* TQFormField.swift in Sources */,
 				D59ADC92C64D3042CA586E2C /* DrillSuggestion.swift in Sources */,
+				A772383B1EE43DFBF610B6FE /* SharedDrillRanking.swift in Sources */,
+				9EE9E99BA3253B5174DD1120 /* OnboardingMapping.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1311,6 +1322,7 @@
 				F943ABCADF55C99BAAD95BF1 /* HomeWeekModelTests.swift in Sources */,
 				6866936A7241804D54FA06B0 /* DrillContentTests.swift in Sources */,
 				A0B2E8C8512C6C2E95846C93 /* ActiveSessionTouchlineTests.swift in Sources */,
+				7CA808CDC7AA98F81A0847E0 /* TouchlineLogicTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

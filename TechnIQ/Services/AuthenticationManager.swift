@@ -25,11 +25,21 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     
     private var authStateHandle: AuthStateDidChangeListenerHandle?
     private var currentNonce: String?
-    
+
+    #if DEBUG
+    /// `-TQLocalUser` (DEBUG only): behave as signed in with a fixed local UID when no Firebase
+    /// user exists, so UI tests can run on a fresh simulator without network auth.
+    static let debugLocalUID: String? =
+        ProcessInfo.processInfo.arguments.contains("-TQLocalUser") ? "tq-local-user" : nil
+    #else
+    static let debugLocalUID: String? = nil
+    #endif
+
     static let shared = AuthenticationManager()
-    
+
     private init() {
         setupAuthStateListener()
+        if Self.debugLocalUID != nil { isAuthenticated = true }
     }
     
     deinit {
@@ -44,7 +54,7 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 self?.currentUser = user
-                self?.isAuthenticated = user != nil
+                self?.isAuthenticated = user != nil || Self.debugLocalUID != nil
                 self?.clearError()
                 Crashlytics.crashlytics().setUserID(user?.uid ?? "")
             }
@@ -539,11 +549,11 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     }
     
     var userUID: String {
-        return currentUser?.uid ?? ""
+        return currentUser?.uid ?? Self.debugLocalUID ?? ""
     }
-    
+
     var hasValidUser: Bool {
-        return currentUser != nil && !userUID.isEmpty
+        return !userUID.isEmpty
     }
 }
 

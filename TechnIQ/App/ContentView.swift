@@ -133,6 +133,14 @@ struct PlayerContentView: View {
             hasCheckedCloud = true
             return
         }
+        #if DEBUG
+        if TQDemoSeed.isRequested {
+            // Demo runs never restore from the cloud: seed a local player and go straight in.
+            TQDemoSeed.ensurePlayer(uid: authManager.userUID, context: viewContext)
+            hasCheckedCloud = true
+            return
+        }
+        #endif
 
         isCheckingCloud = true
 

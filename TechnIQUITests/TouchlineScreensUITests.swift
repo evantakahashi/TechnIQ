@@ -120,7 +120,7 @@ final class TouchlineScreensUITests: XCTestCase {
     // MARK: - You (6c)
 
     func test_youTab_identityCardRowsAndSignOut() throws {
-        launch(["-TQSeedDemo", "-TQTab", "4"])
+        launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "4"])
         XCTAssertTrue(row("Progress & analytics").waitForExistence(timeout: 40), "You tab rows should appear")
         dismissCoachMarkIfPresent()
         shot("you")
@@ -168,7 +168,7 @@ final class TouchlineScreensUITests: XCTestCase {
     // MARK: - Community drills (6b)
 
     func test_communityDrills_featuredCardChipsAndRows() throws {
-        launch(["-TQSeedDemo", "-TQTab", "3"])
+        launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "3"])
         XCTAssertTrue(text(containing: "Drill of the week").waitForExistence(timeout: 40), "featured card")
         dismissCoachMarkIfPresent()
         shot("community-drills")

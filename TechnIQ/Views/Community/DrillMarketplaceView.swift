@@ -13,22 +13,10 @@ struct DrillMarketplaceView: View {
     @ObservedObject private var communityService = CommunityService.shared
     @FetchRequest var players: FetchedResults<Player>
 
-    @State private var chip: Chip = .trending
+    @State private var chip: SharedDrillRanking.Chip = .trending
     @State private var selectedDrill: SharedDrill?
     @State private var notice: String?
     @State private var isSavingFeatured = false
-
-    enum Chip: String, CaseIterable, Identifiable {
-        case trending = "Trending", new = "New", technical = "Technical", tactical = "Tactical", physical = "Physical"
-        var id: String { rawValue }
-
-        var category: String? {
-            switch self {
-            case .technical, .tactical, .physical: return rawValue.lowercased()
-            default: return nil
-            }
-        }
-    }
 
     init() {
         self._players = FetchRequest(
@@ -46,21 +34,12 @@ struct DrillMarketplaceView: View {
     // MARK: Derived
 
     private var visibleDrills: [SharedDrill] {
-        let drills = communityService.sharedDrills.filter { !$0.isHidden }
-        switch chip {
-        case .trending: return drills.sorted { $0.saveCount > $1.saveCount }
-        case .new: return drills.sorted { $0.timestamp > $1.timestamp }
-        case .technical, .tactical, .physical:
-            return drills.filter { $0.category.lowercased() == chip.category }.sorted { $0.saveCount > $1.saveCount }
-        }
+        SharedDrillRanking.visible(communityService.sharedDrills, chip: chip)
     }
 
     /// Most-saved drill shared in the last seven days; falls back to the most-saved overall.
     private var drillOfTheWeek: SharedDrill? {
-        let drills = communityService.sharedDrills.filter { !$0.isHidden }
-        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let recent = drills.filter { $0.timestamp >= weekAgo }
-        return (recent.isEmpty ? drills : recent).max { $0.saveCount < $1.saveCount }
+        SharedDrillRanking.featured(from: communityService.sharedDrills)
     }
 
     var body: some View {
@@ -75,8 +54,8 @@ struct DrillMarketplaceView: View {
                 }
 
                 TQChipRow {
-                    ForEach(Chip.allCases) { option in
-                        TQChip(option.rawValue, isSelected: chip == option) {
+                    ForEach(SharedDrillRanking.Chip.allCases) { option in
+                        TQChip(option.title, isSelected: chip == option) {
                             withAnimation(DesignSystem.Animation.quick) { chip = option }
                             Task { await communityService.fetchSharedDrills(refresh: true, category: option.category) }
                         }
@@ -181,7 +160,7 @@ struct DrillMarketplaceView: View {
     }
 
     private func savesLabel(_ count: Int) -> String {
-        count >= 1000 ? String(format: "%.1fK", Double(count) / 1000).replacingOccurrences(of: ".0K", with: "K") : "\(count)"
+        SharedDrillRanking.savesLabel(count)
     }
 
     private func saveToLibrary(_ drill: SharedDrill) {

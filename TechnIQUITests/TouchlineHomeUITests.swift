@@ -16,7 +16,7 @@ final class TouchlineHomeUITests: XCTestCase {
     // MARK: - Helpers
 
     private func launch(_ arguments: [String]) {
-        app.launchArguments = ["-TQSeedDemo"] + arguments
+        app.launchArguments = ["-TQSeedDemo", "-TQLocalUser"] + arguments
         app.launch()
     }
 

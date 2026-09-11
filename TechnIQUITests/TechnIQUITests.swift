@@ -11,7 +11,7 @@ final class TechnIQUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
-        app.launchArguments = ["UI_TESTING"]
+        app.launchArguments = ["UI_TESTING", "-TQSeedDemo", "-TQLocalUser"]
         app.launch()
     }
 

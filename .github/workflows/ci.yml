@@ -3,12 +3,17 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/touchline-ui]
 
 # Cancel in-progress runs for the same ref when a new commit is pushed.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  # Xcode 26's explicitly-built modules cannot precompile FirebaseFirestoreInternal's module
+  # map; these must be passed on the command line so they reach SPM package targets.
+  XCODEBUILD_FLAGS: SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO
 
 jobs:
   swiftlint:
@@ -18,35 +23,41 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install SwiftLint
         run: brew install swiftlint
-      # Non-blocking today: the calibrated .swiftlint.yml reports ~140 warnings / 0 errors,
-      # so this surfaces annotations without failing the build. Once warnings are burned
-      # down, add `--strict` to make any remaining warning fail CI.
+      # Warnings are annotations only; any rule at `error` severity fails the job.
       - name: Run SwiftLint
         run: swiftlint lint --reporter github-actions-logging
 
-  build-and-test:
+  unit-tests:
     name: Build & Unit Test
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      # The runner's default Xcode builds this iOS 17 target. To pin explicitly, uncomment
-      # and set a version present on the image (check with: ls /Applications | grep Xcode).
-      # - name: Select Xcode
-      #   run: sudo xcode-select -s /Applications/Xcode_16.4.app
+      - name: Select newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
 
-      # GoogleService-Info.plist is gitignored but required to build (it is in the app's
-      # Resources build phase). Store a base64 copy of the local file in the repo secret
-      # GOOGLE_SERVICE_INFO_PLIST_B64 (macOS: base64 -i TechnIQ/GoogleService-Info.plist | pbcopy).
-      - name: Inject Firebase config
+      # Both files are gitignored but required by the project:
+      #  - Config/Secrets.xcconfig is the base configuration of the app target (empty key = YouTube hidden).
+      #  - GoogleService-Info.plist is in the Resources phase and read by FirebaseApp.configure().
+      # Store a base64 copy of the plist in the repo secret GOOGLE_SERVICE_INFO_PLIST_B64
+      # (macOS: base64 -i TechnIQ/GoogleService-Info.plist | pbcopy). YOUTUBE_API_KEY is optional.
+      - name: Inject local config
         env:
           GOOGLE_SERVICE_INFO: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
-        run: echo "$GOOGLE_SERVICE_INFO" | base64 --decode > TechnIQ/GoogleService-Info.plist
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO" ]; then
+            echo "::error::Repository secret GOOGLE_SERVICE_INFO_PLIST_B64 is not set (base64 of TechnIQ/GoogleService-Info.plist)."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICE_INFO" | base64 --decode > TechnIQ/GoogleService-Info.plist
+          plutil -lint TechnIQ/GoogleService-Info.plist
+          printf 'YOUTUBE_API_KEY = %s\n' "$YOUTUBE_API_KEY" > Config/Secrets.xcconfig
 
-      # UI tests (TechnIQUITests) are in the shared scheme but excluded here via
-      # -only-testing: they need seeded auth state and are slow/flaky on CI. Add a
-      # separate job/scheme for them when that state is scriptable.
-      # The simulator is resolved at runtime so the job survives runner-image changes.
       - name: Pick an available iPhone simulator
         id: sim
         run: |
@@ -55,10 +66,6 @@ jobs:
           echo "Using simulator: $DEVICE"
           echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
 
-      # SWIFT/CLANG_ENABLE_EXPLICIT_MODULES=NO: Xcode 26's explicitly-built modules
-      # cannot precompile FirebaseFirestoreInternal's generated module map (missing
-      # Foundation dep). Must be passed on the command line so it reaches SPM package
-      # targets. Drop when Firebase/Apple fix the module map.
       - name: Build and unit test
         run: |
           set -o pipefail
@@ -67,6 +74,73 @@ jobs:
             -scheme TechnIQ \
             -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
             -only-testing:TechnIQTests \
-            SWIFT_ENABLE_EXPLICIT_MODULES=NO \
-            CLANG_ENABLE_EXPLICIT_MODULES=NO \
+            $XCODEBUILD_FLAGS \
             clean test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+
+  ui-tests:
+    name: Touchline UI Tests
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Inject local config
+        env:
+          GOOGLE_SERVICE_INFO: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO" ]; then
+            echo "::error::Repository secret GOOGLE_SERVICE_INFO_PLIST_B64 is not set (base64 of TechnIQ/GoogleService-Info.plist)."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICE_INFO" | base64 --decode > TechnIQ/GoogleService-Info.plist
+          printf 'YOUTUBE_API_KEY = %s\n' "$YOUTUBE_API_KEY" > Config/Secrets.xcconfig
+
+      - name: Pick an available iPhone simulator
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -E '^\s+iPhone' | head -1 | sed -E 's/^ +//; s/ \([0-9A-F-]+\).*$//')
+          if [ -z "$DEVICE" ]; then echo "No iPhone simulator on this image" >&2; exit 1; fi
+          echo "Using simulator: $DEVICE"
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+
+      # The Touchline suites launch the app with `-TQLocalUser -TQSeedDemo` (DEBUG-only): a fixed
+      # local UID plus a seeded player, so no Firebase sign-in or network state is needed.
+      # WalkthroughUITests need a real login and stay out of CI.
+      - name: Run Touchline UI tests
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project TechnIQ.xcodeproj \
+            -scheme TechnIQ \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
+            -only-testing:TechnIQUITests/TechnIQUITests \
+            -only-testing:TechnIQUITests/TouchlineHomeUITests \
+            -only-testing:TechnIQUITests/TouchlineScreensUITests \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 300 \
+            $XCODEBUILD_FLAGS \
+            test
+
+      - name: Upload UI test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+          if-no-files-found: ignore

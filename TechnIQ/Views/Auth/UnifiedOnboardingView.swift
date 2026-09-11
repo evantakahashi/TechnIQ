@@ -78,7 +78,7 @@ struct UnifiedOnboardingView: View {
         ("Midfielder", "Passing range, turns, pressing"),
         ("Forward", "Finishing, movement, first touch")
     ]
-    private let feet = ["Left", "Right", "Both"]
+    private let feet = OnboardingMapping.feet
     private let experienceLevels: [(String, String)] = [
         ("Beginner", "Just starting out"),
         ("Intermediate", "Play regularly"),
@@ -212,7 +212,7 @@ struct UnifiedOnboardingView: View {
                     .padding(.top, 22)
                 TQFormField("Shirt number", text: $kitNumberText, placeholder: "e.g. 9", keyboard: .numberPad)
                     .onChange(of: kitNumberText) { _, value in
-                        kitNumberText = String(value.filter(\.isNumber).prefix(2))
+                        kitNumberText = OnboardingMapping.digits(value, maxDigits: 2)
                     }
             }
         case .weakSpots:
@@ -231,7 +231,7 @@ struct UnifiedOnboardingView: View {
                 TQFormField("Name", text: $playerName, placeholder: "First name or nickname", contentType: .name)
                 TQFormField("Age", text: $ageText, placeholder: "e.g. 14", keyboard: .numberPad)
                     .onChange(of: ageText) { _, value in
-                        ageText = String(value.filter(\.isNumber).prefix(2))
+                        ageText = OnboardingMapping.digits(value, maxDigits: 2)
                     }
                 TQGroupHeader("Level")
                     .padding(.top, 10)
@@ -298,15 +298,9 @@ struct UnifiedOnboardingView: View {
         }
     }
 
-    private var playerAge: Int? {
-        guard let age = Int(ageText), (5...80).contains(age) else { return nil }
-        return age
-    }
+    private var playerAge: Int? { OnboardingMapping.age(from: ageText) }
 
-    private var kitNumber: Int? {
-        guard let number = Int(kitNumberText), (1...99).contains(number) else { return nil }
-        return number
-    }
+    private var kitNumber: Int? { OnboardingMapping.kitNumber(from: kitNumberText) }
 
     private func advance() {
         guard let next = nextStep else { return }
@@ -370,7 +364,7 @@ struct UnifiedOnboardingView: View {
     private func toggleWeakness(_ category: WeaknessCategory) {
         if selectedWeaknesses.contains(category) {
             selectedWeaknesses.remove(category)
-        } else if selectedWeaknesses.count < 3 {
+        } else if selectedWeaknesses.count < OnboardingMapping.maxWeakSpots {
             selectedWeaknesses.insert(category)
         }
     }
@@ -382,8 +376,7 @@ struct UnifiedOnboardingView: View {
             return
         }
 
-        let displayName = playerName.trimmingCharacters(in: .whitespaces)
-        let finalName = displayName.isEmpty ? (authManager.userDisplayName.isEmpty ? "Player" : authManager.userDisplayName) : displayName
+        let finalName = OnboardingMapping.resolvedName(entered: playerName, accountName: authManager.userDisplayName)
 
         let newPlayer = Player(context: viewContext)
         newPlayer.id = UUID()
@@ -445,10 +438,10 @@ struct UnifiedOnboardingView: View {
                     throw NSError(domain: "Onboarding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Player not found"])
                 }
 
-                let difficulty = mapExperienceToDifficulty(selectedExperienceLevel)
-                let category = mapGoalToCategory(selectedGoal)
-                let preferredDays = mapFrequencyToDays(selectedFrequency)
-                let restDays = DayOfWeek.allCases.map(\.rawValue).filter { !preferredDays.contains($0) }
+                let difficulty = OnboardingMapping.difficulty(forExperience: selectedExperienceLevel)
+                let category = OnboardingMapping.category(forGoal: selectedGoal)
+                let preferredDays = OnboardingMapping.preferredDays(forFrequency: selectedFrequency)
+                let restDays = OnboardingMapping.restDays(forFrequency: selectedFrequency)
 
                 let structure = try await AIRecommendationService.shared.generateTrainingPlan(
                     for: player,
@@ -484,39 +477,6 @@ struct UnifiedOnboardingView: View {
                     planErrorMessage = error.localizedDescription
                 }
             }
-        }
-    }
-
-    // MARK: - Mapping
-
-    private func mapExperienceToDifficulty(_ experience: String) -> String {
-        switch experience {
-        case "Beginner": return PlanDifficulty.beginner.rawValue
-        case "Intermediate": return PlanDifficulty.intermediate.rawValue
-        case "Advanced": return PlanDifficulty.advanced.rawValue
-        case "Professional": return PlanDifficulty.elite.rawValue
-        default: return PlanDifficulty.intermediate.rawValue
-        }
-    }
-
-    private func mapGoalToCategory(_ goal: String) -> String {
-        switch goal {
-        case "Improve Skills": return PlanCategory.technical.rawValue
-        case "Build Fitness": return PlanCategory.physical.rawValue
-        case "Prepare for Tryouts": return PlanCategory.general.rawValue
-        case "Stay Active": return PlanCategory.general.rawValue
-        case "Become Pro": return PlanCategory.technical.rawValue
-        default: return PlanCategory.general.rawValue
-        }
-    }
-
-    private func mapFrequencyToDays(_ frequency: String) -> [String] {
-        switch frequency {
-        case "2-3x per week": return ["Monday", "Wednesday", "Friday"]
-        case "3-4x per week": return ["Monday", "Tuesday", "Thursday", "Friday"]
-        case "5-6x per week": return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        case "Daily": return DayOfWeek.allCases.map(\.rawValue)
-        default: return ["Monday", "Wednesday", "Friday"]
         }
     }
 }

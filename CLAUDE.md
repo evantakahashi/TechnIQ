@@ -13,7 +13,7 @@ All xcodebuild invocations (build/test/archive) MUST append `SWIFT_ENABLE_EXPLIC
 - **Build:** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO build`
 - **Test (unit):** `xcodebuild -scheme TechnIQ -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -only-testing:TechnIQTests SWIFT_ENABLE_EXPLICIT_MODULES=NO CLANG_ENABLE_EXPLICIT_MODULES=NO test`
 - **Lint:** `swiftlint` (config `.swiftlint.yml`; ~140 warnings / 0 errors today, not yet `--strict`)
-- **CI:** `.github/workflows/ci.yml` — SwiftLint + build + unit tests on PR / push to main
+- **CI:** `.github/workflows/ci.yml` — SwiftLint, build + unit tests, Touchline UI tests on PR / push to main. Needs repo secret `GOOGLE_SERVICE_INFO_PLIST_B64` (base64 of the gitignored plist); `Config/Secrets.xcconfig` is generated on the runner (optional `YOUTUBE_API_KEY` secret).
 - **Deploy functions:** `cd functions && firebase deploy --only functions`
 - **Commit:** `/commit`
 - **Build skill:** `/build`
@@ -115,8 +115,9 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | TQSearchField, TQFormField, TQBanner, TQSkeleton, TQTabBar, TQDiagram, TQAppMark | Inputs, banners, loading, tab bar, drill diagram surface, app mark |
 | TQGallery (DEBUG) | `-TQGallery [-TQGalleryPage n] [-TQGallerySnapshot]` renders every component for eyeballing |
 
-**Debug launch arguments (DEBUG builds):** `-TQSeedDemo` (kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQScreen signIn|onboarding`.
-**UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift` (run with `-only-testing:TechnIQUITests`; screenshots land in the runner's tmp `touchlineshots/`).
+**Debug launch arguments (DEBUG builds):** `-TQLocalUser` (signed-in with a fixed local UID, no Firebase auth), `-TQSeedDemo` (creates the player if needed; kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQScreen signIn|onboarding`.
+**UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift`, `TechnIQUITests.swift` launch with `-TQLocalUser -TQSeedDemo` so they run on a fresh simulator (screenshots land in the runner's tmp `touchlineshots/`). `WalkthroughUITests` needs a real login and is not run in CI.
+**Pure logic for tests:** `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
 
 ## Development Workflow
 

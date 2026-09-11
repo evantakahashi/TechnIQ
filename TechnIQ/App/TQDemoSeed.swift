@@ -15,6 +15,31 @@ enum TQDemoSeed {
         ProcessInfo.processInfo.arguments.contains("-TQSeedDemo")
     }
 
+    /// Creates the demo player for `uid` when none exists (fresh simulator / CI), with the default
+    /// exercise library so Train and the Home hero have content.
+    @MainActor
+    @discardableResult
+    static func ensurePlayer(uid: String, context: NSManagedObjectContext) -> Player? {
+        guard isRequested, !uid.isEmpty else { return nil }
+        let request = Player.fetchRequest()
+        request.predicate = NSPredicate(format: "firebaseUID == %@", uid)
+        if let existing = try? context.fetch(request).first { return existing }
+
+        let player = Player(context: context)
+        player.id = UUID()
+        player.firebaseUID = uid
+        player.name = "Player"
+        player.age = 14
+        player.position = "Forward"
+        player.dominantFoot = "Right"
+        player.experienceLevel = "Intermediate"
+        player.playingStyle = "Balanced"
+        player.createdAt = Date()
+        CoreDataManager.shared.createDefaultExercises(for: player)
+        try? context.save()
+        return player
+    }
+
     @MainActor
     static func apply(to player: Player, context: NSManagedObjectContext) {
         guard isRequested else { return }
