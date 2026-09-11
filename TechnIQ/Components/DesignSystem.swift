@@ -76,7 +76,11 @@ struct DesignSystem {
         static let cardBackground = surfaceRaised
         static let cardBorder = surfaceOverlay
         static let darkModeBackground = surfaceBase
-        static let cellBackground = surfaceRaised
+        static let cellBackground = surfaceOverlay      // one step above cardBackground so cells inside cards stay visible
+
+        // Kit colours for avatar items and shop swatches — literal hues, independent of the UI accent.
+        static let kitBlue = Color(hex: 0x2F6BFF)
+        static let kitGold = Color(hex: 0xE5B93C)
 
         // Preserved: rarity system (players recognize these)
         static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62)

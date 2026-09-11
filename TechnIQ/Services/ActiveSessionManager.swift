@@ -276,6 +276,12 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         let isFullCompletion = completedCount == exercises.count
         let startingLevel = Int(player.currentLevel)
 
+        // Ending before any drill is completed keeps nothing: no session row, no XP, no streak.
+        guard completedCount > 0 else {
+            completedSession = nil
+            return (nil, nil, [])
+        }
+
         // Create TrainingSession
         let session = TrainingSession(context: context)
         session.id = UUID()

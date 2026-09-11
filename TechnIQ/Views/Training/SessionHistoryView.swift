@@ -37,15 +37,17 @@ struct SessionHistoryView: View {
     @State private var showingTodaysTraining = false
     
     init() {
-        // Initialize with empty predicate - will be updated in onAppear
+        // Predicates are derived from the signed-in user here (not only in onAppear): SwiftUI
+        // re-runs init whenever the parent re-renders, so an initial "match nothing" predicate
+        // would empty the list again after the first appearance.
         self._sessions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
-            predicate: NSPredicate(value: false), // Temporary predicate
+            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
         self._players = FetchRequest(
             sortDescriptors: [],
-            predicate: NSPredicate(value: false),
+            predicate: AuthenticationManager.shared.playerPredicate,
             animation: .default
         )
     }

@@ -29,10 +29,10 @@ struct SessionCalendarView: View {
     init(onSessionSelected: ((TrainingSession) -> Void)? = nil) {
         self.onSessionSelected = onSessionSelected
         
-        // Initialize with empty predicate - will be updated in onAppear
+        // Derived from the signed-in user at init (re-init on parent re-render must not reset it).
         self._sessions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
-            predicate: NSPredicate(value: false),
+            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
     }

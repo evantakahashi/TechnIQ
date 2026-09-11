@@ -76,6 +76,12 @@ struct AITrainingPlanGeneratorView: View {
         }
         .navigationTitle("AI Plan Generator")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+                    .disabled(isGenerating)
+            }
+        }
         .alert("Generation Failed", isPresented: $showError) {
             Button("Retry") {
                 generatePlan()
@@ -166,7 +172,8 @@ struct AITrainingPlanGeneratorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("Leave empty for AI-generated name", text: $planName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                 }
 
                 // Duration
@@ -228,7 +235,8 @@ struct AITrainingPlanGeneratorView: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
 
                         TextField("e.g., Striker, Midfielder", text: $targetRole)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                     }
                 }
             }
@@ -251,7 +259,8 @@ struct AITrainingPlanGeneratorView: View {
                 // Add new focus area
                 HStack {
                     TextField("Add focus area", text: $newFocusArea)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
 
                     Button(action: addFocusArea) {
                         Image(systemName: "plus.circle.fill")

@@ -107,7 +107,7 @@ struct AvatarCustomizationView: View {
                 Text(category.displayName)
                     .font(.system(size: 11, weight: .medium))
             }
-            .foregroundColor(isSelected ? .white : DesignSystem.Colors.textSecondary)
+            .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
             .frame(width: 60, height: 56)
             .background(
                 RoundedRectangle(cornerRadius: 12)

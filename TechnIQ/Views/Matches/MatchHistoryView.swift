@@ -168,7 +168,7 @@ struct MatchHistoryView: View {
         Button(action: action) {
             Text(name)
                 .font(DesignSystem.Typography.labelMedium)
-                .foregroundColor(isSelected ? .white : DesignSystem.Colors.textPrimary)
+                .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                 .padding(.horizontal, DesignSystem.Spacing.md)
                 .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(

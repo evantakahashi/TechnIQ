@@ -48,7 +48,7 @@ struct CreatePostView: View {
                                             )
                                             .foregroundColor(
                                                 selectedType == type
-                                                    ? .white
+                                                    ? DesignSystem.Colors.textOnAccent
                                                     : DesignSystem.Colors.textSecondary
                                             )
                                             .cornerRadius(DesignSystem.CornerRadius.pill)

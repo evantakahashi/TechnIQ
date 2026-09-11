@@ -131,7 +131,8 @@ struct DayEditorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("Optional notes for this day", text: $editedNotes, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                         .lineLimit(2...4)
                         .onChange(of: editedNotes) {
                             hasChanges = true

@@ -128,6 +128,24 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertEqual(sut.totalMinutes, 1, "any time spent rounds up to a minute")
     }
 
+    func test_finishSession_withNoCompletedDrillSavesNothing() {
+        let (sut, player) = makeSUT(durations: [10, 10])
+        sut.start()
+        sut.tick()
+        sut.endSessionEarly()
+        let xpBefore = player.totalXP
+        let sessionsBefore = (player.sessions as? Set<TrainingSession>)?.count ?? 0
+
+        let result = sut.finishSession(player: player, context: stack.context)
+
+        XCTAssertNil(result.xpBreakdown, "nothing completed → nothing to award")
+        XCTAssertNil(result.newLevel)
+        XCTAssertTrue(result.achievements.isEmpty)
+        XCTAssertNil(sut.completedSession)
+        XCTAssertEqual(player.totalXP, xpBefore)
+        XCTAssertEqual((player.sessions as? Set<TrainingSession>)?.count ?? 0, sessionsBefore, "no session row is created")
+    }
+
     // MARK: - Session effort
 
     func test_applyEffort_rewritesCompletedRatingsSessionAndSkillScores() {

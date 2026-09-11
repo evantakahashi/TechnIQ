@@ -14,7 +14,7 @@ struct CommunityFeedView: View {
     init() {
         self._players = FetchRequest(
             sortDescriptors: [],
-            predicate: NSPredicate(value: false),
+            predicate: AuthenticationManager.shared.playerPredicate,
             animation: .default
         )
     }

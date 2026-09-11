@@ -247,7 +247,7 @@ struct MatchLogView: View {
                                 )
                                 .foregroundColor(
                                     positionPlayed == position
-                                        ? .white
+                                        ? DesignSystem.Colors.textOnAccent
                                         : DesignSystem.Colors.textPrimary
                                 )
                                 .cornerRadius(DesignSystem.CornerRadius.sm)
@@ -354,7 +354,7 @@ struct MatchLogView: View {
                             )
                             .foregroundColor(
                                 result == resultOption
-                                    ? .white
+                                    ? DesignSystem.Colors.textOnAccent
                                     : DesignSystem.Colors.textPrimary
                             )
                             .cornerRadius(DesignSystem.CornerRadius.md)
@@ -528,7 +528,7 @@ struct MatchLogView: View {
                                             isSelected ? accentColor : DesignSystem.Colors.cellBackground
                                         )
                                         .foregroundColor(
-                                            isSelected ? .white :
+                                            isSelected ? DesignSystem.Colors.textOnAccent :
                                             isDisabled ? DesignSystem.Colors.textTertiary :
                                             DesignSystem.Colors.textPrimary
                                         )

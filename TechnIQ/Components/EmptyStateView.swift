@@ -9,6 +9,7 @@ enum EmptyStateContext {
     case noProgress
     case noPlans
     case noPosts
+    case noLeaderboard
 }
 
 // MARK: - Empty State View
@@ -68,6 +69,7 @@ struct EmptyStateView: View {
         case .noProgress: return "chart.line.uptrend.xyaxis"
         case .noPlans: return "calendar"
         case .noPosts: return "bubble.left.and.bubble.right"
+        case .noLeaderboard: return "list.number"
         }
     }
 
@@ -85,6 +87,8 @@ struct EmptyStateView: View {
             return "No Training Plans"
         case .noPosts:
             return "No Posts Yet"
+        case .noLeaderboard:
+            return "No Rankings Yet"
         }
     }
 
@@ -102,6 +106,8 @@ struct EmptyStateView: View {
             return "Create a personalized training plan to structure your practice."
         case .noPosts:
             return "Be the first to share something with the community!"
+        case .noLeaderboard:
+            return "Complete sessions to earn XP and climb the board."
         }
     }
 
@@ -119,6 +125,8 @@ struct EmptyStateView: View {
             return "calendar.badge.plus"
         case .noPosts:
             return "square.and.pencil"
+        case .noLeaderboard:
+            return "figure.run"
         }
     }
 }
@@ -165,6 +173,7 @@ struct CompactEmptyStateView: View {
         case .noProgress: return "chart.line.uptrend.xyaxis"
         case .noPlans: return "calendar"
         case .noPosts: return "bubble.left.and.bubble.right"
+        case .noLeaderboard: return "list.number"
         }
     }
 
@@ -182,6 +191,8 @@ struct CompactEmptyStateView: View {
             return "No plans"
         case .noPosts:
             return "No posts yet"
+        case .noLeaderboard:
+            return "No rankings yet"
         }
     }
 
@@ -199,6 +210,8 @@ struct CompactEmptyStateView: View {
             return "Create a training plan"
         case .noPosts:
             return "Share with the community"
+        case .noLeaderboard:
+            return "Earn XP to get ranked"
         }
     }
 }

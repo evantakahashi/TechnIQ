@@ -15,6 +15,7 @@ struct EditProfileView: View {
     @State private var selectedPosition: String
     @State private var selectedPlayingStyle: String
     @State private var selectedDominantFoot: String
+    @State private var kitNumberText: String
     
     let positions = ["Goalkeeper", "Defender", "Midfielder", "Forward"]
     let playingStyles = ["Aggressive", "Defensive", "Balanced", "Creative", "Fast"]
@@ -29,6 +30,7 @@ struct EditProfileView: View {
         _selectedPosition = State(initialValue: player.position ?? "Midfielder")
         _selectedPlayingStyle = State(initialValue: player.playingStyle ?? "Balanced")
         _selectedDominantFoot = State(initialValue: player.dominantFoot ?? "Right")
+        _kitNumberText = State(initialValue: player.kitNumberValue.map(String.init) ?? "")
     }
     
     var body: some View {
@@ -56,6 +58,19 @@ struct EditProfileView: View {
                         Text("Weight: \(Int(playerWeight)) kg")
                         Slider(value: $playerWeight, in: 25...80, step: 1)
                         .a11yValue("\(Int(playerWeight)) kg", label: "Weight")
+                    }
+
+                    HStack {
+                        Text("Kit number")
+                        Spacer()
+                        TextField("None", text: $kitNumberText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                            .onChange(of: kitNumberText) { _, value in
+                                kitNumberText = OnboardingMapping.digits(value, maxDigits: 2)
+                            }
+                            .accessibilityLabel("Kit number, optional")
                     }
                 }
                 
@@ -113,6 +128,7 @@ struct EditProfileView: View {
         player.position = selectedPosition
         player.playingStyle = selectedPlayingStyle
         player.dominantFoot = selectedDominantFoot
+        player.kitNumberValue = OnboardingMapping.kitNumber(from: kitNumberText)
         
         coreDataManager.save()
         dismiss()
