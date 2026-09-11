@@ -239,6 +239,7 @@ struct CommunityPostCard: View {
                             .foregroundColor(DesignSystem.Colors.textSecondary)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("More actions")
                 }
 
                 // Content
@@ -273,6 +274,7 @@ struct CommunityPostCard: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel(post.isLikedByCurrentUser ? "Unlike, \(post.likesCount) likes" : "Like, \(post.likesCount) likes")
 
                     // Comment
                     Button(action: onComment) {
@@ -287,6 +289,7 @@ struct CommunityPostCard: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Comments, \(post.commentsCount)")
 
                     Spacer()
                 }

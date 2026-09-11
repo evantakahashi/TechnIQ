@@ -882,6 +882,24 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         return (week: week, day: dayModel.dayNumber)
     }
 
+    /// Read-only twin of `getCurrentDay(for:)` for SwiftUI view bodies: walks the plan model without
+    /// completing rest days or saving. Pending rest days are treated as passed, exactly as the
+    /// mutating walk would treat them, so both return the same actionable day.
+    nonisolated static func peekCurrentDay(in plan: TrainingPlanModel) -> (week: Int, day: PlanDayModel)? {
+        for week in plan.weeks.sorted(by: { $0.weekNumber < $1.weekNumber }) {
+            for day in week.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+                if day.isCompleted || day.isSkipped || day.isRestDay { continue }
+                return (week: week.weekNumber, day: day)
+            }
+        }
+        return nil
+    }
+
+    nonisolated static func peekCurrentWeekAndDay(in plan: TrainingPlanModel) -> (week: Int, day: Int)? {
+        guard let (week, day) = peekCurrentDay(in: plan) else { return nil }
+        return (week: week, day: day.dayNumber)
+    }
+
     /// Skips the current day without completing it. Does not inflate progress.
     func skipDay(dayId: UUID) {
         let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()

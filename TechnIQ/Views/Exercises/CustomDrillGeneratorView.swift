@@ -18,6 +18,7 @@ struct CustomDrillGeneratorView: View {
     @State private var showingDrillDetail = false
     @State private var showingPaywall = false
     @State private var closeMatch: Exercise?
+    @State private var generationTask: Task<Void, Never>?
 
     enum Phase: Equatable {
         case form
@@ -279,6 +280,8 @@ struct CustomDrillGeneratorView: View {
     }
 
     private func cancel() {
+        generationTask?.cancel()
+        generationTask = nil
         dismiss()
     }
 
@@ -517,9 +520,13 @@ struct CustomDrillGeneratorView: View {
     
     private func generateDrill() {
         phase = .generating
-        Task {
+        generationTask?.cancel()
+        generationTask = Task {
+            defer { generationTask = nil }
             do {
                 let exercise = try await drillService.generateCustomDrill(request: request, for: player)
+                // "Cancel keeps nothing": a cancelled request never saves or spends quota.
+                guard !Task.isCancelled else { return }
                 SubscriptionManager.shared.markCustomDrillUsed()
                 var warnings: [String] = []
                 if case .success(let response) = drillService.generationState {
@@ -527,6 +534,7 @@ struct CustomDrillGeneratorView: View {
                 }
                 phase = .created(exercise, warnings: warnings)
             } catch {
+                guard !Task.isCancelled else { return }
                 #if DEBUG
                 print("Failed to generate drill: \(error)")
                 #endif

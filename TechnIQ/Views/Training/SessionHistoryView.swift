@@ -262,7 +262,7 @@ struct SessionHistoryView: View {
                     .font(DesignSystem.Typography.titleMedium)
                     .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                if let (week, day) = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan) {
+                if let (week, day) = TrainingPlanService.peekCurrentWeekAndDay(in: plan) {
                     Text("Week \(week), Day \(day)")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.textSecondary)

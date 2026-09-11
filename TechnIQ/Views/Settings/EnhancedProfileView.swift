@@ -165,7 +165,7 @@ struct EnhancedProfileView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                     TQFigureRow(figures: [
-                        .init(value: "\(player.currentLevel)", unit: "LVL", unitFirst: true),
+                        .init(value: "\(max(Int(player.currentLevel), 1))", unit: "LVL", unitFirst: true),
                         .init(value: player.totalXP.formatted(.number), unit: "XP"),
                         .init(value: "\(coins)", unit: "C")
                     ], onPitch: true, valueSize: 18, unitSize: 16, spacing: 14)

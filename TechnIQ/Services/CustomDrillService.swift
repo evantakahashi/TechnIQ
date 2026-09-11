@@ -62,6 +62,9 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
             generationProgress = 0.9
             generationMessage = "Finalizing..."
             
+            // The caller cancelled while the function ran: keep nothing.
+            try Task.checkCancellation()
+
             // Step 4: Create Exercise from LLM response
             let exercise = try createExerciseFromLLMResponse(
                 drillResponse, 

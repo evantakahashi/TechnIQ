@@ -172,7 +172,10 @@ struct DrillMarketplaceView: View {
                 notice = "\"\(drill.title)\" added to your drills."
                 HapticManager.shared.success()
             } catch {
-                notice = "Couldn't save that drill. Try again."
+                let reason = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                notice = reason.isEmpty || reason.lowercased().contains("operation couldn")
+                    ? "Couldn't save that drill. Try again."
+                    : reason
             }
             isSavingFeatured = false
         }
