@@ -201,6 +201,7 @@ struct DiagramPath: Codable {
     let to: String
     let style: String  // "dribble", "run", "pass"
     let step: Int?     // nil = show on all steps (backward compat)
+    let verb: String?
     // Baked per-step coordinates from the server's movement simulation —
     // where this action actually happens once players have relocated.
     let fx: Double?
@@ -217,11 +218,13 @@ struct DiagramPath: Codable {
 
     init(from: String, to: String, style: String, step: Int? = nil,
          fx: Double? = nil, fy: Double? = nil, tx: Double? = nil, ty: Double? = nil,
-         alt: Bool? = nil, reset: Bool? = nil, touches: Int? = nil) {
+         alt: Bool? = nil, reset: Bool? = nil, touches: Int? = nil,
+         verb: String? = nil) {
         self.from = from
         self.to = to
         self.style = style
         self.step = step
+        self.verb = verb
         self.fx = fx
         self.fy = fy
         self.tx = tx
