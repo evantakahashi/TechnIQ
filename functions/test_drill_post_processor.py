@@ -561,3 +561,15 @@ def test_missing_collect_run_is_injected():
     styles = [(p["style"], p["to"]) for p in sorted(drill["diagram"]["paths"], key=lambda x: x["step"])]
     assert ("run", "GL") in styles, styles  # the injected fetch
     assert any("Injected collect run" in w for w in warnings)
+
+
+def test_short_pass_becomes_layoff():
+    from drill_post_processor import repair_short_passes
+    d = {"diagram": {"elements": [
+        {"type": "player", "x": 5, "y": 5, "label": "P1"},
+        {"type": "player", "x": 5.8, "y": 5, "label": "P2"},
+    ], "paths": [{"from": "P1", "to": "P2", "style": "pass", "step": 1,
+                  "fx": 5, "fy": 5, "tx": 5.8, "ty": 5}]}}
+    repair_short_passes(d)
+    q = d["diagram"]["paths"][0]
+    assert q["style"] == "receive" and q["from"] == "P2" and q["to"] == "P1"

@@ -42,6 +42,11 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
     home = {e["label"]: [float(e["x"]), float(e["y"])]
             for e in elements if e.get("type") == "player"}
     defenders = {e["label"] for e in elements if e.get("role") == "defender"}
+    goal_boxes = []
+    for e in elements:
+        if e.get("type") == "goal":
+            half = float(e.get("width") or 7.32) / 2
+            goal_boxes.append((float(e["x"]), float(e["y"]), half))
     main = [p for p in phases_all if p.get("kind") != "outcome"]
     outs = [p for p in phases_all if p.get("kind") == "outcome"]
     first_ball = next((p["tracks"][BALL][0] for p in main
@@ -110,6 +115,19 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
             if not lo <= v <= hi:
                 findings.append(f"SPEED {cid} phase{pi}: {v:.1f} m/s "
                                 f"({kind}, '{p.get('label','')[:30]}')")
+        # nobody lives inside the goal: a player track ENDING in a goal's
+        # mouth box reads as "receiving the ball in the goal"
+        for lbl, tr in tracks.items():
+            if lbl == BALL or kind == "fade":
+                continue  # fetching the ball out of the net is a reset, not play
+            ex, ey = tr[1]
+            for gx, gy, half in goal_boxes:
+                if (abs(ex - gx) < 1.6 and abs(ey - gy) <= half) or \
+                   (abs(ey - gy) < 1.6 and abs(ex - gx) <= half):
+                    findings.append(
+                        f"INGOAL {cid} phase{pi}: {lbl} ends up inside the "
+                        f"goal mouth ('{p.get('label','')[:30]}')")
+                    break
         # captions
         lab = (p.get("label") or "").strip()
         if not lab:

@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 from drill_timeline import compile_timeline
 from drill_director import direct_timeline
+from drill_critic import critique
 from eval.anim_lint import lint
 
 BALL = "__ball__"
@@ -120,15 +121,23 @@ def _sanitize(timeline: dict[str, Any], drill: dict[str, Any]) -> dict[str, Any]
                            [float(tr[1][0]), float(tr[1][1])]]
             except (TypeError, ValueError, IndexError):
                 return None
+        kind = p.get("kind") if p.get("kind") in \
+            ("action", "fade", "tossup", "outcome") else "action"
+        # pacing is physics, not art: raise the duration until the fastest
+        # track obeys the speed cap for this phase kind (never fail on it)
+        vmax = {"fade": 13.0, "outcome": 11.0, "action": 36.0,
+                "tossup": 36.0}[kind]
+        mx = max((math.hypot(tr[1][0] - tr[0][0], tr[1][1] - tr[0][1])
+                  for tr in t2.values()), default=0.0)
+        d_min = int(mx / vmax * 1000) + 1 if mx > 0.5 else 300
         clean.append({
-            "d": int(max(300, min(2600, p.get("d", 700)))),
+            "d": int(max(300, max(d_min, min(2600, p.get("d", 700))))),
             "tracks": t2,
             "hips": p.get("hips") or {},
             "eye": p.get("eye") or None,
             "label": str(p.get("label", ""))[:90],
             "ease": p.get("ease") if p.get("ease") in ("lin", "out") else "lin",
-            "kind": p.get("kind") if p.get("kind") in
-                    ("action", "fade", "tossup", "outcome") else "action",
+            "kind": kind,
             "step": p.get("step"),
         })
     return {"phases": clean}
@@ -158,6 +167,7 @@ def author_timeline(drill: dict[str, Any],
         n_phases_hint=max(6, min(18, n_paths + 3)))
 
     findings_prev: list[str] = []
+    best = None
     for attempt in range(2):
         p = prompt if not findings_prev else (
             prompt + "\n\nYOUR PREVIOUS CUT HAD THESE DEFECTS — fix them:\n"
@@ -175,9 +185,21 @@ def author_timeline(drill: dict[str, Any],
         probe = dict(drill)
         probe["animation"] = tl
         findings = lint(probe) + _fidelity(drill, tl)
+        crit = {"blockers": [], "notes": []}
         if not findings:
+            crit = critique(drill, tl, llm_call)  # the sense referee
+            findings = list(crit["blockers"])
+        if not findings:
+            if attempt == 0 and crit["notes"]:
+                # one polish retake on taste notes — the noted cut still ships
+                best = tl
+                findings_prev = crit["notes"]
+                continue
             tl["authored"] = True
             return tl
         findings_prev = findings
+    if best is not None:
+        best["authored"] = True  # noted but sound — ship the authored cut
+        return best
     # referee couldn't clear it — the rule-compiled cut is the safe fallback
     return direct_timeline(drill, compile_timeline(drill), llm_call)

@@ -718,6 +718,30 @@ def annotate_path_positions(drill: dict) -> None:
                 cur["sync"] = True
 
 
+def repair_short_passes(drill: Dict) -> None:
+    """A pass of under ~1m to a teammate IS a layoff — express it as one.
+
+    Tight one-twos legitimately exchange at arm's length; failing them made
+    give-and-go unbuildable. Runs after coordinate baking (needs fx/tx).
+    """
+    by_label = {e.get("label"): e for e in (drill.get("diagram", {})
+                                            .get("elements", []))}
+    for q in drill.get("diagram", {}).get("paths", []):
+        if q.get("alt") or q.get("style") not in ("pass", "toss"):
+            continue
+        if by_label.get(q.get("to"), {}).get("type") not in (
+                "player", "server", "defender"):
+            continue
+        fx, fy, tx, ty = (q.get("fx"), q.get("fy"), q.get("tx"), q.get("ty"))
+        if None in (fx, fy, tx, ty):
+            continue
+        if math.hypot(tx - fx, ty - fy) < 1.2:
+            q["from"], q["to"] = q["to"], q["from"]
+            q["style"] = "receive"
+            q["verb"] = "takes the layoff from"
+            q["fx"], q["fy"], q["tx"], q["ty"] = tx, ty, fx, fy
+
+
 def crop_field_to_content(drill: Dict, margin: float = 6.0,
                           min_w: float = 15.0, min_l: float = 12.0) -> None:
     """Shrink an oversized field to the drill's content plus a margin.

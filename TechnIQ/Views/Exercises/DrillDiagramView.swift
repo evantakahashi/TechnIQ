@@ -1222,11 +1222,11 @@ function loadDrill(drill){
       if(playing&&pts.length){
         let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
         pts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});
-        const pad=5*S2, bw=Math.max(x1-x0+2*pad, 14*S2), bh=Math.max(y1-y0+2*pad, 14*S2);
-        tz=Math.max(1, Math.min(2.6, Math.min(VB0[2]/bw, VB0[3]/bh)));
+        const pad=4*S2, bw=Math.max(x1-x0+2*pad, 12*S2), bh=Math.max(y1-y0+2*pad, 12*S2);
+        tz=Math.max(1, Math.min(3.2, Math.min(VB0[2]/bw, VB0[3]/bh)));
         tcx=(x0+x1)/2; tcy=(y0+y1)/2;
       }
-      cam.z+= (tz-cam.z)*0.07; cam.cx+=(tcx-cam.cx)*0.07; cam.cy+=(tcy-cam.cy)*0.07;
+      cam.z+= (tz-cam.z)*0.10; cam.cx+=(tcx-cam.cx)*0.10; cam.cy+=(tcy-cam.cy)*0.10;
       const w=VB0[2]/cam.z, h=VB0[3]/cam.z;
       let vx=cam.cx-w/2, vy=cam.cy-h/2;
       vx=Math.max(VB0[0],Math.min(VB0[0]+VB0[2]-w,vx));
@@ -1275,12 +1275,12 @@ function loadDrill(drill){
       const k=easef(kRaw,q.ease);
       svgEl.style.opacity="1";
       ball.setAttribute("r", q.kind==="tossup" ? 6.5+5*Math.sin(Math.PI*kRaw) : 6.5);
-      let ballSet=false,ballStart=null,ballNow=null;const camPts=[];
+      let ballSet=false,ballStart=null,ballNow=null;const camPts=[];const camActors=[];
       for(const lbl in q.tracks){
         const tr=q.tracks[lbl],A=px(tr[0]),B=px(tr[1]);
         const X=A.x+(B.x-A.x)*k,Y=A.y+(B.y-A.y)*k;
         if(lbl===BALLK){ball.setAttribute("cx",X);ball.setAttribute("cy",Y);ballSet=true;lastPos[BALLK]={x:X,y:Y};ballStart=A;ballNow={x:X,y:Y};camPts.push({x:X,y:Y});camPts.push({x:B.x,y:B.y});}
-        else{const g=grp(lbl); if(g&&orig[lbl])g.setAttribute("transform",`translate(${X-orig[lbl].x} ${Y-orig[lbl].y})`); lastPos[lbl]={x:X,y:Y};camPts.push({x:X,y:Y});}
+        else{const g=grp(lbl); if(g&&orig[lbl])g.setAttribute("transform",`translate(${X-orig[lbl].x} ${Y-orig[lbl].y})`); lastPos[lbl]={x:X,y:Y};camActors.push({x:X,y:Y});}
       }
       if(!ballSet&&lastPos[BALLK]){ball.setAttribute("cx",lastPos[BALLK].x);ball.setAttribute("cy",lastPos[BALLK].y);}
       svgEl.querySelectorAll('path[data-h]').forEach(w=>{w.setAttribute("opacity",0);w.setAttribute("fill","rgba(0,0,0,.38)");});
@@ -1301,6 +1301,15 @@ function loadDrill(drill){
       const flying=ballStart&&ballNow&&q.kind!=="fade"&&q.kind!=="tossup"
         &&(Math.abs(ballNow.x-ballStart.x)+Math.abs(ballNow.y-ballStart.y)>2);
       trail.setAttribute("d",playing&&flying?`M ${ballStart.x} ${ballStart.y} L ${ballNow.x} ${ballNow.y}`:"");
+      // the star of the shot is the ball and whoever is with it — always in
+      // frame; other actors join only if they are near the action
+      const bref=ballNow||lastPos[BALLK];
+      if(bref){
+        let best=null,bd=1e9;
+        camActors.forEach(a=>{const dd=Math.hypot(a.x-bref.x,a.y-bref.y); if(dd<bd){bd=dd;best=a;}});
+        if(best)camPts.push(best);
+        camActors.forEach(a=>{ if(Math.hypot(a.x-bref.x,a.y-bref.y)<14*S2) camPts.push(a); });
+      } else camActors.forEach(a=>camPts.push(a));
       camTick(camPts);
     }
     function frame(now){

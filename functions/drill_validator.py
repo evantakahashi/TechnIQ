@@ -80,6 +80,34 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_major_props_used(elements, paths)
     _check_duel_escapes_are_choices(elements, paths, bool(drill.get("is_duel")))
     _check_opponents_act(elements, paths)
+    _check_players_out_of_goal(elements, paths)
+
+
+def _check_players_out_of_goal(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Play never ends inside the goal mouth — 'why is the player receiving
+    the ball in the goal'. Reset legs (fetching from the net) are exempt."""
+    goals = [(float(g["x"]), float(g["y"]), float(g.get("width") or 7.32) / 2)
+             for g in elements if g.get("type") == "goal"]
+    if not goals:
+        return
+    players = {e.get("label") for e in elements if e.get("type") == "player"}
+    for p in paths:
+        if p.get("alt") or p.get("reset") or p.get("from") not in players:
+            continue
+        if p.get("style") not in ("run", "dribble", "receive"):
+            continue
+        tx, ty = p.get("tx"), p.get("ty")
+        if tx is None:
+            continue
+        for gx, gy, half in goals:
+            if (abs(tx - gx) < 1.6 and abs(ty - gy) <= half) or \
+               (abs(ty - gy) < 1.6 and abs(tx - gx) <= half):
+                raise ValidationError(
+                    f"step {p.get('step')}: {p.get('from')} ends the action "
+                    "inside the goal mouth — players play IN FRONT of goals; "
+                    "pull that spot out of the mouth")
 
 
 def _check_opponents_act(
