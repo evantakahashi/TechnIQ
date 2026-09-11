@@ -202,7 +202,7 @@ struct DifficultySelectionButton: View {
         Button(action: onTap) {
             Text(difficulty.displayName)
                 .font(DesignSystem.Typography.bodySmall)
-                .foregroundColor(isSelected ? .white : DesignSystem.Colors.textPrimary)
+                .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                 .padding(.horizontal, DesignSystem.Spacing.sm)
                 .padding(.vertical, DesignSystem.Spacing.xs)
                 .frame(maxWidth: .infinity)

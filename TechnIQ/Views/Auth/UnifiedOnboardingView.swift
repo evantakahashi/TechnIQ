@@ -181,7 +181,7 @@ struct UnifiedOnboardingView: View {
         case .weakSpots:
             copy(eyebrow: "Weak spots", title: "What needs\nthe most work?", body: "Pick up to three. Your plan leans into these first.")
         case .about:
-            copy(eyebrow: "About you", title: "Last thing —\nabout you", body: "Your name is shown to other players. Age and level size the load.")
+            copy(eyebrow: "About you", title: "Last thing:\nabout you", body: "Your name is shown to other players. Age and level size the load.")
         default:
             EmptyView()
         }
@@ -285,7 +285,8 @@ struct UnifiedOnboardingView: View {
     /// The remaining decision steps, e.g. "how often · position · weak spots · about you".
     private var upcomingSteps: String? {
         let remaining = decisionSteps.filter { $0.rawValue > step.rawValue }
-        guard !remaining.isEmpty else { return nil }
+        // The button already names the next step; only list when there is more beyond it.
+        guard remaining.count >= 2 else { return nil }
         return remaining.map(\.shortName).joined(separator: " · ")
     }
 

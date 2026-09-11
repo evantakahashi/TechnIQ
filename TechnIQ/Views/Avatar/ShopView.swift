@@ -97,7 +97,7 @@ struct ShopView: View {
             Text(title)
                 .font(DesignSystem.Typography.labelMedium)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .white : DesignSystem.Colors.textSecondary)
+                .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
                 .padding(.horizontal, DesignSystem.Spacing.md)
                 .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.backgroundSecondary)
@@ -360,12 +360,12 @@ struct ShopItemCard: View {
 
     private var itemColor: Color {
         // Map item ID to preview color
-        if item.id.contains("blue") { return DesignSystem.Colors.secondaryBlue }
+        if item.id.contains("blue") { return DesignSystem.Colors.kitBlue }
         if item.id.contains("red") { return .red }
         if item.id.contains("yellow") { return .yellow }
         if item.id.contains("black") { return .black }
         if item.id.contains("white") { return .white }
-        if item.id.contains("gold") { return DesignSystem.Colors.xpGold }
+        if item.id.contains("gold") { return DesignSystem.Colors.kitGold }
         if item.id.contains("neon") { return .green }
         return DesignSystem.Colors.primaryGreen
     }

@@ -100,7 +100,8 @@ struct WeekEditorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("e.g., Ball Control Fundamentals", text: $editedFocusArea)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                         .onChange(of: editedFocusArea) {
                             hasChanges = true
                         }
@@ -113,7 +114,8 @@ struct WeekEditorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("Optional notes for this week", text: $editedNotes, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                         .lineLimit(2...4)
                         .onChange(of: editedNotes) {
                             hasChanges = true

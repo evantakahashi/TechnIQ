@@ -141,7 +141,7 @@ struct SkillTrendChartView: View {
                         Text(category)
                             .font(DesignSystem.Typography.labelMedium)
                             .fontWeight(selectedCategory == category ? .semibold : .regular)
-                            .foregroundColor(selectedCategory == category ? .white : DesignSystem.Colors.textSecondary)
+                            .foregroundColor(selectedCategory == category ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
@@ -174,7 +174,7 @@ struct SkillTrendChartView: View {
                             Text(skill)
                                 .font(DesignSystem.Typography.bodySmall)
                                 .fontWeight(selectedSkill == skill ? .semibold : .regular)
-                                .foregroundColor(selectedSkill == skill ? .white : DesignSystem.Colors.textPrimary)
+                                .foregroundColor(selectedSkill == skill ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                                 .background(

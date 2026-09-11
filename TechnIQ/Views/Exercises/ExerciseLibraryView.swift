@@ -326,6 +326,14 @@ struct ExerciseLibraryView: View {
 
     private func loadExercises() {
         allExercises = CoreDataManager.shared.fetchExercises(for: player)
+        #if DEBUG
+        // `-TQTrainState empty` previews the first-run library (design 15-train-empty).
+        if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "-TQTrainState"),
+           index + 1 < ProcessInfo.processInfo.arguments.count,
+           ProcessInfo.processInfo.arguments[index + 1] == "empty" {
+            allExercises = []
+        }
+        #endif
     }
 
     private func loadCoachSuggestions() {

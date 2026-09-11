@@ -113,7 +113,8 @@ struct PlanEditorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("Enter plan name", text: $editedName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                         .onChange(of: editedName) {
                             hasChanges = true
                         }
@@ -126,7 +127,8 @@ struct PlanEditorView: View {
                         .foregroundColor(DesignSystem.Colors.textSecondary)
 
                     TextField("Enter description", text: $editedDescription, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                         .lineLimit(3...6)
                         .onChange(of: editedDescription) {
                             hasChanges = true

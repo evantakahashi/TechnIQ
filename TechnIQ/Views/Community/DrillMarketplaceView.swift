@@ -21,7 +21,7 @@ struct DrillMarketplaceView: View {
     init() {
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true),
+            predicate: AuthenticationManager.shared.playerPredicate,
             animation: .default
         )
     }

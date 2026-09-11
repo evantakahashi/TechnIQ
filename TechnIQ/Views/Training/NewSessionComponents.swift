@@ -316,7 +316,7 @@ struct ExercisePickerView: View {
                                     Text(category)
                                         .font(DesignSystem.Typography.bodyMedium)
                                         .fontWeight(.medium)
-                                        .foregroundColor(selectedCategory == category ? .white : DesignSystem.Colors.textPrimary)
+                                        .foregroundColor(selectedCategory == category ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                                         .padding(.horizontal, DesignSystem.Spacing.md)
                                         .padding(.vertical, DesignSystem.Spacing.sm)
                                         .background(

@@ -138,12 +138,12 @@ struct NewSessionView: View {
                             HStack {
                                 Image(systemName: iconForSessionType(type))
                                     .font(DesignSystem.Typography.bodyMedium)
-                                    .foregroundColor(sessionType == type ? .white : DesignSystem.Colors.primaryGreen)
+                                    .foregroundColor(sessionType == type ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.primaryGreen)
                                 
                                 Text(type)
                                     .font(DesignSystem.Typography.bodyMedium)
                                     .fontWeight(.medium)
-                                    .foregroundColor(sessionType == type ? .white : DesignSystem.Colors.textPrimary)
+                                    .foregroundColor(sessionType == type ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, DesignSystem.Spacing.sm)

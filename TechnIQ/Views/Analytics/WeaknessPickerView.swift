@@ -119,11 +119,11 @@ private struct WeaknessCategoryChip: View {
         HStack(spacing: DesignSystem.Spacing.sm) {
             Image(systemName: category.icon)
                 .font(.system(size: 14))
-                .foregroundColor(isExpanded ? .white : DesignSystem.Colors.primaryGreen)
+                .foregroundColor(isExpanded ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.primaryGreen)
 
             Text(category.displayName)
                 .font(DesignSystem.Typography.labelMedium)
-                .foregroundColor(isExpanded ? .white : DesignSystem.Colors.textPrimary)
+                .foregroundColor(isExpanded ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
                 .lineLimit(1)
 
             Spacer()
@@ -163,7 +163,7 @@ private struct SubWeaknessChip: View {
             .padding(.horizontal, DesignSystem.Spacing.md)
             .padding(.vertical, DesignSystem.Spacing.sm)
             .background(isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceRaised)
-            .foregroundColor(isSelected ? .white : DesignSystem.Colors.textPrimary)
+            .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
             .cornerRadius(DesignSystem.CornerRadius.pill)
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.pill)

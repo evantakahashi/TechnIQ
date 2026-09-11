@@ -592,7 +592,7 @@ struct ProgrammaticAvatarView: View {
         case .starterGreen: return DesignSystem.Colors.primaryGreen
         case .classicWhite: return .white
         case .strikerRed: return .red
-        case .royalBlue: return DesignSystem.Colors.secondaryBlue
+        case .royalBlue: return DesignSystem.Colors.kitBlue
         case .brazilYellow: return .yellow
         case .barcelonaStyle: return Color(red: 0.6, green: 0.1, blue: 0.2)
         case .classicBlack: return .black
@@ -605,7 +605,7 @@ struct ProgrammaticAvatarView: View {
         case .starterWhite: return .white
         case .classicBlack: return .black
         case .matchingGreen: return DesignSystem.Colors.primaryGreen
-        case .blueAthletic: return DesignSystem.Colors.secondaryBlue
+        case .blueAthletic: return DesignSystem.Colors.kitBlue
         case .redSport: return .red
         }
     }
@@ -684,7 +684,7 @@ struct CompactProgrammaticAvatarView: View {
         case .starterGreen: return DesignSystem.Colors.primaryGreen
         case .classicWhite: return .gray
         case .strikerRed: return .red
-        case .royalBlue: return DesignSystem.Colors.secondaryBlue
+        case .royalBlue: return DesignSystem.Colors.kitBlue
         case .brazilYellow: return .yellow
         case .barcelonaStyle: return Color(red: 0.6, green: 0.1, blue: 0.2)
         case .classicBlack: return .black

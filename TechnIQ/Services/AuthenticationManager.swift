@@ -555,6 +555,20 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     var hasValidUser: Bool {
         return !userUID.isEmpty
     }
+
+    /// `Player` rows owned by the signed-in user (matches nothing when signed out). Use these in
+    /// `@FetchRequest` initialisers, not only in `onAppear`: SwiftUI re-runs a view's `init` on every
+    /// parent re-render, so an initial "match everything / nothing" predicate would come back.
+    var playerPredicate: NSPredicate {
+        let uid = userUID
+        return uid.isEmpty ? NSPredicate(value: false) : NSPredicate(format: "firebaseUID == %@", uid)
+    }
+
+    /// Rows whose `player` relationship belongs to the signed-in user.
+    var ownedByPlayerPredicate: NSPredicate {
+        let uid = userUID
+        return uid.isEmpty ? NSPredicate(value: false) : NSPredicate(format: "player.firebaseUID == %@", uid)
+    }
 }
 
 // MARK: - Apple Sign-In Delegate

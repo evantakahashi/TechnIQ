@@ -79,9 +79,9 @@ struct WeeklyDayView: View {
 
     private var textColor: Color {
         if isToday {
-            return isSelected ? .white : DesignSystem.Colors.primaryGreen
+            return isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.primaryGreen
         } else {
-            return isSelected ? .white : DesignSystem.Colors.textPrimary
+            return isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary
         }
     }
 

@@ -152,15 +152,16 @@ final class TouchlineHomeUITests: XCTestCase {
         endSession.tap()
         let confirm = app.alerts.buttons["End Session"]
         if confirm.waitForExistence(timeout: 4) { confirm.tap() }
-        // Ending early lands on Session Complete; Continue/Done returns to Home.
-        let sessionComplete = text(containing: "Session Complete")
-        XCTAssertTrue(sessionComplete.waitForExistence(timeout: 15), "session complete shown after ending early")
-        shot("session-complete")
-        let cont = app.buttons["Continue"].exists ? app.buttons["Continue"] : app.buttons["Done"]
-        XCTAssertTrue(cont.waitForExistence(timeout: 5), "Continue/Done on session complete")
-        cont.tap()
+        // Ending before any drill is completed keeps nothing: a "Nothing saved" card with Done.
+        let nothingSaved = text(containing: "Nothing saved")
+        XCTAssertTrue(nothingSaved.waitForExistence(timeout: 15), "nothing-saved state shown after ending early with no drill done")
+        XCTAssertFalse(text(containing: "Session Complete").exists, "no XP screen for an empty session")
+        shot("session-nothing-saved")
+        let done = app.buttons["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "Done on the nothing-saved card")
+        done.tap()
         XCTAssertTrue(start.waitForExistence(timeout: 15), "back on Home after the session")
-        XCTAssertFalse(sessionComplete.waitForExistence(timeout: 2), "session complete dismissed")
+        XCTAssertFalse(nothingSaved.waitForExistence(timeout: 2), "nothing-saved card dismissed")
         shot("home-after-session")
     }
 

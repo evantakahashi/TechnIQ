@@ -37,7 +37,7 @@ struct LeaderboardView: View {
                 Spacer()
             } else if communityService.leaderboard.isEmpty {
                 Spacer()
-                EmptyStateView(context: .noPosts)
+                EmptyStateView(context: .noLeaderboard)
                 Spacer()
             } else {
                 ScrollView {

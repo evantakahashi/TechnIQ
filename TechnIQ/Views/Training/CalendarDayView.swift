@@ -118,9 +118,9 @@ struct CalendarDayView: View {
         if !isCurrentMonth {
             return DesignSystem.Colors.textTertiary
         } else if isToday {
-            return isSelected ? .white : DesignSystem.Colors.primaryGreen
+            return isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.primaryGreen
         } else {
-            return isSelected ? .white : DesignSystem.Colors.textPrimary
+            return isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary
         }
     }
 

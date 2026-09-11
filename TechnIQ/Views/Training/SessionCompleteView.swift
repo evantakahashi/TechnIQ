@@ -27,7 +27,9 @@ struct SessionCompleteView: View {
     var sessionRating: Int? = nil
 
     // Touchline
-    var recap: [SessionRecapItem] = []
+    /// Completed drills. nil = not supplied (legacy callers): every exercise is listed.
+    /// An empty array means the session ended before any drill was completed.
+    var recap: [SessionRecapItem]? = nil
     var xpBefore: Int64? = nil
     var levelBefore: Int? = nil
     var weekSummary: String? = nil
@@ -112,7 +114,7 @@ struct SessionCompleteView: View {
             ShareToCommunitySheet(
                 shareType: .session(
                     duration: sessionDurationMinutes,
-                    exerciseCount: recap.isEmpty ? exercises.count : recap.count,
+                    exerciseCount: completedCount,
                     rating: Double(efforts[min(effortIndex, efforts.count - 1)].rating),
                     xp: Int(xpBreakdown?.total ?? 0)
                 ),
@@ -153,9 +155,12 @@ struct SessionCompleteView: View {
         return formatter.string(from: Date())
     }
 
+    /// Drills that count for this session: the supplied recap, else every exercise.
+    private var completedCount: Int { recap?.count ?? exercises.count }
+
     private var summaryLine: String {
-        let count = recap.isEmpty ? exercises.count : recap.count
-        var parts: [String] = ["\(count) drill\(count == 1 ? "" : "s")"]
+        let count = completedCount
+        var parts: [String] = [count == 0 ? "Ended early" : "\(count) drill\(count == 1 ? "" : "s")"]
         if sessionDurationMinutes > 0 { parts.append("\(sessionDurationMinutes) min") }
         if let focus = dominantSkill { parts.append("\(focus.lowercased()) work done") }
         var line = parts.joined(separator: " · ") + "."
@@ -219,9 +224,8 @@ struct SessionCompleteView: View {
 
     @ViewBuilder
     private var recapSection: some View {
-        let items: [(String, String?)] = recap.isEmpty
-            ? exercises.map { ($0.name ?? "Drill", nil) }
-            : recap.map { ($0.name, recapMeta($0)) }
+        let items: [(String, String?)] = recap.map { $0.map { ($0.name, recapMeta($0)) } }
+            ?? exercises.map { ($0.name ?? "Drill", nil) }
         if !items.isEmpty {
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.offset) { index, item in

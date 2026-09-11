@@ -497,7 +497,8 @@ struct ExerciseDetailView: View {
 
                 // Optional notes
                 TextField("Any comments? (optional)", text: $feedbackNotes)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textFieldStyle(.plain)
+                        .modernTextFieldStyle()
                     .font(.subheadline)
 
                 // Submit button
@@ -597,7 +598,7 @@ struct FeedbackChip: View {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(selected ? DesignSystem.Colors.primaryGreen : Color.gray.opacity(0.2))
                 )
-                .foregroundColor(selected ? .white : DesignSystem.Colors.textSecondary)
+                .foregroundColor(selected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
         }
         .buttonStyle(PlainButtonStyle())
     }

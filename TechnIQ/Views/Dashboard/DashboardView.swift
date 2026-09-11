@@ -68,17 +68,17 @@ struct DashboardView: View {
         self._selectedTab = selectedTab
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
-            predicate: NSPredicate(value: true),
+            predicate: AuthenticationManager.shared.playerPredicate,
             animation: .default
         )
         self._recentSessions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
-            predicate: NSPredicate(value: true),
+            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
         self._recentMatches = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Match.date, ascending: false)],
-            predicate: NSPredicate(value: true),
+            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
     }

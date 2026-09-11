@@ -19,6 +19,7 @@ struct ActiveTrainingView: View {
     @State private var xpBreakdown: SessionXPBreakdown?
     @State private var newLevel: Int?
     @State private var unlockedAchievements: [Achievement] = []
+    @State private var hasFinished = false
     @State private var xpBeforeSession: Int64 = 0
     @State private var levelBeforeSession: Int = 1
 
@@ -269,10 +270,40 @@ struct ActiveTrainingView: View {
 
     // MARK: - Session Complete
 
+    /// Ended before any drill was completed: nothing was saved, so no XP or recap to show.
+    private var nothingSavedContent: some View {
+        TQScreen {
+            VStack(spacing: DesignSystem.Spacing.section) {
+                Spacer()
+                TQHeroCard(
+                    eyebrow: "Ended early",
+                    title: "Nothing saved",
+                    body: "Finish at least one drill and the session counts toward your streak and XP.",
+                    actionTitle: "Done",
+                    actionIcon: nil,
+                    markings: .heroSimple,
+                    action: { dismiss() }
+                )
+                Spacer()
+            }
+        }
+    }
+
     @ViewBuilder
     private var sessionCompleteContent: some View {
         if let player = currentPlayer {
-            if xpBreakdown != nil {
+            if !hasFinished {
+                Color.clear
+                    .onAppear {
+                        let result = manager.finishSession(player: player, context: viewContext)
+                        xpBreakdown = result.xpBreakdown
+                        newLevel = result.newLevel
+                        unlockedAchievements = result.achievements
+                        hasFinished = true
+                    }
+            } else if xpBreakdown == nil {
+                nothingSavedContent
+            } else {
                 SessionCompleteView(
                     xpBreakdown: xpBreakdown,
                     newLevel: newLevel,
@@ -290,14 +321,6 @@ struct ActiveTrainingView: View {
                         manager.applyEffort(effort, to: manager.completedSession, player: player, context: viewContext)
                     }
                 )
-            } else {
-                Color.clear
-                    .onAppear {
-                        let result = manager.finishSession(player: player, context: viewContext)
-                        xpBreakdown = result.xpBreakdown
-                        newLevel = result.newLevel
-                        unlockedAchievements = result.achievements
-                    }
             }
         } else {
             TQScreen {

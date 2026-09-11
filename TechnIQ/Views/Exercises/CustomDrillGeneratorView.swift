@@ -351,7 +351,7 @@ struct CustomDrillGeneratorView: View {
                         Spacer()
                         Text("\(request.skillDescription.count)/500")
                             .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(request.skillDescription.isValidSkillDescription ? 
+                            .foregroundColor(request.skillDescription.isEmpty || request.skillDescription.isValidSkillDescription ?
                                            DesignSystem.Colors.textSecondary : DesignSystem.Colors.error)
                     }
                 }
@@ -481,11 +481,11 @@ struct CustomDrillGeneratorView: View {
                             VStack(spacing: DesignSystem.Spacing.xs) {
                                 Image(systemName: size.icon)
                                     .font(.title3)
-                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
+                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
 
                                 Text(size.displayName)
                                     .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
                             }
@@ -557,10 +557,10 @@ struct CategorySelectionCard: View {
                 VStack(spacing: DesignSystem.Spacing.xs) {
                     Image(systemName: category.iconSystemName)
                         .font(.title3)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
                     Text(category.displayName)
                         .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
@@ -596,7 +596,7 @@ struct DifficultySelectionCard: View {
                         .foregroundColor(difficultyColor)
                     Text(difficulty.displayName)
                         .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -635,11 +635,11 @@ struct EquipmentSelectionCard: View {
                 VStack(spacing: DesignSystem.Spacing.xs) {
                     Image(systemName: equipment.icon)
                         .font(.title3)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.primaryGreen)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
                     
                     Text(equipment.displayName)
                         .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
+                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
