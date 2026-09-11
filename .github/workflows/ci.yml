@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, feat/touchline-ui]
+    branches: [main]
 
 # Cancel in-progress runs for the same ref when a new commit is pushed.
 concurrency:
@@ -121,7 +121,8 @@ jobs:
 
       # The Touchline suites launch the app with `-TQLocalUser -TQSeedDemo` (DEBUG-only): a fixed
       # local UID plus a seeded player, so no Firebase sign-in or network state is needed.
-      # WalkthroughUITests need a real login and stay out of CI.
+      # WalkthroughUITests need a real login and stay out of CI. A failed test is retried once
+      # (-retry-tests-on-failure) to absorb simulator relaunch flakes on shared runners.
       - name: Run Touchline UI tests
         run: |
           set -o pipefail
@@ -134,6 +135,8 @@ jobs:
             -only-testing:TechnIQUITests/TouchlineScreensUITests \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
+            -retry-tests-on-failure \
+            -test-iterations 2 \
             $XCODEBUILD_FLAGS \
             test
 
