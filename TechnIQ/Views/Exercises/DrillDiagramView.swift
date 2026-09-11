@@ -1018,6 +1018,14 @@ extension DrillWebAnimationView {
         return "{\"diagram\":\(d),\"animation\":\(a)}"
     }
 
+    /// Overload for call sites that hold the decoded diagram.
+    static func composedJSON(diagram: DrillDiagram, animationJSON: String?) -> String? {
+        guard let a = animationJSON, !a.isEmpty,
+              let data = try? JSONEncoder().encode(diagram),
+              let d = String(data: data, encoding: .utf8) else { return nil }
+        return "{\"diagram\":\(d),\"animation\":\(a)}"
+    }
+
     static let playerHTML: String = ##"""
 <!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -1025,10 +1033,10 @@ extension DrillWebAnimationView {
 html,body{margin:0;padding:0;background:transparent;-webkit-user-select:none;user-select:none;overflow:hidden}
 svg{width:100vw;height:auto;display:block;border-radius:10px}
 .animbar{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;padding:0 10px}
-.animbar button{font:700 14px/1 -apple-system,system-ui;border:1px solid rgba(128,140,128,.4);background:rgba(128,140,128,.14);color:inherit;border-radius:9px;padding:9px 16px}
+.animbar button{font:600 12px/1 -apple-system,system-ui;letter-spacing:.06em;text-transform:uppercase;border:0;background:#5CCB5F;color:#0E1210;border-radius:7px;padding:10px 16px}
 .animbar input{flex:1}
-.animcap{text-align:center;font:600 14px/1.45 -apple-system,system-ui;margin:8px 10px 4px;min-height:20px;color:inherit}
-body{color:#E8F0E8}
+.animcap{text-align:center;font:600 13px/1.45 -apple-system,system-ui;margin:8px 10px 4px;min-height:20px;color:#D7E3DA}
+body{color:#BFD3C4}
 @media (prefers-color-scheme: light){body{color:#1A211B}}
 </style></head><body>
 <div id="stage"></div>
@@ -1040,7 +1048,7 @@ function rot(e,W,L){const d=[e.x,W-e.x,e.y,L-e.y];const m=Math.min(...d);return 
 function renderPitch(drill){
   const dg=drill.diagram,f=dg.field,W=f.width,L=f.length,S=30,vw=W*S,vh=L*S;
   const svg=el("svg",{viewBox:`-14 -14 ${vw+28} ${vh+28}`,role:"img","aria-label":"drill diagram"});
-  svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"#4E9B4B"}));
+  svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"#173A26"}));
   for(let i=0;i<Math.floor(L/3);i++){ if(i%2===0) svg.appendChild(el("rect",{x:0,y:i*3*S,width:vw,height:3*S,fill:"var(--stripe)"})); }
   svg.appendChild(el("circle",{cx:vw/2,cy:vh/2,r:Math.min(vw,vh)*.16,fill:"none",stroke:"rgba(255,255,255,.35)","stroke-width":1.5}));
   // Penalty areas in front of edge goals
@@ -1121,7 +1129,7 @@ function renderPitch(drill){
   });
   dg.elements.forEach(e=>{
     const x=px(e),y=py(e),g=el("g",{"data-label":e.label,"data-type":e.type});
-    if(e.type==="cone"){ g.appendChild(el("path",{d:`M ${x} ${y-7} L ${x-6.5} ${y+5} L ${x+6.5} ${y+5} Z`,fill:"#F2A623",stroke:"#8A4F0B","stroke-width":.8})); }
+    if(e.type==="cone"){ g.appendChild(el("path",{d:`M ${x} ${y-7} L ${x-6.5} ${y+5} L ${x+6.5} ${y+5} Z`,fill:"#F0A33A",stroke:"#7A4A12","stroke-width":.8})); }
     else if(e.type==="ball"){ g.appendChild(el("circle",{cx:x,cy:y,r:4.6,fill:"#fff",stroke:"#222","stroke-width":1})); }
     else if(e.type==="goal"||e.type==="gate"){
       const r=rot(e,W,L),wpx=((e.type==="goal"?(e.width||7.32):(e.width||1.6))*S);
@@ -1131,10 +1139,10 @@ function renderPitch(drill){
       g.appendChild(gg);
     }
     else if(e.type==="wall"){ const wr=rot(e,W,L); const wg=el("g",{transform:`rotate(${wr} ${x} ${y})`}); wg.appendChild(el("rect",{x:x-26,y:y-4,width:52,height:8,rx:3,fill:"#9AA4A0",stroke:"rgba(0,0,0,.35)","stroke-width":1})); g.appendChild(wg); }
-    else { const fill=e.role==="defender"?"#E24B4A":e.role==="server"?"#F1EFE8":"#378ADD"; g.appendChild(el("circle",{cx:x,cy:y,r:11,fill,stroke:"rgba(0,0,0,.4)","stroke-width":1.2})); }
+    else { const fill=e.role==="defender"?"#B23A3A":e.role==="server"?"#EEF1EC":"#5CCB5F"; g.appendChild(el("circle",{cx:x,cy:y,r:11,fill,stroke:"rgba(0,0,0,.4)","stroke-width":1.2})); }
     if(e.type==="player"){
       const inTxt=e.role==="worker"?"You":(e.role==="defender"?"D":(e.display_label?e.display_label[0]:e.label[0]));
-      const inEl=el("text",{x,y:y+3.6,"text-anchor":"middle","font-size":9,"font-weight":600,fill:e.role==="server"?"#2C2C2A":"#FFFFFF","font-family":"sans-serif"});
+      const inEl=el("text",{x,y:y+3.6,"text-anchor":"middle","font-size":9,"font-weight":600,fill:e.role==="server"?"#0E1210":"#0E1210","font-family":"sans-serif"});
       inEl.textContent=inTxt; g.appendChild(inEl);
       const under=e.display_label||(e.role==="server"?"Feeder":e.role==="defender"?"Defender":"");
       if(under){ const u=el("text",{x,y:y+24,"text-anchor":"middle","font-size":9.5,fill:"rgba(255,255,255,.9)","font-family":"sans-serif"});

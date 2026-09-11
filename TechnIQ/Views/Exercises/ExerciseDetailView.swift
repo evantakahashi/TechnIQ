@@ -68,7 +68,7 @@ struct ExerciseDetailView: View {
                     }
 
                     if let diagram = parseDiagram() {
-                        TQDiagram(diagram: diagram, steps: content.steps)
+                        TQDiagram(diagram: diagram, steps: content.steps, animationJSON: exercise.animationJSON)
                     } else if let videoId = extractYouTubeVideoId() {
                         videoCard(videoId)
                     }

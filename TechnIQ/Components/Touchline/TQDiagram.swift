@@ -11,27 +11,42 @@ struct TQDiagram: View {
     var steps: [String] = []
     var height: CGFloat = 220
     var animatable: Bool = true
+    /// Phase-timeline film (server-authored). When present, the chip becomes
+    /// "Watch" and swaps the pitch for the animated player inline.
+    var animationJSON: String? = nil
 
     @State private var currentStep: Int? = nil
     @State private var isAutoPlaying = false
+    @State private var showFilm = false
+
+    private var filmJSON: String? {
+        DrillWebAnimationView.composedJSON(diagram: diagram,
+                                           animationJSON: animationJSON)
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            AnimatedDrillDiagramView(
-                diagram: diagram,
-                instructions: steps,
-                currentStep: $currentStep,
-                isAutoPlaying: $isAutoPlaying,
-                chrome: false
-            )
-            .frame(height: height)
+            if showFilm, let film = filmJSON {
+                DrillWebAnimationView(drillJSON: film)
+                    .frame(height: height + 150)
+                    .accessibilityLabel("Animated drill film")
+            } else {
+                AnimatedDrillDiagramView(
+                    diagram: diagram,
+                    instructions: steps,
+                    currentStep: $currentStep,
+                    isAutoPlaying: $isAutoPlaying,
+                    chrome: false
+                )
+                .frame(height: height)
 
-            legend
-                .padding(.leading, 12)
-                .padding(.top, 10)
+                legend
+                    .padding(.leading, 12)
+                    .padding(.top, 10)
+            }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: height)
+        .frame(height: showFilm && filmJSON != nil ? height + 150 : height)
         .overlay(alignment: .bottomTrailing) {
             Text("\(Int(diagram.field.width)) × \(Int(diagram.field.length)) M")
                 .font(Font.system(size: 11, weight: .regular).width(.condensed))
@@ -42,15 +57,22 @@ struct TQDiagram: View {
                 .accessibilityLabel("\(Int(diagram.field.width)) by \(Int(diagram.field.length)) metres")
         }
         .overlay(alignment: .bottomLeading) {
-            if animatable, hasSteps {
+            if animatable, hasSteps || filmJSON != nil {
                 Button {
                     HapticManager.shared.selectionChanged()
-                    toggleAnimation()
+                    if filmJSON != nil {
+                        withAnimation(.easeInOut(duration: 0.2)) { showFilm.toggle() }
+                    } else {
+                        toggleAnimation()
+                    }
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: isAutoPlaying ? "stop.fill" : "play.fill")
+                        Image(systemName: filmJSON != nil
+                              ? (showFilm ? "stop.fill" : "play.circle.fill")
+                              : (isAutoPlaying ? "stop.fill" : "play.fill"))
                             .font(.system(size: 9, weight: .bold))
-                        Text(isAutoPlaying ? "Stop" : "Animate")
+                        Text(filmJSON != nil ? (showFilm ? "Close" : "Watch")
+                             : (isAutoPlaying ? "Stop" : "Animate"))
                             .font(Font.system(size: 12, weight: .semibold).width(.condensed))
                             .textCase(.uppercase)
                             .tracking(0.7)
