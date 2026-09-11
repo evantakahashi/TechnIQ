@@ -80,6 +80,34 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_major_props_used(elements, paths)
     _check_duel_escapes_are_choices(elements, paths, bool(drill.get("is_duel")))
     _check_opponents_act(elements, paths)
+    _check_players_out_of_goal(elements, paths)
+
+
+def _check_players_out_of_goal(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """Play never ends inside the goal mouth — 'why is the player receiving
+    the ball in the goal'. Reset legs (fetching from the net) are exempt."""
+    goals = [(float(g["x"]), float(g["y"]), float(g.get("width") or 7.32) / 2)
+             for g in elements if g.get("type") == "goal"]
+    if not goals:
+        return
+    players = {e.get("label") for e in elements if e.get("type") == "player"}
+    for p in paths:
+        if p.get("alt") or p.get("reset") or p.get("from") not in players:
+            continue
+        if p.get("style") not in ("run", "dribble", "receive"):
+            continue
+        tx, ty = p.get("tx"), p.get("ty")
+        if tx is None:
+            continue
+        for gx, gy, half in goals:
+            if (abs(tx - gx) < 1.6 and abs(ty - gy) <= half) or \
+               (abs(ty - gy) < 1.6 and abs(tx - gx) <= half):
+                raise ValidationError(
+                    f"step {p.get('step')}: {p.get('from')} ends the action "
+                    "inside the goal mouth — players play IN FRONT of goals; "
+                    "pull that spot out of the mouth")
 
 
 def _check_opponents_act(
@@ -137,13 +165,16 @@ def _check_major_props_used(
         if g.get("label") in used:
             continue
         # a goal backing used in-goal target gates is legitimately "used"
-        def in_mouth(e):
+        def serves_goal(e):
             dx = abs(e.get("x", 0) - g.get("x", 0))
             dy = abs(e.get("y", 0) - g.get("y", 0))
             half = g.get("width", 7.32) / 2
-            return (dx < 1.5 and dy <= half) or (dy < 1.5 and dx <= half)
+            in_mouth = (dx < 1.5 and dy <= half) or (dy < 1.5 and dx <= half)
+            # crossing/landing zones in the goal's apron justify it too
+            in_apron = (min(dx, dy) <= 6.0 and max(dx, dy) <= half + 2.0)
+            return in_mouth or in_apron
         has_used_gate = any(
-            e.get("type") == "gate" and e.get("label") in used and in_mouth(e)
+            e.get("type") == "gate" and e.get("label") in used and serves_goal(e)
             for e in elements)
         if not has_used_gate:
             raise ValidationError(
@@ -181,6 +212,9 @@ def _check_flight_through_players(
         for e in players + cones:
             if e.get("label") in (p.get("from"), p.get("to")):
                 continue
+            if e.get("role") == "defender":
+                continue  # a defender contesting the lane is the game (rondos,
+                          # splitting passes) — not a staging error
             radius = 0.8 if e.get("type") == "player" else 0.5
             if e.get("type") == "cone" and \
                     ((e["x"] - fx) ** 2 + (e["y"] - fy) ** 2) ** 0.5 < 1.5:

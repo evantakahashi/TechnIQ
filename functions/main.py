@@ -489,6 +489,7 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
         client = Anthropic(api_key=anthropic_api_key)
 
         from drill_generator import generate_drill, DrillGenerationFailed, SYSTEM_PROMPT
+        from drill_animator import author_timeline
 
         def _llm_call(prompt: str) -> str:
             # opus-4-8 won the 2026-09-06 model A/B: geometry 80.8 vs 71.7
@@ -500,10 +501,13 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             # body, errors appended at the tail) read it from cache.
             body = prompt
             system = None
-            if prompt.startswith(SYSTEM_PROMPT):
-                system = [{"type": "text", "text": SYSTEM_PROMPT,
-                           "cache_control": {"type": "ephemeral"}}]
-                body = prompt[len(SYSTEM_PROMPT):].lstrip("\n")
+            from drill_animator import AUTHOR_STATIC
+            for prefix in (SYSTEM_PROMPT, AUTHOR_STATIC):
+                if prompt.startswith(prefix):
+                    system = [{"type": "text", "text": prefix,
+                               "cache_control": {"type": "ephemeral"}}]
+                    body = prompt[len(prefix):].lstrip("\n")
+                    break
             marker = "PRIOR ATTEMPT ERRORS"
             if system and marker in body:
                 head, tail = body.split(marker, 1)
@@ -549,6 +553,18 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
                 },
                 llm_call=_llm_call,
             )
+
+            # Animation: compile the phase timeline, then let the model direct
+            # pacing + narration within rails (movement immutable, refereed).
+            try:
+                drill["animation"] = author_timeline(drill, _llm_call)
+            except Exception as anim_err:  # animation is enhancement, never fatal
+                logger.warning(f"animation pass failed: {anim_err}")
+                try:
+                    from drill_timeline import compile_timeline
+                    drill["animation"] = compile_timeline(drill)
+                except Exception:
+                    pass
         except DrillGenerationFailed as e:
             logger.error(f"Drill generation failed [{request_id}]: {e}")
             return _error_response("Drill generation failed", 500, request_id)

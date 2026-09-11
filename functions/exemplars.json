@@ -255,7 +255,8 @@
   "archetype": "keeper_rebound",
   "pressure": "active",
   "dsl": "player S1 at (10, 4.5) role \"server\" label \"Server\"\nplayer P1 at (6, 7.5) role \"worker\" label \"Keeper\"\nball B1 at (10, 4.5)\nwall W1 at (2, 7.5) width 5\nstep 1: S1 throws to W1\nstep 2: P1 receives from W1\nstep 3: P1 throws to S1\nstep 4: S1 receives from P1\nstep 5: S1 throws to W1\nstep 6: P1 receives from W1\nstep 7: P1 throws to S1\nstep 8: S1 receives from P1\npoint: Warm up 2-3 minutes \u2014 light jog, arm circles, wrist rolls, and easy two-hand catches of a soft toss\npoint: The wall is a MIRROR \u2014 the server throws at an angle, so the rebound comes off the OPPOSITE way; the keeper stands on that mirror line, 4-5m off the wall\npoint: Set your feet before the rebound arrives \u2014 hands ready at hip height, eyes through the ball into the catch\npoint: Server varies pace and height every throw so the keeper reads the bounce late \u2014 that unknown is what trains reactions\npoint: One ball: catch clean, throw it straight back to the server \u2014 the return is your reset\npoint: Target: 8 of 10 rebounds held clean, no spills \u2014 count out loud\npoint: 10 catches per set, 4 sets; swap keeper and server every set\npoint: Soft hands on low skidders \u2014 collapse behind the ball, land on forearm and hip, never elbows\nvariation: Low skidders \u2014 server drills the wall flat so rebounds stay under knee height\nvariation: High hands \u2014 throws at head height for reflex catches above the shoulders\nvariation: Catch-then-shuffle \u2014 two side steps to a cone after each hold, then reset",
-  "notes": "Hand-authored: mirror-geometry wall rebound (serve angled in, keeper on the reflected line 4.5m out). Fixes the GK archetype gap."
+  "notes": "Hand-authored: mirror-geometry wall rebound (serve angled in, keeper on the reflected line 4.5m out). Fixes the GK archetype gap.",
+  "priority": true
  },
  {
   "id": "keeper_rebound_solo_int",
@@ -277,14 +278,16 @@
   "archetype": "server_executor",
   "pressure": "passive",
   "dsl": "player S1 at (4, 7.5) role \"server\" label \"Server\"\nplayer P1 at (10.9, 7.5) role \"worker\"\nball B1 at (4, 7.5)\ncone C1 at (10, 7.5)\ngoal GL at (19, 7.5) width 7.32\ngate G1 at (19, 5.3) width 1.2\ngate G2 at (19, 9.7) width 1.2\nstep 1: S1 tosses to P1\nstep 2: P1 shoots at G1\nstep 3: P1 runs to G1\nstep 4: P1 dribbles to S1\nstep 5: S1 receives from P1\nstep 6: P1 runs to C1\nstep 7: S1 tosses to P1\nstep 8: P1 shoots at G2\npoint: Warm up 2-3 minutes \u2014 light jog, leg swings, and a few soft thigh cushions before striking volleys\npoint: Server tosses soft and underhand from 6m \u2014 let the ball drop to knee height, then strike\npoint: Lock the ankle, toes down, strike through the middle of the ball with the laces \u2014 no toe pokes\npoint: Alternate corners \u2014 near-post gate, then far-post gate; placement over power\npoint: One ball: collect your strike from the goal, work it back to the server, then back to your spot for the next toss\npoint: Target: 6 of 10 volleys through a corner gate; count out loud\npoint: 5 volleys per set, 4 sets; collecting and returning is the rest\npoint: Land balanced on the standing leg \u2014 knee soft, never locked\nvariation: Thigh-cushion first \u2014 control on the thigh, let it bounce once, then volley\nvariation: Weak foot only \u2014 every volley with the weaker foot\nvariation: Half-volley \u2014 let the toss bounce once and strike it on the rise",
-  "notes": "Hand-authored aerial-serve family: toss, first-time volley at corner gates, collect-return loop. Fixes the volleys holdout gap."
+  "notes": "Hand-authored aerial-serve family: toss, first-time volley at corner gates, collect-return loop. Fixes the volleys holdout gap.",
+  "priority": true
  },
  {
   "id": "shield_hold_exit_int",
   "archetype": "gate_dribbling",
   "pressure": "active",
   "dsl": "player S1 at (3, 7.5) role \"server\" label \"Server\"\nplayer P1 at (11.9, 7.5) role \"worker\"\nplayer D1 at (15, 7.5) role \"defender\"\nball B1 at (3, 7.5)\ncone C1 at (11, 7.5)\ngate G1 at (16, 3.5) width 2\ngate G2 at (16, 11.5) width 2\nstep 1: S1 passes to P1\nstep 2: D1 runs to P1\nstep 3: P1 dribbles to G1\nstep 4: P1 dribbles to S1\nstep 5: S1 receives from P1\nstep 6: P1 runs to C1\nstep 7: S1 passes to P1\nstep 8: D1 runs to P1\nstep 9: P1 dribbles to G2\npoint: Warm up 2-3 minutes \u2014 light jog, hip openers, easy back-to-defender holds at half strength\npoint: Receive with the defender at your BACK \u2014 get side-on, arm bar for feel (not a push), ball on the far foot\npoint: Shield for a two-count, FEEL which side the pressure leans, then spin off and exit through the OPPOSITE gate\npoint: The defender presses live as the ball arrives \u2014 real contact, no fouls\npoint: One ball: after the exit, work it back to the server and jog to your spot for the next feed\npoint: Target: 7 of 10 clean exits through a gate without losing the ball; count out loud\npoint: 5 holds per set, 4 sets; swap worker and defender every set\npoint: Stay low \u2014 knees bent, wide base; the moment you stand tall you get rolled off the ball\nvariation: Weak side only \u2014 every exit spin to the weaker shoulder\nvariation: Delay game \u2014 hold for a full three-count before the exit\nvariation: No hands \u2014 shield with body position only, arms folded",
-  "notes": "Hand-authored shield family: feed, live back pressure (defender closes as ball arrives), hold, spin exit through a gate, one-ball return. Defender acts every rep."
+  "notes": "Hand-authored shield family: feed, live back pressure (defender closes as ball arrives), hold, spin exit through a gate, one-ball return. Defender acts every rep.",
+  "priority": true
  },
  {
   "id": "escape_1v2_press_adv",
@@ -292,6 +295,23 @@
   "pressure": "active",
   "dsl": "player P1 at (16, 7.5) role \"worker\" label \"Carrier\"\nplayer D1 at (11, 5.5) role \"defender\"\nplayer D2 at (11, 9.5) role \"defender\"\nball B1 at (16, 7.5)\ngate G1 at (2, 3.5) width 2\ngate G2 at (2, 11.5) width 2\nstep 1: P1 dribbles to D1\nstep 2: D2 runs to P1\nor: P1 dribbles to G1\nor: P1 dribbles to G2\npoint: Warm up 2-3 minutes \u2014 light jog, sharp 5m accelerations, easy close-control touches\npoint: HOW IT WORKS: the carrier attacks ONE presser to commit them; the second presser collapses to trap \u2014 beat the trap and escape through either gate\npoint: Attack the first defender's front foot at pace \u2014 a slow approach lets the trap set\npoint: The escape is LIVE \u2014 feel the second presser's angle and break the opposite way; both gates always open\npoint: Pressers: first shows a side, second reads and doubles \u2014 win the ball or force it dead\npoint: Scoring: carrier scores through either gate; pressers score on any win or out-of-bounds. First to 5, then rotate roles\npoint: Keep the ball on the foot FURTHEST from pressure through the whole escape\nvariation: Time cap \u2014 carrier has 6 seconds to escape or the pressers win\nvariation: One-way gates \u2014 pressers call which gate closes as they spring the trap\nvariation: Add a bounce player behind the gates the carrier can wall-pass off",
   "notes": "Hand-authored 1v2 family: commit the first presser, second presser's trap run plays simultaneously, both escapes dashed. Every opponent acts.",
-  "is_duel": true
+  "is_duel": true,
+  "priority": true
+ },
+ {
+  "id": "give_and_go_wall_int",
+  "archetype": "wall_passing",
+  "pressure": "passive",
+  "dsl": "player P1 at (3, 7.5) role \"worker\"\nplayer P2 at (10, 5) role \"server\" label \"Wall player\"\nball B1 at (3, 7.5)\ncone C1 at (13, 10)\ngate G1 at (17.5, 10) width 2\nstep 1: P1 passes to P2 one-touch\nstep 2: P1 runs to C1\nstep 3: P2 passes to P1 one-touch\nstep 4: P1 dribbles to G1\nstep 5: P1 dribbles to P2\nstep 6: P2 receives from P1\nstep 7: P1 runs to B1\npoint: Warm up 2-3 minutes \u2014 light jog, open the hips, easy one-touch passing at half pace\npoint: Play the give, then GO \u2014 sprint past the wall player the instant the ball leaves your foot\npoint: The wall player plays first-time into your PATH, not your feet \u2014 run onto it\npoint: Take the return in stride and drive through the gate without breaking speed\npoint: One ball: after the gate, work it back to the wall player and jog to the start\npoint: Target: 8 of 10 give-and-gos taken in stride, no stop between give and go\npoint: Swap roles every 5 reps\npoint: Progression: wall player moves \u2014 the angle of your run changes every rep\nvariation: Two-touch cap for the runner \u2014 control, then play\nvariation: Weak foot gives \u2014 every first pass with the weaker foot\nvariation: Double wall \u2014 go around, give again to a second angle",
+  "notes": "Hand-authored give-and-go family: give, sprint, return INTO THE PATH (angled run onto the ball), finish through the gate, one-ball return.",
+  "priority": true
+ },
+ {
+  "id": "throw_in_target_int",
+  "archetype": "server_executor",
+  "pressure": "passive",
+  "dsl": "player P1 at (2, 7.5) role \"worker\" label \"Thrower\"\nplayer P2 at (14, 10) role \"server\" label \"Target\"\nball B1 at (2, 7.5)\ncone C1 at (12, 5)\ngate G1 at (13.2, 10) width 2\nstep 1: P1 throws to P2\nstep 2: P2 dribbles to C1\nstep 3: P2 dribbles to P1\nstep 4: P1 receives from P2\nstep 5: P2 runs to G1\nstep 6: P1 throws to P2\npoint: Warm up 2-3 minutes \u2014 arm circles, trunk twists, a few easy short throws\npoint: Both feet ON the ground through the release, ball comes from BEHIND the head \u2014 a legal throw scores, a foul throw resets the count\npoint: Whip through with the whole body \u2014 back arches, arms follow, snap at the top\npoint: Throw to the target's CHEST or lead them through the gate \u2014 never behind them\npoint: The target shows late \u2014 move to the gate as the thrower loads up\npoint: One ball: target controls, dribbles it back, hands it over, next throw\npoint: Target: 7 of 10 legal throws the target controls in one touch\npoint: Swap thrower and target every 5 throws\nvariation: Down-the-line \u2014 target runs a channel and takes the throw in stride\nvariation: Distance ladder \u2014 each legal catch, the target starts one step deeper\nvariation: Quick restart \u2014 target returns the ball with a one-touch pass instead of a dribble",
+  "notes": "Hand-authored throw-in family: legal-technique cues, thrower->moving target through a gate, one-ball return loop.",
+  "priority": true
  }
 ]

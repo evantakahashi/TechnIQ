@@ -128,6 +128,13 @@ def post_process_drill(drill: Dict, player_age: int = 14) -> Tuple[Dict, List[st
                 f"Dropped {len(drop)} or-branch(es) — movement choices are "
                 "for duels (finish-shot options stay)")
 
+    # 3b15. Missing collect runs get INJECTED, not retried: when a player
+    # acts on a ball resting elsewhere, the jog to fetch it is deterministic
+    # plumbing — write it in and renumber (mirrors the walk-back logic).
+    paths, inject_warnings = _inject_collect_runs(elements, paths)
+    warnings.extend(inject_warnings)
+    drill["diagram"]["paths"] = paths
+
     # 3b2. A cone where a player stands is clutter ("it could get in the way")
     players_sp = [(e.get("x"), e.get("y")) for e in elements if e.get("type") == "player"]
     keep = []
@@ -404,6 +411,121 @@ def _normalize_carrier_runs(elements: List[Dict], paths: List[Dict]) -> List[str
     return warnings
 
 
+def _inject_collect_runs(elements: List[Dict], paths: List[Dict]) -> Tuple[List[Dict], List[str]]:
+    """Insert `run to <rest>` before ball actions whose actor lacks the ball.
+
+    The retry loop begged models to add these for 15 attempts across three
+    holdout cases; a fetch-jog is always-correct plumbing — just write it.
+    """
+    warnings: List[str] = []
+    by_label = {e.get("label"): e for e in elements}
+    unclaimed = {e["label"] for e in elements if e.get("type") == "ball"}
+
+    def near(a, b, dist):
+        return math.hypot(a.get("x", 0) - b.get("x", 0),
+                          a.get("y", 0) - b.get("y", 0)) <= dist
+
+    holder = None
+    resting_at = None
+    last_spot: Dict[str, str] = {}  # player -> last run/dribble target element
+    for e in elements:
+        if e.get("type") != "player":
+            continue
+        for bl in list(unclaimed):
+            if near(e, by_label[bl], 2.5):
+                holder = e.get("label")
+                unclaimed.discard(bl)
+                break
+        if holder:
+            break
+
+    ordered = sorted((q for q in paths if not q.get("alt")),
+                     key=lambda x: x.get("step", 0))
+    alts = [q for q in paths if q.get("alt")]
+    out: List[Dict] = []
+    for q in ordered:
+        style, src, dst = q.get("style"), q.get("from"), q.get("to")
+        needs = style in ("pass", "dribble", "shoot", "shot", "throw",
+                          "toss", "header")
+        if needs and holder != src:
+            src_el = by_label.get(src)
+            got = False
+            if src_el is not None:
+                reach = 6.0 if src_el.get("role") == "server" else 3.0
+                for bl in list(unclaimed):
+                    if near(src_el, by_label[bl], reach):
+                        holder, got = src, True
+                        unclaimed.discard(bl)
+                        break
+            if not got and holder is not None and holder != src \
+                    and by_label.get(holder, {}).get("type") == "player":
+                # ball is with a teammate — inject the handover chain
+                out.append({"from": holder, "to": src, "style": "dribble",
+                            "verb": "works it to", "step": 0})
+                out.append({"from": src, "to": holder, "style": "receive",
+                            "verb": "receives from", "step": 0})
+                giver = holder
+                spot = last_spot.get(giver)
+                if spot and by_label.get(spot, {}).get("type") in ("cone", "gate"):
+                    out.append({"from": giver, "to": spot, "style": "run",
+                                "verb": "runs back to", "step": 0})
+                warnings.append(
+                    f"Injected handover: {giver} works the ball to {src}"
+                    + (f" and returns to {spot}" if spot else ""))
+                holder, got = src, True
+            if not got and resting_at is not None:
+                out.append({"from": src, "to": resting_at, "style": "run",
+                            "verb": "runs to", "step": 0})
+                warnings.append(
+                    f"Injected collect run: {src} fetches the ball at {resting_at}")
+                holder, resting_at = src, None
+            elif not got and unclaimed:
+                bl = next(iter(unclaimed))
+                out.append({"from": src, "to": bl, "style": "run",
+                            "verb": "runs to", "step": 0})
+                warnings.append(f"Injected collect run: {src} fetches {bl}")
+                unclaimed.discard(bl)
+                holder = src
+        # possession transitions (mirror of the validator machine)
+        if style == "dribble":
+            pass
+        elif style in ("pass", "throw", "toss", "header"):
+            de = by_label.get(dst, {})
+            if de.get("type") == "player":
+                holder = dst
+            elif de.get("type") == "wall":
+                pass
+            else:
+                holder, resting_at = None, dst
+        elif style in ("shoot", "shot"):
+            if by_label.get(dst, {}).get("type") != "wall":
+                holder, resting_at = None, dst
+        elif style == "receive":
+            if holder == dst or by_label.get(dst, {}).get("type") in ("wall", "ball") \
+                    or resting_at == dst:
+                holder, resting_at = src, None
+        elif style == "run":
+            de = by_label.get(dst, {})
+            if de.get("type") in ("cone", "gate") and not q.get("reset"):
+                last_spot[src] = dst
+            if de.get("type") == "ball" and dst in unclaimed:
+                unclaimed.discard(dst)
+                holder = src
+            elif holder is None and dst == resting_at:
+                holder, resting_at = src, None
+        out.append(q)
+    # renumber: non-alt 1..n, alts re-attach to their original base numbers
+    old_to_new = {}
+    n = 0
+    for q in out:
+        n += 1
+        old_to_new.setdefault(q.get("step"), n)
+        q["step"] = n
+    for q in alts:
+        q["step"] = old_to_new.get(q.get("step"), q.get("step"))
+    return out + alts, warnings
+
+
 def _normalize_setup_touch_cones(elements: List[Dict], paths: List[Dict]) -> List[str]:
     """Approach cone → touch cone → shot: the cut must be short (≤4m raw).
 
@@ -594,6 +716,30 @@ def annotate_path_positions(drill: dict) -> None:
                     off_line = abs((ox - fx) * vy - (oy - fy) * vx) / seg
             if off_line is None or off_line >= 2.5:
                 cur["sync"] = True
+
+
+def repair_short_passes(drill: Dict) -> None:
+    """A pass of under ~1m to a teammate IS a layoff — express it as one.
+
+    Tight one-twos legitimately exchange at arm's length; failing them made
+    give-and-go unbuildable. Runs after coordinate baking (needs fx/tx).
+    """
+    by_label = {e.get("label"): e for e in (drill.get("diagram", {})
+                                            .get("elements", []))}
+    for q in drill.get("diagram", {}).get("paths", []):
+        if q.get("alt") or q.get("style") not in ("pass", "toss"):
+            continue
+        if by_label.get(q.get("to"), {}).get("type") not in (
+                "player", "server", "defender"):
+            continue
+        fx, fy, tx, ty = (q.get("fx"), q.get("fy"), q.get("tx"), q.get("ty"))
+        if None in (fx, fy, tx, ty):
+            continue
+        if math.hypot(tx - fx, ty - fy) < 1.2:
+            q["from"], q["to"] = q["to"], q["from"]
+            q["style"] = "receive"
+            q["verb"] = "takes the layoff from"
+            q["fx"], q["fy"], q["tx"], q["ty"] = tx, ty, fx, fy
 
 
 def crop_field_to_content(drill: Dict, margin: float = 6.0,

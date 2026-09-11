@@ -8,7 +8,7 @@ from typing import Any, Callable
 from archetype_picker import pick_archetype
 from category_rules import get_rule_pack
 from dsl_parser import DSLParseError, parse_dsl
-from drill_post_processor import post_process_drill, annotate_path_positions, crop_field_to_content
+from drill_post_processor import post_process_drill, annotate_path_positions, crop_field_to_content, repair_short_passes
 from drill_quality import score_drill_quality
 from drill_validator import ValidationError, validate_drill
 from exemplars import get_exemplars
@@ -42,7 +42,7 @@ DSL grammar:
   `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
   `mannequin M1 at (x, y)` (passive pressure-from-behind obstacle — use for "under pressure" work without a live defender),
   optional `label "..."` on players.
-- Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from, throws to, tosses to, heads to}
+- Actions: `step N: ID <verb> ID`. Use YOUR OWN soccer verbs — "chips to", "curls at", "cuts back to", "drives to" all parse; write the game the way a coach speaks. Each verb resolves to one of 8 semantic classes (passes/dribbles/runs/shoots/receives/throws/tosses/heads — how the ball physically behaves). Common verbs resolve automatically; for an unusual one, declare it once above the steps: `verb nutmegs = dribbles`. Your verb word is kept and shown to the kid.
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
 - Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.
@@ -97,6 +97,7 @@ STAGE & PRESENTATION (know how your output is shown, and design FOR it):
 SESSION SHAPE (a drill is a repeatable block, not one pretty sequence):
 - Steps form a REPEATING cycle — no fixed step count, use as many as the drill needs: the worker does the skill, resets, does it again. Reuse the same targets across steps.
 - ONE BALL ON THE PITCH: declare exactly ONE ball element, at the feet of whoever starts with it. Extra supply balls are NEVER drawn — mention a stack in a coaching point if useful. Every cycle scripts the collect-and-return: after a shot/cross, someone runs to the ball and works it back (that jog is the rest). Use `receives from` to hand the ball over.
+- RETURNS CAN TEACH: for intermediate+ players, the way back is not dead time — give the return leg ONE purposeful element when it fits (dribble back THROUGH a gate, a weave around the far cone, a weak-foot-only carry). A bare jog home is beginner furniture.
 - WORKING SPOT: in server-feeds-worker loops, mark the worker's spot with a cone. After returning the ball to the server, the worker RUNS BACK to that cone BEFORE the next feed — never take a serve standing on top of the server (a 0m pass is invalid). The feed times with the run: serve arrives as they reach the spot.
 - ACCURACY skills: the finish must beat a TARGET, not just enter a goal — place 1-2 gates inside the goal (e.g. bottom corners) or a cone target, and require reps through it.
 - 6-9 coaching points. The FIRST is the warm-up. Exactly one states a countable target ("8 of 10 through the gate"). One states set/rep volume and the rest pattern ("5 strikes per set, 4 sets; collecting balls is the rest"). One is a progression or regression ("hit 8/10 → move 2m back; miss 5 → bigger gate").
@@ -157,6 +158,10 @@ def generate_drill(
         field_size = "half"
 
     rule_pack = get_rule_pack(weakness)
+    if rule_pack and any(k in blob_field for k in
+                         rule_pack.get("required_styles_skip_if", [])):
+        rule_pack = {k: v for k, v in rule_pack.items()
+                     if k != "required_styles"}  # sub-skill exempts the contract
     # Realism wins over the request: skills that need a feed/opponent (pressure
     # receiving, turns, GK reactions) get the partner even on a solo request —
     # "a player receives from another player" beats a faked-solo version.
@@ -199,13 +204,15 @@ def generate_drill(
             drill["equipment"] = equipment
             drill["category"] = category
             blob = f"{skill_description} {weakness}".lower()
-            drill["is_duel"] = bool(_re.search(r"\b(1v1|1v2|2v1|press|pressing)\b", blob)) or (
-                category == "tactical" and number_of_players in (2, 3)
-                and "head" not in blob
-            )
+            # duel-ness comes from OPPOSITION SEMANTICS in the request, never
+            # guessed from category+count (an overlapping-fullback combination
+            # is tactical 2p and is NOT a duel)
+            drill["is_duel"] = bool(_re.search(
+                r"\b(1v1|1v2|2v1|press|pressing|duel|defend|defending)\b", blob))
             drill, _warnings = post_process_drill(drill, player_age=age)
             crop_field_to_content(drill)
             annotate_path_positions(drill)
+            repair_short_passes(drill)
             validate_drill(drill)
             score, reasons = score_drill_quality(drill, rule_pack, level,
                                                  number_of_players=number_of_players)

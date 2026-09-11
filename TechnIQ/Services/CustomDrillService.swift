@@ -257,8 +257,15 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         
         // Convert to CustomDrillResponse
         let drillResponseData = try JSONSerialization.data(withJSONObject: drillData)
-        let drillResponse = try JSONDecoder().decode(CustomDrillResponse.self, from: drillResponseData)
-        
+        var drillResponse = try JSONDecoder().decode(CustomDrillResponse.self, from: drillResponseData)
+
+        // Phase-timeline animation rides through as raw JSON for the player
+        if let animation = drillData["animation"],
+           JSONSerialization.isValidJSONObject(animation),
+           let animationData = try? JSONSerialization.data(withJSONObject: animation) {
+            drillResponse.animationJSON = String(data: animationData, encoding: .utf8)
+        }
+
         return drillResponse
     }
     
@@ -292,6 +299,8 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
                 exercise.diagramJSON = diagramString
             }
         }
+
+        exercise.animationJSON = response.animationJSON
         
         // Create detailed instructions
         var instructionsText = "**Setup:**\n\(response.setup)\n\n"

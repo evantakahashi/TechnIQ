@@ -31,6 +31,7 @@ extension Exercise {
 
     // Diagram JSON for AI-generated drills
     @NSManaged public var diagramJSON: String?
+    @NSManaged public var animationJSON: String?
 
     // Physical/technical scoring
     @NSManaged public var metabolicLoad: Int16

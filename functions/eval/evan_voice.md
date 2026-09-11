@@ -243,4 +243,5 @@ is still a bad drill. Judge the drill, not the effort.
 | Blind A/B (baseline, pre-doc) | 11 | ~5/11 | yes — Claude 87-95 on four Evan-bads |
 | On-skill regens (first with doc) | 4 | 3/4 direction | no — the miss was too LOW (gk-wall: Claude bad, Evan "not bad, needs variation"). Don't overcorrect simple-but-functional to bad. |
 | Golden set v3.2 | 13 | ~9/13 direction | mixed: heading-def Claude ok → Evan GOLDEN (too low); weakfoot golden↔golden MATCH; 2v/gk-wall slightly high. Recurring lesson: Evan judges the animated whole; positional nits don't sink a drill, missing beats do. |
+| Holdout v3 authored (open verbs + films) | 10 | overall "a lot better… very good", minor errors unspecified | direction strongly positive; his bar keeps rising with quality — "minor errors" now means polish, not correctness |
 | next round | — | — | — |

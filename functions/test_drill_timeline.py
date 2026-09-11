@@ -1,0 +1,122 @@
+"""Compiler tests: steps -> phase timeline."""
+import json, glob
+from drill_timeline import compile_timeline, BALL
+
+
+def _first(drill_id):
+    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
+                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+        d = json.load(open(f))
+        if d['_case']['id'] == drill_id:
+            return d
+    raise AssertionError(drill_id)
+
+
+def test_sync_pair_becomes_one_dual_track_phase():
+    d = _first('passing-pair')
+    tl = compile_timeline(d)
+    dual = [p for p in tl['phases'] if BALL in p['tracks']
+            and sum(1 for k in p['tracks'] if k != BALL) >= 1
+            and any(p['tracks'][k][0] != p['tracks'][k][1]
+                    for k in p['tracks'] if k != BALL)]
+    assert dual, "expected at least one phase where a player moves WITH a ball flight"
+
+
+def test_resets_become_fade_phases():
+    d = _first('weakfoot-finish')
+    tl = compile_timeline(d)
+    kinds = [p['kind'] for p in tl['phases']]
+    assert 'fade' in kinds
+    # per-leg resets: short runs of fade legs are expected, long chains are not
+    run = mx = 0
+    for k in kinds:
+        run = run + 1 if k == 'fade' else 0
+        mx = max(mx, run)
+    assert mx <= 3
+
+
+def test_durations_scale_with_distance():
+    d = _first('speed-ball')
+    tl = compile_timeline(d)
+    action = [p for p in tl['phases'] if p['kind'] == 'action']
+    assert len({p['d'] for p in action}) > 1, "distances differ so durations must"
+
+
+def test_hips_face_incoming_ball_on_feeds():
+    d = _first('shoot-turn')
+    tl = compile_timeline(d)
+    feed = next(p for p in tl['phases']
+                if p['kind'] == 'action' and BALL in p['tracks']
+                and any(k != BALL and p['hips'].get(k) for k in p['hips']))
+    assert feed['hips'], "receiver facing vector expected on the feed"
+
+
+def test_outcome_phases_for_duels():
+    d = _first('defend-1v1')
+    tl = compile_timeline(d)
+    assert sum(1 for p in tl['phases'] if p['kind'] == 'outcome') == 2
+
+
+def test_no_dead_action_phases():
+    for cid in ('shoot-turn', 'crossing-finish', 'passing-pair'):
+        tl = compile_timeline(_first(cid))
+        for p in tl['phases']:
+            if p['kind'] != 'action':
+                continue
+            import math
+            mx = max(math.hypot(t[1][0]-t[0][0], t[1][1]-t[0][1])
+                     for t in p['tracks'].values())
+            assert mx > 0.3, f"dead phase in {cid}: {p['label']}"
+
+
+def test_ball_continuity_across_phases():
+    """The ball never teleports between consecutive non-fade phases."""
+    import math
+    for cid in ('shoot-turn', 'passing-pair', 'gk-wall'):
+        tl = compile_timeline(_first(cid))
+        last = None
+        for p in tl['phases']:
+            if p['kind'] == 'outcome':
+                break
+            tr = p['tracks'].get(BALL)
+            if tr is None:
+                continue
+            if last is not None and p['kind'] == 'action':
+                jump = math.hypot(tr[0][0]-last[0], tr[0][1]-last[1])
+                assert jump < 0.2, f"{cid}: ball jumps {jump:.1f}m into '{p['label']}'"
+            last = tr[1]
+
+
+def test_ball_never_glides_home_alone():
+    """In every fade leg that moves the ball, a player travels WITH it."""
+    import math
+    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
+                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+        d = json.load(open(f))
+        tl = compile_timeline(d)
+        for p in tl['phases']:
+            if p['kind'] != 'fade' or BALL not in p['tracks']:
+                continue
+            bt = p['tracks'][BALL]
+            if math.hypot(bt[1][0]-bt[0][0], bt[1][1]-bt[0][1]) < 1.0:
+                continue
+            carried = any(
+                lbl != BALL
+                and math.hypot(tr[0][0]-bt[0][0], tr[0][1]-bt[0][1]) < 1.8
+                and math.hypot(tr[1][0]-bt[1][0], tr[1][1]-bt[1][1]) < 1.8
+                for lbl, tr in p['tracks'].items())
+            assert carried, f"{d['_case']['id']}: ball glides alone in '{p['label']}'"
+
+
+def test_zero_lint_findings_on_golden_set():
+    """The recursive audit's floor: compiled timelines lint clean."""
+    import sys
+    sys.path.insert(0, '.')
+    from eval.anim_lint import lint
+    total = []
+    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
+                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+        d = json.load(open(f))
+        d['animation'] = compile_timeline(d)
+        total += lint(d)
+    assert total == [], total
