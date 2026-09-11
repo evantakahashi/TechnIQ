@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9E5121D5EF0270A1C92AA4CD /* TouchlineScreensUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */; };
+		D59ADC92C64D3042CA586E2C /* DrillSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */; };
 		D67A3F022C3AA937B4832F13 /* TQFormField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596560DE22A4069FB36A800D /* TQFormField.swift */; };
 		F2EF0CF15B9BC666D32F24C1 /* TQDiagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B4D2F42E87B546D59E5252 /* TQDiagram.swift */; };
 		A0B2E8C8512C6C2E95846C93 /* ActiveSessionTouchlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */; };
@@ -49,7 +51,6 @@
 		1E51099D06ED50F6DC5D351E /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FE3E9147AD4F0CFD63A186 /* SubscriptionManager.swift */; };
 		1F0F140035EE6E8483DD261C /* ShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD1AC457D0F69F00356A18C /* ShopView.swift */; };
 		2266C73DB002B2D82E540F0E /* SessionCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */; };
-		2557CA8268DE54DF1338A586 /* SmartDrillRecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */; };
 		2571006405C4CCD7CC915813 /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CC34B60C3065E96B57FD0B /* PostDetailView.swift */; };
 		27132693A915BEE378793F05 /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7834ABCD957BA5E4FD177585 /* OnboardingTests.swift */; };
 		2FE4921DF34388CE08A48234 /* TestCoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE580DDBB22F74CB2AB410 /* TestCoreDataStack.swift */; };
@@ -61,7 +62,6 @@
 		3893C359228FDA67D0953766 /* AvatarServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561F2D51E0C11C3433FA9FCC /* AvatarServiceProtocol.swift */; };
 		403C1185978C4C8A50D15539 /* ShareToCommunitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F9F8DE69207E865A055833 /* ShareToCommunitySheet.swift */; };
 		4201402677BE58588ADB059B /* AvatarConfiguration+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */; };
-		48EC7FAEB2DB9EF56FB7C221 /* DrillWalkthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */; };
 		4B87F1AD4E428A335D7AB99E /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6796ED72F183046E40ED28 /* HapticManager.swift */; };
 		4C102640228EE14C374F878D /* CoreDataFetchRequests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCB090868FC899416F79119 /* CoreDataFetchRequests.swift */; };
 		4C9D1F32686BA5522B81F917 /* AchievementServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F179B8B167033349F82B723 /* AchievementServiceTests.swift */; };
@@ -247,6 +247,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchlineScreensUITests.swift; sourceTree = "<group>"; };
+		DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillSuggestion.swift; sourceTree = "<group>"; };
 		596560DE22A4069FB36A800D /* TQFormField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQFormField.swift; sourceTree = "<group>"; };
 		46B4D2F42E87B546D59E5252 /* TQDiagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQDiagram.swift; sourceTree = "<group>"; };
 		84957C5231BD6408B4973288 /* ActiveSessionTouchlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSessionTouchlineTests.swift; sourceTree = "<group>"; };
@@ -298,11 +300,9 @@
 		2659B9B57B37C71E458B41BA /* AICoachServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AICoachServiceProtocol.swift; sourceTree = "<group>"; };
 		27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessAnalysisService.swift; sourceTree = "<group>"; };
 		B395E80411D6420B8D990AC7 /* NotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
-		2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DrillWalkthroughView.swift; sourceTree = "<group>"; };
 		3925740FA6F2C355453AED01 /* CloudService+Restore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "CloudService+Restore.swift"; sourceTree = "<group>"; };
 		3B3B91FFE5AC4E05301010EE /* CloudServiceProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudServiceProtocols.swift; sourceTree = "<group>"; };
 		3E3961B97CD75C170250A285 /* AIRecommendationServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AIRecommendationServiceProtocol.swift; sourceTree = "<group>"; };
-		3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartDrillRecommendationsView.swift; sourceTree = "<group>"; };
 		402BC8AE4CF03D55985B510B /* AvatarConfiguration+CoreDataProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AvatarConfiguration+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		404FDED0C603AACD8A21910F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		48CC34B60C3065E96B57FD0B /* PostDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
@@ -612,6 +612,7 @@
 				A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */,
 				ACF905C9EA7B9866B20B2BF7 /* XPModels.swift */,
 				0C502A111655139990553D48 /* DrillContent.swift */,
+				DF7A38C5A898F4C8550D43D2 /* DrillSuggestion.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -792,8 +793,6 @@
 				EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */,
 				QDS00002AAAA00000000AAAA /* QuickDrillSheet.swift */,
 				B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */,
-				2FE2AC47D81B99EF4461E211 /* DrillWalkthroughView.swift */,
-				3EF484C200003DD5B57F4430 /* SmartDrillRecommendationsView.swift */,
 			);
 			name = Exercises;
 			path = Exercises;
@@ -877,6 +876,7 @@
 				DF1636162E133003001E8CF9 /* TechnIQUITests.swift */,
 				DF1636182E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift */,
 				7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */,
+				EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */,
 			);
 			path = TechnIQUITests;
 			sourceTree = "<group>";
@@ -1237,8 +1237,6 @@
 				C6B103867C1F772570493297 /* WeaknessSuggestionsCard.swift in Sources */,
 				B27D510330BD10FBFB2A3278 /* WeaknessAnalysisService.swift in Sources */,
 				5F884C06C6E74364A1A2FEB0 /* NotificationManager.swift in Sources */,
-				48EC7FAEB2DB9EF56FB7C221 /* DrillWalkthroughView.swift in Sources */,
-				2557CA8268DE54DF1338A586 /* SmartDrillRecommendationsView.swift in Sources */,
 				B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */,
 				AF80E380774AEB62A33122F3 /* AppLogger.swift in Sources */,
 				8925E101D04C6B7E6E30EFFC /* YouTubeService.swift in Sources */,
@@ -1290,6 +1288,7 @@
 				EFFA7FF4F7A6DD27B8E84557 /* DrillContent.swift in Sources */,
 				F2EF0CF15B9BC666D32F24C1 /* TQDiagram.swift in Sources */,
 				D67A3F022C3AA937B4832F13 /* TQFormField.swift in Sources */,
+				D59ADC92C64D3042CA586E2C /* DrillSuggestion.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1323,6 +1322,7 @@
 				DF1636172E133003001E8CF9 /* TechnIQUITests.swift in Sources */,
 				DF1636192E133003001E8CF9 /* TechnIQUITestsLaunchTests.swift in Sources */,
 				9FFD6978C1092160F0CC727B /* TouchlineHomeUITests.swift in Sources */,
+				9E5121D5EF0270A1C92AA4CD /* TouchlineScreensUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1484,7 +1484,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1517,7 +1517,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

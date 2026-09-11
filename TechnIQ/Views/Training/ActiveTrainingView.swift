@@ -299,7 +299,14 @@ struct ActiveTrainingView: View {
             TQScreen {
                 VStack(spacing: DesignSystem.Spacing.section) {
                     Spacer()
-                    TQHeroCard(eyebrow: "Full time", title: "Session complete", actionTitle: "Done", actionIcon: nil, markings: .heroSimple, action: { dismiss() })
+                    TQHeroCard(
+                        eyebrow: "Full time",
+                        title: "Session complete",
+                        actionTitle: "Done",
+                        actionIcon: nil,
+                        markings: .heroSimple,
+                        action: { dismiss() }
+                    )
                     Spacer()
                 }
             }
@@ -323,7 +330,12 @@ struct ActiveTrainingView: View {
            let wd = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan),
            let week = plan.weeks.first(where: { $0.weekNumber == wd.week }) {
             planWeek = HomeWeekModel.PlanWeek(days: week.days.map {
-                HomeWeekModel.PlanDay(weekday: $0.dayOfWeek.map { $0.sortOrder + 1 }, isRest: $0.isRestDay, isCompleted: $0.isCompleted || $0.isSkipped, sessionCount: $0.sessions.count)
+                HomeWeekModel.PlanDay(
+                    weekday: $0.dayOfWeek.map { $0.sortOrder + 1 },
+                    isRest: $0.isRestDay,
+                    isCompleted: $0.isCompleted || $0.isSkipped,
+                    sessionCount: $0.sessions.count
+                )
             })
         }
         let week = HomeWeekModel.build(today: Date(), calendar: Calendar.current, sessionDates: sessions, plan: planWeek)

@@ -210,7 +210,13 @@ struct EmailAuthView: View {
                         TQFormField("Name", text: $fullName, placeholder: "Your name", contentType: .name)
                     }
                     TQFormField("Email", text: $email, placeholder: "you@example.com", contentType: .emailAddress, keyboard: .emailAddress)
-                    TQFormField("Password", text: $password, placeholder: isSignUp ? "At least 6 characters" : "Your password", isSecure: true, contentType: isSignUp ? .newPassword : .password)
+                    TQFormField(
+                        "Password",
+                        text: $password,
+                        placeholder: isSignUp ? "At least 6 characters" : "Your password",
+                        isSecure: true,
+                        contentType: isSignUp ? .newPassword : .password
+                    )
                     if isSignUp {
                         TQFormField("Confirm password", text: $confirmPassword, placeholder: "Repeat your password", isSecure: true, contentType: .newPassword)
                     }
@@ -240,6 +246,14 @@ struct EmailAuthView: View {
         .scrollDismissesKeyboard(.interactively)
         .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { TQKeyboard.dismiss() }
+                    .font(Font.system(size: 16, weight: .semibold))
+                    .foregroundColor(DesignSystem.Colors.grass)
+            }
+        }
         .alert("Password reset", isPresented: $showResetAlert) {
             Button("OK", role: .cancel) { }
         } message: {

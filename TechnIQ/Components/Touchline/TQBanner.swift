@@ -94,10 +94,21 @@ struct TQBanner: View {
 #if DEBUG
 #Preview("Banner") {
     VStack(spacing: 12) {
-        TQBanner(.warning, lead: "You're offline.", message: "Today's drill comes from your plan; the coach's note will update when you're back.", actionTitle: "Retry", action: {})
+        TQBanner(
+            .warning,
+            lead: "You're offline.",
+            message: "Today's drill comes from your plan; the coach's note will update when you're back.",
+            actionTitle: "Retry",
+            action: {}
+        )
         TQBanner(.error, lead: "Couldn't save.", message: "Your session is kept on this device.", actionTitle: "Retry", action: {})
         TQBanner(.info, message: "Coach didn't answer in time. Showing today's plan drill.")
-        TQBanner(.error, lead: "Couldn't generate this one", message: "The drill came back with a layout that didn't pass our checks. Nothing was saved and your quota wasn't used.", layout: .block)
+        TQBanner(
+            .error,
+            lead: "Couldn't generate this one",
+            message: "The drill came back with a layout that didn't pass our checks. Nothing was saved and your quota wasn't used.",
+            layout: .block
+        )
     }
     .padding(20)
     .background(DesignSystem.Colors.surfaceBase)

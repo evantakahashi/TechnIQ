@@ -156,6 +156,17 @@ struct UnifiedOnboardingView: View {
 
             footer
         }
+        // The footer stays put under the keyboard (the fields sit at the top of the scroll view);
+        // the keyboard bar's Done dismisses it.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { TQKeyboard.dismiss() }
+                    .font(Font.system(size: 16, weight: .semibold))
+                    .foregroundColor(DesignSystem.Colors.grass)
+            }
+        }
     }
 
     @ViewBuilder

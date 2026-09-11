@@ -1,55 +1,35 @@
 import XCTest
 @testable import TechnIQ
 
-// MARK: - Feature Highlight Data Tests
+// MARK: - Onboarding Step Tests (Touchline 7b)
 
-final class FeatureHighlightTests: XCTestCase {
+final class OnboardingStepTests: XCTestCase {
+    typealias Step = UnifiedOnboardingView.Step
 
-    func test_onboardingHighlights_hasThreeItems() {
-        XCTAssertEqual(FeatureHighlight.onboardingHighlights.count, 3)
+    func test_fiveDecisionStepsInOrder() {
+        let decisions = Step.allCases.filter(\.isDecision)
+        XCTAssertEqual(decisions, [.goal, .frequency, .position, .weakSpots, .about])
     }
 
-    func test_onboardingHighlights_firstIsAITraining() {
-        let highlight = FeatureHighlight.onboardingHighlights[0]
-        XCTAssertEqual(highlight.headline, "Smart Drills, Built for You")
-        XCTAssertFalse(highlight.body.isEmpty)
+    func test_generationAndPaywallFollowTheDecisions() {
+        XCTAssertFalse(Step.generating.isDecision)
+        XCTAssertFalse(Step.paywall.isDecision)
+        XCTAssertEqual(Step.about.rawValue + 1, Step.generating.rawValue)
+        XCTAssertEqual(Step.generating.rawValue + 1, Step.paywall.rawValue)
     }
 
-    func test_onboardingHighlights_secondIsProgressXP() {
-        let highlight = FeatureHighlight.onboardingHighlights[1]
-        XCTAssertEqual(highlight.headline, "Level Up Your Game")
-    }
-
-    func test_onboardingHighlights_thirdIsAvatar() {
-        let highlight = FeatureHighlight.onboardingHighlights[2]
-        XCTAssertEqual(highlight.headline, "Make It Yours")
-    }
-
-    func test_onboardingHighlights_allHaveUniqueIDs() {
-        let highlights = FeatureHighlight.onboardingHighlights
-        let ids = Set(highlights.map { $0.id })
-        XCTAssertEqual(ids.count, highlights.count)
-    }
-
-    func test_featureIconContent_sfSymbol() {
-        let highlight = FeatureHighlight.onboardingHighlights[0]
-        if case .sfSymbol(let name, _) = highlight.iconContent {
-            XCTAssertEqual(name, "brain.head.profile")
-        } else {
-            XCTFail("Expected sfSymbol icon content for AI Training highlight")
+    func test_shortNamesAreLowercaseAndUnique() {
+        let names = Step.allCases.map(\.shortName)
+        XCTAssertEqual(Set(names).count, names.count)
+        for name in names {
+            XCTAssertEqual(name, name.lowercased())
+            XCTAssertFalse(name.isEmpty)
         }
     }
 
-    func test_featureIconContent_multiIcon() {
-        let highlight = FeatureHighlight.onboardingHighlights[1]
-        if case .multiIcon(let icons) = highlight.iconContent {
-            XCTAssertEqual(icons.count, 3)
-            XCTAssertEqual(icons[0].name, "star.fill")
-            XCTAssertEqual(icons[1].name, "flame.fill")
-            XCTAssertEqual(icons[2].name, "trophy.fill")
-        } else {
-            XCTFail("Expected multiIcon content for Progress highlight")
-        }
+    func test_noWelcomeOrPlayingStyleSteps() {
+        let names = Step.allCases.map(\.shortName)
+        XCTAssertFalse(names.contains { $0.contains("welcome") || $0.contains("style") })
     }
 }
 

@@ -403,8 +403,22 @@ struct TQOptionRow: View {
                 TQRow("Last match", meta: .init("vs Northside · ", accent: "W 3–1"), action: {})
                 TQRow("Drills from the coach", badge: TQBadge(.count(3)), action: {})
                 TQRow("Drills from the coach", note: "after your first session").disabled(true)
-                TQRow("Two-touch wall passing", subtitle: "Technical · Lvl 2 · 15 min · from your coach", leading: .tile(TQTile("AI", style: .ai)), accessory: .heart(isOn: false, action: {}), verticalPadding: 12, action: {})
-                TQRow("Wall pass & spin", subtitle: "Sofia R. · Lvl 2 · 12 min", leading: .tile(TQTile("TEC")), accessory: .saves(842), verticalPadding: 12, action: {})
+                TQRow(
+                    "Two-touch wall passing",
+                    subtitle: "Technical · Lvl 2 · 15 min · from your coach",
+                    leading: .tile(TQTile("AI", style: .ai)),
+                    accessory: .heart(isOn: false, action: {}),
+                    verticalPadding: 12,
+                    action: {}
+                )
+                TQRow(
+                    "Wall pass & spin",
+                    subtitle: "Sofia R. · Lvl 2 · 12 min",
+                    leading: .tile(TQTile("TEC")),
+                    accessory: .saves(842),
+                    verticalPadding: 12,
+                    action: {}
+                )
                 TQRow("TechnIQ Pro", badge: TQBadge(.status("Active")), verticalPadding: 12, action: {})
             }
             VStack(spacing: 0) {
@@ -414,7 +428,15 @@ struct TQOptionRow: View {
                 TQRule()
             }
             VStack(spacing: 0) {
-                TQIndexRow(index: "01", text: "Two-touch wall passing", meta: "120 reps · 15′", indexTone: .muted, textColor: DesignSystem.Colors.chalkWhite, indexWidth: 34, verticalPadding: 12)
+                TQIndexRow(
+                    index: "01",
+                    text: "Two-touch wall passing",
+                    meta: "120 reps · 15′",
+                    indexTone: .muted,
+                    textColor: DesignSystem.Colors.chalkWhite,
+                    indexWidth: 34,
+                    verticalPadding: 12
+                )
                 TQRule()
             }
             VStack(spacing: 0) {

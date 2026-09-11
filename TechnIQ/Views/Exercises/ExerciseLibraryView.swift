@@ -108,7 +108,10 @@ struct ExerciseLibraryView: View {
                     TQButton("+ New drill", size: .compact, fullWidth: false) { showingNewDrillMenu = true }
                 }
 
-                TQSearchField(allExercises.isEmpty ? "Search drills" : "Search \(allExercises.count) drill\(allExercises.count == 1 ? "" : "s")", text: $searchText)
+                TQSearchField(
+                    allExercises.isEmpty ? "Search drills" : "Search \(allExercises.count) drill\(allExercises.count == 1 ? "" : "s")",
+                    text: $searchText
+                )
                     .disabled(allExercises.isEmpty)
 
                 if allExercises.isEmpty {
@@ -212,7 +215,11 @@ struct ExerciseLibraryView: View {
                     withAnimation(DesignSystem.Animation.quick) { chip = option }
                 }
             }
-            TQChip(filterState.hasActiveFilters ? "Filters · \(filterState.activeFilterCount)" : "Filters", isSelected: filterState.hasActiveFilters, icon: "slider.horizontal.3") {
+            TQChip(
+                filterState.hasActiveFilters ? "Filters · \(filterState.activeFilterCount)" : "Filters",
+                isSelected: filterState.hasActiveFilters,
+                icon: "slider.horizontal.3"
+            ) {
                 showingFilterSheet = true
             }
         }
@@ -379,9 +386,27 @@ struct NewDrillSheet: View {
             TQGroupHeader("New drill")
                 .padding(.top, 4)
             TQRowList {
-                TQRow("Generate with the coach", subtitle: "Describe what to fix · 20 s", leading: .tile(TQTile("AI", style: .ai)), verticalPadding: DesignSystem.Spacing.rowVertical, action: onAI)
-                TQRow("Write one yourself", subtitle: "Manual drill", leading: .tile(TQTile(symbol: "plus")), verticalPadding: DesignSystem.Spacing.rowVertical, action: onManual)
-                TQRow("Pull in video drills", subtitle: "YouTube · Pro", leading: .tile(TQTile("VID")), verticalPadding: DesignSystem.Spacing.rowVertical, action: onVideo)
+                TQRow(
+                    "Generate with the coach",
+                    subtitle: "Describe what to fix · 20 s",
+                    leading: .tile(TQTile("AI", style: .ai)),
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: onAI
+                )
+                TQRow(
+                    "Write one yourself",
+                    subtitle: "Manual drill",
+                    leading: .tile(TQTile(symbol: "plus")),
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: onManual
+                )
+                TQRow(
+                    "Pull in video drills",
+                    subtitle: "YouTube · Pro",
+                    leading: .tile(TQTile("VID")),
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: onVideo
+                )
             }
             Spacer(minLength: 0)
         }

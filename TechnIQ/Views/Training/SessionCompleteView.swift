@@ -225,7 +225,15 @@ struct SessionCompleteView: View {
         if !items.isEmpty {
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                    TQIndexRow(index: String(format: "%02d", index + 1), text: item.0, meta: item.1, indexTone: .muted, textColor: DesignSystem.Colors.chalkWhite, indexWidth: 34, verticalPadding: DesignSystem.Spacing.rowVertical)
+                    TQIndexRow(
+                        index: String(format: "%02d", index + 1),
+                        text: item.0,
+                        meta: item.1,
+                        indexTone: .muted,
+                        textColor: DesignSystem.Colors.chalkWhite,
+                        indexWidth: 34,
+                        verticalPadding: DesignSystem.Spacing.rowVertical
+                    )
                 }
                 TQRule()
             }

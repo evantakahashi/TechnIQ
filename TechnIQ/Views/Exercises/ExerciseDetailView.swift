@@ -150,7 +150,11 @@ struct ExerciseDetailView: View {
             TQBackButton { dismiss() }
         } trailing: {
             HStack(spacing: 2) {
-                TQIconAction(isFavorite ? "heart.fill" : "heart", tone: isFavorite ? .grass : .muted, accessibilityLabel: isFavorite ? "Remove from saved" : "Save drill") {
+                TQIconAction(
+                    isFavorite ? "heart.fill" : "heart",
+                    tone: isFavorite ? .grass : .muted,
+                    accessibilityLabel: isFavorite ? "Remove from saved" : "Save drill"
+                ) {
                     toggleFavorite()
                 }
                 if isEditable {

@@ -962,7 +962,14 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                         if let created { existingExercises.append(created) }
                         return created
                     }
-                    _ = addSessionToDay(day, sessionType: sessionTemplate.sessionType, duration: sessionTemplate.duration, intensity: sessionTemplate.intensity, notes: sessionTemplate.notes, exercises: exercises)
+                    _ = addSessionToDay(
+                        day,
+                        sessionType: sessionTemplate.sessionType,
+                        duration: sessionTemplate.duration,
+                        intensity: sessionTemplate.intensity,
+                        notes: sessionTemplate.notes,
+                        exercises: exercises
+                    )
                 }
             }
         }
@@ -1057,7 +1064,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: Self.templateWeeks(count: 6, trainingDays: [.monday, .wednesday, .friday], sessionType: .technical, difficulty: .intermediate, focus: ["Passing range", "First touch under pressure", "Scanning and vision", "Box-to-box running", "Switching play", "Tempo control"])
+            weeks: Self.templateWeeks(
+                count: 6,
+                trainingDays: [.monday, .wednesday, .friday],
+                sessionType: .technical,
+                difficulty: .intermediate,
+                focus: ["Passing range", "First touch under pressure", "Scanning and vision", "Box-to-box running", "Switching play", "Tempo control"]
+            )
         )
     }
 
@@ -1078,7 +1091,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: Self.templateWeeks(count: 6, trainingDays: [.monday, .wednesday, .friday], sessionType: .tactical, difficulty: .intermediate, focus: ["Body shape and positioning", "1v1 defending", "Aerial duels", "Recovery runs", "Playing out from the back", "Reading the game"])
+            weeks: Self.templateWeeks(
+                count: 6,
+                trainingDays: [.monday, .wednesday, .friday],
+                sessionType: .tactical,
+                difficulty: .intermediate,
+                focus: ["Body shape and positioning", "1v1 defending", "Aerial duels", "Recovery runs", "Playing out from the back", "Reading the game"]
+            )
         )
     }
 
@@ -1099,7 +1118,13 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             completedAt: nil,
             createdAt: Date(),
             updatedAt: Date(),
-            weeks: Self.templateWeeks(count: 4, trainingDays: [.monday, .tuesday, .thursday, .saturday], sessionType: .physical, difficulty: .advanced, focus: ["Acceleration", "Change of direction", "Reactive speed", "Match-speed repeats"])
+            weeks: Self.templateWeeks(
+                count: 4,
+                trainingDays: [.monday, .tuesday, .thursday, .saturday],
+                sessionType: .physical,
+                difficulty: .advanced,
+                focus: ["Acceleration", "Change of direction", "Reactive speed", "Match-speed repeats"]
+            )
         )
     }
 

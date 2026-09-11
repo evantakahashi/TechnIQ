@@ -9,6 +9,7 @@ final class TouchlineHomeUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = true
+        XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
     }
 
@@ -117,7 +118,10 @@ final class TouchlineHomeUITests: XCTestCase {
         let matchRow = row("Last match")
         XCTAssertTrue(matchRow.waitForExistence(timeout: 5), "last match row")
         XCTAssertTrue(tapWhenHittable(matchRow), "match row hittable")
-        XCTAssertTrue(text(containing: "Match History").waitForExistence(timeout: 8) || text(containing: "Northside").waitForExistence(timeout: 2), "match history opened")
+        XCTAssertTrue(
+            text(containing: "Match History").waitForExistence(timeout: 8) || text(containing: "Northside").waitForExistence(timeout: 2),
+            "match history opened"
+        )
         shot("match-history")
         goBack()
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after match history")
@@ -228,7 +232,10 @@ final class TouchlineHomeUITests: XCTestCase {
         let buildRow = row("Build a training plan")
         XCTAssertTrue(buildRow.waitForExistence(timeout: 5), "build plan row")
         XCTAssertTrue(tapWhenHittable(buildRow), "build plan row hittable")
-        XCTAssertTrue(text(containing: "AI Plan Generator").waitForExistence(timeout: 8) || app.navigationBars["AI Plan Generator"].waitForExistence(timeout: 2), "plan generator opened")
+        XCTAssertTrue(
+            text(containing: "AI Plan Generator").waitForExistence(timeout: 8) || app.navigationBars["AI Plan Generator"].waitForExistence(timeout: 2),
+            "plan generator opened"
+        )
         shot("plan-generator")
         dismissSheet()
         XCTAssertTrue(quick.waitForExistence(timeout: 8), "back on Home after plan generator")
@@ -237,7 +244,10 @@ final class TouchlineHomeUITests: XCTestCase {
         let logRow = row("Log a match")
         XCTAssertTrue(logRow.waitForExistence(timeout: 5), "log match row")
         XCTAssertTrue(tapWhenHittable(logRow), "log match row hittable")
-        XCTAssertTrue(app.navigationBars["Log Match"].waitForExistence(timeout: 8) || text(containing: "Log Match").waitForExistence(timeout: 2), "match log opened")
+        XCTAssertTrue(
+            app.navigationBars["Log Match"].waitForExistence(timeout: 8) || text(containing: "Log Match").waitForExistence(timeout: 2),
+            "match log opened"
+        )
         shot("match-log")
         dismissSheet()
         XCTAssertTrue(quick.waitForExistence(timeout: 8), "back on Home after match log")

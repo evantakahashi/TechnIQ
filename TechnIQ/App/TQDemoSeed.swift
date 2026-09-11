@@ -96,7 +96,14 @@ enum TQDemoSeed {
                 guard let day = TrainingPlanService.shared.addDayToWeek(week, dayNumber: index + 1, dayOfWeek: weekdays[index], isRestDay: count == 0, notes: nil) else { continue }
                 for sessionIndex in 0..<count {
                     let sessionExercises = Array(exercises.dropFirst(sessionIndex).prefix(1))
-                    _ = TrainingPlanService.shared.addSessionToDay(day, sessionType: .technical, duration: 15, intensity: 3, notes: nil, exercises: sessionExercises)
+                    _ = TrainingPlanService.shared.addSessionToDay(
+                        day,
+                        sessionType: .technical,
+                        duration: 15,
+                        intensity: 3,
+                        notes: nil,
+                        exercises: sessionExercises
+                    )
                 }
                 let done = weekNumber <= 2 || (weekNumber == 3 && index == 0)
                 if done {

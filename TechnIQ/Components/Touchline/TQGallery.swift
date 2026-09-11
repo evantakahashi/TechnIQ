@@ -85,7 +85,15 @@ struct TQGalleryView: View {
                         actionTitle: "Start session",
                         action: {}
                     )
-                    TQHeroCard(eyebrow: "Today's session", trailingMeta: "WK 3 · DAY 2", title: "", actionTitle: "", state: .loading, markings: .heroSimple, action: {})
+                    TQHeroCard(
+                        eyebrow: "Today's session",
+                        trailingMeta: "WK 3 · DAY 2",
+                        title: "",
+                        actionTitle: "",
+                        state: .loading,
+                        markings: .heroSimple,
+                        action: {}
+                    )
                     TQPitchCard(.strip, markings: .strip) {
                         HStack(spacing: 14) {
                             VStack(alignment: .leading, spacing: 4) {
@@ -133,10 +141,24 @@ struct TQGalleryView: View {
                 section("TQRow · leading none/tile/index · trailing meta/badge/chevron/heart · pressed · disabled", index: 2) {
                     TQRowList {
                         TQRow("Plain row", meta: .init("META"), action: {})
-                        TQRow("Tile row + subtitle", subtitle: "Technical · Lvl 2 · 20 min", leading: .tile(TQTile("TEC")), accessory: .heart(isOn: true, action: {}), verticalPadding: 12, action: {})
+                        TQRow(
+                            "Tile row + subtitle",
+                            subtitle: "Technical · Lvl 2 · 20 min",
+                            leading: .tile(TQTile("TEC")),
+                            accessory: .heart(isOn: true, action: {}),
+                            verticalPadding: 12,
+                            action: {}
+                        )
                         TQRow("Index row (steps, recap)", leading: .index("01"), badge: TQBadge(.count(3)), accessory: .none, verticalPadding: 12, action: {})
                         TQRow("Disabled", note: "after your first session").disabled(true)
-                        TQRow("Wall pass & spin", subtitle: "Sofia R. · Lvl 2 · 12 min", leading: .tile(TQTile("AI", style: .ai)), accessory: .saves(842), verticalPadding: 12, action: {})
+                        TQRow(
+                            "Wall pass & spin",
+                            subtitle: "Sofia R. · Lvl 2 · 12 min",
+                            leading: .tile(TQTile("AI", style: .ai)),
+                            accessory: .saves(842),
+                            verticalPadding: 12,
+                            action: {}
+                        )
                     }
                 }
 
@@ -146,7 +168,10 @@ struct TQGalleryView: View {
                     TQScheduleGrid(rows: [
                         .init(label: "WK 1", cells: [.init(state: .done), .rest, .init(state: .done), .init(state: .done), .rest, .init(state: .done, sessions: 2), .rest]),
                         .init(label: "WK 3", cells: [.init(state: .done), .rest, .init(state: .planned), .init(state: .planned), .rest, .init(state: .today, sessions: 2), .rest], isCurrent: true),
-                        .init(label: "WK 4", cells: [.init(state: .planned), .init(state: .planned), .rest, .init(state: .planned), .rest, .init(state: .planned), .rest])
+                        .init(
+                            label: "WK 4",
+                            cells: [.init(state: .planned), .init(state: .planned), .rest, .init(state: .planned), .rest, .init(state: .planned), .rest]
+                        )
                     ])
                 }
 

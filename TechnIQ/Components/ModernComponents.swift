@@ -127,39 +127,6 @@ struct ModernCard<Content: View>: View {
     }
 }
 
-// MARK: - Compact Action Button
-
-/// Deprecated: use TQButton(size: .compact) or TQChip. Flat raised chip kept for legacy rows.
-struct CompactActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: {
-            HapticManager.shared.selectionChanged()
-            action()
-        }) {
-            HStack(spacing: DesignSystem.Spacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(DesignSystem.Colors.chalkWhite)
-                Text(title)
-                    .font(DesignSystem.Typography.labelMedium)
-                    .textCase(.uppercase)
-                    .tracking(0.6)
-                    .foregroundColor(DesignSystem.Colors.chalkWhite)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 40)
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(TQPressStyle(fill: DesignSystem.Colors.surfaceRaised, pressedFill: DesignSystem.Colors.surfaceHighlight, cornerRadius: DesignSystem.CornerRadius.md))
-    }
-}
-
 // MARK: - Modern Text Field
 
 /// Raised field, r8, 1 px highlight border, grass border on focus, eyebrow label.
@@ -331,25 +298,6 @@ struct StatCard: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Floating Action Button
-
-/// Deprecated: Touchline has one primary action per screen (TQButton) — no FABs.
-struct FloatingActionButton: View {
-    let icon: String
-    let action: () -> Void
-    let color: Color
-
-    init(icon: String, color: Color = DesignSystem.Colors.primaryGreen, action: @escaping () -> Void) {
-        self.icon = icon
-        self.color = color
-        self.action = action
-    }
-
-    var body: some View {
-        TQIconButton(icon, style: .primary, shape: .square, size: 54, iconSize: 20, accessibilityLabel: "Create", action: action)
     }
 }
 

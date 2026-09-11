@@ -83,6 +83,7 @@ struct EnhancedProfileView: View {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
                 TQScreenTitle("You") {
                     TQIconAction("gearshape", accessibilityLabel: "Settings") { showingSettings = true }
+                        .accessibilityIdentifier("profile.settings")
                 }
                 .padding(.top, 8)
 

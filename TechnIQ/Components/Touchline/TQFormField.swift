@@ -63,6 +63,15 @@ struct TQFormField: View {
     }
 }
 
+// MARK: - TQKeyboard
+
+enum TQKeyboard {
+    /// Resigns the first responder (dismisses the software keyboard) from anywhere.
+    static func dismiss() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 // MARK: - TQAppMark
 
 /// 40 pt app mark: near-black rounded square with a lime centre-circle target on a halfway line.

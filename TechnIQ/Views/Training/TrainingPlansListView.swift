@@ -240,8 +240,20 @@ struct NewPlanSheet: View {
             TQGroupHeader("New plan")
                 .padding(.top, 4)
             TQRowList {
-                TQRow("Build it with the coach", subtitle: "Position, weak spots, schedule · Pro", leading: .tile(TQTile("AI", style: .ai)), verticalPadding: DesignSystem.Spacing.rowVertical, action: onAI)
-                TQRow("Build it yourself", subtitle: "Custom weeks and sessions", leading: .tile(TQTile(symbol: "plus")), verticalPadding: DesignSystem.Spacing.rowVertical, action: onCustom)
+                TQRow(
+                    "Build it with the coach",
+                    subtitle: "Position, weak spots, schedule · Pro",
+                    leading: .tile(TQTile("AI", style: .ai)),
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: onAI
+                )
+                TQRow(
+                    "Build it yourself",
+                    subtitle: "Custom weeks and sessions",
+                    leading: .tile(TQTile(symbol: "plus")),
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: onCustom
+                )
             }
             Spacer(minLength: 0)
         }

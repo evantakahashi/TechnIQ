@@ -81,7 +81,7 @@ TechnIQ/
 ├── Views/
 │   ├── Auth/      Dashboard/ Training/ Exercises/ Matches/
 │   ├── Avatar/    Analytics/ Community/ Settings/
-├── Components/    (DesignSystem, ModernComponents, CoachMarkOverlay, etc.)
+├── Components/    (DesignSystem, ModernComponents [legacy wrappers], CoachMarkOverlay; Touchline/ = TQ* design-system components)
 └── Utilities/     (AppLogger, HapticManager, NetworkManager)
 ```
 
@@ -90,13 +90,33 @@ TechnIQ/
 |------|---------|
 | `App/TechnIQApp.swift` | App entry, Firebase/Google Sign-In init |
 | `App/ContentView.swift` | Root nav, auth routing, cloud restore |
-| `Components/DesignSystem.swift` | Design tokens (colors, typography, spacing) |
-| `Components/ModernComponents.swift` | Reusable UI (ModernCard, ModernButton, etc.) |
+| `Components/DesignSystem.swift` | Touchline tokens (surfaces/pitch/grass/cone, condensed display type, radii, spacing, tab symbols) |
+| `Components/Touchline/TQ*.swift` | Touchline components — screens are composed only from these (see table below) |
+| `Components/ModernComponents.swift` | Legacy layer: ModernButton/ModernSegmentControl wrap TQButton/TQSegment; flat ModernCard/ModernTextField/StatCard kept for out-of-scope screens |
+| `App/TQDemoSeed.swift` | DEBUG demo fixture + `-TQScreen` hosts for screenshot/UI-test runs |
+| `scripts/add_to_pbxproj.py` | Registers new Swift files in project.pbxproj (not a synchronized folder): `<group> <file>`, `--tests`, `--uitests`, `--remove` |
 | `Services/CoreDataManager.swift` | Core Data stack, exercise CRUD |
 | `Services/YouTubeService.swift` | YouTube video data, caching, smart recommendations |
 | `Services/CoreDataFetchRequests.swift` | Dynamic description generation helpers |
 | `Views/Exercises/TemplateExerciseLibrary.swift` | 45+ exercise templates with fuzzy matching |
 | `Models/TrainingPlanModels.swift` | UI models, SessionType enum (incl. warmup/cooldown) |
+
+## Touchline Design System (Components/Touchline/)
+Every in-scope screen is built only from these; add a variant to a TQ component rather than styling ad hoc. One pitch-green surface and one grass button per screen; no shadows or gradients (the sign-in header fade is the one exception).
+| Component | Use |
+|-----------|-----|
+| TQPitchMarkings / TQPitchCard / TQHeroCard | Chalk-line pitch surfaces (hero, strip, pinned, card, fullscreen) |
+| TQButton (+TQIconButton, TQTextLink, TQPressStyle) | primary grass / inverse chalk / raised / ghost / destructive; sizes regular, compact, auth |
+| TQRow, TQRowList, TQIndexRow, TQStepRow, TQOptionRow | Flat rows with tile/index leading, meta/badge/chevron/heart/saves trailing; onboarding option rows |
+| TQText (TQEyebrow, TQDisplayTitle, TQFigureRow, TQMeta, TQBody, TQGroupHeader, TQSectionHeader, TQFooterLine) | Condensed display type; `TQDisplayTitle` with `\n` stacks lines tight |
+| TQControls (TQSegment, TQChip, TQChipRow, TQBadge, TQTile, TQStepper, TQProgressBar) | Segments, chips, level/count/status badges, 42 pt tiles |
+| TQStatRail, TQWeekStrip, TQScheduleGrid, TQLevelBar, TQClock | Figures rail, week/plan grids, animated level bar, session clock |
+| TQHeaders (TQScreenTitle, TQNavBar, TQBackButton, TQIconAction, TQScreen, TQAvatarCircle) | Screen chrome (native nav bars are hidden) |
+| TQSearchField, TQFormField, TQBanner, TQSkeleton, TQTabBar, TQDiagram, TQAppMark | Inputs, banners, loading, tab bar, drill diagram surface, app mark |
+| TQGallery (DEBUG) | `-TQGallery [-TQGalleryPage n] [-TQGallerySnapshot]` renders every component for eyeballing |
+
+**Debug launch arguments (DEBUG builds):** `-TQSeedDemo` (kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQScreen signIn|onboarding`.
+**UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift` (run with `-only-testing:TechnIQUITests`; screenshots land in the runner's tmp `touchlineshots/`).
 
 ## Development Workflow
 
@@ -109,15 +129,16 @@ TechnIQ/
 ## View Structure
 | Area | Key Views |
 |------|-----------|
-| Auth | AuthenticationView, UnifiedOnboardingView, EnhancedOnboardingView |
-| Dashboard | DashboardView, TrainHubView, PlayerProgressView |
+| Auth | AuthenticationView (SignInLandingView + EmailAuthView), UnifiedOnboardingView (5 decision steps → plan gen → OnboardingPaywallView) |
+| Dashboard | DashboardView (Home; HomeWeekModel), CoachDrillsView, TrainHubView, PlayerProgressView |
 | Training Plans | AITrainingPlanGeneratorView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
-| Sessions | TodaysTrainingView, ActiveTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
-| Exercises | ExerciseLibraryView, ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView, QuickDrillSheet |
+| Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet), SessionCompleteView, TodaysTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
+| Exercises | ExerciseLibraryView (Train tab), ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView (+TQDiagram), QuickDrillSheet, SharedDrillDetailView |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
 | Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
 | Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |
-| Settings | SettingsView, EditProfileView, SharePlanView |
+| Community | CommunityView (Feed / Drills / Leaderboard), DrillMarketplaceView (drill of the week) |
+| Settings | EnhancedProfileView (You tab), SettingsView, EditProfileView, SharePlanView |
 
 ## Deferred / Outstanding
 - API key rotation (keys in functions/.env.yaml need revoking) — USER ACTION

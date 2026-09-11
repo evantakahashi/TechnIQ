@@ -275,49 +275,6 @@ struct ErrorStateView: View {
     }
 }
 
-// MARK: - Welcome Back State
-
-/// Welcome back state for returning users after inactivity
-struct WelcomeBackView: View {
-    let daysInactive: Int
-    let onStartTraining: () -> Void
-
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            Image(systemName: "figure.soccer")
-                .font(.system(size: 120, weight: .regular))
-                .foregroundColor(DesignSystem.Colors.chalkWhite)
-
-            TQRule().padding(.horizontal, 48)
-
-            Text("WELCOME BACK")
-                .font(DesignSystem.Typography.displayLarge)
-                .foregroundColor(DesignSystem.Colors.chalkWhite)
-
-            Text(motivationalMessage)
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.mutedIvory)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, DesignSystem.Spacing.lg)
-
-            ModernButton("Start Training", icon: "play.fill", style: .primary, action: onStartTraining)
-                .padding(.top, DesignSystem.Spacing.md)
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-        }
-        .padding(DesignSystem.Spacing.xl)
-    }
-
-    private var motivationalMessage: String {
-        if daysInactive >= 7 {
-            return "It's been a while! No worries - every champion takes breaks. Let's pick up where we left off!"
-        } else if daysInactive >= 3 {
-            return "A few days off is normal. Ready to get back into the rhythm?"
-        } else {
-            return "Good to see you again! Let's keep building on your progress."
-        }
-    }
-}
-
 // MARK: - Previews
 
 #Preview("Empty States") {
@@ -369,8 +326,4 @@ struct WelcomeBackView: View {
 
         ErrorStateView(retryAction: {})
     }
-}
-
-#Preview("Welcome Back") {
-    WelcomeBackView(daysInactive: 7, onStartTraining: {})
 }

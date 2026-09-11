@@ -251,7 +251,11 @@ struct CustomDrillGeneratorView: View {
         if let drillError = error as? CustomDrillError {
             switch drillError {
             case .networkError:
-                return Failure(kind: .offline, title: "You're offline", message: "The coach needs a connection to build a drill. Try again when you're back online.")
+                return Failure(
+                    kind: .offline,
+                    title: "You're offline",
+                    message: "The coach needs a connection to build a drill. Try again when you're back online."
+                )
             case .dailyLimitReached, .quotaExceeded:
                 return Failure(kind: .quota, title: "No AI drills left today", message: drillError.errorDescription ?? "")
             case .invalidRequest:
@@ -261,9 +265,17 @@ struct CustomDrillGeneratorView: View {
             }
         }
         if isOffline {
-            return Failure(kind: .offline, title: "You're offline", message: "The coach needs a connection to build a drill. Try again when you're back online.")
+            return Failure(
+                kind: .offline,
+                title: "You're offline",
+                message: "The coach needs a connection to build a drill. Try again when you're back online."
+            )
         }
-        return Failure(kind: .generic, title: "Couldn't generate this one", message: "The drill came back with a layout that didn't pass our checks. Nothing was saved and your quota wasn't used.")
+        return Failure(
+            kind: .generic,
+            title: "Couldn't generate this one",
+            message: "The drill came back with a layout that didn't pass our checks. Nothing was saved and your quota wasn't used."
+        )
     }
 
     private func cancel() {

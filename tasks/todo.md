@@ -9,13 +9,14 @@ inventory, lines 17–73) and #8b (tab symbols, lines 263–280). PNGs in `scree
 Only anchors 4a 5a 5b 5c 6a 6b 6c 7a 7b 7c 8a 8b 9a 9b–9g are final; ignore turns 0–3, 4b, 4c.
 Values come from the HTML inline styles, never estimated from PNGs.
 
-## Status (2026-09-09 evening)
+## Status (2026-09-10)
 - [x] 01 Tokens — commit 42652d8
 - [x] 02 Components — 8b3adb5, 618f5ef (+ `TQGallery` debug view; `scripts/add_to_pbxproj.py` registers files)
 - [x] 03 Home — 54e563d + review commit; all four states verified on the simulator with `-TQSeedDemo` / `-TQHomeState`
-- [ ] REVIEW STOP: Evan compares against screens/01-home.png (+12/13/14) before step 04
-- [ ] 04 Active session + Session complete
-- [ ] 05 Remaining screens · [ ] 06 Cleanup (delete SmartDrillRecommendationsView's unused view, WelcomeBackView, CompactActionButton/FloatingActionButton once unused; CLAUDE.md table; run full unit tests)
+- [x] REVIEW STOP — Evan reviewed Home ("great, commit and move on")
+- [x] 04 Active session + Session complete — bf75abe
+- [x] 05 Train, AI drill states, Plans, Plan detail, Drill detail, Community — e7a409f; You, Sign-in, Onboarding — 361b38f
+- [x] 06 Cleanup — dead views/components deleted, lint 0 errors, unit + UI suites green, CLAUDE.md updated
 
 ## Rules of the build
 - Token NAMES in DesignSystem.swift stay; VALUES change (spec §2–4). Shadows → clear. Gradients → removed.
@@ -100,25 +101,25 @@ FilterChip/ActionChip/PhysicalIndicatorChip/FrequencyChip→TQChip · Difficulty
 - [x] Build; compare to 01/12/13/14 PNGs on simulator.
 
 ### 04 Active session + Session complete (#5c, #6a)
-- [ ] ActiveSessionManager: add clock (countdown from estimatedDurationSeconds, count-up fallback), pause/resume, reps counter (+10), effort zone from metabolicLoad (Z1–Z5); persist reps/duration to SessionExercise; drop per-exercise rating phase (see Q2).
-- [ ] ActiveTrainingView: full-screen pitch (markings 20 %), top bar close / "DRILL n OF m" / menu(≡ → sheet with diagram + steps), 3 pt progress segments, eyebrow + displayMedium name, TQClock, reps + effort numberLarge, coach tip strip (35 % base overlay), controls pause 64 / "+10 REPS" grass / next.
-- [ ] SessionCompleteView: pitch header 420 pt r28 bottom ("FULL TIME · date", "SESSION COMPLETE", summary line, TQStatRail +XP / streak / +coins), TQLevelBar previous→new 0.8 s + "630 / 720 · 90 to lvl 13", drill recap TQRows (.index), "How did it feel?" TQSegment Easy/OK/Good/Hard → overallRating, Done + Share. Level-up → level bar completes + one row "LEVEL 13 · Prospect"; achievements → rows; weekly check-in → row. Remove confetti here.
-- [ ] Build; compare to 04/05 PNGs.
+- [x] ActiveSessionManager: add clock (countdown from estimatedDurationSeconds, count-up fallback), pause/resume, reps counter (+10), effort zone from metabolicLoad (Z1–Z5); persist reps/duration to SessionExercise; drop per-exercise rating phase (see Q2).
+- [x] ActiveTrainingView: full-screen pitch (markings 20 %), top bar close / "DRILL n OF m" / menu(≡ → sheet with diagram + steps), 3 pt progress segments, eyebrow + displayMedium name, TQClock, reps + effort numberLarge, coach tip strip (35 % base overlay), controls pause 64 / "+10 REPS" grass / next.
+- [x] SessionCompleteView: pitch header 420 pt r28 bottom ("FULL TIME · date", "SESSION COMPLETE", summary line, TQStatRail +XP / streak / +coins), TQLevelBar previous→new 0.8 s + "630 / 720 · 90 to lvl 13", drill recap TQRows (.index), "How did it feel?" TQSegment Easy/OK/Good/Hard → overallRating, Done + Share. Level-up → level bar completes + one row "LEVEL 13 · Prospect"; achievements → rows; weekly check-in → row. Remove confetti here.
+- [x] Build; compare to 04/05 PNGs.
 
 ### 05 Remaining screens (restyle onto components)
-- [ ] Train (#5a, #9e): TrainHubView/ExerciseLibraryView/ExerciseLibraryComponents — "TRAIN" + grass "+ New drill" (sheet AI/Manual/Video); TQSearchField "Search n drills"; strip TQPitchCard "FROM YOUR COACH · n NEW"; chips All/Saved/Technical/Physical/Tactical/Video (+ filter sheet behind trailing chip); flat TQRow list (tile, name, meta, heart). Empty: search disabled 50 %, pitch card "YOUR LIBRARY IS EMPTY / DESCRIBE WHAT YOU WANT TO FIX" + Generate a drill, rows Browse templates (45) / Pull in video drills (VID) / Write one yourself (+).
-- [ ] AI drill generating/failed (#9f, #9g): CustomDrillGeneratorView — "YOU ASKED FOR" raised card; pitch card with spinner + "DRAWING THE SETUP"; step rows ticking with real pipeline stages; Cancel. Failed: error banner, Try again (primary) / Edit the request (raised), "CLOSE MATCHES IN YOUR LIBRARY" rows. Same layout for offline (Try again disabled), quota (Try again → Upgrade), moderation (Edit only).
-- [ ] Plans (#8a): TrainingPlansListView — "PLANS" + "+ New plan"; active plan TQPitchCard (WK n / 8, progress bar, "Next: … · day"); TQSegment Pre-built / My plans · n; rows 42 pt "8W" tile, name, meta, level badge, chevron.
-- [ ] Plan detail (#5b): TrainingPlanDetailView — push not sheet; "PLAN" nav + Edit; eyebrow "ACTIVE · role · level"; displayLarge title; description; TQStatRail (%, week n/8, total h, done); TQScheduleGrid 8×7 (tap cell → day sheet) + legend; pinned TQPitchCard "TODAY · WK n DAY m" + Start.
-- [ ] Drill detail (#7c): ExerciseDetailView + DrillDiagramView → TQDiagram; header back / eyebrow "AI DRILL · category" / heart + share; title + figures; steps as index rows + "+n coaching points" collapsed; pinned Start drill + "+PLAN"; notes/feedback below fold; video card only for video drills.
-- [ ] Community (#6b): CommunityView/DrillMarketplaceView — "COMMUNITY" + raised "+ Post"; TQSegment Feed/Drills/Leaderboard (Drills default); TQPitchCard "DRILL OF THE WEEK" (most-saved last 7 d, fallback all-time) with Add to my drills / Preview; chips; rows with saves count + heart.
-- [ ] You (#6c): EnhancedProfileView — "YOU" + gear; TQPitchCard avatar 78×112, eyebrow tier · position, name, LVL · XP · coins, level bar, ghosted kit number; TQStatRail sessions / hours / streak / season G A; groups TRAINING / ACCOUNT / APP as rows; Pro row ACTIVE badge; Sign out ghost at bottom.
-- [ ] Sign-in (#7a): AuthenticationView — pitch header 470 pt fading to base, icon + wordmark; eyebrow, 60 pt headline, paragraph; Apple (inverse), Google (raised), Email (raised → email form screen restyled), "Train as a guest →" text, legal line.
-- [ ] Onboarding (#7b): UnifiedOnboardingView/OnboardingComponents — drop welcome + feature tour; one decision per screen goal → frequency → position (+foot) → weak spots → name/age/level, then plan generation + paywall (existing); TQStepper; selectable rows (number, title, consequence, radio); Next names the next step; "Next up · …" footer.
-- [ ] Build after each screen; PNG comparison on simulator.
+- [x] Train (#5a, #9e): TrainHubView/ExerciseLibraryView/ExerciseLibraryComponents — "TRAIN" + grass "+ New drill" (sheet AI/Manual/Video); TQSearchField "Search n drills"; strip TQPitchCard "FROM YOUR COACH · n NEW"; chips All/Saved/Technical/Physical/Tactical/Video (+ filter sheet behind trailing chip); flat TQRow list (tile, name, meta, heart). Empty: search disabled 50 %, pitch card "YOUR LIBRARY IS EMPTY / DESCRIBE WHAT YOU WANT TO FIX" + Generate a drill, rows Browse templates (45) / Pull in video drills (VID) / Write one yourself (+).
+- [x] AI drill generating/failed (#9f, #9g): CustomDrillGeneratorView — "YOU ASKED FOR" raised card; pitch card with spinner + "DRAWING THE SETUP"; step rows ticking with real pipeline stages; Cancel. Failed: error banner, Try again (primary) / Edit the request (raised), "CLOSE MATCHES IN YOUR LIBRARY" rows. Same layout for offline (Try again disabled), quota (Try again → Upgrade), moderation (Edit only).
+- [x] Plans (#8a): TrainingPlansListView — "PLANS" + "+ New plan"; active plan TQPitchCard (WK n / 8, progress bar, "Next: … · day"); TQSegment Pre-built / My plans · n; rows 42 pt "8W" tile, name, meta, level badge, chevron.
+- [x] Plan detail (#5b): TrainingPlanDetailView — push not sheet; "PLAN" nav + Edit; eyebrow "ACTIVE · role · level"; displayLarge title; description; TQStatRail (%, week n/8, total h, done); TQScheduleGrid 8×7 (tap cell → day sheet) + legend; pinned TQPitchCard "TODAY · WK n DAY m" + Start.
+- [x] Drill detail (#7c): ExerciseDetailView + DrillDiagramView → TQDiagram; header back / eyebrow "AI DRILL · category" / heart + share; title + figures; steps as index rows + "+n coaching points" collapsed; pinned Start drill + "+PLAN"; notes/feedback below fold; video card only for video drills.
+- [x] Community (#6b): CommunityView/DrillMarketplaceView — "COMMUNITY" + raised "+ Post"; TQSegment Feed/Drills/Leaderboard (Drills default); TQPitchCard "DRILL OF THE WEEK" (most-saved last 7 d, fallback all-time) with Add to my drills / Preview; chips; rows with saves count + heart.
+- [x] You (#6c): EnhancedProfileView — "YOU" + gear; TQPitchCard avatar 78×112, eyebrow tier · position, name, LVL · XP · coins, level bar, ghosted kit number; TQStatRail sessions / hours / streak / season G A; groups TRAINING / ACCOUNT / APP as rows; Pro row ACTIVE badge; Sign out ghost at bottom.
+- [x] Sign-in (#7a): AuthenticationView — pitch header 470 pt fading to base, icon + wordmark; eyebrow, 60 pt headline, paragraph; Apple (inverse), Google (raised), Email (raised → email form screen restyled), "Train as a guest →" text, legal line.
+- [x] Onboarding (#7b): UnifiedOnboardingView/OnboardingComponents — drop welcome + feature tour; one decision per screen goal → frequency → position (+foot) → weak spots → name/age/level, then plan generation + paywall (existing); TQStepper; selectable rows (number, title, consequence, radio); Next names the next step; "Next up · …" footer.
+- [x] Build after each screen; PNG comparison on simulator.
 
 ### 06 Cleanup
-- [ ] Delete dead components/files; swiftlint; unit tests (`-only-testing:TechnIQTests`); update CLAUDE.md component table + Key Files; memory note.
+- [x] Delete dead components/files; swiftlint; unit tests (`-only-testing:TechnIQTests`); update CLAUDE.md component table + Key Files; memory note.
 
 ## Judgment calls made (say so in the recap)
 - Onboarding stepper counts 5 decision steps (mock says 04 but lists 5 screens).
