@@ -351,7 +351,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         src_el = by_label.get(src, {})
         role = f" ({src_el.get('role')})" if src_el.get("role") else ""
         base = _situational(style, src, dst, by_label) or \
-            f"{src}{role} {_PLAIN.get(style, 'moves to')} {dst}"
+            f"{src}{role} {p.get('verb') or _PLAIN.get(style, 'moves to')} {dst}"
         steps_lit = [merged_step] + ([sync.get("step")] if sync is not None else [])
         phases.append({
             "d": _dur(style, dist),

@@ -42,7 +42,7 @@ DSL grammar:
   `player P1 at (x, y) role "worker"` (or `"server"` or `"defender"`),
   `mannequin M1 at (x, y)` (passive pressure-from-behind obstacle — use for "under pressure" work without a live defender),
   optional `label "..."` on players.
-- Actions: `step N: ID verb ID` where verb in {passes to, dribbles to, runs to, shoots at, receives from, throws to, tosses to, heads to}
+- Actions: `step N: ID <verb> ID`. Use YOUR OWN soccer verbs — "chips to", "curls at", "cuts back to", "drives to" all parse; write the game the way a coach speaks. Each verb resolves to one of 8 semantic classes (passes/dribbles/runs/shoots/receives/throws/tosses/heads — how the ball physically behaves). Common verbs resolve automatically; for an unusual one, declare it once above the steps: `verb nutmegs = dribbles`. Your verb word is kept and shown to the kid.
 - `throws to` = hand distribution (goalkeepers); `tosses to` = soft underhand serve (heading/volley work); `heads to` = aerial header at a goal/gate/player. Use these for GK and heading drills — never fake them with foot passes.
 - Valid `passes to` targets: player, server, defender, wall, goal, or a GATE used as a landing zone (chips/through-balls arrive there). Never pass to a cone or ball.
 - Valid `shoots at` targets: goal, gate, wall ONLY — never a ball, cone, or player. If no goal is in the equipment, declare a gate and shoot through it.

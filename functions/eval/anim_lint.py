@@ -49,6 +49,7 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
 
     findings: list[str] = []
     last: dict[str, list[float]] = {lbl: list(xy) for lbl, xy in home.items()}
+    seen_actor: set = set()
     prev_label = None
     cid = drill.get("_case", {}).get("id", "?")
 
@@ -59,12 +60,18 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
         dur = p.get("d", 0) / 1000.0
         # continuity in
         for lbl, tr in tracks.items():
-            if lbl in last and _d(tr[0], last[lbl]) > 0.35 \
+            first_sight = lbl not in seen_actor
+            seen_actor.add(lbl)
+            tol = 1.2 if first_sight else 0.35  # staging licence at curtain-up
+            if lbl in last and _d(tr[0], last[lbl]) > tol \
                     and kind not in ("homeglide",):
                 tag = "CONT-B" if lbl == BALL else "CONT-P"
+                where = ("their drawn marker" if first_sight
+                         else "where they were")
                 findings.append(
                     f"{tag} {cid} phase{pi} '{p.get('label','')[:34]}': "
-                    f"{lbl} starts {_d(tr[0], last[lbl]):.1f}m from where it was")
+                    f"{lbl} starts {_d(tr[0], last[lbl]):.1f}m from {where} "
+                    f"({last[lbl][0]:.1f},{last[lbl][1]:.1f})")
         # aloneness (fades only — kicks fly alone legitimately)
         if kind == "fade" and BALL in tracks and _d(*tracks[BALL]) > 1.5:
             bt = tracks[BALL]

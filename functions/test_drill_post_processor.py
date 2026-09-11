@@ -545,3 +545,19 @@ def test_run_to_spot_cone_stops_in_front():
     ], "paths": [{"from": "P1", "to": "C1", "style": "run", "step": 1}]}}
     annotate_path_positions(d)
     assert d["diagram"]["paths"][0]["tx"] < 10  # short of the cone, approach side
+
+
+def test_missing_collect_run_is_injected():
+    """Actor shoots, ball rests at goal, next rep dribbles — fetch is injected."""
+    d = _carrier_run_drill()
+    d["diagram"]["elements"].append({"type": "goal", "x": 19, "y": 7.5, "label": "GL", "width": 7.32})
+    d["equipment"].append("goals")
+    d["diagram"]["paths"] = [
+        {"from": "P1", "to": "C1", "style": "dribble", "step": 1},
+        {"from": "P1", "to": "GL", "style": "shoot", "step": 2},
+        {"from": "P1", "to": "C2", "style": "dribble", "step": 3},  # no ball!
+    ]
+    drill, warnings = post_process_drill(d, player_age=14)
+    styles = [(p["style"], p["to"]) for p in sorted(drill["diagram"]["paths"], key=lambda x: x["step"])]
+    assert ("run", "GL") in styles, styles  # the injected fetch
+    assert any("Injected collect run" in w for w in warnings)

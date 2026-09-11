@@ -31,7 +31,7 @@ def test_parse_paths_use_step_numbers():
     diagram = parse_dsl(SIMPLE_DRILL)
     paths = diagram["diagram"]["paths"]
     assert len(paths) == 2
-    assert paths[0] == {"from": "P1", "to": "C1", "style": "dribble", "step": 1}
+    assert paths[0] == {"from": "P1", "to": "C1", "style": "dribble", "verb": "dribbles to", "step": 1}
     assert paths[1]["step"] == 2
 
 
@@ -200,3 +200,31 @@ point: a
 point: b''')
     alts = [p for p in d["diagram"]["paths"] if p.get("alt")]
     assert len(alts) == 1 and alts[0]["to"] == "G2" and alts[0]["step"] == 2
+
+
+def test_open_verbs_synonyms_and_declarations():
+    d = parse_dsl("""verb nutmegs = dribbles
+player P1 at (2, 7) role "worker"
+player P2 at (8, 7) role "server"
+ball B1 at (2, 7)
+cone C1 at (12, 7)
+goal GL at (19, 7) width 7.32
+step 1: P1 chips to P2
+step 2: P2 lays to P1
+step 3: P1 nutmegs to C1
+step 4: P1 curls at GL
+point: p""")
+    styles = [p["style"] for p in d["diagram"]["paths"]]
+    assert styles == ["pass", "pass", "dribble", "shoot"]
+    verbs = [p["verb"] for p in d["diagram"]["paths"]]
+    assert verbs == ["chips to", "lays to", "nutmegs to", "curls at"]
+
+
+def test_unknown_verb_names_the_fix():
+    import pytest
+    with pytest.raises(DSLParseError, match="declare it first"):
+        parse_dsl("""player P1 at (2, 7) role "worker"
+ball B1 at (2, 7)
+cone C1 at (8, 7)
+step 1: P1 zorbles to C1
+point: p""")

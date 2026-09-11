@@ -501,10 +501,13 @@ def generate_custom_drill(req: https_fn.Request) -> https_fn.Response:
             # body, errors appended at the tail) read it from cache.
             body = prompt
             system = None
-            if prompt.startswith(SYSTEM_PROMPT):
-                system = [{"type": "text", "text": SYSTEM_PROMPT,
-                           "cache_control": {"type": "ephemeral"}}]
-                body = prompt[len(SYSTEM_PROMPT):].lstrip("\n")
+            from drill_animator import AUTHOR_STATIC
+            for prefix in (SYSTEM_PROMPT, AUTHOR_STATIC):
+                if prompt.startswith(prefix):
+                    system = [{"type": "text", "text": prefix,
+                               "cache_control": {"type": "ephemeral"}}]
+                    body = prompt[len(prefix):].lstrip("\n")
+                    break
             marker = "PRIOR ATTEMPT ERRORS"
             if system and marker in body:
                 head, tail = body.split(marker, 1)

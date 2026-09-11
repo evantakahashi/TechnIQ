@@ -137,13 +137,16 @@ def _check_major_props_used(
         if g.get("label") in used:
             continue
         # a goal backing used in-goal target gates is legitimately "used"
-        def in_mouth(e):
+        def serves_goal(e):
             dx = abs(e.get("x", 0) - g.get("x", 0))
             dy = abs(e.get("y", 0) - g.get("y", 0))
             half = g.get("width", 7.32) / 2
-            return (dx < 1.5 and dy <= half) or (dy < 1.5 and dx <= half)
+            in_mouth = (dx < 1.5 and dy <= half) or (dy < 1.5 and dx <= half)
+            # crossing/landing zones in the goal's apron justify it too
+            in_apron = (min(dx, dy) <= 6.0 and max(dx, dy) <= half + 2.0)
+            return in_mouth or in_apron
         has_used_gate = any(
-            e.get("type") == "gate" and e.get("label") in used and in_mouth(e)
+            e.get("type") == "gate" and e.get("label") in used and serves_goal(e)
             for e in elements)
         if not has_used_gate:
             raise ValidationError(

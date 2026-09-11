@@ -4,6 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+# Canonical SEMANTIC classes — closed on purpose: possession tracking and
+# every validator reason over these. The SURFACE vocabulary is open: models
+# may use any verb and declare its class inline (`verb chips = passes`).
 VERB_TO_STYLE = {
     "passes to": "pass",
     "dribbles to": "dribble",
@@ -14,6 +17,39 @@ VERB_TO_STYLE = {
     "heads to": "header",    # aerial finish/clearance off a served ball
     "tosses to": "toss",     # underhand serve for heading/volley work
 }
+
+# Built-in synonym stems -> canonical style (surface flavor, same physics)
+_VERB_SYNONYMS = {
+    "chip": "pass", "clip": "pass", "loft": "pass", "slip": "pass",
+    "slide": "pass", "roll": "pass", "play": "pass", "feed": "pass",
+    "cross": "pass", "lay": "pass", "cutback": "pass", "cut back": "pass",
+    "strike": "shoot", "fire": "shoot", "blast": "shoot", "finish": "shoot",
+    "volley": "shoot", "smash": "shoot", "place": "shoot", "curl": "shoot",
+    "carry": "dribble", "drive": "dribble", "take": "dribble",
+    "weave": "dribble", "glide": "dribble", "shield": "dribble",
+    "sprint": "run", "jog": "run", "move": "run", "shuffle": "run",
+    "dart": "run", "check": "run", "press": "run", "close": "run",
+    "cushion": "receive", "control": "receive", "trap": "receive",
+    "catch": "receive", "collect": "receive", "gather": "receive",
+    "chest": "receive", "flick": "header", "nod": "header",
+    "lob": "toss", "serve": "toss", "punt": "throw", "bowl": "throw",
+}
+_CANON_STYLES = set(VERB_TO_STYLE.values())
+
+
+def resolve_verb(phrase: str, declared: dict[str, str]) -> str | None:
+    """Any surface verb -> canonical style, or None if unresolvable."""
+    p = phrase.strip().lower()
+    if p in VERB_TO_STYLE:
+        return VERB_TO_STYLE[p]
+    head = re.sub(r"\s+(to|at|from|into|through|past|off|on)$", "", p)
+    head = head.rstrip("s")  # chips -> chip
+    if head in declared:
+        return declared[head]
+    for stem, style in _VERB_SYNONYMS.items():
+        if head.startswith(stem):
+            return style
+    return None
 
 ELEMENT_KEYWORDS = {"cone", "gate", "ball", "goal", "player", "wall", "defender", "server", "mannequin"}
 
@@ -37,12 +73,14 @@ _ELEMENT_RE = re.compile(
     r"\s*$"
 )
 _STEP_RE = re.compile(
-    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)(?:\s+(?P<touch>one-touch|two-touch|first-time))?\s*$"
+    r"^step\s+(?P<num>\d+)\s*:\s*(?P<src>\w+)\s+(?P<verb>[a-z][a-z \-]*?)\s+(?P<dst>\w+)(?:\s+(?P<touch>one-touch|two-touch|first-time))?\s*$"
 )
+_VERB_DECL_RE = re.compile(
+    r"^verb\s+(?P<word>[a-z\-]+)\s*=\s*(?P<canon>[a-z]+)\s*$")
 _POINT_RE = re.compile(r"^point\s*:\s*(?P<text>.+?)\s*$")
 _VARIATION_RE = re.compile(r"^variation\s*:\s*(?P<text>.+?)\s*$")
 _OPTION_RE = re.compile(
-    r"^or\s*:\s*(?P<src>\w+)\s+(?P<verb>passes to|dribbles to|runs to|shoots at|receives from|throws to|heads to|tosses to)\s+(?P<dst>\w+)\s*$"
+    r"^or\s*:\s*(?P<src>\w+)\s+(?P<verb>[a-z][a-z \-]*?)\s+(?P<dst>\w+)\s*$"
 )
 
 
@@ -56,6 +94,7 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
     coaching_points: list[str] = []
     variations: list[str] = []
     seen_ids: set[str] = set()
+    declared_verbs: dict[str, str] = {}
     last_step = 0
 
     for idx, raw_line in enumerate(dsl.splitlines(), start=1):
@@ -64,6 +103,21 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
             continue
         if line.startswith("#"):
             continue  # model's plan comment — kept in raw logs for debugging, not data
+        vm = _VERB_DECL_RE.match(line)
+        if vm:
+            craw = vm.group("canon").lower()
+            canon = (craw if craw in _CANON_STYLES
+                     else craw.rstrip("s") if craw.rstrip("s") in _CANON_STYLES
+                     else resolve_verb(craw + " to", {})
+                     or resolve_verb(craw + " from", {})
+                     or resolve_verb(craw + " at", {}))
+            if canon is None:
+                raise DSLParseError(idx, f"verb declaration maps to unknown "
+                                    f"class {vm.group('canon')!r} — use one of "
+                                    "passes/dribbles/runs/shoots/receives/"
+                                    "throws/tosses/heads")
+            declared_verbs[vm.group("word").lower().rstrip("s")] = canon
+            continue
 
         head = line.split(None, 1)[0].rstrip(":")
 
@@ -76,7 +130,7 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
             continue
 
         if head == "step":
-            path, step_num = _parse_step(line, idx)
+            path, step_num = _parse_step(line, idx, declared_verbs)
             if step_num != last_step + 1:
                 raise DSLParseError(
                     idx,
@@ -89,13 +143,18 @@ def parse_dsl(dsl: str) -> dict[str, Any]:
         if head == "or":
             m = _OPTION_RE.match(line)
             if not m:
-                raise DSLParseError(idx, "malformed option (or: X verb Y)")
+                raise DSLParseError(idx, f"malformed option {line!r} — format: `or: ID verb ID`")
             if last_step == 0:
                 raise DSLParseError(idx, "or: must follow a step")
+            ov = m.group("verb").strip()
+            ostyle = resolve_verb(ov, declared_verbs)
+            if ostyle is None:
+                raise DSLParseError(idx, f"verb {ov!r} has no known meaning")
             paths.append({
                 "from": m.group("src"),
                 "to": m.group("dst"),
-                "style": VERB_TO_STYLE[m.group("verb")],
+                "style": ostyle,
+                "verb": ov,
                 "step": last_step,
                 "alt": True,
             })
@@ -154,19 +213,23 @@ def _parse_element(line: str, idx: int) -> dict[str, Any]:
     return el
 
 
-def _parse_step(line: str, idx: int) -> tuple[dict[str, Any], int]:
+def _parse_step(line: str, idx: int, declared_verbs: dict[str, str]) -> tuple[dict[str, Any], int]:
     m = _STEP_RE.match(line)
     if not m:
-        raise DSLParseError(idx, "malformed step")
-    verb = m.group("verb")
-    style = VERB_TO_STYLE.get(verb)
+        raise DSLParseError(idx, f"malformed step {line!r} — format: `step N: ID verb ID`")
+    verb = m.group("verb").strip()
+    style = resolve_verb(verb, declared_verbs)
     if style is None:
-        raise DSLParseError(idx, f"unknown verb {verb!r}")
+        raise DSLParseError(
+            idx, f"verb {verb!r} has no known meaning — declare it first "
+            f"(`verb {verb.split()[0]} = passes|dribbles|runs|shoots|receives"
+            f"|throws|tosses|heads`) or use a stock verb")
     step_num = int(m.group("num"))
     path = {
         "from": m.group("src"),
         "to": m.group("dst"),
         "style": style,
+        "verb": verb,
         "step": step_num,
     }
     if m.group("touch"):

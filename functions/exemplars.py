@@ -72,6 +72,7 @@ def get_exemplars(
         hits.sort(key=lambda e: (
             player_count(e) != number_of_players,
             not e.get("golden"),
+            not e.get("priority"),
             -e.get("dsl", "").count("step "),
         ))
         return hits

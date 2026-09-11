@@ -30,20 +30,13 @@ _SCHEMA_EXAMPLE = '''{"phases":[
   "hips":{},"label":"Bring it back — that's your rest","ease":"lin","kind":"fade","step":2}
 ]}'''
 
-_AUTHOR_PROMPT = """You are animating a youth soccer drill as a short looping film.
+AUTHOR_STATIC = """You are animating a youth soccer drill as a short looping film.
 You author EVERY movement: the ball's flights and touches, each player's runs, the
-timing, the facing, the narration. Coordinates are METERS on a {W}x{L} field
-(x 0-{W}, y 0-{L}). This is the same craft as your best hand-made drill animations.
+timing, the facing, the narration. This is the same craft as your best hand-made
+drill animations. All coordinates are METERS on the field given below.
 
-THE DRILL (fixed — your film must faithfully show these actions in order):
-Cast: {cast}
-Elements: {elements}
-Steps (fx,fy -> tx,ty are the true positions):
-{steps}
-Coaching voice (mine for captions): {coaching}
-
-OUTPUT: ONLY a JSON object {{"phases": [...]}}. Phase schema (all coords meters):
-{schema}
+OUTPUT: ONLY a JSON object {"phases": [...]}. Phase schema (all coords meters):
+""" + _SCHEMA_EXAMPLE + """
 - tracks: "__ball__" plus any player labels; [from,to] each. Untracked = stands still.
 - kind: "action" | "fade" (reset plumbing — brisk, ball always accompanied) | "tossup"
   (self-toss: ball pulses in place) | "outcome" (a dashed or-branch escape, at the END).
@@ -61,7 +54,18 @@ CRAFT (your own style, made explicit):
   ("Bring it back — that's your rest").
 - The loop must END exactly at its starting state (positions AND ball).
 - Captions: second person, technique and perception, no numbers.
-- {n_phases_hint} phases feels right for this drill. Reply with the JSON only."""
+"""
+
+_AUTHOR_TAIL = """
+THE DRILL (fixed — your film must faithfully show these actions in order):
+Field: {W}x{L} meters (x 0-{W}, y 0-{L}).
+Cast: {cast}
+Elements: {elements}
+Steps (fx,fy -> tx,ty are the true positions):
+{steps}
+Coaching voice (mine for captions): {coaching}
+
+{n_phases_hint} phases feels right for this drill. Reply with the JSON only."""
 
 
 def _fidelity(drill: dict[str, Any], timeline: dict[str, Any]) -> list[str]:
@@ -143,15 +147,15 @@ def author_timeline(drill: dict[str, Any],
         for e in diagram.get("elements", []) if e.get("type") == "player")
     steps = "\n".join(
         f"  s{p.get('step')}{' [reset]' if p.get('reset') else (' [or]' if p.get('alt') else '')}: "
-        f"{p.get('from')} {p.get('style')} {p.get('to')} "
+        f"{p.get('from')} {p.get('verb') or p.get('style')} {p.get('to')} "
         f"({p.get('fx'):.1f},{p.get('fy'):.1f})->({p.get('tx'):.1f},{p.get('ty'):.1f})"
         for p in diagram.get("paths", []) if p.get("fx") is not None)
     coaching = " | ".join((drill.get("coaching_points") or [])[:6])
     n_paths = sum(1 for p in diagram.get("paths", []) if not p.get("alt"))
-    prompt = _AUTHOR_PROMPT.format(
+    prompt = AUTHOR_STATIC + _AUTHOR_TAIL.format(
         W=int(field.get("width", 20)), L=int(field.get("length", 15)),
         cast=cast, elements=els, steps=steps, coaching=coaching,
-        schema=_SCHEMA_EXAMPLE, n_phases_hint=max(6, min(18, n_paths + 3)))
+        n_phases_hint=max(6, min(18, n_paths + 3)))
 
     findings_prev: list[str] = []
     for attempt in range(2):
