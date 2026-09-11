@@ -1208,8 +1208,9 @@ function loadDrill(drill){
     svgEl.querySelectorAll('g[data-label]').forEach(g=>{
       const lbl=g.getAttribute('data-label');
       if(orig[lbl]&&orig[lbl].type==="player"){
-        const wedge=el("path",{d:"M 9 0 L 15 3.4 L 15 -3.4 Z",fill:"rgba(0,0,0,.38)","data-h":lbl,opacity:0,transform:`translate(${x} ${y})`});
-        wedge.setAttribute("data-cx",x); wedge.setAttribute("data-cy",y);
+        const ox=orig[lbl].x, oy=orig[lbl].y;
+        const wedge=el("path",{d:"M 9 0 L 15 3.4 L 15 -3.4 Z",fill:"rgba(0,0,0,.38)","data-h":lbl,opacity:0,transform:`translate(${ox} ${oy})`});
+        wedge.setAttribute("data-cx",ox); wedge.setAttribute("data-cy",oy);
         g.appendChild(wedge);
       }
     });
