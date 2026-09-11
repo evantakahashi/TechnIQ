@@ -172,6 +172,54 @@ final class TrainingPlanTemplateTests: XCTestCase {
         XCTAssertTrue(weeks[0].days.allSatisfy(\.isRestDay))
     }
 
+    func test_peekCurrentDay_skipsDoneSkippedAndRestDaysWithoutMutating() {
+        var weeks = TrainingPlanService.templateWeeks(count: 2, trainingDays: [.monday, .wednesday], sessionType: .technical, difficulty: .beginner, focus: [])
+        // Week 1: Monday done, Tuesday (rest) untouched, Wednesday skipped → next actionable is week 2 Monday.
+        weeks[0] = mark(weeks[0]) { day in
+            switch day.dayOfWeek {
+            case .monday: return (completed: true, skipped: false)
+            case .wednesday: return (completed: false, skipped: true)
+            default: return (completed: false, skipped: false)
+            }
+        }
+        let plan = TrainingPlanModel(
+            id: UUID(), name: "Peek", description: "", durationWeeks: 2, difficulty: .beginner, category: .technical,
+            targetRole: nil, isPrebuilt: false, isActive: true, currentWeek: 1, progressPercentage: 0,
+            startedAt: nil, completedAt: nil, createdAt: Date(), updatedAt: Date(), weeks: weeks
+        )
+        let current = TrainingPlanService.peekCurrentDay(in: plan)
+        XCTAssertEqual(current?.week, 2)
+        XCTAssertEqual(current?.day.dayOfWeek, .monday)
+        XCTAssertEqual(TrainingPlanService.peekCurrentWeekAndDay(in: plan)?.day, current?.day.dayNumber)
+        // Pure: the pending rest days are still not completed on the model.
+        let restDays = plan.weeks.flatMap(\.days).filter(\.isRestDay)
+        XCTAssertFalse(restDays.isEmpty)
+        XCTAssertTrue(restDays.allSatisfy { !$0.isCompleted })
+    }
+
+    func test_peekCurrentDay_isNilWhenOnlyRestOrDoneDaysRemain() {
+        var weeks = TrainingPlanService.templateWeeks(count: 1, trainingDays: [.monday], sessionType: .technical, difficulty: .beginner, focus: [])
+        weeks[0] = mark(weeks[0]) { day in (completed: day.dayOfWeek == .monday, skipped: false) }
+        let plan = TrainingPlanModel(
+            id: UUID(), name: "Done", description: "", durationWeeks: 1, difficulty: .beginner, category: .technical,
+            targetRole: nil, isPrebuilt: false, isActive: true, currentWeek: 1, progressPercentage: 0,
+            startedAt: nil, completedAt: nil, createdAt: Date(), updatedAt: Date(), weeks: weeks
+        )
+        XCTAssertNil(TrainingPlanService.peekCurrentDay(in: plan))
+    }
+
+    private func mark(_ week: PlanWeekModel, _ state: (PlanDayModel) -> (completed: Bool, skipped: Bool)) -> PlanWeekModel {
+        let days = week.days.map { day -> PlanDayModel in
+            let flags = state(day)
+            return PlanDayModel(
+                id: day.id, dayNumber: day.dayNumber, dayOfWeek: day.dayOfWeek, isRestDay: day.isRestDay,
+                isSkipped: flags.skipped, notes: day.notes, isCompleted: flags.completed, completedAt: flags.completed ? Date() : nil,
+                sessions: day.sessions
+            )
+        }
+        return PlanWeekModel(id: week.id, weekNumber: week.weekNumber, focusArea: week.focusArea, notes: week.notes, isCompleted: false, completedAt: nil, days: days)
+    }
+
     func test_prebuiltTemplates_haveFullSchedules() {
         let templates = TrainingPlanService.shared.availablePlans
         XCTAssertEqual(templates.count, 6)

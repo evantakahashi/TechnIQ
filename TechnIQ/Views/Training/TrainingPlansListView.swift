@@ -20,6 +20,7 @@ struct TrainingPlansListView: View {
     @State private var showingShareSheet = false
     @State private var planToShare: TrainingPlanModel?
     @State private var myPlans: [TrainingPlanModel] = []
+    @State private var activeNextLine = ""
     @State private var route: TrainingPlanModel?
 
     @FetchRequest var players: FetchedResults<Player>
@@ -111,7 +112,8 @@ struct TrainingPlansListView: View {
     // MARK: - Active plan card
 
     private func activePlanCard(_ plan: TrainingPlanModel) -> some View {
-        let weekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        // Pure read: view bodies must not advance the plan (that happens in loadMyPlans()).
+        let weekDay = TrainingPlanService.peekCurrentWeekAndDay(in: plan)
         let week = weekDay?.week ?? max(plan.currentWeek, 1)
         let progress = min(1, max(0, plan.progressPercentage / 100))
         return Button {
@@ -133,7 +135,7 @@ struct TrainingPlansListView: View {
                             .foregroundColor(DesignSystem.Colors.chalkWhite)
                     }
                     HStack {
-                        Text(nextSessionLine(for: plan, weekDay: weekDay))
+                        Text(activeNextLine.isEmpty ? nextSessionLine(for: plan, weekDay: weekDay) : activeNextLine)
                             .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(DesignSystem.Colors.textOnPitch)
                             .lineLimit(1)
@@ -148,14 +150,12 @@ struct TrainingPlansListView: View {
         .accessibilityHint("Opens the plan")
     }
 
-    private func nextSessionLine(for plan: TrainingPlanModel, weekDay: (week: Int, day: Int)?) -> String {
+    private func nextSessionLine(for plan: TrainingPlanModel, weekDay: (week: Int, day: Int)?, exerciseName: String? = nil) -> String {
         guard let weekDay,
               let week = plan.weeks.first(where: { $0.weekNumber == weekDay.week }),
               let day = week.days.first(where: { $0.dayNumber == weekDay.day }) else {
             return plan.isCompleted ? "Plan complete" : "Next: pick up where you left off"
         }
-        let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
-        let exerciseName = sessions.first?.exercises?.allObjects.compactMap { ($0 as? Exercise)?.name }.sorted().first
         let what = exerciseName ?? (day.sessions.first.map { "\($0.sessionType.displayName) session" } ?? "Training")
         let when = day.dayOfWeek?.shortName ?? "Day \(day.dayNumber)"
         return "Next: \(what) · \(when)"
@@ -226,6 +226,16 @@ struct TrainingPlansListView: View {
         guard let player = players.first else { return }
         myPlans = planService.fetchAllPlans(for: player)
         planService.activePlan = planService.fetchActivePlan(for: player)
+        // Progression (auto-completing pending rest days) happens here, once per load; the card
+        // body only peeks at the model.
+        if let plan = planService.activePlan {
+            let weekDay = planService.getCurrentWeekAndDay(for: plan)
+            let sessions = planService.getTodaysSessions(for: plan)
+            let exerciseName = sessions.first?.exercises?.allObjects.compactMap { ($0 as? Exercise)?.name }.sorted().first
+            activeNextLine = nextSessionLine(for: plan, weekDay: weekDay, exerciseName: exerciseName)
+        } else {
+            activeNextLine = ""
+        }
     }
 }
 

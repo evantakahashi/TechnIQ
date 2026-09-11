@@ -23,6 +23,7 @@ struct ActiveTrainingView: View {
     @State private var levelBeforeSession: Int = 1
 
     @State private var showingEndConfirm = false
+    @State private var clockWasRunningBeforeEndPrompt = false
     @State private var showingDrillSheet = false
 
     init(exercises: [Exercise], planSession: PlanSession? = nil) {
@@ -87,7 +88,9 @@ struct ActiveTrainingView: View {
         .onDisappear { manager.pauseClock() }
         .alert("End session early?", isPresented: $showingEndConfirm) {
             Button("End Session", role: .destructive) { manager.endSessionEarly() }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: .cancel) {
+                if clockWasRunningBeforeEndPrompt { manager.startClock() }
+            }
         } message: {
             Text("Drills you finished are saved with pro-rated XP.")
         }
@@ -143,6 +146,7 @@ struct ActiveTrainingView: View {
     private var topBar: some View {
         HStack {
             TQIconButton("xmark", style: .translucent, shape: .circle, size: 36, iconSize: 13, accessibilityLabel: "End session") {
+                clockWasRunningBeforeEndPrompt = manager.isRunning
                 manager.pauseClock()
                 showingEndConfirm = true
             }
@@ -327,7 +331,7 @@ struct ActiveTrainingView: View {
         let sessions = ((player.sessions as? Set<TrainingSession>) ?? []).compactMap { $0.date }
         var planWeek: HomeWeekModel.PlanWeek? = nil
         if let plan = TrainingPlanService.shared.fetchActivePlan(for: player),
-           let wd = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan),
+           let wd = TrainingPlanService.peekCurrentWeekAndDay(in: plan),
            let week = plan.weeks.first(where: { $0.weekNumber == wd.week }) {
             planWeek = HomeWeekModel.PlanWeek(days: week.days.map {
                 HomeWeekModel.PlanDay(
