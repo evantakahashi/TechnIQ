@@ -17,6 +17,7 @@ Values come from the HTML inline styles, never estimated from PNGs.
 - [x] 04 Active session + Session complete — bf75abe
 - [x] 05 Train, AI drill states, Plans, Plan detail, Drill detail, Community — e7a409f; You, Sign-in, Onboarding — 361b38f
 - [x] 06 Cleanup — dead views/components deleted, lint 0 errors, unit + UI suites green, CLAUDE.md updated
+- [x] 07 CI + hardening (2026-09-10) — CI was red on every push to main because the runner lacked the gitignored `Config/Secrets.xcconfig` and `GoogleService-Info.plist`; workflow now generates both (secret `GOOGLE_SERVICE_INFO_PLIST_B64` set), picks the newest Xcode, adds a Touchline UI test job; `-TQLocalUser` debug auth; `SharedDrillRanking` / `OnboardingMapping` extracted with tests (161 unit, 20 UI). Branch merged with main (functions/ taken from main) — PR #2.
 
 ## Rules of the build
 - Token NAMES in DesignSystem.swift stay; VALUES change (spec §2–4). Shadows → clear. Gradients → removed.
