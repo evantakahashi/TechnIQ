@@ -1,430 +1,280 @@
 import SwiftUI
 
+// MARK: - Sign-in (Touchline 7a)
+//
+// Landing: a 470 pt pitch header that fades into the base surface, app mark + wordmark top-left,
+// eyebrow, 60 pt headline, one-paragraph pitch, then Apple (inverse) / Google (raised) /
+// Email (raised) buttons, "Train as a guest →" as text, and the legal line. Email pushes the
+// existing email form onto its own screen.
+
 struct AuthenticationView: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
-    @State private var isSignUp = false
-    
     var body: some View {
-        ZStack {
-            // Adaptive background (gradient light, solid dark)
-            AdaptiveBackground()
-                .ignoresSafeArea()
-            
-            if isSignUp {
-                ModernSignUpView(isSignUp: $isSignUp)
-            } else {
-                ModernSignInView(isSignUp: $isSignUp)
-            }
+        NavigationStack {
+            SignInLandingView()
+                .navigationDestination(for: AuthRouteToken.self) { route in
+                    switch route {
+                    case .email: EmailAuthView()
+                    }
+                }
         }
     }
 }
 
-struct ModernSignInView: View {
+// MARK: - Landing
+
+struct SignInLandingView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
-    @Binding var isSignUp: Bool
+
+    private let headerHeight: CGFloat = 470
+    private let copyOverlap: CGFloat = 108   // eyebrow sits inside the header's fade (mock y ≈ 362)
+
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    header(topInset: proxy.safeAreaInsets.top)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        TQEyebrow("Your AI soccer coach", size: 13)
+                            .padding(.bottom, 10)
+                        TQDisplayTitle("Train with\na plan", size: .hero)
+                            .padding(.bottom, 12)
+                        Text("A weekly plan built around your position and weak spots, drills with diagrams, and every session tracked.")
+                            .font(Font.system(size: 16, weight: .regular))
+                            .foregroundColor(DesignSystem.Colors.mutedIvory)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 22)
+
+                        if !authManager.errorMessage.isEmpty {
+                            TQBanner(.error, message: authManager.errorMessage)
+                                .padding(.bottom, 12)
+                        }
+
+                        VStack(spacing: 10) {
+                            TQButton("Continue with Apple", icon: "apple.logo", style: .inverse, size: .auth, face: .text, isLoading: authManager.isLoading) {
+                                Task { await authManager.signInWithApple() }
+                            }
+                            .accessibilityIdentifier("signin.apple")
+                            TQButton("Continue with Google", icon: "g.circle", style: .raised, size: .auth, face: .text) {
+                                Task { await authManager.signInWithGoogle() }
+                            }
+                            .accessibilityIdentifier("signin.google")
+                            NavigationLink(value: AuthRouteToken.email) {
+                                TQButtonLabel("Continue with email")
+                            }
+                            .buttonStyle(TQPressStyle(fill: DesignSystem.Colors.surfaceRaised, pressedFill: DesignSystem.Colors.surfaceHighlight, cornerRadius: DesignSystem.CornerRadius.button))
+                            .accessibilityIdentifier("signin.email")
+                        }
+                        .disabled(authManager.isLoading)
+
+                        HStack {
+                            Spacer()
+                            TQTextLink("Train as a guest") {
+                                Task { await authManager.signInAnonymously() }
+                            }
+                            .disabled(authManager.isLoading)
+                            .accessibilityIdentifier("signin.guest")
+                            Spacer()
+                        }
+                        .padding(.top, 2)
+
+                        legalLine
+                            .padding(.bottom, 8)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                    .padding(.top, -copyOverlap)
+                }
+                .frame(minHeight: proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom, alignment: .top)
+            }
+            .ignoresSafeArea(edges: .top)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    // The pitch header: solid pitch under the markings, fading into the base surface over the
+    // bottom third so the headline sits on the base colour.
+    private func header(topInset: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            DesignSystem.Colors.pitch
+            TQPitchMarkings(preset: .signIn)
+            LinearGradient(
+                stops: [
+                    .init(color: DesignSystem.Colors.surfaceBase.opacity(0), location: 0.5),
+                    .init(color: DesignSystem.Colors.surfaceBase, location: 0.98)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            HStack(spacing: 10) {
+                TQAppMark()
+                Text("TechnIQ")
+                    .font(Font.system(size: 22, weight: .bold).width(.condensed))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+            }
+            .padding(.leading, DesignSystem.Spacing.screenPadding)
+            .padding(.top, max(topInset, 20) + 6)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("TechnIQ")
+        }
+        .frame(height: headerHeight)
+        .frame(maxWidth: .infinity)
+        .clipped()
+    }
+
+    private var legalLine: some View {
+        HStack(spacing: 0) {
+            Spacer()
+            Text("By continuing you agree to the ")
+            Button("Terms") { open("https://techniq-b9a27.web.app/terms-of-service.html") }
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
+            Text(" and ")
+            Button("Privacy Policy") { open("https://techniq-b9a27.web.app/privacy-policy.html") }
+                .foregroundColor(DesignSystem.Colors.mutedIvory)
+            Text(".")
+            Spacer()
+        }
+        .font(Font.system(size: 12, weight: .regular))
+        .foregroundColor(DesignSystem.Colors.textTertiary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+    }
+
+    private func open(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
+    }
+}
+
+/// Route token shared with `AuthenticationView`'s destination switch.
+enum AuthRouteToken: Hashable { case email }
+
+/// Raised, full-width label matching `TQButton(size: .auth, face: .text)` for use inside a
+/// `NavigationLink`.
+private struct TQButtonLabel: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title)
+            .font(Font.system(size: 17, weight: .semibold))
+            .foregroundColor(DesignSystem.Colors.chalkWhite)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Email form (own screen)
+
+struct EmailAuthView: View {
+    @EnvironmentObject private var authManager: AuthenticationManager
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isSignUp = false
     @State private var email = ""
     @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var fullName = ""
     @State private var showResetAlert = false
     @State private var resetAlertMessage = ""
+    @State private var modeIndex = 0
 
-    private var isLoginEnabled: Bool {
-        !email.isEmpty && !password.isEmpty && password.count >= 6
+    private var canSubmit: Bool {
+        guard !email.isEmpty, password.count >= 6 else { return false }
+        return isSignUp ? password == confirmPassword && !fullName.trimmingCharacters(in: .whitespaces).isEmpty : true
     }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Spacer(minLength: DesignSystem.Spacing.lg)
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
+                TQNavBar("Email") {
+                    TQBackButton { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+                }
 
-                // Logo and Title Section
-                VStack(spacing: DesignSystem.Spacing.xl) {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        // Modern logo with soccer ball
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Image(systemName: "soccerball")
-                                .font(.largeTitle)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                .a11yHidden()
+                TQDisplayTitle(isSignUp ? "Create your account" : "Welcome back", size: .small)
 
-                            Text("TechnIQ")
-                                .font(DesignSystem.Typography.displaySmall)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                        }
-                        
-                        Text("Master Your Soccer Skills")
-                            .font(DesignSystem.Typography.bodyLarge)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .multilineTextAlignment(.center)
+                TQSegment(options: ["Sign in", "Create account"], selectedIndex: $modeIndex)
+                    .onChange(of: modeIndex) { _, newValue in
+                        withAnimation(DesignSystem.Animation.quick) { isSignUp = newValue == 1 }
+                        authManager.errorMessage = ""
                     }
-                    
-                    // Modern Login Form
-                    ModernCard(padding: DesignSystem.Spacing.lg) {
-                        VStack(spacing: DesignSystem.Spacing.lg) {
-                            ModernTextField(
-                                "Email",
-                                text: $email,
-                                placeholder: "Enter your email",
-                                icon: DesignSystem.Icons.email
-                            )
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            
-                            ModernTextField(
-                                "Password",
-                                text: $password,
-                                placeholder: "Enter your password",
-                                icon: DesignSystem.Icons.password,
-                                isSecure: true
-                            )
-                            
-                            // Error Message
-                            if !authManager.errorMessage.isEmpty {
-                                HStack {
-                                    Image(systemName: DesignSystem.Icons.xmark)
-                                        .foregroundColor(DesignSystem.Colors.error)
-                                        .a11yHidden()
-                                    Text(authManager.errorMessage)
-                                        .font(DesignSystem.Typography.bodySmall)
-                                        .foregroundColor(DesignSystem.Colors.error)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, DesignSystem.Spacing.sm)
-                            }
-                            
-                            // Login Button
-                            Button(action: {
-                                Task {
-                                    await authManager.signIn(email: email, password: password)
-                                }
-                            }) {
-                                HStack {
-                                    if authManager.isLoading {
-                                        SoccerBallSpinner()
-                                    }
-                                    Text("LOGIN")
-                                        .font(DesignSystem.Typography.labelLarge)
-                                        .fontWeight(.semibold)
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(DesignSystem.Spacing.buttonPadding)
-                                .background(
-                                    isLoginEnabled
-                                        ? DesignSystem.Colors.accentLime
-                                        : DesignSystem.Colors.surfaceHighlight
-                                )
-                                .cornerRadius(DesignSystem.CornerRadius.button)
-                                .customShadow(DesignSystem.Shadow.medium)
-                            }
-                            .disabled(!isLoginEnabled || authManager.isLoading)
-                            .pressAnimation()
-                            .a11y(label: "Sign in", hint: "Double tap to sign in with your email and password")
-                            
-                            // Divider
-                            HStack {
-                                Rectangle()
-                                    .fill(DesignSystem.Colors.neutral300)
-                                    .frame(height: 1)
-                                Text("or")
-                                    .font(DesignSystem.Typography.bodySmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                                Rectangle()
-                                    .fill(DesignSystem.Colors.neutral300)
-                                    .frame(height: 1)
-                            }
-                            
-                            // Google Sign-In Button
-                            ModernButton("CONTINUE WITH GOOGLE", icon: "globe", style: .secondary) {
-                                Task {
-                                    await authManager.signInWithGoogle()
-                                }
-                            }
-                            .disabled(authManager.isLoading)
-                            .a11y(label: "Continue with Google", hint: "Double tap to sign in with your Google account")
 
-                            // Apple Sign-In Button
-                            ModernButton("CONTINUE WITH APPLE", icon: "apple.logo", style: .secondary) {
-                                Task {
-                                    await authManager.signInWithApple()
-                                }
-                            }
-                            .disabled(authManager.isLoading)
-                            .a11y(label: "Continue with Apple", hint: "Double tap to sign in with your Apple ID")
-
-                            ModernButton("TRY WITHOUT AN ACCOUNT", icon: "figure.run", style: .ghost) {
-                                Task {
-                                    await authManager.signInAnonymously()
-                                }
-                            }
-                            .disabled(authManager.isLoading)
-                            .a11y(label: "Try without an account", hint: "Double tap to explore the app as a guest")
-
-                            // Forgot Password
-                            Button("Forgot password?") {
-                                guard !email.isEmpty else {
-                                    resetAlertMessage = "Enter your email first to reset your password."
-                                    showResetAlert = true
-                                    return
-                                }
-                                Task {
-                                    await authManager.resetPassword(email: email)
-                                    resetAlertMessage = authManager.errorMessage.isEmpty
-                                        ? "Reset email sent — check your inbox."
-                                        : authManager.errorMessage
-                                    showResetAlert = true
-                                }
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
+                VStack(spacing: 12) {
+                    if isSignUp {
+                        TQFormField("Name", text: $fullName, placeholder: "Your name", contentType: .name)
+                    }
+                    TQFormField("Email", text: $email, placeholder: "you@example.com", contentType: .emailAddress, keyboard: .emailAddress)
+                    TQFormField("Password", text: $password, placeholder: isSignUp ? "At least 6 characters" : "Your password", isSecure: true, contentType: isSignUp ? .newPassword : .password)
+                    if isSignUp {
+                        TQFormField("Confirm password", text: $confirmPassword, placeholder: "Repeat your password", isSecure: true, contentType: .newPassword)
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                
-                Spacer(minLength: DesignSystem.Spacing.md)
 
-                // Create Account Section
-                ModernButton("CREATE AN ACCOUNT", icon: "person.crop.circle.badge.plus", style: .ghost) {
-                    withAnimation(DesignSystem.Animation.smooth) {
-                        isSignUp = true
+                if !authManager.errorMessage.isEmpty {
+                    TQBanner(.error, message: authManager.errorMessage)
+                }
+
+                TQButton(isSignUp ? "Create account" : "Sign in", size: .auth, isLoading: authManager.isLoading) {
+                    submit()
+                }
+                .disabled(!canSubmit)
+                .accessibilityIdentifier("email.submit")
+
+                if !isSignUp {
+                    HStack {
+                        Spacer()
+                        TQTextLink("Forgot password?", arrow: false) { resetPassword() }
+                        Spacer()
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .a11y(label: "Create an account", hint: "Double tap to switch to the sign up form")
-
-
-                // Legal Links
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Button("Terms of Service") {
-                        if let url = URL(string: "https://techniq-b9a27.web.app/terms-of-service.html") {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    Text("·")
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    Button("Privacy Policy") {
-                        if let url = URL(string: "https://techniq-b9a27.web.app/privacy-policy.html") {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-                .padding(.bottom, DesignSystem.Spacing.xl)
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .alert("Password Reset", isPresented: $showResetAlert) {
+        .scrollDismissesKeyboard(.interactively)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .alert("Password reset", isPresented: $showResetAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(resetAlertMessage)
         }
+        .onDisappear { authManager.errorMessage = "" }
     }
-}
 
-struct ModernSignUpView: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
-    @Binding var isSignUp: Bool
-    @State private var username = ""
-    @State private var firstName = ""
-    @State private var lastName = ""
-    @State private var email = ""
-    @State private var password = ""
-    @State private var confirmPassword = ""
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Modern Header
-            HStack {
-                Button(action: {
-                    withAnimation(DesignSystem.Animation.smooth) {
-                        isSignUp = false
-                    }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        .frame(width: 40, height: 40)
-                        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
-                        .cornerRadius(DesignSystem.CornerRadius.sm)
-                }
-                .a11y(label: "Back")
-
-                Spacer()
-
-                Text("Sign Up")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Spacer()
-
-                // Balances the back button so the title stays centered
-                Color.clear
-                    .frame(width: 40, height: 40)
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.top, DesignSystem.Spacing.md)
-
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.xl) {
-                    modernDataStep
-                }
-                .padding(.top, DesignSystem.Spacing.xl)
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.bottom, DesignSystem.Spacing.xl)
+    private func submit() {
+        let name = fullName.trimmingCharacters(in: .whitespaces)
+        if isSignUp, !name.isEmpty {
+            UserDefaults.standard.set(name, forKey: "onboarding_prefill_name")
+        }
+        Task {
+            if isSignUp {
+                await authManager.signUp(email: email, password: password)
+            } else {
+                await authManager.signIn(email: email, password: password)
             }
         }
     }
-    
-    private var modernDataStep: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            // Profile Avatar Section
-            VStack(spacing: DesignSystem.Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(DesignSystem.Colors.primaryGreen.opacity(0.1))
-                        .frame(width: 100, height: 100)
-                    
-                    Image(systemName: "person")
-                        .font(.system(size: 40))
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        .a11yHidden()
-                }
-                
-                Text("Profile Setup")
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-            
-            // Form Fields in Card
-            ModernCard(padding: DesignSystem.Spacing.lg) {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    ModernTextField(
-                        "Username",
-                        text: $username,
-                        placeholder: "Choose username",
-                        icon: "person"
-                    )
-                    
-                    HStack(spacing: DesignSystem.Spacing.md) {
-                        ModernTextField(
-                            "First Name",
-                            text: $firstName,
-                            placeholder: "First name"
-                        )
-                        
-                        ModernTextField(
-                            "Last Name",
-                            text: $lastName,
-                            placeholder: "Last name"
-                        )
-                    }
-                    
-                    ModernTextField(
-                        "Email",
-                        text: $email,
-                        placeholder: "your.email@example.com",
-                        icon: DesignSystem.Icons.email
-                    )
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
-                    
-                    ModernTextField(
-                        "Password",
-                        text: $password,
-                        placeholder: "Create password",
-                        icon: DesignSystem.Icons.password,
-                        isSecure: true
-                    )
-                    
-                    ModernTextField(
-                        "Confirm Password",
-                        text: $confirmPassword,
-                        placeholder: "Confirm password",
-                        icon: DesignSystem.Icons.password,
-                        isSecure: true
-                    )
-                }
-            }
-            
-            // Error Message
-            if !authManager.errorMessage.isEmpty {
-                HStack {
-                    Image(systemName: DesignSystem.Icons.xmark)
-                        .foregroundColor(DesignSystem.Colors.error)
-                        .a11yHidden()
-                    Text(authManager.errorMessage)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.error)
-                    Spacer()
-                }
-                .padding(.horizontal, DesignSystem.Spacing.sm)
-            }
 
-            // Create Account Button
-            ModernButton("CREATE ACCOUNT", icon: "checkmark") {
-                let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-                if !fullName.isEmpty {
-                    UserDefaults.standard.set(fullName, forKey: "onboarding_prefill_name")
-                }
-                Task {
-                    await authManager.signUp(email: email, password: password)
-                }
-            }
-            .disabled(!fieldsAreValid || authManager.isLoading)
-
-            // Divider
-            HStack {
-                Rectangle()
-                    .fill(DesignSystem.Colors.neutral300)
-                    .frame(height: 1)
-                Text("or")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                Rectangle()
-                    .fill(DesignSystem.Colors.neutral300)
-                    .frame(height: 1)
-            }
-
-            // Apple Sign-In Button
-            ModernButton("SIGN UP WITH APPLE", icon: "apple.logo", style: .secondary) {
-                Task {
-                    await authManager.signInWithApple()
-                }
-            }
-            .disabled(authManager.isLoading)
-
-            // Legal Links
-            HStack(spacing: DesignSystem.Spacing.md) {
-                Button("Terms of Service") {
-                    if let url = URL(string: "https://techniq-b9a27.web.app/terms-of-service.html") {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                .font(DesignSystem.Typography.bodySmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                Text("·")
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                Button("Privacy Policy") {
-                    if let url = URL(string: "https://techniq-b9a27.web.app/privacy-policy.html") {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                .font(DesignSystem.Typography.bodySmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
+    private func resetPassword() {
+        guard !email.isEmpty else {
+            resetAlertMessage = "Enter your email first to reset your password."
+            showResetAlert = true
+            return
         }
-    }
-    
-    private var fieldsAreValid: Bool {
-        !username.isEmpty && !firstName.isEmpty && !lastName.isEmpty && 
-        !email.isEmpty && !password.isEmpty && password == confirmPassword && password.count >= 6
+        Task {
+            await authManager.resetPassword(email: email)
+            resetAlertMessage = authManager.errorMessage.isEmpty
+                ? "Reset email sent — check your inbox."
+                : authManager.errorMessage
+            showResetAlert = true
+        }
     }
 }
 

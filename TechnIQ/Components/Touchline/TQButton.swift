@@ -108,7 +108,7 @@ struct TQButton: View {
     }
 
     private var font: Font {
-        if face == .text { return Font.system(size: 15, weight: .bold) }
+        if face == .text { return size == .auth ? Font.system(size: 17, weight: .semibold) : Font.system(size: 15, weight: .bold) }
         if style == .ghost { return Font.system(size: 14, weight: .semibold) }
         switch size {
         case .regular: return DesignSystem.Typography.labelLarge

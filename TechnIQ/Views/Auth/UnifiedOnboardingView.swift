@@ -1,35 +1,56 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Onboarding (Touchline 7b)
+//
+// One decision per screen: goal → frequency → position (+ foot + kit number) → weak spots →
+// name / age / level. Chalk-line stepper 01/05, options as selectable rows (number, title,
+// one-line consequence, radio), a "Next: …" button that names the next step and a "Next up · …"
+// footer. Then plan generation and the Pro paywall. No welcome / feature tour — sign-in already
+// made the pitch.
+
 struct UnifiedOnboardingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coreDataManager: CoreDataManager
     @EnvironmentObject private var authManager: AuthenticationManager
     @Binding var isOnboardingComplete: Bool
 
-    // Step state
-    @State private var currentStep = 0
-    @State private var dragOffset: CGFloat = 0
-    private let totalSteps = 9
+    // MARK: Steps
 
-    // Step 2: Goal
+    enum Step: Int, CaseIterable {
+        case goal, frequency, position, weakSpots, about, generating, paywall
+
+        var isDecision: Bool { rawValue <= Step.about.rawValue }
+
+        /// Short name used in "Next: …" and "Next up · …".
+        var shortName: String {
+            switch self {
+            case .goal: return "goal"
+            case .frequency: return "how often"
+            case .position: return "position"
+            case .weakSpots: return "weak spots"
+            case .about: return "about you"
+            case .generating: return "your plan"
+            case .paywall: return "go pro"
+            }
+        }
+    }
+
+    @State private var step: Step = .goal
+    private let decisionSteps = Step.allCases.filter(\.isDecision)
+
+    // Answers
     @State private var selectedGoal = "Improve Skills"
     @State private var selectedFrequency = "3-4x per week"
-    @State private var selectedWeaknesses: Set<WeaknessCategory> = []
-
-    // Step 3: About You
-    @State private var playerName = ""
-    @State private var playerAge: Int? = nil
-    @State private var selectedExperienceLevel = "Beginner"
-    @State private var yearsPlaying: Int = 2
-
-    // Step 4: Soccer Profile
     @State private var selectedPosition = "Midfielder"
-    @State private var selectedPlayingStyle = "Balanced"
-    @State private var selectedDominantFoot = "Right"
+    @State private var selectedDominantFoot = 1          // Left / Right / Both
+    @State private var kitNumberText = ""
+    @State private var selectedWeaknesses: Set<WeaknessCategory> = []
+    @State private var playerName = ""
+    @State private var ageText = ""
+    @State private var selectedExperienceLevel = "Beginner"
 
-    // Step 5: Plan Generation
-    @State private var isGeneratingPlan = false
+    // Plan generation
     @State private var planGenerationFailed = false
     @State private var planErrorMessage = ""
     @State private var loadingPhase: LoadingPhase = .connecting
@@ -37,69 +58,51 @@ struct UnifiedOnboardingView: View {
     @State private var phaseTimer: Timer?
     @State private var planGenerationComplete = false
 
-    // Constants
-    let trainingGoals = ["Improve Skills", "Build Fitness", "Prepare for Tryouts", "Stay Active", "Become Pro"]
-    let trainingFrequencies = ["2-3x per week", "3-4x per week", "5-6x per week", "Daily"]
-    let positions = ["Goalkeeper", "Defender", "Midfielder", "Forward"]
-    let playingStyles = ["Aggressive", "Defensive", "Balanced", "Creative", "Fast"]
-    let dominantFeet = ["Left", "Right", "Both"]
-    let experienceLevels = ["Beginner", "Intermediate", "Advanced", "Professional"]
+    // Option catalogues
+    private let goals: [(String, String)] = [
+        ("Improve Skills", "Technique-heavy: touch, passing, finishing"),
+        ("Build Fitness", "More conditioning and speed work"),
+        ("Prepare for Tryouts", "Position-specific, match-paced sessions"),
+        ("Stay Active", "Short, varied sessions you can keep up"),
+        ("Become Pro", "Full load, weekly adaptation, no rest weeks")
+    ]
+    private let frequencies: [(String, String)] = [
+        ("2-3x per week", "Three sessions, plenty of recovery"),
+        ("3-4x per week", "The sweet spot for steady progress"),
+        ("5-6x per week", "Club schedule: one rest day"),
+        ("Daily", "Every day, shorter sessions")
+    ]
+    private let positions: [(String, String)] = [
+        ("Goalkeeper", "Handling, footwork and distribution"),
+        ("Defender", "1v1 defending, heading, clearances"),
+        ("Midfielder", "Passing range, turns, pressing"),
+        ("Forward", "Finishing, movement, first touch")
+    ]
+    private let feet = ["Left", "Right", "Both"]
+    private let experienceLevels: [(String, String)] = [
+        ("Beginner", "Just starting out"),
+        ("Intermediate", "Play regularly"),
+        ("Advanced", "Club or travel team"),
+        ("Professional", "Academy level")
+    ]
+
+    // MARK: Body
 
     var body: some View {
-        ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    DesignSystem.Colors.primaryGreen.opacity(0.05),
-                    DesignSystem.Colors.background
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                // Header
-                onboardingHeader
-
-                // Progress Indicator
-                progressIndicator
-                    .padding(.top, DesignSystem.Spacing.lg)
-
-                Spacer()
-
-                // Step Content
-                stepContent
-                    .offset(x: currentStep <= 3 ? dragOffset : 0)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                guard currentStep <= 3 else { return }
-                                dragOffset = value.translation.width
-                            }
-                            .onEnded { value in
-                                guard currentStep <= 3 else {
-                                    dragOffset = 0
-                                    return
-                                }
-                                let threshold: CGFloat = 50
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    if value.translation.width < -threshold && currentStep < 3 {
-                                        currentStep += 1
-                                    } else if value.translation.width > threshold && currentStep > 0 {
-                                        currentStep -= 1
-                                    }
-                                    dragOffset = 0
-                                }
-                            }
-                    )
-
-                Spacer()
-
-                // Continue Button
-                continueButton
+        VStack(spacing: 0) {
+            if step.isDecision {
+                decisionScreen
+            } else if step == .generating {
+                planGenerationStep
+            } else {
+                OnboardingPaywallView(
+                    planName: selectedGoal,
+                    onContinueFree: { isOnboardingComplete = true },
+                    onPurchaseComplete: { isOnboardingComplete = true }
+                )
             }
         }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
         .onAppear {
             if let prefillName = UserDefaults.standard.string(forKey: "onboarding_prefill_name"), !prefillName.isEmpty {
                 playerName = prefillName
@@ -115,664 +118,243 @@ struct UnifiedOnboardingView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Decision screens
 
-    private var onboardingHeader: some View {
-        HStack {
-            if currentStep > 0 && currentStep < 7 {
-                Button(action: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        currentStep -= 1
-                    }
-                    HapticManager.shared.lightTap()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title3)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                        .frame(width: 44, height: 44)
+    private var stepIndex: Int { decisionSteps.firstIndex(of: step).map { $0 + 1 } ?? 1 }
+
+    private var nextStep: Step? {
+        Step(rawValue: step.rawValue + 1)
+    }
+
+    private var decisionScreen: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                if step != .goal {
+                    TQBackButton { goBack() }
                 }
-                .a11y(label: "Back")
-            } else {
-                Spacer()
-                    .frame(width: 44)
+                TQStepper(current: stepIndex, total: decisionSteps.count)
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 10)
+            .padding(.bottom, 24)
 
-            Spacer()
-
-            // Step title
-            Text(stepTitle)
-                .font(DesignSystem.Typography.titleMedium)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            Spacer()
-
-            // Skip button (welcome + feature highlight pages)
-            if currentStep < 4 {
-                Button("Skip") {
-                    withAnimation {
-                        currentStep = 4
-                    }
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    stepCopy
+                    stepBody
+                        .padding(.top, 22)
                 }
-                .font(DesignSystem.Typography.labelMedium)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .frame(width: 44, height: 44)
-            } else {
-                Spacer()
-                    .frame(width: 44)
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, 16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .id(step)
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+
+            footer
+        }
+    }
+
+    @ViewBuilder
+    private var stepCopy: some View {
+        switch step {
+        case .goal:
+            copy(eyebrow: "Your goal", title: "What are you\ntraining for?", body: "This sets the balance of your plan. You can change it later.")
+        case .frequency:
+            copy(eyebrow: "How often", title: "How often can\nyou train?", body: "Your plan schedules sessions on this many days each week.")
+        case .position:
+            copy(eyebrow: "Your position", title: "Where do\nyou play?", body: "Drills are picked for your position and stronger foot.")
+        case .weakSpots:
+            copy(eyebrow: "Weak spots", title: "What needs\nthe most work?", body: "Pick up to three. Your plan leans into these first.")
+        case .about:
+            copy(eyebrow: "About you", title: "Last thing —\nabout you", body: "Your name is shown to other players. Age and level size the load.")
+        default:
+            EmptyView()
+        }
+    }
+
+    private func copy(eyebrow: String, title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TQEyebrow(eyebrow, size: 13)
+            TQDisplayTitle(title, size: .mediumLarge)
+            TQBody(body, tone: .base, size: 16)
+        }
+    }
+
+    @ViewBuilder
+    private var stepBody: some View {
+        switch step {
+        case .goal:
+            optionList(goals, selected: selectedGoal) { selectedGoal = $0 }
+        case .frequency:
+            optionList(frequencies, selected: selectedFrequency) { selectedFrequency = $0 }
+        case .position:
+            VStack(alignment: .leading, spacing: 0) {
+                optionList(positions, selected: selectedPosition) { selectedPosition = $0 }
+                TQGroupHeader("Stronger foot")
+                    .padding(.top, 22)
+                TQSegment(options: feet, selectedIndex: $selectedDominantFoot)
+                TQGroupHeader("Kit number · optional")
+                    .padding(.top, 22)
+                TQFormField("Shirt number", text: $kitNumberText, placeholder: "e.g. 9", keyboard: .numberPad)
+                    .onChange(of: kitNumberText) { _, value in
+                        kitNumberText = String(value.filter(\.isNumber).prefix(2))
+                    }
+            }
+        case .weakSpots:
+            VStack(spacing: 10) {
+                ForEach(Array(WeaknessCategory.allCases.enumerated()), id: \.element.id) { index, category in
+                    TQOptionRow(
+                        number: String(format: "%02d", index + 1),
+                        title: category.displayName,
+                        subtitle: nil,
+                        isSelected: selectedWeaknesses.contains(category)
+                    ) { toggleWeakness(category) }
+                }
+            }
+        case .about:
+            VStack(alignment: .leading, spacing: 12) {
+                TQFormField("Name", text: $playerName, placeholder: "First name or nickname", contentType: .name)
+                TQFormField("Age", text: $ageText, placeholder: "e.g. 14", keyboard: .numberPad)
+                    .onChange(of: ageText) { _, value in
+                        ageText = String(value.filter(\.isNumber).prefix(2))
+                    }
+                TQGroupHeader("Level")
+                    .padding(.top, 10)
+                optionList(experienceLevels, selected: selectedExperienceLevel) { selectedExperienceLevel = $0 }
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    private func optionList(_ options: [(String, String)], selected: String, select: @escaping (String) -> Void) -> some View {
+        VStack(spacing: 10) {
+            ForEach(Array(options.enumerated()), id: \.element.0) { index, option in
+                TQOptionRow(
+                    number: String(format: "%02d", index + 1),
+                    title: option.0,
+                    subtitle: option.1,
+                    isSelected: selected == option.0
+                ) { select(option.0) }
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        VStack(spacing: 10) {
+            TQButton(nextButtonTitle) { advance() }
+                .disabled(!canContinue)
+                .accessibilityIdentifier("onboarding.next")
+            if let upcoming = upcomingSteps {
+                Text("Next up · \(upcoming)")
+                    .font(Font.system(size: 13, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.dimIvory)
+                    .lineLimit(1)
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-        .padding(.top, DesignSystem.Spacing.md)
+        .padding(.top, 10)
+        .padding(.bottom, 6)
+        .background(DesignSystem.Colors.surfaceBase)
     }
 
-    private var stepTitle: String {
-        switch currentStep {
-        case 0: return "Welcome"
-        case 1, 2, 3: return "TechnIQ"
-        case 4: return "Your Goal"
-        case 5: return "About You"
-        case 6: return "Your Style"
-        case 7: return "Your Plan"
-        case 8: return "Go Pro"
-        default: return ""
+    private var nextButtonTitle: String {
+        switch step {
+        case .about: return "Build my plan"
+        default: return "Next: \(nextStep?.shortName ?? "")"
         }
     }
 
-    // MARK: - Progress Indicator
-
-    private var progressIndicator: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            HStack(spacing: 6) {
-                ForEach(0..<totalSteps, id: \.self) { index in
-                    Capsule()
-                        .fill(index <= currentStep ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.chalkWhite.opacity(0.12))
-                        .frame(height: 4)
-                        .animation(.spring(response: 0.3), value: currentStep)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .a11yHidden()
-
-            Text("Step \(currentStep + 1) of \(totalSteps)")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-        }
-    }
-
-    // MARK: - Step Content
-
-    @ViewBuilder
-    private var stepContent: some View {
-        Group {
-            switch currentStep {
-            case 0:
-                welcomeStep
-            case 1, 2, 3:
-                FeatureHighlightPage(
-                    highlight: FeatureHighlight.onboardingHighlights[currentStep - 1]
-                )
-            case 4:
-                goalStep
-            case 5:
-                basicInfoStep
-            case 6:
-                positionStyleStep
-            case 7:
-                planGenerationStep
-            case 8:
-                OnboardingPaywallView(
-                    planName: selectedGoal,
-                    onContinueFree: { isOnboardingComplete = true },
-                    onPurchaseComplete: { isOnboardingComplete = true }
-                )
-            default:
-                EmptyView()
-            }
-        }
-        .transition(.asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .leading).combined(with: .opacity)
-        ))
-    }
-
-    // MARK: - Continue Button
-
-    private var continueButton: some View {
-        Group {
-            if currentStep < 7 {
-                Button(action: {
-                    HapticManager.shared.mediumTap()
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        if currentStep == 6 {
-                            // End of soccer profile — create player, then advance to plan gen
-                            createPlayer()
-                            currentStep += 1
-                            generateInitialPlan()
-                        } else {
-                            currentStep += 1
-                        }
-                    }
-                }) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Text(buttonTitle)
-                            .font(DesignSystem.Typography.labelLarge)
-                            .fontWeight(.semibold)
-                        if currentStep == 3 {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
-                                .a11yHidden()
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(canContinue ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
-                    .cornerRadius(DesignSystem.CornerRadius.button)
-                }
-                .disabled(!canContinue)
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.bottom, 34)
-            }
-            // Step 5: no continue button — auto-navigates or shows retry/skip inline
-        }
-    }
-
-    private var buttonTitle: String {
-        switch currentStep {
-        case 0: return "GET STARTED"
-        case 3: return "LET'S SET UP YOUR PROFILE"
-        case 6: return "GENERATE MY PLAN"
-        default: return "CONTINUE"
-        }
+    /// The remaining decision steps, e.g. "how often · position · weak spots · about you".
+    private var upcomingSteps: String? {
+        let remaining = decisionSteps.filter { $0.rawValue > step.rawValue }
+        guard !remaining.isEmpty else { return nil }
+        return remaining.map(\.shortName).joined(separator: " · ")
     }
 
     private var canContinue: Bool {
-        switch currentStep {
-        case 5:
-            return !playerName.isEmpty && playerAge != nil
+        switch step {
+        case .about:
+            return !playerName.trimmingCharacters(in: .whitespaces).isEmpty && (playerAge ?? 0) >= 5
         default:
             return true
         }
     }
 
-    // MARK: - Step Views
-
-    private var welcomeStep: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            Image(systemName: "figure.soccer")
-                .font(.system(size: 120, weight: .regular))
-                .foregroundColor(DesignSystem.Colors.chalkWhite)
-                .a11yHidden()
-
-            VStack(spacing: DesignSystem.Spacing.md) {
-                Text("Welcome to TechnIQ")
-                    .font(DesignSystem.Typography.headlineLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text("Train smarter. Get better every day.")
-                    .font(DesignSystem.Typography.bodyLarge)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            // Feature highlights
-            VStack(spacing: DesignSystem.Spacing.md) {
-                OnboardingFeatureRow(
-                    icon: "star.fill",
-                    iconColor: DesignSystem.Colors.xpGold,
-                    title: "Earn XP & Level Up",
-                    description: "Track progress like a game"
-                )
-
-                OnboardingFeatureRow(
-                    icon: "brain.head.profile",
-                    iconColor: DesignSystem.Colors.secondaryBlue,
-                    title: "Smart Recommendations",
-                    description: "AI-powered training plans"
-                )
-
-                OnboardingFeatureRow(
-                    icon: "flame.fill",
-                    iconColor: DesignSystem.Colors.streakOrange,
-                    title: "Build Streaks",
-                    description: "Stay consistent, unlock rewards"
-                )
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-        }
-        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+    private var playerAge: Int? {
+        guard let age = Int(ageText), (5...80).contains(age) else { return nil }
+        return age
     }
 
-    private var goalStep: some View {
-        ScrollView(showsIndicators: false) {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            Image(systemName: "target")
-                .font(.system(size: 96, weight: .regular))
-                .foregroundColor(DesignSystem.Colors.accentLime)
-                .a11yHidden()
+    private var kitNumber: Int? {
+        guard let number = Int(kitNumberText), (1...99).contains(number) else { return nil }
+        return number
+    }
 
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                Text("What's Your Training Goal?")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text("This helps us pick the right drills for you")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+    private func advance() {
+        guard let next = nextStep else { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            if step == .about {
+                createPlayer()
+                step = .generating
+                generateInitialPlan()
+            } else {
+                step = next
             }
-
-            // Goal selection
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(trainingGoals, id: \.self) { goal in
-                    OnboardingOptionButton(
-                        title: goal,
-                        icon: goalIcon(for: goal),
-                        isSelected: selectedGoal == goal
-                    ) {
-                        selectedGoal = goal
-                        HapticManager.shared.selectionChanged()
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-
-            // Frequency selection
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                Text("How often can you train?")
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.horizontal, DesignSystem.Spacing.sm)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        ForEach(trainingFrequencies, id: \.self) { freq in
-                            FrequencyChip(
-                                title: freq,
-                                isSelected: selectedFrequency == freq
-                            ) {
-                                selectedFrequency = freq
-                                HapticManager.shared.selectionChanged()
-                            }
-                        }
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                Text("What do you want to get better at?")
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.horizontal, DesignSystem.Spacing.sm)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        ForEach(WeaknessCategory.allCases) { category in
-                            FrequencyChip(
-                                title: category.displayName,
-                                isSelected: selectedWeaknesses.contains(category)
-                            ) {
-                                toggleWeakness(category)
-                            }
-                            .a11y(
-                                label: category.displayName,
-                                trait: selectedWeaknesses.contains(category) ? [.isButton, .isSelected] : .isButton
-                            )
-                        }
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-                }
-            }
-
-            if !selectedGoal.isEmpty {
-                Text("We'll tailor your drills to \(selectedGoal.lowercased())")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .transition(.opacity)
-                    .animation(DesignSystem.Animation.smooth, value: selectedGoal)
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
         }
     }
 
-    private func goalIcon(for goal: String) -> String {
-        switch goal {
-        case "Improve Skills": return "target"
-        case "Build Fitness": return "heart.fill"
-        case "Prepare for Tryouts": return "trophy.fill"
-        case "Stay Active": return "figure.walk"
-        case "Become Pro": return "star.fill"
-        default: return "target"
-        }
+    private func goBack() {
+        guard let previous = Step(rawValue: step.rawValue - 1), previous.isDecision else { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step = previous }
     }
 
-    private var basicInfoStep: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 80, weight: .regular))
-                    .foregroundColor(DesignSystem.Colors.accentLime)
-                    .a11yHidden()
-
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text("Create Your Profile")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text("Let's personalize your training")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Player Name
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Your Name")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        TextField("Enter your name", text: $playerName)
-                            .font(DesignSystem.Typography.bodyLarge)
-                            .padding(DesignSystem.Spacing.md)
-                            .background(DesignSystem.Colors.surfaceHighlight)
-                            .cornerRadius(DesignSystem.CornerRadius.md)
-
-                        Text("This name is shown to other players — first name or nickname is perfect.")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textTertiary)
-                    }
-
-                    // Age Picker
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Age")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        Picker("Age", selection: $playerAge) {
-                            Text("Select your age").tag(Int?.none)
-                            ForEach(8...25, id: \.self) { age in
-                                Text("\(age) years").tag(Int?(age))
-                            }
-                        }
-                        .pickerStyle(.wheel)
-                        .frame(height: 120)
-                        .clipped()
-                    }
-
-                    // Experience Level
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Experience Level")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignSystem.Spacing.sm) {
-                            ForEach(experienceLevels, id: \.self) { level in
-                                Button {
-                                    selectedExperienceLevel = level
-                                    HapticManager.shared.selectionChanged()
-                                } label: {
-                                    VStack(spacing: 2) {
-                                        Text(level)
-                                            .font(DesignSystem.Typography.labelMedium)
-                                            .fontWeight(.medium)
-                                        Text(experienceDescription(level))
-                                            .font(DesignSystem.Typography.labelSmall)
-                                    }
-                                    .foregroundColor(selectedExperienceLevel == level ? .white : DesignSystem.Colors.textPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, DesignSystem.Spacing.md)
-                                    .background(selectedExperienceLevel == level ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
-                                    .cornerRadius(DesignSystem.CornerRadius.sm)
-                                }
-                            }
-                        }
-                    }
-
-                    // Years Playing
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        HStack {
-                            Text("Years Playing")
-                                .font(DesignSystem.Typography.labelMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            Spacer()
-                            Text("\(yearsPlaying) years")
-                                .font(DesignSystem.Typography.labelLarge)
-                                .fontWeight(.medium)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
-
-                        Slider(value: Binding(
-                            get: { Double(yearsPlaying) },
-                            set: { yearsPlaying = Int($0) }
-                        ), in: 0...20, step: 1)
-                        .tint(DesignSystem.Colors.primaryGreen)
-                        .a11yValue("\(yearsPlaying) years", label: "Years Playing")
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.bottom, DesignSystem.Spacing.xl)
-        }
-    }
-
-    private var positionStyleStep: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Image(systemName: "sportscourt")
-                    .font(.system(size: 80, weight: .regular))
-                    .foregroundColor(DesignSystem.Colors.accentLime)
-                    .a11yHidden()
-
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text("Your Playing Style")
-                        .font(DesignSystem.Typography.titleLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text("This helps tailor drills to your position")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Position Selection
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Primary Position")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignSystem.Spacing.sm) {
-                            ForEach(positions, id: \.self) { position in
-                                PositionButton(
-                                    title: position,
-                                    icon: positionIcon(for: position),
-                                    isSelected: selectedPosition == position
-                                ) {
-                                    selectedPosition = position
-                                    HapticManager.shared.selectionChanged()
-                                }
-                            }
-                        }
-                    }
-
-                    // Playing Style
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Playing Style")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: DesignSystem.Spacing.sm) {
-                                ForEach(playingStyles, id: \.self) { style in
-                                    Button {
-                                        selectedPlayingStyle = style
-                                        HapticManager.shared.selectionChanged()
-                                    } label: {
-                                        VStack(spacing: 2) {
-                                            Text(style)
-                                                .font(DesignSystem.Typography.labelMedium)
-                                                .fontWeight(.medium)
-                                            Text(styleDescriptor(style))
-                                                .font(DesignSystem.Typography.labelSmall)
-                                        }
-                                        .foregroundColor(selectedPlayingStyle == style ? .white : DesignSystem.Colors.textPrimary)
-                                        .padding(.horizontal, DesignSystem.Spacing.md)
-                                        .padding(.vertical, DesignSystem.Spacing.sm)
-                                        .background(selectedPlayingStyle == style ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
-                                        .cornerRadius(DesignSystem.CornerRadius.pill)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Dominant Foot
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Dominant Foot")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            ForEach(dominantFeet, id: \.self) { foot in
-                                Button {
-                                    selectedDominantFoot = foot
-                                    HapticManager.shared.selectionChanged()
-                                } label: {
-                                    Text(foot)
-                                        .font(DesignSystem.Typography.labelLarge)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(selectedDominantFoot == foot ? .white : DesignSystem.Colors.textPrimary)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, DesignSystem.Spacing.md)
-                                        .background(selectedDominantFoot == foot ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceHighlight)
-                                        .cornerRadius(DesignSystem.CornerRadius.md)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.bottom, DesignSystem.Spacing.xl)
-        }
-    }
-
-    private func experienceDescription(_ level: String) -> String {
-        switch level {
-        case "Beginner": return "Just starting out"
-        case "Intermediate": return "Play regularly"
-        case "Advanced": return "Club/travel team"
-        case "Professional": return "Academy level"
-        default: return ""
-        }
-    }
-
-    private func styleDescriptor(_ style: String) -> String {
-        switch style {
-        case "Aggressive": return "Press high"
-        case "Defensive": return "Stay back"
-        case "Balanced": return "All-around"
-        case "Creative": return "Flair moves"
-        case "Fast": return "Quick counter"
-        default: return ""
-        }
-    }
-
-    private func positionIcon(for position: String) -> String {
-        switch position {
-        case "Goalkeeper": return "hand.raised.fill"
-        case "Defender": return "shield.fill"
-        case "Midfielder": return "arrow.left.arrow.right"
-        case "Forward": return "target"
-        default: return "figure.soccer"
-        }
-    }
-
-    // MARK: - Plan Generation Step
+    // MARK: - Plan generation
 
     private var planGenerationStep: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
+        VStack(alignment: .leading, spacing: 0) {
             Spacer()
-
             if planGenerationComplete {
-                // Celebration state
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 120, weight: .regular))
-                    .foregroundColor(DesignSystem.Colors.accentLime)
-                    .a11yHidden()
-
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Text("You're All Set!")
-                        .font(DesignSystem.Typography.headlineLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text("Your plan is ready — Day 1 is waiting on your home screen.")
-                        .font(DesignSystem.Typography.bodyLarge)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
+                TQEyebrow("Plan ready", size: 13)
+                    .padding(.bottom, 12)
+                TQDisplayTitle("You're\nall set", size: .mediumLarge)
+                    .padding(.bottom, 12)
+                TQBody("Day 1 is waiting on your home screen.", tone: .base, size: 16)
             } else if planGenerationFailed {
-                // Error state
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 96, weight: .regular))
-                    .foregroundColor(DesignSystem.Colors.bloodOrange)
-                    .a11yHidden()
-
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Text("Couldn't Generate Plan")
-                        .font(DesignSystem.Typography.headlineMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text(planErrorMessage)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .multilineTextAlignment(.center)
+                TQEyebrow("Plan", size: 13)
+                    .padding(.bottom, 12)
+                TQDisplayTitle("Couldn't build\nyour plan", size: .mediumLarge)
+                    .padding(.bottom, 12)
+                TQBanner(.error, message: planErrorMessage.isEmpty ? "Something went wrong." : planErrorMessage, layout: .block)
+                    .padding(.bottom, 20)
+                TQButton("Try again", icon: "arrow.clockwise") { generateInitialPlan() }
+                TQButton("Skip for now", style: .ghost, face: .text) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step = .paywall }
                 }
-
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    ModernButton("Try Again", icon: "arrow.clockwise", style: .primary) {
-                        generateInitialPlan()
-                    }
-
-                    Button("Skip for Now") {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            currentStep = 8
-                        }
-                    }
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
+                .padding(.top, 8)
             } else {
-                // Loading state
-                SoccerBallSpinner()
-                    .scaleEffect(3.0)
-
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Text("Building Your Plan")
-                        .font(DesignSystem.Typography.headlineMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text(loadingPhase.description)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                ProgressView(value: loadingPhase.progress)
-                    .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
-                    .frame(width: 200)
+                TQSpinner(color: DesignSystem.Colors.grass, lineWidth: 3, size: 36)
+                    .padding(.bottom, 24)
+                TQEyebrow("Building your plan", size: 13)
+                    .padding(.bottom, 12)
+                TQDisplayTitle(loadingPhase.description.replacingOccurrences(of: "...", with: ""), size: .medium)
+                    .padding(.bottom, 20)
+                TQProgressBar(progress: loadingPhase.progress, height: 4)
+                    .animation(DesignSystem.Animation.smooth, value: loadingPhase.progress)
             }
-
             Spacer()
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Helper Functions
+    // MARK: - Helpers
 
     private func toggleWeakness(_ category: WeaknessCategory) {
         if selectedWeaknesses.contains(category) {
@@ -780,26 +362,17 @@ struct UnifiedOnboardingView: View {
         } else if selectedWeaknesses.count < 3 {
             selectedWeaknesses.insert(category)
         }
-        HapticManager.shared.selectionChanged()
     }
 
     private func createPlayer() {
-        #if DEBUG
-        print("Starting player creation...")
-        #endif
         let userUID = authManager.userUID
-        if userUID.isEmpty {
-            #if DEBUG
-            print("No Firebase UID available - cannot create player")
-            #endif
+        guard !userUID.isEmpty else {
+            AppLogger.shared.error("Onboarding: no Firebase UID — cannot create player")
             return
         }
 
-        #if DEBUG
-        print("Creating player for UID: \(userUID)")
-        #endif
-        let displayName = playerName.isEmpty ? authManager.userDisplayName : playerName
-        let finalName = displayName.isEmpty ? "Player" : displayName
+        let displayName = playerName.trimmingCharacters(in: .whitespaces)
+        let finalName = displayName.isEmpty ? (authManager.userDisplayName.isEmpty ? "Player" : authManager.userDisplayName) : displayName
 
         let newPlayer = Player(context: viewContext)
         newPlayer.id = UUID()
@@ -807,9 +380,10 @@ struct UnifiedOnboardingView: View {
         newPlayer.name = finalName
         newPlayer.age = Int16(playerAge ?? 0)
         newPlayer.position = selectedPosition
-        newPlayer.playingStyle = selectedPlayingStyle
-        newPlayer.dominantFoot = selectedDominantFoot
+        newPlayer.playingStyle = "Balanced"
+        newPlayer.dominantFoot = feet[min(max(selectedDominantFoot, 0), feet.count - 1)]
         newPlayer.experienceLevel = selectedExperienceLevel
+        newPlayer.kitNumber = Int16(kitNumber ?? 0)
         newPlayer.createdAt = Date()
 
         if !selectedWeaknesses.isEmpty {
@@ -823,28 +397,22 @@ struct UnifiedOnboardingView: View {
         }
 
         coreDataManager.createDefaultExercises(for: newPlayer)
-
         coreDataManager.save()
-        #if DEBUG
-        print("Successfully saved player profile to Core Data")
-        #endif
 
-        // Sync to Firebase/Cloud
         Task {
             await CloudService.shared.performFullSync()
             await CloudService.shared.trackUserEvent(.sessionStart, contextData: [
                 "onboarding_completed": true,
-                "player_name": playerName
+                "player_name": finalName
             ])
         }
     }
 
     private func generateInitialPlan() {
-        isGeneratingPlan = true
         planGenerationFailed = false
+        planGenerationComplete = false
         loadingPhase = .connecting
 
-        // Animate through loading phases
         phaseTimer?.invalidate()
         phaseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { timer in
             DispatchQueue.main.async {
@@ -860,7 +428,6 @@ struct UnifiedOnboardingView: View {
 
         generationTask = Task {
             do {
-                // Fetch the player we just created
                 let request = Player.fetchRequest()
                 request.predicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
                 guard let player = try viewContext.fetch(request).first else {
@@ -878,7 +445,7 @@ struct UnifiedOnboardingView: View {
                     difficulty: difficulty,
                     category: category,
                     targetRole: selectedPosition,
-                    focusAreas: [],
+                    focusAreas: selectedWeaknesses.map { $0.displayName },
                     preferredDays: preferredDays,
                     restDays: restDays
                 )
@@ -888,27 +455,20 @@ struct UnifiedOnboardingView: View {
                     return
                 }
 
-                // Save plan to Core Data
                 if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player) {
                     TrainingPlanService.shared.activatePlan(plan.toModel(), for: player)
                 }
 
                 await MainActor.run {
                     phaseTimer?.invalidate()
-                    isGeneratingPlan = false
                     planGenerationComplete = true
-
-                    // Auto-navigate after brief celebration
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            currentStep = 8
-                        }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step = .paywall }
                     }
                 }
             } catch {
                 await MainActor.run {
                     phaseTimer?.invalidate()
-                    isGeneratingPlan = false
                     planGenerationFailed = true
                     planErrorMessage = error.localizedDescription
                 }
@@ -916,7 +476,7 @@ struct UnifiedOnboardingView: View {
         }
     }
 
-    // MARK: - Mapping Helpers
+    // MARK: - Mapping
 
     private func mapExperienceToDifficulty(_ experience: String) -> String {
         switch experience {

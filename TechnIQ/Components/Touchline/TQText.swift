@@ -98,14 +98,44 @@ struct TQDisplayTitle: View {
     }
 
     var body: some View {
-        Text(text)
+        Group {
+            if text.contains("\n") {
+                // Explicit breaks: stack the lines with negative spacing to approximate the mocks'
+                // .88 line-height, which SwiftUI's lineSpacing cannot go below.
+                VStack(alignment: .leading, spacing: -pointSize * 0.26) {
+                    ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { _, line in
+                        styled(Text(String(line)))
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(text.replacingOccurrences(of: "\n", with: " "))
+            } else {
+                styled(Text(text))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func styled(_ text: Text) -> some View {
+        text
             .font(font)
             .textCase(.uppercase)
             .tracking(tracking)
             .lineSpacing(lineSpacing)
             .foregroundColor(color)
             .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var pointSize: CGFloat {
+        switch size {
+        case .hero: return 60
+        case .large: return 56
+        case .mediumLarge: return 46
+        case .medium: return 40
+        case .small: return 30
+        case .card: return 26
+        case .strip: return 22
+        }
     }
 
     private var font: Font {
@@ -141,6 +171,13 @@ struct TQFigureRow: View {
         let id = UUID()
         let value: String
         let unit: String
+        var unitFirst: Bool = false   // "LVL 12" puts the unit before the number
+
+        init(value: String, unit: String, unitFirst: Bool = false) {
+            self.value = value
+            self.unit = unit
+            self.unitFirst = unitFirst
+        }
     }
 
     let figures: [Figure]
@@ -150,7 +187,11 @@ struct TQFigureRow: View {
     var spacing: CGFloat = 18
 
     init(_ figures: [(String, String)], onPitch: Bool = true, valueSize: CGFloat = 20, unitSize: CGFloat = 15, spacing: CGFloat = 18) {
-        self.figures = figures.map { Figure(value: $0.0, unit: $0.1) }
+        self.init(figures: figures.map { Figure(value: $0.0, unit: $0.1) }, onPitch: onPitch, valueSize: valueSize, unitSize: unitSize, spacing: spacing)
+    }
+
+    init(figures: [Figure], onPitch: Bool = true, valueSize: CGFloat = 20, unitSize: CGFloat = 15, spacing: CGFloat = 18) {
+        self.figures = figures
         self.onPitch = onPitch
         self.valueSize = valueSize
         self.unitSize = unitSize
@@ -161,17 +202,30 @@ struct TQFigureRow: View {
         HStack(alignment: .firstTextBaseline, spacing: spacing) {
             ForEach(figures) { figure in
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(figure.value)
-                        .font(Font.system(size: valueSize, weight: .semibold).width(.condensed).monospacedDigit())
-                        .foregroundColor(DesignSystem.Colors.chalkWhite)
-                    Text(figure.unit)
-                        .font(Font.system(size: unitSize, weight: .semibold).width(.condensed))
-                        .textCase(.uppercase)
-                        .foregroundColor(onPitch ? DesignSystem.Colors.textOnPitch : DesignSystem.Colors.dimIvory)
+                    if figure.unitFirst {
+                        unitText(figure.unit)
+                        valueText(figure.value)
+                    } else {
+                        valueText(figure.value)
+                        unitText(figure.unit)
+                    }
                 }
                 .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    private func valueText(_ value: String) -> some View {
+        Text(value)
+            .font(Font.system(size: valueSize, weight: .semibold).width(.condensed).monospacedDigit())
+            .foregroundColor(DesignSystem.Colors.chalkWhite)
+    }
+
+    private func unitText(_ unit: String) -> some View {
+        Text(unit)
+            .font(Font.system(size: unitSize, weight: .semibold).width(.condensed))
+            .textCase(.uppercase)
+            .foregroundColor(onPitch ? DesignSystem.Colors.textOnPitch : DesignSystem.Colors.dimIvory)
     }
 }
 

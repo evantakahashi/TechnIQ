@@ -1,20 +1,31 @@
 import SwiftUI
 import CoreData
 
+// MARK: - You (Touchline 6c)
+//
+// Pitch card (avatar, tier · position eyebrow, condensed name, LVL · XP · coins, level bar, ghosted
+// kit number), a stat rail (sessions / hours / streak / season G A), then row groups under
+// TRAINING / ACCOUNT / APP eyebrows. TechnIQ Pro shows an ACTIVE badge; Sign out is a ghost button.
+
 struct EnhancedProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @ObservedObject private var avatarService = AvatarService.shared
     @FetchRequest var players: FetchedResults<Player>
     @FetchRequest var sessions: FetchedResults<TrainingSession>
 
+    @State private var route: ProfileRoute?
     @State private var showingEditProfile = false
     @State private var showingAvatarCustomization = false
     @State private var showingShop = false
     @State private var showingSettings = false
-    @State private var showingProgress = false
-    @State private var showingAchievements = false
+    @State private var showingPaywall = false
     @State private var showingSignOutAlert = false
+
+    private enum ProfileRoute: Hashable {
+        case progress, achievements, sessionHistory, matches
+    }
 
     init() {
         self._players = FetchRequest(
@@ -34,46 +45,74 @@ struct EnhancedProfileView: View {
         return players.first { $0.firebaseUID == authManager.userUID }
     }
 
-    private var totalTrainingHours: Double {
-        let totalMinutes = sessions.reduce(0) { $0 + $1.duration }
-        return totalMinutes / 60.0
+    // MARK: Derived
+
+    private var totalTrainingHours: Int {
+        Int((sessions.reduce(0) { $0 + $1.duration } / 60.0).rounded())
     }
 
+    private func seasonGoalsAssists(for player: Player) -> (Int, Int) {
+        let matches: [Match]
+        if let season = MatchService.shared.getActiveSeason(for: player), let set = season.matches as? Set<Match> {
+            matches = Array(set)
+        } else {
+            matches = (player.matches as? Set<Match>).map(Array.init) ?? []
+        }
+        let stats = MatchService.shared.calculateStats(for: matches)
+        return (stats.totalGoals, stats.totalAssists)
+    }
+
+    private func tierTitle(for player: Player) -> String {
+        XPService.shared.tierForLevel(Int(player.currentLevel))?.title ?? "Prospect"
+    }
+
+    private func levelProgress(for player: Player) -> Double {
+        XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
+    }
+
+    private var achievementSummary: String {
+        guard let player = currentPlayer else { return "" }
+        let unlocked = AchievementService.shared.getUnlockedAchievements(for: player).count
+        return "\(unlocked) / \(AchievementService.allAchievements.count)"
+    }
+
+    // MARK: Body
+
     var body: some View {
-        ZStack {
-            AdaptiveBackground()
-                .ignoresSafeArea()
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
+                TQScreenTitle("You") {
+                    TQIconAction("gearshape", accessibilityLabel: "Settings") { showingSettings = true }
+                }
+                .padding(.top, 8)
 
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    if let player = currentPlayer {
-                        // Profile Header Card
-                        profileHeader(player: player)
+                if let player = currentPlayer {
+                    identityCard(player)
+                        .coachMark(.progress)
 
-                        // Quick Stats Row
-                        quickStatsRow(player: player)
-                            .coachMark(.progress)
+                    statRail(player)
 
-                        // Menu Sections
-                        trainingSection(player: player)
-                        accountSection
-                        appSection
+                    trainingGroup
+                    accountGroup
+                    appGroup
 
-                        // Sign Out Button
-                        signOutButton
-                    } else {
-                        ContentUnavailableView(
-                            "No Profile Found",
-                            systemImage: "person.circle",
-                            description: Text("Create a profile to get started")
-                        )
+                    TQButton("Sign out", style: .ghost, face: .text) { showingSignOutAlert = true }
+                        .padding(.top, DesignSystem.Spacing.sm)
+                        .accessibilityIdentifier("profile.signOut")
+                } else {
+                    TQRowList {
+                        TQRow("No profile yet", note: "sign in to get started").disabled(true)
                     }
                 }
-                .padding(DesignSystem.Spacing.md)
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .navigationTitle("You")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $route) { route in
+            destination(for: route)
+        }
         .sheet(isPresented: $showingEditProfile) {
             if let player = currentPlayer {
                 EditProfileView(player: player)
@@ -88,23 +127,12 @@ struct EnhancedProfileView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
-        .sheet(isPresented: $showingProgress) {
-            if let player = currentPlayer {
-                NavigationStack {
-                    PlayerProgressView(player: player)
-                }
-            }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(feature: .trainingPlan)
         }
-        .sheet(isPresented: $showingAchievements) {
-            if let player = currentPlayer {
-                NavigationStack {
-                    AchievementsBrowseView(player: player)
-                }
-            }
-        }
-        .alert("Sign Out", isPresented: $showingSignOutAlert) {
+        .alert("Sign out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
-            Button("Sign Out", role: .destructive) {
+            Button("Sign out", role: .destructive) {
                 authManager.signOut()
             }
         } message: {
@@ -116,288 +144,124 @@ struct EnhancedProfileView: View {
         }
     }
 
-    // MARK: - Profile Header
+    // MARK: - Identity card
 
-    private func profileHeader(player: Player) -> some View {
-        ModernCard {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                // Avatar
-                ProgrammaticAvatarView(
-                    avatarState: avatarService.currentAvatarState,
-                    size: .medium
-                )
-                .frame(width: 80, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md))
+    private func identityCard(_ player: Player) -> some View {
+        let kit = player.kitNumberValue
+        let coins = Int(player.coins)
+        return TQPitchCard(.hero, markings: .profile) {
+            HStack(alignment: .top, spacing: 16) {
+                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium)
+                    .scaleEffect(0.65)
+                    .frame(width: 78, height: 117)
+                    .background(DesignSystem.Colors.surfaceBase)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md, style: .continuous))
+                    .accessibilityHidden(true)
 
-                // Info
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text((player.name ?? "Player").uppercased())
-                        .font(DesignSystem.Typography.displayLarge)
-                        .foregroundColor(DesignSystem.Colors.chalkWhite)
+                VStack(alignment: .leading, spacing: 6) {
+                    TQEyebrow([tierTitle(for: player), player.position].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "), size: 12)
+                    TQDisplayTitle(player.name ?? "Player", size: .medium)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Label("Level \(player.currentLevel)", systemImage: "star.circle.fill")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.xpGold)
-
-                        if let position = player.position, !position.isEmpty {
-                            Text(position)
-                                .font(DesignSystem.Typography.labelMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                    }
-
-                    // XP Progress
-                    let xpProgress = XPService.shared.progressToNextLevel(
-                        totalXP: player.totalXP,
-                        currentLevel: Int(player.currentLevel)
-                    )
-                    let xpToNext = XPService.shared.xpRequiredForLevel(Int(player.currentLevel) + 1) - player.totalXP
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        ProgressView(value: xpProgress)
-                            .tint(DesignSystem.Colors.xpGold)
-
-                        Text("\(max(0, xpToNext)) XP to next level")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
+                    TQFigureRow(figures: [
+                        .init(value: "\(player.currentLevel)", unit: "LVL", unitFirst: true),
+                        .init(value: player.totalXP.formatted(.number), unit: "XP"),
+                        .init(value: "\(coins)", unit: "C")
+                    ], onPitch: true, valueSize: 18, unitSize: 16, spacing: 14)
+                    TQLevelBar(previous: levelProgress(for: player), current: levelProgress(for: player), height: 6, animates: false, onPitch: true)
+                        .padding(.top, 4)
                 }
-
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if let kit {
+                Text("\(kit)")
+                    .font(Font.system(size: 56, weight: .bold).width(.condensed))
+                    .foregroundColor(DesignSystem.Colors.chalkWhite.opacity(0.18))
+                    .padding(.trailing, 18)
+                    .padding(.top, 8)
+                    .accessibilityLabel("Kit number \(kit)")
             }
         }
     }
 
-    // MARK: - Quick Stats Row
+    // MARK: - Stat rail
 
-    private func quickStatsRow(player: Player) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            QuickStatItem(
-                value: "\(sessions.count)",
-                label: "Sessions",
-                icon: "calendar",
-                color: DesignSystem.Colors.primaryGreen
-            )
-
-            QuickStatItem(
-                value: String(format: "%.1f", totalTrainingHours),
-                label: "Hours",
-                icon: "clock.fill",
-                color: DesignSystem.Colors.secondaryBlue
-            )
-
-            QuickStatItem(
-                value: "\(player.currentStreak)",
-                label: "Streak",
-                icon: "flame.fill",
-                color: DesignSystem.Colors.streakOrange
-            )
-        }
-        .accessibilityElement(children: .combine)
+    private func statRail(_ player: Player) -> some View {
+        let (goals, assists) = seasonGoalsAssists(for: player)
+        return TQStatRail(items: [
+            .init("\(sessions.count)", label: "sessions"),
+            .init("\(totalTrainingHours)", unit: "h", label: "trained"),
+            .init("\(player.currentStreak)", label: "streak", accent: true),
+            .init("\(goals)G \(assists)A", label: "season")
+        ])
     }
 
-    // MARK: - Menu Sections
+    // MARK: - Row groups
 
-    private func trainingSection(player: Player) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("TRAINING")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .padding(.leading, DesignSystem.Spacing.sm)
+    private var trainingGroup: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Training")
+            TQRowList {
+                TQRow("Progress & analytics") { route = .progress }
+                TQRow("Achievements", meta: .init(achievementSummary)) { route = .achievements }
+                TQRow("Session history") { route = .sessionHistory }
+                TQRow("Matches & seasons") { route = .matches }
+            }
+        }
+    }
 
-            ModernCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ProfileMenuItem(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "Progress & Analytics",
-                        color: DesignSystem.Colors.primaryGreen
-                    ) {
-                        showingProgress = true
-                    }
-
-                    Divider().padding(.leading, 52)
-
-                    ProfileMenuItem(
-                        icon: "trophy.fill",
-                        title: "Achievements",
-                        color: DesignSystem.Colors.xpGold
-                    ) {
-                        showingAchievements = true
-                    }
+    private var accountGroup: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Account")
+            TQRowList {
+                TQRow("Edit profile") { showingEditProfile = true }
+                TQRow("Kit & avatar") { showingAvatarCustomization = true }
+                TQRow("Shop", meta: .init("", accent: "\(currentPlayer.map { Int($0.coins) } ?? 0) C")) { showingShop = true }
+                if subscriptionManager.isPro {
+                    TQRow("TechnIQ Pro", badge: TQBadge(.status("Active"))) { showingSettings = true }
+                } else {
+                    TQRow("TechnIQ Pro", meta: .init("Upgrade")) { showingPaywall = true }
                 }
             }
         }
     }
 
-    private var accountSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("ACCOUNT")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .padding(.leading, DesignSystem.Spacing.sm)
-
-            ModernCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ProfileMenuItem(
-                        icon: "person.fill",
-                        title: "Edit Profile",
-                        color: DesignSystem.Colors.secondaryBlue
-                    ) {
-                        showingEditProfile = true
-                    }
-
-                    Divider().padding(.leading, 52)
-
-                    ProfileMenuItem(
-                        icon: "paintpalette.fill",
-                        title: "Customize Avatar",
-                        color: DesignSystem.Colors.levelPurple
-                    ) {
-                        showingAvatarCustomization = true
-                    }
-
-                    Divider().padding(.leading, 52)
-
-                    ProfileMenuItem(
-                        icon: "cart.fill",
-                        title: "Shop",
-                        color: DesignSystem.Colors.coinGold
-                    ) {
-                        showingShop = true
-                    }
-                }
+    private var appGroup: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("App")
+            TQRowList {
+                TQRow("Settings") { showingSettings = true }
+                TQRow("Privacy policy") { open("https://techniq-b9a27.web.app/privacy-policy.html") }
+                TQRow("Terms of service") { open("https://techniq-b9a27.web.app/terms-of-service.html") }
             }
         }
     }
 
-    private var appSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("APP")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .padding(.leading, DesignSystem.Spacing.sm)
+    // MARK: - Navigation
 
-            ModernCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ProfileMenuItem(
-                        icon: "gearshape.fill",
-                        title: "Settings",
-                        color: DesignSystem.Colors.neutral500
-                    ) {
-                        showingSettings = true
-                    }
-
-                    Divider().padding(.leading, 52)
-
-                    ProfileMenuItem(
-                        icon: "questionmark.circle.fill",
-                        title: "Help & Support",
-                        color: DesignSystem.Colors.info
-                    ) {
-                        // TODO: Show help view
-                    }
-                }
+    @ViewBuilder
+    private func destination(for route: ProfileRoute) -> some View {
+        if let player = currentPlayer {
+            switch route {
+            case .progress: PlayerProgressView(player: player)
+            case .achievements: AchievementsBrowseView(player: player)
+            case .sessionHistory: SessionHistoryView()
+            case .matches: MatchHistoryView(player: player)
             }
         }
     }
 
-    private var signOutButton: some View {
-        Button {
-            showingSignOutAlert = true
-        } label: {
-            HStack {
-                Spacer()
-                Text("Sign Out")
-                    .font(DesignSystem.Typography.labelLarge)
-                    .fontWeight(.medium)
-                    .foregroundColor(DesignSystem.Colors.error)
-                Spacer()
-            }
-            .padding(DesignSystem.Spacing.md)
-            .background(DesignSystem.Colors.error.opacity(0.1))
-            .cornerRadius(DesignSystem.CornerRadius.md)
-        }
-        .padding(.top, DesignSystem.Spacing.md)
-        .a11y(label: "Sign out", hint: "Double tap to sign out of your account")
+    private func open(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
     }
-
-    // MARK: - Helpers
 
     private func updateFilters() {
         guard !authManager.userUID.isEmpty else { return }
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         sessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-    }
-
-}
-
-// MARK: - Supporting Views
-
-struct QuickStatItem: View {
-    let value: String
-    let label: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.xs) {
-            Text(label.uppercased())
-                .font(DesignSystem.Typography.labelSmall)
-                .tracking(1.0)
-                .foregroundColor(DesignSystem.Colors.mutedIvory)
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .heavy))
-                    .foregroundColor(color)
-                Text(value)
-                    .font(DesignSystem.Typography.heroDisplay)
-                    .foregroundColor(DesignSystem.Colors.chalkWhite)
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
-    }
-}
-
-struct ProfileMenuItem: View {
-    let icon: String
-    let title: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    Image(systemName: icon)
-                        .font(.system(size: 16))
-                        .foregroundColor(color)
-                }
-
-                Text(title)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(DesignSystem.Colors.textTertiary)
-            }
-            .padding(DesignSystem.Spacing.md)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -418,123 +282,58 @@ struct AchievementsBrowseView: View {
     }
 
     var body: some View {
-        ZStack {
-            AdaptiveBackground()
-                .ignoresSafeArea()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                    summaryHeader
-
-                    ForEach(Achievement.AchievementCategory.allCases, id: \.self) { category in
-                        categorySection(category)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
+                TQNavBar("Achievements") {
+                    TQBackButton { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                 }
-                .padding(DesignSystem.Spacing.md)
-            }
-        }
-        .navigationTitle("Achievements")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") { dismiss() }
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            }
-        }
-    }
+                TQStatRail(items: [
+                    .init("\(unlockedCount)", label: "unlocked", accent: true),
+                    .init("\(AchievementService.allAchievements.count - unlockedCount)", label: "to earn")
+                ], style: .compact)
 
-    private var summaryHeader: some View {
-        ModernCard {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(DesignSystem.Colors.xpGold.opacity(0.15))
-                        .frame(width: 56, height: 56)
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 26))
-                        .foregroundColor(DesignSystem.Colors.xpGold)
+                ForEach(Achievement.AchievementCategory.allCases, id: \.self) { category in
+                    categorySection(category)
                 }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(unlockedCount) of \(AchievementService.allAchievements.count) unlocked")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Text("Keep training to earn them all!")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                Spacer()
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private func categorySection(_ category: Achievement.AchievementCategory) -> some View {
         let items = AchievementService.allAchievements.filter { $0.category == category }
-        return VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text(category.rawValue.uppercased())
-                .font(DesignSystem.Typography.labelSmall)
-                .tracking(1.0)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .padding(.leading, DesignSystem.Spacing.sm)
-
-            LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.md) {
+        return VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader(category.rawValue)
+            TQRowList {
                 ForEach(items, id: \.id) { achievement in
-                    achievementTile(achievement)
+                    achievementRow(achievement)
                 }
             }
         }
     }
 
-    private func achievementTile(_ achievement: Achievement) -> some View {
+    private func achievementRow(_ achievement: Achievement) -> some View {
         let unlocked = AchievementService.shared.isUnlocked(achievement.id, for: player)
         let progress = AchievementService.shared.getProgress(for: achievement, player: player, in: viewContext)
-
-        return VStack(spacing: DesignSystem.Spacing.sm) {
-            ZStack {
-                Circle()
-                    .fill((unlocked ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400).opacity(0.15))
-                    .frame(width: 64, height: 64)
-                Image(systemName: unlocked ? achievement.icon : "lock.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(unlocked ? DesignSystem.Colors.xpGold : DesignSystem.Colors.textTertiary)
-            }
-
-            Text(achievement.name)
-                .font(DesignSystem.Typography.labelLarge)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-
-            Text(achievement.description)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if unlocked {
-                Text("+\(achievement.xpReward) XP")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            } else if progress > 0 {
-                ProgressView(value: progress)
-                    .tint(DesignSystem.Colors.primaryGreen)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: 190, alignment: .top)
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.card)
-        .customShadow(DesignSystem.Shadow.small)
-        .opacity(unlocked ? 1.0 : 0.85)
-        .a11y(
-            label: "\(achievement.name), \(unlocked ? "unlocked" : "locked"). \(achievement.description)",
-            trait: .isStaticText
+        let meta: TQRow.Meta = unlocked
+            ? .init("", accent: "+\(achievement.xpReward) XP")
+            : .init(progress > 0 ? "\(Int((progress * 100).rounded()))%" : "Locked")
+        return TQRow(
+            achievement.name,
+            subtitle: achievement.description,
+            leading: .tile(TQTile(symbol: unlocked ? achievement.icon : "lock.fill")),
+            meta: meta,
+            accessory: .none,
+            verticalPadding: DesignSystem.Spacing.rowVertical
         )
+        .opacity(unlocked ? 1 : 0.7)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(achievement.name), \(unlocked ? "unlocked" : "locked"). \(achievement.description)")
     }
 }
 
@@ -543,5 +342,6 @@ struct AchievementsBrowseView: View {
         EnhancedProfileView()
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)
+            .environmentObject(SubscriptionManager.shared)
     }
 }

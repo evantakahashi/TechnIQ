@@ -14,6 +14,7 @@ struct TQLevelBar: View {
     var detailAccent: String? = nil   // "90 to lvl 13"
     var height: CGFloat = 8
     var animates: Bool = true
+    var onPitch: Bool = false         // darker track when drawn on a pitch card
 
     @State private var fill: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,8 +40,8 @@ struct TQLevelBar: View {
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(DesignSystem.Colors.surfaceRaised)
-                    Capsule().fill(DesignSystem.Colors.surfaceHighlight)
+                    Capsule().fill(onPitch ? DesignSystem.Colors.surfaceBase.opacity(0.45) : DesignSystem.Colors.surfaceRaised)
+                    Capsule().fill(onPitch ? DesignSystem.Colors.chalkWhite.opacity(0.18) : DesignSystem.Colors.surfaceHighlight)
                         .frame(width: clamp(previous) * proxy.size.width)
                     Capsule().fill(DesignSystem.Colors.grass)
                         .frame(width: clamp(fill) * proxy.size.width)

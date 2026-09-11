@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import SwiftUI
 
 #if DEBUG
 // MARK: - TQDemoSeed
@@ -180,6 +181,35 @@ enum TQDemoSeed {
             exercise.instructions = "1. Stand 8 m from the wall between the two cones.\n2. \(description)\n3. Every 20 reps, shift to the other cone and change the angle."
             exercise.player = player
             return exercise
+        }
+    }
+}
+
+// MARK: - TQDebugScreen
+//
+// `-TQScreen signIn|onboarding` opens a pre-auth screen directly so it can be screenshotted
+// without signing out of the simulator.
+
+enum TQDebugScreen: String {
+    case signIn, onboarding
+
+    static var requested: TQDebugScreen? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let index = args.firstIndex(of: "-TQScreen"), index + 1 < args.count else { return nil }
+        return TQDebugScreen(rawValue: args[index + 1])
+    }
+}
+
+struct TQDebugScreenHost: View {
+    let screen: TQDebugScreen
+    @State private var onboardingComplete = false
+
+    var body: some View {
+        switch screen {
+        case .signIn:
+            AuthenticationView()
+        case .onboarding:
+            UnifiedOnboardingView(isOnboardingComplete: $onboardingComplete)
         }
     }
 }

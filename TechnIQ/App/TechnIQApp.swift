@@ -69,6 +69,8 @@ struct TechnIQApp: App {
         #if DEBUG
         if TQGalleryView.isRequested {
             TQGalleryView()
+        } else if let screen = TQDebugScreen.requested {
+            TQDebugScreenHost(screen: screen)
         } else {
             ContentView()
         }
