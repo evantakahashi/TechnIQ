@@ -165,6 +165,57 @@ final class TouchlineScreensUITests: XCTestCase {
         XCTAssertTrue(signOut.waitForExistence(timeout: 5), "still signed in after cancelling")
     }
 
+    // MARK: - Train sections
+
+    func test_train_sectionsSeeAllPinAndSearch() throws {
+        launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "1"])
+        XCTAssertTrue(button(containing: "New drill").waitForExistence(timeout: 60), "train tab")
+        dismissCoachMarkIfPresent()
+        XCTAssertTrue(text(containing: "My drills").waitForExistence(timeout: 10), "My drills section leads")
+        XCTAssertTrue(text(containing: "Pinned").waitForExistence(timeout: 5), "the demo pins Passing")
+        shot("train-sections")
+
+        // See all → the skill list with sort and chips; Unpin flips the header tag.
+        let seeAllPassing = app.buttons["seeAll.Passing"]
+        XCTAssertTrue(scrollTo(seeAllPassing), "see all passing reachable")
+        seeAllPassing.tap()
+        XCTAssertTrue(text(containing: "Skill · pinned").waitForExistence(timeout: 8), "skill list header")
+        XCTAssertTrue(buttonNamed("Level").exists && buttonNamed("Saved").exists, "sort segment and chips")
+        tapWhenHittable(buttonNamed("Level"))
+        shot("train-see-all-passing")
+        let pin = app.buttons["skill.pin"]
+        XCTAssertTrue(pin.waitForExistence(timeout: 5), "pin action")
+        XCTAssertEqual(pin.label.lowercased(), "unpin")
+        pin.tap()
+        settle(0.5)
+        XCTAssertEqual(pin.label.lowercased(), "pin", "unpinned")
+        goBack()
+        XCTAssertTrue(text(containing: "My drills").waitForExistence(timeout: 8), "back on Train")
+        XCTAssertFalse(text(containing: "Pinned").exists, "no pinned tag after unpinning")
+
+        // Re-pin from wherever Passing landed (a section's See all, or a More-skills chip).
+        let passingEntry = seeAllPassing.exists ? seeAllPassing : button(containing: "Passing ·")
+        XCTAssertTrue(scrollTo(passingEntry), "passing reachable after unpin")
+        passingEntry.tap()
+        XCTAssertTrue(pin.waitForExistence(timeout: 5))
+        pin.tap()
+        settle(0.5)
+        goBack()
+        XCTAssertTrue(text(containing: "Pinned").waitForExistence(timeout: 8), "pinned tag restored")
+
+        // Search flattens the sections into one list.
+        app.swipeDown(velocity: .fast)
+        settle(0.5)
+        let search = app.textFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "search field")
+        search.tap()
+        search.typeText("pass")
+        settle(0.8)
+        XCTAssertFalse(text(containing: "My drills").exists, "sections hidden while searching")
+        XCTAssertTrue(row("Passing Accuracy").waitForExistence(timeout: 5), "matching drill listed")
+        shot("train-search")
+    }
+
     // MARK: - Community drills (6b)
 
     func test_communityDrills_featuredCardChipsAndRows() throws {

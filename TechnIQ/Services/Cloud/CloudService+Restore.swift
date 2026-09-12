@@ -153,6 +153,7 @@ extension CloudService {
         player.experienceLevel = data["experienceLevel"] as? String
         player.competitiveLevel = data["competitiveLevel"] as? String
         player.kitNumber = Self.int16Value(from: data["kitNumber"])
+        if let pinned = data["pinnedSkills"] as? String, !pinned.isEmpty { player.pinnedSkills = pinned }
         player.playerRoleModel = data["playerRoleModel"] as? String
         player.playingStyle = data["playingStyle"] as? String
         player.dominantFoot = data["dominantFoot"] as? String

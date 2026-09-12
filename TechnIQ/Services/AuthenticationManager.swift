@@ -549,7 +549,9 @@ class AuthenticationManager: ObservableObject, AuthenticationManagerProtocol {
     }
     
     var userUID: String {
-        return currentUser?.uid ?? Self.debugLocalUID ?? ""
+        // The debug local user takes precedence so a simulator that also has a signed-in Firebase
+        // user does not switch players once Auth restores its session mid-launch.
+        return Self.debugLocalUID ?? currentUser?.uid ?? ""
     }
 
     var hasValidUser: Bool {

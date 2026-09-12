@@ -20,6 +20,7 @@ extension Player {
     @NSManaged public var experienceLevel: String?
     @NSManaged public var competitiveLevel: String?
     @NSManaged public var kitNumber: Int16   // 0 = none (optional shirt number)
+    @NSManaged public var pinnedSkills: String?   // comma-separated WeaknessCategory raw values pinned on Train
     @NSManaged public var playerRoleModel: String?
     @NSManaged public var lastCloudSync: Date?
     @NSManaged public var totalXP: Int64
