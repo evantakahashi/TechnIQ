@@ -1031,7 +1031,8 @@ extension DrillWebAnimationView {
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
 html,body{margin:0;padding:0;background:transparent;-webkit-user-select:none;user-select:none;overflow:hidden}
-svg{width:100vw;height:auto;display:block;border-radius:10px}
+svg.pitchsvg{width:100vw;height:auto;display:block;border-radius:10px}
+.animbar svg{width:12px;height:12px;flex:none}
 .animbar{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;padding:0 10px}
 .animbar button{font:600 12px/1 -apple-system,system-ui;letter-spacing:.06em;text-transform:uppercase;border:0;background:#5CCB5F;color:#0E1210;border-radius:7px;padding:10px 16px}
 .animbar input{flex:1}
@@ -1158,7 +1159,7 @@ function renderPitch(drill){
 function loadDrill(drill){
   const stage=document.getElementById('stage'); stage.innerHTML='';
   const pw=document.createElement('div'); stage.appendChild(pw);
-  const svgEl=renderPitch(drill); pw.appendChild(svgEl);
+  const svgEl=renderPitch(drill); svgEl.classList.add('pitchsvg'); pw.appendChild(svgEl);
   // ---- Engine v2: phase-timeline player (Fable-style: continuous clock,
   // ---- concurrent tracks, hips vectors, timed coaching captions) ----
   const BALLK="__ball__";
