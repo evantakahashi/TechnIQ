@@ -1,5 +1,15 @@
 import Foundation
 
+/// Central feature gates. Default OFF for gated features; flip via launch
+/// argument (UI tests / dev) or UserDefaults (remote-config hook later).
+enum FeatureFlags {
+    /// YouTube video-drill import + its library filters. Hidden for v1.
+    static var youtubeDrills: Bool {
+        ProcessInfo.processInfo.arguments.contains("-TQYouTubeDrills")
+            || UserDefaults.standard.bool(forKey: "ff.youtubeDrills")
+    }
+}
+
 struct YouTubeConfig {
     static let baseURL = "https://www.googleapis.com/youtube/v3"
     static let maxResults = 25

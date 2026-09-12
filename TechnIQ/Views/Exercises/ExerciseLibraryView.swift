@@ -245,7 +245,9 @@ struct ExerciseLibraryView: View {
                       subtitle: "\(TemplateExerciseLibrary.shared.allExercises.count) drills · all positions",
                       leading: .tile(TQTile("\(TemplateExerciseLibrary.shared.allExercises.count)")),
                       action: { importTemplates() })
-                TQRow("Pull in video drills", subtitle: "YouTube · Pro", leading: .tile(TQTile("VID")), action: { loadYouTubeContent() })
+                if FeatureFlags.youtubeDrills {
+                    TQRow("Pull in video drills", subtitle: "YouTube · Pro", leading: .tile(TQTile("VID")), action: { loadYouTubeContent() })
+                }
                 TQRow("Write one yourself", subtitle: "Manual drill", leading: .tile(TQTile(symbol: "plus")), action: { showingManualDrillCreator = true })
             }
         }
@@ -393,13 +395,15 @@ struct NewDrillSheet: View {
                     verticalPadding: DesignSystem.Spacing.rowVertical,
                     action: onManual
                 )
-                TQRow(
-                    "Pull in video drills",
-                    subtitle: "YouTube · Pro",
-                    leading: .tile(TQTile("VID")),
-                    verticalPadding: DesignSystem.Spacing.rowVertical,
-                    action: onVideo
-                )
+                if FeatureFlags.youtubeDrills {
+                    TQRow(
+                        "Pull in video drills",
+                        subtitle: "YouTube · Pro",
+                        leading: .tile(TQTile("VID")),
+                        verticalPadding: DesignSystem.Spacing.rowVertical,
+                        action: onVideo
+                    )
+                }
             }
             Spacer(minLength: 0)
         }
