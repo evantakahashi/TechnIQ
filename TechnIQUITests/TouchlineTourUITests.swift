@@ -152,12 +152,15 @@ final class TouchlineTourUITests: XCTestCase {
         } else {
             dismissBottomSheet()
         }
-        tapWhenHittable(buttonNamed("Saved"))
-        settle(0.8)
-        shot("train-saved-empty")
-        tapWhenHittable(buttonNamed("Physical"))
-        settle(0.8)
-        shot("train-physical")
+        shot("train-sections")
+        app.swipeUp(velocity: .slow)
+        settle(0.6)
+        shot("train-sections-scrolled")
+        if tapWhenHittable(button(containing: "See all My drills"), timeout: 3) {
+            settle(1.0)
+            shot("train-my-drills")
+            goBack()
+        }
     }
 
     // MARK: - You

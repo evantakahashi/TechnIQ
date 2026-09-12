@@ -118,10 +118,10 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | TQSearchField, TQFormField, TQBanner, TQSkeleton, TQTabBar, TQDiagram, TQAppMark | Inputs, banners, loading, tab bar, drill diagram surface, app mark |
 | TQGallery (DEBUG) | `-TQGallery [-TQGalleryPage n] [-TQGallerySnapshot]` renders every component for eyeballing |
 
-**Debug launch arguments (DEBUG builds):** `-TQLocalUser` (signed-in with a fixed local UID, no Firebase auth), `-TQSeedDemo` (creates the player if needed; kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQTrainState empty`, `-TQScreen signIn|onboarding`.
+**Debug launch arguments (DEBUG builds):** `-TQLocalUser` (signed-in with a fixed local UID, no Firebase auth), `-TQSeedDemo` (creates the player if needed; kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQTrainState empty`, `-TQRoute skill` (Train: Passing See-all list), `-TQScreen signIn|onboarding`.
 **UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift`, `TechnIQUITests.swift` launch with `-TQLocalUser -TQSeedDemo` so they run on a fresh simulator (screenshots land in the runner's tmp `touchlineshots/`). `TouchlineTourUITests` is a local screenshot tour of every secondary screen and sheet (run it before a release and eyeball the `T*.png` shots). `WalkthroughUITests` needs a real login and is not run in CI.
 **Fetch predicates:** derive `@FetchRequest` predicates from `AuthenticationManager.shared.playerPredicate` / `ownedByPlayerPredicate` in `init`, never only in `onAppear` (SwiftUI re-runs `init` on parent re-renders).
-**Pure logic for tests:** `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
+**Pure logic for tests:** `Models/TrainLibraryModel.swift` (Train sections: skill mapping, My drills first, two-drill minimum, pins, usage order, row meta), `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
 
 ## Development Workflow
 
@@ -138,7 +138,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | Dashboard | DashboardView (Home; HomeWeekModel), CoachDrillsView, TrainHubView, PlayerProgressView |
 | Training Plans | AITrainingPlanGeneratorView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
 | Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet), SessionCompleteView, TodaysTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
-| Exercises | ExerciseLibraryView (Train tab), ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView (+TQDiagram), QuickDrillSheet, SharedDrillDetailView |
+| Exercises | ExerciseLibraryView (Train tab: My drills + per-skill sections from `Models/TrainLibraryModel.swift`), TrainSkillListView (See all), ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView (+TQDiagram), QuickDrillSheet, SharedDrillDetailView |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
 | Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
 | Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |

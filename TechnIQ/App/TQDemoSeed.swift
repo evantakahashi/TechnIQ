@@ -56,6 +56,7 @@ enum TQDemoSeed {
 
         seedPlan(for: player, context: context, now: now)
         seedSessions(for: player, context: context, calendar: calendar, now: now)
+        seedDrillUsage(for: player, context: context, calendar: calendar, now: now)
         seedMatch(for: player, calendar: calendar, now: now)
 
         // Coach marks would cover the hero in screenshots.
@@ -169,6 +170,48 @@ enum TQDemoSeed {
             session.overallRating = 4
             session.sessionType = "Training"
             session.xpEarned = 180
+        }
+    }
+
+    /// Recent use on a few library drills (and a pinned skill) so Train's sections have something to
+    /// order by: passing drills used this week, one shooting drill last week.
+    @MainActor
+    private static func seedDrillUsage(for player: Player, context: NSManagedObjectContext, calendar: Calendar, now: Date) {
+        var exercises = CoreDataManager.shared.fetchExercises(for: player)
+        // One drill of the player's own so the "My drills" section always exists.
+        if !exercises.contains(where: { $0.trainDrill.isMine }) {
+            let mine = Exercise(context: context)
+            mine.id = UUID()
+            mine.name = "Weak-foot finishing"
+            mine.category = "Technical"
+            mine.exerciseDescription = "AI-Generated Custom Drill: finish first time with the weaker foot from cut-backs."
+            mine.instructions = "Setup: two cones 8 m out, server on the byline.\nSteps:\n1. Server cuts the ball back.\n2. Finish first time, weak foot only.\n3. Alternate near and far post."
+            mine.difficulty = 2
+            mine.estimatedDurationSeconds = 15 * 60
+            mine.targetSkills = ["Weak Foot", "Shooting"]
+            mine.lastUsedAt = calendar.date(byAdding: .day, value: -2, to: now)
+            mine.updatedAt = now
+            mine.player = player
+            exercises.append(mine)
+        }
+        if !player.pinnedSkillList.contains(.passing) { player.pinnedSkillList = [.passing] + player.pinnedSkillList }
+        guard !exercises.isEmpty, exercises.filter({ $0.lastUsedAt != nil }).count <= 1 else { return }
+        let sessions = ((player.sessions as? Set<TrainingSession>) ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+        let recent: [(name: String, daysAgo: Int)] = [
+            ("Passing Accuracy", 1), ("Two-touch wall passing", 1), ("First-touch directional", 3),
+            ("Ball Control", 4), ("Shooting Practice", 9), ("Dribbling Cones", 16)
+        ]
+        for (index, entry) in recent.enumerated() {
+            guard let exercise = exercises.first(where: { $0.name?.caseInsensitiveCompare(entry.name) == .orderedSame }) else { continue }
+            exercise.lastUsedAt = calendar.date(byAdding: .day, value: -entry.daysAgo, to: now)
+            if let session = sessions.dropFirst(index % max(sessions.count, 1)).first {
+                let use = SessionExercise(context: context)
+                use.id = UUID()
+                use.session = session
+                use.exercise = exercise
+                use.duration = 15
+                use.performanceRating = 4
+            }
         }
     }
 

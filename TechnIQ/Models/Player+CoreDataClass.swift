@@ -9,4 +9,10 @@ public class Player: NSManagedObject {
         get { kitNumber > 0 ? Int(kitNumber) : nil }
         set { kitNumber = Int16(clamping: newValue ?? 0) }
     }
+
+    /// Skills pinned to the top of the Train screen, in pin order.
+    var pinnedSkillList: [WeaknessCategory] {
+        get { (pinnedSkills ?? "").split(separator: ",").compactMap { WeaknessCategory(rawValue: String($0)) } }
+        set { pinnedSkills = newValue.isEmpty ? nil : newValue.map(\.rawValue).joined(separator: ",") }
+    }
 }
