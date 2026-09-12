@@ -1049,7 +1049,7 @@ function renderPitch(drill){
   const dg=drill.diagram,f=dg.field,W=f.width,L=f.length,S=30,vw=W*S,vh=L*S;
   const svg=el("svg",{viewBox:`-14 -14 ${vw+28} ${vh+28}`,role:"img","aria-label":"drill diagram"});
   svg.appendChild(el("rect",{x:0,y:0,width:vw,height:vh,rx:8,fill:"#173A26"}));
-  for(let i=0;i<Math.floor(L/3);i++){ if(i%2===0) svg.appendChild(el("rect",{x:0,y:i*3*S,width:vw,height:3*S,fill:"var(--stripe)"})); }
+  for(let i=0;i<Math.floor(L/3);i++){ if(i%2===0) svg.appendChild(el("rect",{x:0,y:i*3*S,width:vw,height:3*S,fill:"rgba(255,255,255,.045)"})); }
   svg.appendChild(el("circle",{cx:vw/2,cy:vh/2,r:Math.min(vw,vh)*.16,fill:"none",stroke:"rgba(255,255,255,.35)","stroke-width":1.5}));
   // Penalty areas in front of edge goals
   dg.elements.filter(e=>e.type==="goal").forEach(g0=>{
@@ -1280,10 +1280,16 @@ function loadDrill(drill){
         if(t>=total){ t=0; loopIdx++; phases=loopPhases(); total=phases.reduce((a,q)=>a+q.d,0); phases.forEach(q=>{if(q.kind==="homeglide")q._built=false;}); } }
       last=now; render(); raf=requestAnimationFrame(frame);
     }
+    const IC={
+      play:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+      pause:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>'
+    };
     const bar=document.createElement("div"); bar.className="animbar";
-    const btn=document.createElement("button"); btn.textContent="▶ Play";
-    btn.addEventListener("click",()=>{ playing=!playing; btn.textContent=playing?"⏸ Pause":"▶ Play";
+    const btn=document.createElement("button");
+    const setBtn=()=>{btn.innerHTML=(playing?IC.pause:IC.play)+'<span style="margin-left:6px">'+(playing?"Pause":"Play")+"</span>";btn.style.display="inline-flex";btn.style.alignItems="center";};
+    btn.addEventListener("click",()=>{ playing=!playing; setBtn();
       if(raf===null){ snapStart(); raf=requestAnimationFrame(frame); } });
+    setBtn();
     const spd=document.createElement("input"); Object.assign(spd,{type:"range",min:"0.5",max:"2",step:"0.25",value:"1"}); spd.style.flex="1";
     const spdOut=document.createElement("span"); spdOut.textContent="1x"; spdOut.style.cssText="min-width:32px;font:600 12px ui-monospace,monospace;color:var(--muted)";
     spd.addEventListener("input",()=>{speed=parseFloat(spd.value);spdOut.textContent=speed+"x";});
