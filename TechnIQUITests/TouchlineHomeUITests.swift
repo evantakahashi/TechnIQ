@@ -142,13 +142,12 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after coach drills")
 
         // Next session row → plan detail → back
-        let nextRow = row("Next session")
-        if nextRow.waitForExistence(timeout: 3) {
-            XCTAssertTrue(tapWhenHittable(nextRow), "next session row hittable")
-            XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan opened from next session")
-            goBack()
-            XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after next session")
-        }
+        let nextRow = app.buttons["home.nextSession"]
+        XCTAssertTrue(nextRow.waitForExistence(timeout: 5), "next session row")
+        XCTAssertTrue(tapWhenHittable(nextRow), "next session row hittable")
+        XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan opened from next session")
+        goBack()
+        XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after next session")
 
         // Tab bar round trip
         let trainTab = app.buttons["Train"]
