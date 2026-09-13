@@ -172,6 +172,10 @@ struct PlayerProgressView: View {
 
     // MARK: - Overall Stats Section
 
+    private var weekComparison: PlayerRecords.WeekComparison {
+        PlayerRecords.build(sessions: RecordsView.facts(for: player), now: Date(), calendar: .current).comparison
+    }
+
     private var overallStatsSection: some View {
         VStack(spacing: 12) {
             if let stats = overallStats {
@@ -201,10 +205,11 @@ struct PlayerProgressView: View {
                     )
 
                     StatCard(
-                        title: "Improvement",
-                        value: stats.improvementPercentage > 0 ? "+\(Int(stats.improvementPercentage))%" : "\(Int(stats.improvementPercentage))%",
-                        icon: "chart.line.uptrend.xyaxis",
-                        color: stats.improvementPercentage > 0 ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.secondaryBlue
+                        title: "This week",
+                        value: "\(weekComparison.thisWeekSessions)",
+                        subtitle: weekComparison.thisWeekSessions == weekComparison.lastWeekSessions ? "same as last week" : "\(weekComparison.lastWeekSessions) last week",
+                        icon: "calendar.badge.clock",
+                        color: weekComparison.thisWeekSessions >= weekComparison.lastWeekSessions ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.secondaryBlue
                     )
                 }
             } else {

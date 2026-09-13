@@ -389,15 +389,15 @@ struct UnifiedOnboardingView: View {
         newPlayer.kitNumber = Int16(kitNumber ?? 0)
         newPlayer.createdAt = Date()
 
-        if !selectedWeaknesses.isEmpty {
-            let profile = PlayerProfile(context: viewContext)
-            profile.id = UUID()
-            profile.selfIdentifiedWeaknesses = selectedWeaknesses.map { $0.displayName }
-            profile.createdAt = Date()
-            profile.updatedAt = Date()
-            profile.player = newPlayer
-            newPlayer.playerProfile = profile
-        }
+        let profile = PlayerProfile(context: viewContext)
+        profile.id = UUID()
+        profile.selfIdentifiedWeaknesses = selectedWeaknesses.isEmpty ? nil : selectedWeaknesses.map { $0.displayName }
+        profile.trainingGoal = selectedGoal
+        profile.trainingDayList = OnboardingMapping.preferredDays(forFrequency: selectedFrequency).compactMap { DayOfWeek(rawValue: $0) }
+        profile.createdAt = Date()
+        profile.updatedAt = Date()
+        profile.player = newPlayer
+        newPlayer.playerProfile = profile
 
         coreDataManager.createDefaultExercises(for: newPlayer)
         coreDataManager.save()

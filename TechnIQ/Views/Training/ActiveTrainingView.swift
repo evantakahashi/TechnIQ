@@ -11,9 +11,12 @@ import CoreData
 struct ActiveTrainingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var authManager: AuthenticationManager
 
     @StateObject private var manager: ActiveSessionManager
+    /// A resumed session opens paused on the drill it was interrupted in.
+    private let isResumed: Bool
 
     // Session complete state
     @State private var xpBreakdown: SessionXPBreakdown?
@@ -27,8 +30,11 @@ struct ActiveTrainingView: View {
     @State private var clockWasRunningBeforeEndPrompt = false
     @State private var showingDrillSheet = false
 
-    init(exercises: [Exercise], planSession: PlanSession? = nil) {
-        _manager = StateObject(wrappedValue: ActiveSessionManager(exercises: exercises, planSession: planSession))
+    init(exercises: [Exercise], planSession: PlanSession? = nil, resumeFrom snapshot: SessionSnapshot? = nil) {
+        let manager = ActiveSessionManager(exercises: exercises, planSession: planSession)
+        if let snapshot { manager.apply(snapshot) }
+        _manager = StateObject(wrappedValue: manager)
+        isResumed = snapshot != nil
     }
 
     private var currentPlayer: Player? {
@@ -84,9 +90,13 @@ struct ActiveTrainingView: View {
                 xpBeforeSession = player.totalXP
                 levelBeforeSession = Int(player.currentLevel)
             }
-            manager.start()
+            if isResumed { manager.persistSnapshot() } else { manager.start() }
         }
         .onDisappear { manager.pauseClock() }
+        .onChange(of: scenePhase) { _, phase in
+            // A call or a lock screen pauses the clock and writes the snapshot; the player resumes.
+            if phase != .active { manager.pauseClock() }
+        }
         .alert("End session early?", isPresented: $showingEndConfirm) {
             Button("End Session", role: .destructive) { manager.endSessionEarly() }
             Button("Cancel", role: .cancel) {

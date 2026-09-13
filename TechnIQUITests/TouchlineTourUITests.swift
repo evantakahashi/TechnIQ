@@ -212,10 +212,23 @@ final class TouchlineTourUITests: XCTestCase {
         shot("session-history")
         goBack()
 
+        tapWhenHittable(row("This week"))
+        settle(1.5)
+        XCTAssertTrue(text(containing: "Personal bests").waitForExistence(timeout: 5), "records screen")
+        shot("records")
+        goBack()
+
         tapWhenHittable(row("Edit profile"))
         settle(1.2)
         shot("edit-profile")
         dismissSheet()
+
+        tapWhenHittable(row("Training profile"))
+        settle(1.2)
+        XCTAssertTrue(app.buttons["trainingProfile.save"].waitForExistence(timeout: 5), "training profile sheet")
+        XCTAssertTrue(text(containing: "Weak spots").exists, "weak spots group")
+        shot("training-profile")
+        dismissSheet(["Cancel", "Close", "Done"])
 
         tapWhenHittable(row("Kit & avatar"))
         settle(1.5)

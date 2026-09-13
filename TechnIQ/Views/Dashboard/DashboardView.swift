@@ -8,6 +8,8 @@ struct TrainingLaunch: Identifiable {
     let exercises: [Exercise]
     /// Plan session this launch fulfils, so completion can be written back to the plan.
     var planSession: PlanSession? = nil
+    /// Set when continuing an interrupted session.
+    var resumeFrom: SessionSnapshot? = nil
 }
 
 // MARK: - Home (Touchline 4a / 9b / 9c / 9d)
@@ -44,6 +46,8 @@ struct DashboardView: View {
 
     // Coach (Pro)
     @State private var coachSwapExercise: Exercise?
+    @State private var pendingSession: SessionSnapshot?
+    @State private var previewSession: PlanSession?
     @State private var paywallFeature: PaywallFeature?
     @State private var showingWeeklyReview = false
     @State private var showingCoachBuild = false
@@ -133,6 +137,7 @@ struct DashboardView: View {
                 if let player = currentPlayer {
                     header(player: player)
                     banners
+                    resumeStrip
                     hero(player: player)
                         .coachMark(.dashboard)
                     weekSection
@@ -187,6 +192,17 @@ struct DashboardView: View {
         .sheet(item: $paywallFeature) { feature in
             PaywallView(feature: feature)
         }
+        .sheet(item: $previewSession) { session in
+            SessionPreviewSheet(
+                eyebrow: weekDayMeta.map { "Today · \($0)" } ?? "Today",
+                title: todaysExercises.first?.name ?? "Today's session",
+                exercises: todaysExercises
+            ) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: session)
+                }
+            }
+        }
         .sheet(isPresented: $showingWeeklyReview) {
             if let player = currentPlayer {
                 WeeklyReviewView(weekNumber: aiCoachService.completedWeekNumber, player: player)
@@ -212,7 +228,7 @@ struct DashboardView: View {
             }
         }
         .fullScreenCover(item: $trainingLaunch, onDismiss: { loadPlan() }) { launch in
-            ActiveTrainingView(exercises: launch.exercises, planSession: launch.planSession)
+            ActiveTrainingView(exercises: launch.exercises, planSession: launch.planSession, resumeFrom: launch.resumeFrom)
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
@@ -331,6 +347,71 @@ struct DashboardView: View {
             }
         }
         .accessibilityLabel("Your avatar")
+    }
+
+    // MARK: - Session in progress
+
+    @ViewBuilder
+    private var resumeStrip: some View {
+        if let snapshot = pendingSession, let drillName = pendingDrillName(snapshot) {
+            Button {
+                HapticManager.shared.lightTap()
+                resumeSession(snapshot)
+            } label: {
+                TQPitchCard(.strip, markings: .strip) {
+                    HStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            TQEyebrow("Session in progress · \(clockLabel(snapshot.totalSeconds))", size: 11)
+                            TQDisplayTitle(drillName, size: .strip)
+                                .lineLimit(1)
+                            Text("Drill \(snapshot.currentExerciseIndex + 1) of \(snapshot.exerciseIDs.count) · tap to continue")
+                                .font(DesignSystem.Typography.bodySmall)
+                                .foregroundColor(DesignSystem.Colors.textOnPitch)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 8)
+                        TQChevron(color: DesignSystem.Colors.textOnPitch)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.resumeSession")
+            .accessibilityHint("Continues the interrupted session")
+            .contextMenu {
+                Button(role: .destructive) { discardPendingSession() } label: { Label("Discard session", systemImage: "trash") }
+            }
+        }
+    }
+
+    private func clockLabel(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    private func pendingDrillName(_ snapshot: SessionSnapshot) -> String? {
+        guard snapshot.currentExerciseIndex < snapshot.exerciseIDs.count,
+              let id = UUID(uuidString: snapshot.exerciseIDs[snapshot.currentExerciseIndex]) else { return nil }
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        return (try? viewContext.fetch(request).first)?.name
+    }
+
+    private func resumeSession(_ snapshot: SessionSnapshot) {
+        guard let manager = ActiveSessionManager.restore(snapshot, in: viewContext) else {
+            discardPendingSession()
+            return
+        }
+        trainingLaunch = TrainingLaunch(exercises: manager.exercises, planSession: manager.planSession, resumeFrom: snapshot)
+    }
+
+    private func discardPendingSession() {
+        SessionSnapshot.clear()
+        withAnimation(DesignSystem.Animation.quick) { pendingSession = nil }
+    }
+
+    private func loadPendingSession() {
+        pendingSession = SessionSnapshot.load()
+        if let snapshot = pendingSession, pendingDrillName(snapshot) == nil { discardPendingSession() }
     }
 
     // MARK: - Banners
@@ -584,6 +665,10 @@ struct DashboardView: View {
         TQRowList {
             if let plan = activePlan {
                 TQRow(plan.name, meta: .init(planRowMeta(plan)), action: { route = .planDetail(plan) })
+                if let next = nextSessionMeta {
+                    TQRow("Next session", meta: next, action: { route = .planDetail(plan) })
+                        .accessibilityIdentifier("home.nextSession")
+                }
                 if aiCoachService.weeklyCheckInAvailable {
                     TQRow("Week \(aiCoachService.completedWeekNumber) review ready",
                           subtitle: subscriptionManager.isPro ? "\(coachName) read the week; see what changes" : "\(coachName)'s review of the week · Pro",
@@ -720,9 +805,35 @@ struct DashboardView: View {
     private func startPlanSession(_ session: PlanSession) {
         if todaysExercises.isEmpty {
             showingLogPlanSession = true
+        } else if todaysExercises.count > 1 {
+            // Several drills: show what the session holds before the clock starts.
+            previewSession = session
         } else {
             trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: session)
         }
+    }
+
+    /// "Thu · First-touch directional" for the next planned session after today, or nil.
+    private var nextSessionMeta: TQRow.Meta? {
+        guard let plan = activePlan else { return nil }
+        let calendar = Calendar.current
+        let now = Date()
+        let todayStart = calendar.startOfDay(for: now)
+        let upcoming = PlanSchedule.upcoming(in: plan, startDate: PlanSchedule.startDate(of: plan), now: now, calendar: calendar, limit: 3)
+        guard let next = upcoming.first(where: { $0.date > todayStart }) else { return nil }
+        let name = next.day.sessions.first.flatMap { session in
+            session.exerciseIDs.first.flatMap { id in
+                recentExerciseName(id)
+            } ?? "\(session.sessionType.displayName) session"
+        } ?? "Training"
+        return .init("\(PlanSchedule.label(for: next.date, now: now, calendar: calendar)) · \(name)", size: 14, face: .text)
+    }
+
+    private func recentExerciseName(_ id: UUID) -> String? {
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        return (try? viewContext.fetch(request).first)?.name
     }
 
     // MARK: - Data
@@ -747,6 +858,7 @@ struct DashboardView: View {
     private func loadPlan() {
         guard let player = currentPlayer else { return }
         activePlan = forcedState == "empty" ? nil : TrainingPlanService.shared.fetchActivePlan(for: player)
+        loadPendingSession()
         guard let plan = activePlan else {
             currentWeekDay = nil
             planIsComplete = false

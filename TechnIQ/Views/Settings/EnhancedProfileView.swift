@@ -22,6 +22,7 @@ struct EnhancedProfileView: View {
     @State private var showingShop = false
     @State private var showingReminders = false
     @State private var showingCoachName = false
+    @State private var showingTrainingProfile = false
     @State private var showingPaywall = false
     @State private var showingSignOutAlert = false
     @State private var restoreMessage: String?
@@ -32,7 +33,7 @@ struct EnhancedProfileView: View {
     @State private var deleteError: String?
 
     private enum ProfileRoute: Hashable {
-        case progress, achievements, sessionHistory, matches
+        case progress, achievements, sessionHistory, matches, records
     }
 
     init() {
@@ -76,6 +77,12 @@ struct EnhancedProfileView: View {
 
     private func levelProgress(for player: Player) -> Double {
         XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
+    }
+
+    /// "3 sessions · 1 more than last week" from the same model the Records screen uses.
+    private var weekLine: String {
+        guard let player = currentPlayer else { return "" }
+        return PlayerRecords.build(sessions: RecordsView.facts(for: player), now: Date(), calendar: .current).comparison.line
     }
 
     private var achievementSummary: String {
@@ -138,6 +145,11 @@ struct EnhancedProfileView: View {
         }
         .sheet(isPresented: $showingShop) {
             ShopView()
+        }
+        .sheet(isPresented: $showingTrainingProfile) {
+            if let player = currentPlayer {
+                TrainingProfileView(player: player)
+            }
         }
         .sheet(isPresented: $showingCoachName) {
             CoachNameView()
@@ -270,6 +282,7 @@ struct EnhancedProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             TQGroupHeader("Training")
             TQRowList {
+                TQRow("This week", meta: .init(weekLine, size: 14, face: .text)) { route = .records }
                 TQRow("Progress & analytics") { route = .progress }
                 TQRow("Achievements", meta: .init(achievementSummary)) { route = .achievements }
                 TQRow("Session history") { route = .sessionHistory }
@@ -283,6 +296,7 @@ struct EnhancedProfileView: View {
             TQGroupHeader("Account")
             TQRowList {
                 TQRow("Edit profile") { showingEditProfile = true }
+                TQRow("Training profile", subtitle: "Goal, days, position, weak spots") { showingTrainingProfile = true }
                 TQRow("Kit & avatar") { showingAvatarCustomization = true }
                 TQRow("Reminders", meta: .init(ReminderSettings.load().timeLabel())) { showingReminders = true }
                 TQRow("Your coach", meta: .init(CoachIdentity.name())) { showingCoachName = true }
@@ -352,6 +366,7 @@ struct EnhancedProfileView: View {
             case .achievements: AchievementsBrowseView(player: player)
             case .sessionHistory: SessionHistoryView()
             case .matches: MatchHistoryView(player: player)
+            case .records: RecordsView(player: player)
             }
         }
     }

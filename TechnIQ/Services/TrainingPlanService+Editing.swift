@@ -135,6 +135,65 @@ extension TrainingPlanService {
         return saveEdit(session.day?.week?.plan)
     }
 
+    // MARK: Training days
+
+    /// Moves the plan's coming weeks onto new weekdays. The current week (and any earlier one) is
+    /// left alone; in each later week the existing training days are laid onto the new weekdays in
+    /// order, extra sessions fold into the last new day, and missing days copy the last session.
+    @discardableResult
+    func rebindTrainingDays(planId: UUID, to newDays: [DayOfWeek], now: Date = Date(), calendar: Calendar = .current) -> Bool {
+        guard let plan = fetch(TrainingPlan.self, id: planId), !newDays.isEmpty else { return false }
+        let model = plan.toModel()
+        let currentWeek = TrainingPlanService.peekCurrentDay(in: model)?.week ?? (model.weeks.map(\.weekNumber).max() ?? 0) + 1
+        let target = newDays.sorted { $0.sortOrder < $1.sortOrder }
+        var changed = false
+
+        for week in ((plan.weeks?.allObjects as? [PlanWeek]) ?? []) where Int(week.weekNumber) > currentWeek {
+            let days = ((week.days?.allObjects as? [PlanDay]) ?? []).sorted { $0.dayNumber < $1.dayNumber }
+            guard days.count == 7, !days.contains(where: { $0.isCompleted || $0.isSkipped }) else { continue }
+            let trainingDays = days.filter { !$0.isRestDay }
+            let sessionsInOrder = trainingDays.flatMap { day in
+                ((day.sessions?.allObjects as? [PlanSession]) ?? []).sorted { $0.orderIndex < $1.orderIndex }
+            }
+            guard !sessionsInOrder.isEmpty else { continue }
+
+            // Reset every day to rest, then place sessions on the new weekdays.
+            for day in days {
+                day.isRestDay = true
+                for session in (day.sessions?.allObjects as? [PlanSession]) ?? [] { session.day = nil }
+            }
+            let slots = target.compactMap { weekday in days.first { $0.dayOfWeek == weekday.rawValue } }
+            guard !slots.isEmpty else { continue }
+            for (index, slot) in slots.enumerated() {
+                slot.isRestDay = false
+                if index < sessionsInOrder.count {
+                    let session = sessionsInOrder[index]
+                    session.day = slot
+                    session.orderIndex = 0
+                } else if let last = sessionsInOrder.last {
+                    let copy = PlanSession(context: editingContext)
+                    copy.id = UUID()
+                    copy.sessionType = last.sessionType
+                    copy.duration = last.duration
+                    copy.intensity = last.intensity
+                    copy.orderIndex = 0
+                    copy.day = slot
+                    copy.exercises = last.exercises
+                }
+            }
+            if sessionsInOrder.count > slots.count, let lastSlot = slots.last {
+                for (offset, session) in sessionsInOrder.dropFirst(slots.count).enumerated() {
+                    session.day = lastSlot
+                    session.orderIndex = Int16(offset + 1)
+                }
+            }
+            for session in sessionsInOrder where session.day == nil { editingContext.delete(session) }
+            changed = true
+        }
+        guard changed else { return false }
+        return saveEdit(plan)
+    }
+
     // MARK: Custom plan skeleton
 
     struct CustomPlanSpec {
