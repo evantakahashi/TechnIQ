@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */; };
+		F2E59BA579CC00B14EA7D0FB /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */; };
+		6AD991F7EACD13025FCA8EE6 /* ReminderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */; };
+		1B063906C319AD0180CD07A1 /* PlanSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2301FED0997F0B9056B6F83 /* PlanSchedule.swift */; };
 		E4414AEC1496F2C84A2F28DE /* SessionDrillPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CA20E5627CAAD14F4673F5 /* SessionDrillPickerView.swift */; };
 		42C4977C223204DE931DA559 /* PlanTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A42A145BF4FDDDB40D4405 /* PlanTabView.swift */; };
 		DB0DFBD7F71606FA0C21AA4D /* TrustTheNumbersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 883166737FF17224528FEC3D /* TrustTheNumbersTests.swift */; };
@@ -247,6 +251,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanScheduleTests.swift; sourceTree = "<group>"; };
+		76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
+		B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderSettings.swift; sourceTree = "<group>"; };
+		C2301FED0997F0B9056B6F83 /* PlanSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSchedule.swift; sourceTree = "<group>"; };
 		E3CA20E5627CAAD14F4673F5 /* SessionDrillPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDrillPickerView.swift; sourceTree = "<group>"; };
 		A8A42A145BF4FDDDB40D4405 /* PlanTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTabView.swift; sourceTree = "<group>"; };
 		883166737FF17224528FEC3D /* TrustTheNumbersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrustTheNumbersTests.swift; sourceTree = "<group>"; };
@@ -616,6 +624,8 @@
 				694822F7BDD6D0D2D4D628DC /* OnboardingMapping.swift */,
 				27E37ED1CFBD51F7B1F8BFB7 /* TrainLibraryModel.swift */,
 				0809C8492ADCA1E3AF0BFF84 /* FreeDrillAllowance.swift */,
+				C2301FED0997F0B9056B6F83 /* PlanSchedule.swift */,
+				B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -867,6 +877,7 @@
 				6D13195CD252EB8003999BD4 /* TouchlineLogicTests.swift */,
 				DCA70A17A2BA0B19D9055B7D /* TrainLibraryModelTests.swift */,
 				883166737FF17224528FEC3D /* TrustTheNumbersTests.swift */,
+				F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -890,6 +901,7 @@
 				DF1636282E133100001E8CF9 /* EditProfileView.swift */,
 				ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */,
 				7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */,
+				76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */,
 			);
 			name = Settings;
 			path = Settings;
@@ -1286,6 +1298,9 @@
 				0B2CD53AF08CE27B3AB59857 /* FreeDrillAllowance.swift in Sources */,
 				42C4977C223204DE931DA559 /* PlanTabView.swift in Sources */,
 				E4414AEC1496F2C84A2F28DE /* SessionDrillPickerView.swift in Sources */,
+				1B063906C319AD0180CD07A1 /* PlanSchedule.swift in Sources */,
+				6AD991F7EACD13025FCA8EE6 /* ReminderSettings.swift in Sources */,
+				F2E59BA579CC00B14EA7D0FB /* NotificationSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1311,6 +1326,7 @@
 				7CA808CDC7AA98F81A0847E0 /* TouchlineLogicTests.swift in Sources */,
 				B998652CFABAE10DE8A418A8 /* TrainLibraryModelTests.swift in Sources */,
 				DB0DFBD7F71606FA0C21AA4D /* TrustTheNumbersTests.swift in Sources */,
+				4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

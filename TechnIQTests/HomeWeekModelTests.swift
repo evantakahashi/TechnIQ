@@ -18,19 +18,16 @@ final class HomeWeekModelTests: XCTestCase {
     }
 
     func testMockWeek_threeDoneOfFour_todayHighlighted() {
-        // Sessions on Mon, Wed, Thu; plan has four training days: Mon, Wed, Thu, Sat.
+        // Sessions on Mon, Wed, Thu; plan has four dated training days: Mon, Wed, Thu, Sat.
         let sessions = [day(-5), day(-3), day(-2)]
-        let plan = HomeWeekModel.PlanWeek(days: [
-            .init(weekday: 1, isRest: false, isCompleted: true, sessionCount: 1),
-            .init(weekday: 2, isRest: true, isCompleted: true, sessionCount: 0),
-            .init(weekday: 3, isRest: false, isCompleted: true, sessionCount: 1),
-            .init(weekday: 4, isRest: false, isCompleted: true, sessionCount: 1),
-            .init(weekday: 5, isRest: true, isCompleted: true, sessionCount: 0),
-            .init(weekday: 6, isRest: false, isCompleted: false, sessionCount: 1),
-            .init(weekday: 7, isRest: true, isCompleted: false, sessionCount: 0)
-        ])
+        let planned: [HomeWeekModel.PlannedDay] = [
+            .init(date: day(-5), sessionCount: 1, isDone: true),
+            .init(date: day(-3), sessionCount: 1, isDone: true),
+            .init(date: day(-2), sessionCount: 1, isDone: true),
+            .init(date: day(0), sessionCount: 1, isDone: false)
+        ]
 
-        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: sessions, plan: plan)
+        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: sessions, plannedDays: planned)
 
         XCTAssertEqual(week.todayIndex, 5)
         XCTAssertEqual(week.cells.map(\.state), [.done, .rest, .done, .done, .rest, .today, .rest])
@@ -40,7 +37,7 @@ final class HomeWeekModelTests: XCTestCase {
     }
 
     func testFirstRun_noPlanNoSessions_showsTodayAndNoTarget() {
-        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [], plan: nil)
+        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [], plannedDays: nil)
 
         XCTAssertEqual(week.cells.map(\.state), [.rest, .rest, .rest, .rest, .rest, .today, .rest])
         XCTAssertEqual(week.done, 0)
@@ -48,31 +45,27 @@ final class HomeWeekModelTests: XCTestCase {
         XCTAssertEqual(week.summary, "0 / —")
     }
 
-    func testPlanWithoutWeekdays_assignsRemainingDaysFromToday() {
-        // Plan week has 3 training days without weekday info; one already done (Tuesday).
-        let sessions = [day(-4)]
-        let plan = HomeWeekModel.PlanWeek(days: [
-            .init(weekday: nil, isRest: false, isCompleted: true, sessionCount: 1),
-            .init(weekday: nil, isRest: true, isCompleted: true, sessionCount: 0),
-            .init(weekday: nil, isRest: false, isCompleted: false, sessionCount: 1),
-            .init(weekday: nil, isRest: false, isCompleted: false, sessionCount: 2)
-        ])
+    func testPlannedDaysOutsideThisWeekAreIgnored() {
+        let planned: [HomeWeekModel.PlannedDay] = [
+            .init(date: day(-8), sessionCount: 1, isDone: false),   // last week
+            .init(date: day(1), sessionCount: 2, isDone: false),    // Sunday
+            .init(date: day(3), sessionCount: 1, isDone: false)     // next week
+        ]
 
-        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: sessions, plan: plan)
+        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [], plannedDays: planned)
 
-        // Tue done; today (Sat) planned; Sunday planned with two sessions.
-        XCTAssertEqual(week.cells.map(\.state), [.rest, .done, .rest, .rest, .rest, .today, .planned])
+        XCTAssertEqual(week.cells.map(\.state), [.rest, .rest, .rest, .rest, .rest, .today, .planned])
         XCTAssertEqual(week.cells[6].sessions, 2)
-        XCTAssertEqual(week.target, 3)
+        XCTAssertEqual(week.target, 1)
     }
 
     func testMissedPastPlannedDayIsMarkedMissed() {
-        let plan = HomeWeekModel.PlanWeek(days: [
-            .init(weekday: 1, isRest: false, isCompleted: false, sessionCount: 1),
-            .init(weekday: 6, isRest: false, isCompleted: false, sessionCount: 1)
-        ])
+        let planned: [HomeWeekModel.PlannedDay] = [
+            .init(date: day(-5), sessionCount: 1, isDone: false),   // Monday, never trained
+            .init(date: day(0), sessionCount: 1, isDone: false)
+        ]
 
-        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [], plan: plan)
+        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [], plannedDays: planned)
 
         XCTAssertEqual(week.cells[0].state, .missed)
         XCTAssertEqual(week.cells[5].state, .today)
@@ -80,7 +73,7 @@ final class HomeWeekModelTests: XCTestCase {
     }
 
     func testSessionTodayMarksTodayDone() {
-        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [saturday], plan: nil)
+        let week = HomeWeekModel.build(today: saturday, calendar: calendar, sessionDates: [saturday], plannedDays: nil)
 
         XCTAssertEqual(week.cells[5].state, .done)
         XCTAssertEqual(week.done, 1)

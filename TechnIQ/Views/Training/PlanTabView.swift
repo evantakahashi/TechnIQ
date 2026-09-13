@@ -48,6 +48,7 @@ struct PlanTabView: View {
         guard let player else { rootPlanID = nil; return }
         planService.activePlan = planService.fetchActivePlan(for: player)
         rootPlanID = planService.activePlan?.id
+        NotificationManager.shared.refresh(for: player)
     }
 
     private func syncRootIfNeeded() {

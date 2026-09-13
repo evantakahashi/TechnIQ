@@ -102,10 +102,7 @@ struct SessionCompleteView: View {
             onEffort?(efforts[index])
         }
         .task {
-            // Ask for notification permission right after the first dopamine hit
-            try? await Task.sleep(nanoseconds: 1_200_000_000)
-            NotificationManager.shared.requestPermissionIfNeeded()
-            NotificationManager.shared.scheduleDailyTrainingReminder()
+            NotificationManager.shared.refresh(for: player)
         }
         .sheet(isPresented: $showingWeeklyCheckIn) {
             WeeklyCheckInView(weekNumber: aiCoachService.completedWeekNumber, player: player)

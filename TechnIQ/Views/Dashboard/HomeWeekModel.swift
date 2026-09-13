@@ -2,27 +2,23 @@ import Foundation
 
 // MARK: - HomeWeekModel
 //
-// Pure mapping from this week's training sessions + the active plan's current week onto the
-// seven Home week-strip cells (Monday first). Plans are completion-based, not calendar-based,
-// so plan days with no weekday are laid out from today forward.
+// Pure mapping from this week's training sessions + the active plan's dated days onto the seven
+// Home week-strip cells (Monday first). Plan days carry calendar dates (see PlanSchedule), so a
+// planned day earlier in the week with no session is shown as missed, today is today, and later
+// planned days are planned. Skipped days are handed in as not planned, so they read as rest.
 
 enum HomeWeekModel {
-    struct PlanDay {
-        var weekday: Int?        // 1 = Monday … 7 = Sunday, nil when the plan doesn't pin days
-        var isRest: Bool
-        var isCompleted: Bool
+    struct PlannedDay {
+        var date: Date
         var sessionCount: Int
-    }
-
-    struct PlanWeek {
-        var days: [PlanDay]
+        var isDone: Bool
     }
 
     struct Week {
         let cells: [TQDayCell]   // 7 cells, Monday first
         let todayIndex: Int      // 0…6
         let done: Int            // days trained this week
-        let target: Int?         // training days in the plan week; nil without a plan
+        let target: Int?         // planned training days this week; nil without a plan
 
         var summary: String {
             if let target {
@@ -32,39 +28,36 @@ enum HomeWeekModel {
         }
     }
 
-    static func build(today: Date, calendar: Calendar, sessionDates: [Date], plan: PlanWeek?) -> Week {
+    static func build(today: Date, calendar: Calendar, sessionDates: [Date], plannedDays: [PlannedDay]?) -> Week {
         let todayIndex = mondayIndex(of: today, calendar: calendar)
         let startOfToday = calendar.startOfDay(for: today)
         guard let monday = calendar.date(byAdding: .day, value: -todayIndex, to: startOfToday) else {
             return Week(cells: Array(repeating: .rest, count: 7), todayIndex: todayIndex, done: 0, target: nil)
         }
 
+        func offset(of date: Date) -> Int? {
+            let start = calendar.startOfDay(for: date)
+            guard let days = calendar.dateComponents([.day], from: monday, to: start).day, (0..<7).contains(days) else { return nil }
+            return days
+        }
+
         // Sessions per weekday this week.
         var sessionsPerDay = Array(repeating: 0, count: 7)
         for date in sessionDates {
-            let start = calendar.startOfDay(for: date)
-            guard let offset = calendar.dateComponents([.day], from: monday, to: start).day, (0..<7).contains(offset) else { continue }
-            sessionsPerDay[offset] += 1
+            if let index = offset(of: date) { sessionsPerDay[index] += 1 }
         }
 
-        // Planned sessions per weekday: pinned weekdays first, unpinned days laid out from today.
+        // Planned sessions per weekday this week.
         var plannedPerDay = Array(repeating: 0, count: 7)
         var target: Int? = nil
-        if let plan {
-            let trainingDays = plan.days.filter { !$0.isRest }
-            target = trainingDays.count
-            var cursor = todayIndex
-            for day in trainingDays {
-                if let weekday = day.weekday, (1...7).contains(weekday) {
-                    plannedPerDay[weekday - 1] += max(day.sessionCount, 1)
-                } else if !day.isCompleted {
-                    // Unpinned, still to do: fill today and the following days in order.
-                    while cursor < 7 && (sessionsPerDay[cursor] > 0 || plannedPerDay[cursor] > 0) { cursor += 1 }
-                    guard cursor < 7 else { break }
-                    plannedPerDay[cursor] += max(day.sessionCount, 1)
-                    cursor += 1
-                }
+        if let plannedDays {
+            var planned = 0
+            for day in plannedDays {
+                guard let index = offset(of: day.date) else { continue }
+                plannedPerDay[index] += max(day.sessionCount, 1)
+                planned += 1
             }
+            target = planned
         }
 
         var cells: [TQDayCell] = []

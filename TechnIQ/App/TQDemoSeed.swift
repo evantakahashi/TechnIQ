@@ -99,8 +99,13 @@ enum TQDemoSeed {
         if let active = TrainingPlanService.shared.fetchActivePlan(for: player), active.weeks.isEmpty {
             TrainingPlanService.shared.deletePlan(active)
         }
-        guard TrainingPlanService.shared.fetchActivePlan(for: player) == nil,
-              let plan = TrainingPlanService.shared.createCustomPlan(
+        // A plan seeded on an earlier launch keeps its rows but is re-anchored so week 3 is this week
+        // and today always has a session due (simulators keep their data between runs).
+        if let existing = TrainingPlanService.shared.fetchActivePlan(for: player) {
+            reanchor(existing, now: now)
+            return
+        }
+        guard let plan = TrainingPlanService.shared.createCustomPlan(
                 name: "Striker Development",
                 description: "8 weeks on finishing, positioning and movement in the attacking third.",
                 durationWeeks: 8,
@@ -114,11 +119,17 @@ enum TQDemoSeed {
                      "Pressure finishing", "Combination play", "Match-speed repetition", "Taper and test"]
         let exercises = seedExercises(for: player, context: context)
         let weekdays = DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }
+        // Week 3 is this calendar week: earlier training days are done, today's is due, later ones planned.
+        let calendar = Calendar.current
+        let todayIndex = HomeWeekModel.mondayIndex(of: now, calendar: calendar)
+        let thisMonday = calendar.date(byAdding: .day, value: -todayIndex, to: calendar.startOfDay(for: now)) ?? now
 
         for weekNumber in 1...8 {
             guard let week = TrainingPlanService.shared.addWeekToPlan(plan, weekNumber: weekNumber, focusArea: focus[weekNumber - 1], notes: nil) else { continue }
             let pattern = weekNumber % 2 == 1 ? [1, 0, 1, 1, 0, 2, 0] : [1, 1, 0, 1, 0, 1, 0]
-            for (index, count) in pattern.enumerated() {
+            for (index, patternCount) in pattern.enumerated() {
+                // Whatever the weekday, the demo always has a session due today.
+                let count = (weekNumber == 3 && index == todayIndex) ? max(patternCount, 1) : patternCount
                 guard let day = TrainingPlanService.shared.addDayToWeek(week, dayNumber: index + 1, dayOfWeek: weekdays[index], isRestDay: count == 0, notes: nil) else { continue }
                 for sessionIndex in 0..<count {
                     let sessionExercises = Array(exercises.dropFirst(sessionIndex).prefix(1))
@@ -131,7 +142,7 @@ enum TQDemoSeed {
                         exercises: sessionExercises
                     )
                 }
-                let done = weekNumber <= 2 || (weekNumber == 3 && index == 0)
+                let done = weekNumber <= 2 || (weekNumber == 3 && index < todayIndex)
                 if done {
                     day.isCompleted = true
                     day.completedAt = now
@@ -150,6 +161,54 @@ enum TQDemoSeed {
         plan.progressPercentage = 31
         try? context.save()
         TrainingPlanService.shared.activatePlan(plan.toModel(), for: player)
+        // Anchor the plan two weeks back so week 3 falls on this week (PlanSchedule dates days from the anchor).
+        plan.startedAt = calendar.date(byAdding: .day, value: -14, to: thisMonday)
+        try? context.save()
+    }
+
+    /// Re-dates an already seeded plan: anchor two weeks back, week-3 days before today done,
+    /// today's day not done and not a rest day.
+    @MainActor
+    private static func reanchor(_ model: TrainingPlanModel, now: Date) {
+        let context = CoreDataManager.shared.context
+        let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", model.id as CVarArg)
+        request.fetchLimit = 1
+        guard let plan = try? context.fetch(request).first else { return }
+        let calendar = Calendar.current
+        let todayIndex = HomeWeekModel.mondayIndex(of: now, calendar: calendar)
+        let thisMonday = calendar.date(byAdding: .day, value: -todayIndex, to: calendar.startOfDay(for: now)) ?? now
+        plan.startedAt = calendar.date(byAdding: .day, value: -14, to: thisMonday)
+        plan.completedAt = nil
+        plan.isActive = true
+        for week in (plan.weeks?.allObjects as? [PlanWeek]) ?? [] where week.weekNumber == 3 {
+            week.isCompleted = false
+            week.completedAt = nil
+            for day in (week.days?.allObjects as? [PlanDay]) ?? [] {
+                let index = Int(day.dayNumber) - 1
+                let sessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
+                if index == todayIndex {
+                    day.isRestDay = false
+                    day.isSkipped = false
+                    day.isCompleted = false
+                    day.completedAt = nil
+                    sessions.forEach { $0.isCompleted = false; $0.completedAt = nil }
+                    if sessions.isEmpty {
+                        _ = TrainingPlanService.shared.addSessionToDay(day, sessionType: .technical, duration: 15, intensity: 3, notes: nil, exercises: [])
+                    }
+                } else if index < todayIndex, !day.isRestDay {
+                    day.isCompleted = true
+                    day.completedAt = now
+                    sessions.forEach { $0.isCompleted = true; $0.completedAt = now }
+                } else if index > todayIndex {
+                    day.isSkipped = false
+                    day.isCompleted = false
+                    day.completedAt = nil
+                    sessions.forEach { $0.isCompleted = false; $0.completedAt = nil }
+                }
+            }
+        }
+        try? context.save()
     }
 
     /// Completed sessions on the training days earlier this week.

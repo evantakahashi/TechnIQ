@@ -43,12 +43,12 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - [ ] Deferred: the cloud `get_advanced_recommendations` client path in AIRecommendationService is dead but entangled with the plan generator; remove in Phase 4 when the coach functions are reworked
 - Tests: UI tests updated (plan tab root + All plans, You account rows, no guest link), `DrillGeneratorDefaultsTests`
 
-## Phase 2 — Dated plans + reminders — PR
-- [ ] Additive Core Data: `TrainingPlan.startDate`, `PlanDay.scheduledDate` (both .xcdatamodel + +CoreDataProperties, synced)
-- [ ] Binding: preferred days (onboarding/generator) → weekday per plan day; Home strip, plan grid and "Next: Thu" agree
-- [ ] Missed day → session shifts to the next training day, week strip shows the miss; rest days say "Rest day" on Home
-- [ ] Reminders: plan-day + streak-at-risk scheduled; permission asked after "You're all set"; Notifications row (time, toggles)
-- Tests: `PlanScheduleTests` (binding, shift-forward, week boundaries), `HomeWeekModel` tests
+## Phase 2 — Dated plans + reminders — PR (branch feat/audit-phase2)
+- [x] No new attributes needed: dates derive from `startedAt ?? createdAt` + week/day (`Models/PlanSchedule.swift`)
+- [x] Binding: preferred days (onboarding/generator) → weekday per plan day; Home strip, plan grid and "Next: Thu" agree
+- [x] Missed day → session shifts to the next training day, week strip shows the miss; rest days say "Rest day" on Home
+- [x] Reminders: plan-day + streak-at-risk scheduled; permission asked after "You're all set"; Notifications row (time, toggles)
+- Tests: `PlanScheduleTests` (dates, rotation, today/rest/overdue/complete, labels, reminder planning, settings), `HomeWeekModelTests` rewritten for dated days
 
 ## Phase 3 — Plan editor + custom builder — PR
 - [ ] One editor: plan → tap a day → edit its sessions and drills (add/remove session, pick drills from library, duration, difficulty, rest toggle); add/remove week and day from the grid

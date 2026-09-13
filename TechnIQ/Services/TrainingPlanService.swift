@@ -829,32 +829,47 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         do {
             guard let plan = try context.fetch(request).first else { return nil }
 
-            let weeks = (plan.weeks?.allObjects as? [PlanWeek])?.sorted { $0.weekNumber < $1.weekNumber } ?? []
+            // Calendar order (see PlanSchedule): with a mid-week anchor the days of a plan week
+            // rotate, and the walk must agree with what Home and the plan tab show as "today".
+            let startDate = plan.startedAt ?? plan.createdAt ?? Date()
+            let calendar = Calendar.current
+            var ordered: [(week: PlanWeek, day: PlanDay, date: Date)] = []
+            for week in (plan.weeks?.allObjects as? [PlanWeek]) ?? [] {
+                for day in (week.days?.allObjects as? [PlanDay]) ?? [] {
+                    let date = PlanSchedule.date(week: Int(week.weekNumber), dayNumber: Int(day.dayNumber),
+                                                 dayOfWeek: day.dayOfWeek.flatMap { DayOfWeek(rawValue: $0) },
+                                                 startDate: startDate, calendar: calendar)
+                    ordered.append((week, day, date))
+                }
+            }
+            ordered.sort { lhs, rhs in
+                if lhs.date != rhs.date { return lhs.date < rhs.date }
+                if lhs.week.weekNumber != rhs.week.weekNumber { return lhs.week.weekNumber < rhs.week.weekNumber }
+                return lhs.day.dayNumber < rhs.day.dayNumber
+            }
             var didAutoComplete = false
 
-            for week in weeks {
-                let days = (week.days?.allObjects as? [PlanDay])?.sorted { $0.dayNumber < $1.dayNumber } ?? []
-
-                for day in days {
-                    if day.isCompleted || day.isSkipped {
-                        continue
-                    }
-
-                    // Auto-complete rest days silently
-                    if day.isRestDay {
-                        day.isCompleted = true
-                        day.completedAt = Date()
-                        didAutoComplete = true
-                        checkAndMarkWeekCompleted(week)
-                        continue
-                    }
-
-                    // This is the current actionable day
-                    if didAutoComplete {
-                        try context.save()
-                    }
-                    return (week: Int(week.weekNumber), day: day.toModel())
+            for entry in ordered {
+                let week = entry.week
+                let day = entry.day
+                if day.isCompleted || day.isSkipped {
+                    continue
                 }
+
+                // Auto-complete rest days silently
+                if day.isRestDay {
+                    day.isCompleted = true
+                    day.completedAt = Date()
+                    didAutoComplete = true
+                    checkAndMarkWeekCompleted(week)
+                    continue
+                }
+
+                // This is the current actionable day
+                if didAutoComplete {
+                    try context.save()
+                }
+                return (week: Int(week.weekNumber), day: day.toModel())
             }
 
             // All days done
@@ -900,13 +915,9 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
     /// completing rest days or saving. Pending rest days are treated as passed, exactly as the
     /// mutating walk would treat them, so both return the same actionable day.
     nonisolated static func peekCurrentDay(in plan: TrainingPlanModel) -> (week: Int, day: PlanDayModel)? {
-        for week in plan.weeks.sorted(by: { $0.weekNumber < $1.weekNumber }) {
-            for day in week.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
-                if day.isCompleted || day.isSkipped || day.isRestDay { continue }
-                return (week: week.weekNumber, day: day)
-            }
-        }
-        return nil
+        let entries = PlanSchedule.trainingDays(in: plan, startDate: PlanSchedule.startDate(of: plan), calendar: Calendar.current)
+        guard let next = entries.first(where: { !$0.day.isDone }) else { return nil }
+        return (week: next.week.weekNumber, day: next.day)
     }
 
     nonisolated static func peekCurrentWeekAndDay(in plan: TrainingPlanModel) -> (week: Int, day: Int)? {

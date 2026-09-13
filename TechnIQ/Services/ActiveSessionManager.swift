@@ -349,9 +349,8 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         // Recompute level after all XP (session + achievements) so achievement-triggered level-ups aren't silent
         let newLevel = XPService.shared.syncLevel(for: player, previousLevel: startingLevel)
 
-        // They trained today: clear the streak-at-risk reminder and re-arm the daily nudge
-        NotificationManager.shared.cancelStreakAtRiskForToday()
-        NotificationManager.shared.scheduleDailyTrainingReminder()
+        // They trained today: the streak nudge goes, the next training day's reminder stays
+        NotificationManager.shared.refresh(for: player)
 
         return (breakdown, newLevel, achievements)
     }

@@ -113,10 +113,15 @@ class CloudService: ObservableObject, CloudServiceProtocol {
     // MARK: - Batch Chunking
 
     /// Commits items in batches of 450 to stay under Firestore's 500-operation limit.
+    /// The unit-test host must never talk to Firestore: a signed-in developer simulator would
+    /// otherwise push test fixtures to the cloud, and Firestore's ObjC exceptions abort the host.
+    nonisolated static let isRunningUnitTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     func commitInChunks<T>(
         _ items: [T],
         using buildBatch: (WriteBatch, T) throws -> Void
     ) async throws {
+        guard !Self.isRunningUnitTests else { return }
         let chunkSize = 450
         for startIndex in stride(from: 0, to: items.count, by: chunkSize) {
             let endIndex = min(startIndex + chunkSize, items.count)
