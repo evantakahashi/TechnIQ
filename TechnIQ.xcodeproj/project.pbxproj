@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804B18528216721B69177A23 /* CoachTests.swift */; };
+		F96E2B06284F47CEC02E5AAD /* CoachNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */; };
+		3AE3C1A470994AC877B03118 /* WeeklyReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */; };
+		86DFD01FC4F6A1C806C32203 /* WeekRecap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */; };
 		565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */; };
 		9342ED1699DC2EBAA4B7DC21 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C28DF7DEA23142931CB645 /* FlowLayout.swift */; };
 		F1DD5121464FBB7B25111B1B /* PlanDayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */; };
@@ -220,7 +224,6 @@
 		E5591F833CC51F5ADCC6EE14 /* XPModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF905C9EA7B9866B20B2BF7 /* XPModels.swift */; };
 		EA07A7012CE139C637532E02 /* AvatarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8676FB258A5AF6EC1244EC96 /* AvatarService.swift */; };
 		EB539CB86095C8D1A10D01B5 /* CoinDisplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B68C1149036359889CAE238 /* CoinDisplayView.swift */; };
-		EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */; };
 		ENHPROF01234567890ABCD01 /* EnhancedProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */; };
 		F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */; };
 		F84CA73C74DB2E3A95B451D9 /* CloudService+Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A71C35FEF2B592FCF38E1F /* CloudService+Sync.swift */; };
@@ -252,6 +255,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		804B18528216721B69177A23 /* CoachTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTests.swift; sourceTree = "<group>"; };
+		1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachNameView.swift; sourceTree = "<group>"; };
+		2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReviewView.swift; sourceTree = "<group>"; };
+		0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekRecap.swift; sourceTree = "<group>"; };
 		E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanEditingTests.swift; sourceTree = "<group>"; };
 		B5C28DF7DEA23142931CB645 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDayEditorView.swift; sourceTree = "<group>"; };
@@ -350,7 +357,6 @@
 		78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityModifiers.swift; sourceTree = "<group>"; };
 		7C049D7194E9C8A7FF88C4A7 /* CoreDataManagerProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreDataManagerProtocol.swift; sourceTree = "<group>"; };
 		7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
-		7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyCheckInView.swift; sourceTree = "<group>"; };
 		820C6879AF5B5C8E6E082821 /* InsightsEngineProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsEngineProtocol.swift; sourceTree = "<group>"; };
 		8242D125539C2ECF4723E3EB /* DrillMarketplaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DrillMarketplaceView.swift; sourceTree = "<group>"; };
 		840F67CB8B6C97962DADCE93 /* YouTubeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeService.swift; sourceTree = "<group>"; };
@@ -551,10 +557,10 @@
 				D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */,
 				TRAINHUB01234567890ABCDEF /* TrainHubView.swift */,
 				0AA18311F41B034E3F4EA29A /* ActiveTrainingView.swift */,
-				7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */,
 				A8A42A145BF4FDDDB40D4405 /* PlanTabView.swift */,
 				E3CA20E5627CAAD14F4673F5 /* SessionDrillPickerView.swift */,
 				92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */,
+				2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */,
 			);
 			name = Training;
 			path = Training;
@@ -626,6 +632,7 @@
 				0809C8492ADCA1E3AF0BFF84 /* FreeDrillAllowance.swift */,
 				C2301FED0997F0B9056B6F83 /* PlanSchedule.swift */,
 				B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */,
+				0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -881,6 +888,7 @@
 				883166737FF17224528FEC3D /* TrustTheNumbersTests.swift */,
 				F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */,
 				E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */,
+				804B18528216721B69177A23 /* CoachTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -905,6 +913,7 @@
 				ENHPROF01234567890ABCDEF /* EnhancedProfileView.swift */,
 				7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */,
 				76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */,
+				1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */,
 			);
 			name = Settings;
 			path = Settings;
@@ -1227,7 +1236,6 @@
 				5E36B250ED840BC0C10003B4 /* TransitionSystem.swift in Sources */,
 				9D06AEC93234B277CCC67AE7 /* AICoachModels.swift in Sources */,
 				E2D2BEC5527618FA6329F05B /* AICoachService.swift in Sources */,
-				EF97299295830E2DAD751A7F /* WeeklyCheckInView.swift in Sources */,
 				695960723F17A060BD23464D /* DrillMarketplaceView.swift in Sources */,
 				7F4976D664E85BCC1050A92F /* LeaderboardView.swift in Sources */,
 				403C1185978C4C8A50D15539 /* ShareToCommunitySheet.swift in Sources */,
@@ -1304,6 +1312,9 @@
 				40BCDDC12C4BA858B3CE198B /* TrainingPlanService+Editing.swift in Sources */,
 				F1DD5121464FBB7B25111B1B /* PlanDayEditorView.swift in Sources */,
 				9342ED1699DC2EBAA4B7DC21 /* FlowLayout.swift in Sources */,
+				86DFD01FC4F6A1C806C32203 /* WeekRecap.swift in Sources */,
+				3AE3C1A470994AC877B03118 /* WeeklyReviewView.swift in Sources */,
+				F96E2B06284F47CEC02E5AAD /* CoachNameView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1331,6 +1342,7 @@
 				DB0DFBD7F71606FA0C21AA4D /* TrustTheNumbersTests.swift in Sources */,
 				4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */,
 				565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */,
+				C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

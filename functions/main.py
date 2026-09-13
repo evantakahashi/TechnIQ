@@ -17,6 +17,7 @@ from firebase_functions import https_fn
 # Import our ML recommendation engines
 from ml.youtube_recommendations import create_youtube_ml_engine
 from lightweight_recommendations import create_lightweight_recommendations
+from coach_prompts import build_daily_coaching_prompt, build_weekly_review_prompt, coach_system
 
 # Register Firestore moderation triggers (auto-hide reported community content).
 # Imported for the decorator side effects so `firebase deploy` picks them up.
@@ -1430,8 +1431,12 @@ def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
         streak_days = request_data.get('streak_days', 0)
         days_since_last = request_data.get('days_since_last_session', 0)
         total_sessions = request_data.get('total_sessions', 0)
+        library = request_data.get('library', [])
+        library = library[:40] if isinstance(library, list) else []
+        today = request_data.get('today') if isinstance(request_data.get('today'), dict) else None
+        coach_name = str(request_data.get('coach_name') or 'Coach')[:40]
 
-        logger.info(f"🎯 Generating daily coaching for user with {len(recent_sessions)} recent sessions")
+        logger.info(f"🎯 Generating daily coaching for user with {len(recent_sessions)} recent sessions, {len(library)} library drills")
 
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         if not anthropic_api_key:
@@ -1440,59 +1445,40 @@ def get_daily_coaching(req: https_fn.Request) -> https_fn.Response:
         from anthropic import Anthropic
         client = Anthropic(api_key=anthropic_api_key)
 
-        # Build session summary for prompt
-        session_text = ""
-        for s in recent_sessions[:10]:
-            session_text += f"- {s.get('date', '?')}: {s.get('duration_minutes', 0)}min, rated {s.get('overall_rating', 0)}/5\n"
-            for ex in s.get('exercises', []):
-                session_text += f"  - {ex.get('name', '?')} ({ex.get('category', '?')}): skills={ex.get('skills', [])}, rated {ex.get('rating', 0)}/5\n"
-
-        balance_text = f"Technical: {category_balance.get('technical', 0)}%, Physical: {category_balance.get('physical', 0)}%, Tactical: {category_balance.get('tactical', 0)}%"
-
-        plan_text = ""
-        if active_plan:
-            plan_text = f"Active plan: {active_plan.get('name', 'Unknown')}, Week {active_plan.get('week', '?')}, {active_plan.get('progress', 0)*100:.0f}% complete"
-
-        streak_text = f"Current streak: {streak_days} days. Days since last session: {days_since_last}. Total sessions: {total_sessions}."
-
-        prompt = f"""Analyze this soccer player's recent training and provide today's coaching recommendation.
-
-Player: Age {player_profile.get('age', '?')}, {player_profile.get('position', '?')}, {player_profile.get('experience', 'intermediate')} level
-Style: {player_profile.get('style', 'unknown')}, Dominant foot: {player_profile.get('dominant_foot', 'unknown')}
-Goals: {', '.join(player_profile.get('goals', []))}
-Weaknesses: {', '.join(player_profile.get('weaknesses', []))}
-
-Recent sessions (newest first):
-{session_text or 'No sessions yet'}
-
-Category balance: {balance_text}
-{plan_text}
-{streak_text}
-
-Instructions:
-1. Identify the ONE most important focus area based on skill rating trends, category imbalance, or neglected weaknesses
-2. Provide 2-sentence reasoning with specific data points (e.g. "Your passing ratings dropped from 3.6 to 2.8")
-3. Design a specific drill targeting this focus area, appropriate for the player's level
-4. Give 1-3 actionable coaching tips
-5. Generate 1-2 data-backed insights (celebrations for improvements, warnings for declines, recommendations for imbalances)
-6. If streak > 3, include a brief motivational streak message
-
-Return ONLY valid JSON:
-{{"focus_area": "Passing", "reasoning": "Your passing ratings...", "recommended_drill": {{"name": "Short name", "description": "One sentence", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1", "Step 2"], "equipment": ["ball", "cones"], "target_skills": ["passing", "first touch"], "is_from_library": false, "library_exercise_id": null}}, "additional_tips": ["Tip 1"], "streak_message": "5 days strong!", "insights": [{{"title": "Title", "description": "Description with data", "type": "celebration|recommendation|warning|pattern", "priority": 9, "actionable": "Optional action"}}]}}"""
+        prompt = build_daily_coaching_prompt(
+            player_profile=player_profile,
+            recent_sessions=recent_sessions,
+            category_balance=category_balance,
+            active_plan=active_plan,
+            streak_days=streak_days,
+            days_since_last=days_since_last,
+            total_sessions=total_sessions,
+            library=library,
+            today=today,
+        )
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            system="You are an expert soccer coach providing daily personalized training guidance. Be concise, data-driven, and actionable. Focus on the most impactful improvement area.",
+            system=coach_system(coach_name, "You pick one drill a day from the player's own library and say why in one line."),
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=1200,
+            max_tokens=700,
             temperature=0.4
         )
 
         result = parse_llm_json(response.content[0].text)
 
-        logger.info(f"✅ Daily coaching generated: focus={result.get('focus_area', '?')}")
+        # Never trust an id the model did not get from us.
+        drill = result.get('recommended_drill') if isinstance(result.get('recommended_drill'), dict) else None
+        if drill is not None:
+            known_ids = {str(d.get('id')) for d in library if d.get('id')}
+            picked = drill.get('library_exercise_id')
+            if drill.get('is_from_library') and (not picked or str(picked) not in known_ids):
+                drill['is_from_library'] = False
+                drill['library_exercise_id'] = None
+
+        logger.info(f"✅ Daily coaching generated: focus={result.get('focus_area', '?')}, from_library={bool(drill and drill.get('is_from_library'))}")
         return _json_response(result, 200)
 
     except Exception as e:
@@ -1537,6 +1523,8 @@ def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
         plan_structure = request_data.get('plan_structure', {})
         completed_week = request_data.get('completed_week', {})
         week_number = request_data.get('week_number', 1)
+        recap = request_data.get('recap') if isinstance(request_data.get('recap'), dict) else None
+        coach_name = str(request_data.get('coach_name') or 'Coach')[:40]
 
         logger.info(f"📊 Generating plan adaptation for week {week_number}")
 
@@ -1570,30 +1558,21 @@ def get_plan_adaptation(req: https_fn.Request) -> https_fn.Response:
 
         avg_rating = sum(ratings) / len(ratings) if ratings else 0
 
-        prompt = f"""Review this completed training plan week and propose specific adaptations for next week.
-
-Player: Age {player_profile.get('age', '?')}, {player_profile.get('position', '?')}, {player_profile.get('experience', 'intermediate')}
-Plan: {plan_structure.get('name', 'Unknown')}
-Week {week_number} completed: {sessions_completed}/{total_sessions} sessions, avg rating {avg_rating:.1f}/5
-
-Week details:
-{week_summary or 'No data'}
-
-Next week's current plan:
-{json.dumps(plan_structure.get('next_week', {}), indent=2)}
-
-Instructions:
-1. Summarize the week in 2-3 sentences (what went well, what needs work)
-2. Propose 1-3 specific adaptations for next week based on performance data
-3. Each adaptation should be one of: add_session, modify_difficulty, remove_session, swap_exercise
-4. Be conservative — only propose changes backed by clear data signals
-
-Return ONLY valid JSON:
-{{"summary": "Week summary...", "adaptations": [{{"type": "modify_difficulty", "day": 2, "session_index": 0, "description": "Bump dribbling difficulty from 3 to 4", "old_difficulty": 3, "new_difficulty": 4, "drill": null}}, {{"type": "add_session", "day": 3, "session_index": null, "description": "Add passing drill", "old_difficulty": null, "new_difficulty": null, "drill": {{"name": "Wall Pass Combos", "description": "...", "category": "technical", "difficulty": 3, "duration": 15, "steps": ["Step 1"], "equipment": ["ball", "wall"], "target_skills": ["passing"], "is_from_library": false, "library_exercise_id": null}}}}]}}"""
+        prompt = build_weekly_review_prompt(
+            player_profile=player_profile,
+            plan_name=plan_structure.get('name', 'Unknown'),
+            week_number=week_number,
+            week_summary=week_summary,
+            sessions_completed=sessions_completed,
+            total_sessions=total_sessions,
+            avg_rating=avg_rating,
+            recap=recap,
+            next_week=plan_structure.get('next_week', {}),
+        )
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            system="You are a soccer training plan analyst. Review weekly performance data and propose minimal, data-driven adaptations. Be conservative — only change what the data clearly supports.",
+            system=coach_system(coach_name, "You review the player's week and propose the fewest changes the numbers support."),
             messages=[
                 {"role": "user", "content": prompt}
             ],

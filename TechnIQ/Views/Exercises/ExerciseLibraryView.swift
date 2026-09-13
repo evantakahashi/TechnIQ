@@ -146,7 +146,7 @@ struct ExerciseLibraryView: View {
                 TQPitchCard(.strip, markings: .strip) {
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 4) {
-                            TQEyebrow("From your coach · \(coachSuggestions.count) suggestion\(coachSuggestions.count == 1 ? "" : "s")", size: 11)
+                            TQEyebrow("From \(CoachIdentity.name()) · \(coachSuggestions.count) suggestion\(coachSuggestions.count == 1 ? "" : "s")", size: 11)
                             TQDisplayTitle("Fix your \(first.category.lowercased())", size: .strip)
                             Text("Your weak spots, built into drills in about 20 seconds")
                                 .font(DesignSystem.Typography.bodySmall)
@@ -160,7 +160,7 @@ struct ExerciseLibraryView: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
-            .accessibilityHint("Opens drills from the coach")
+            .accessibilityHint("Opens drills from \(CoachIdentity.name())")
         }
     }
 
@@ -383,7 +383,7 @@ struct NewDrillSheet: View {
                 .padding(.top, 4)
             TQRowList {
                 TQRow(
-                    "Generate with the coach",
+                    "Generate with \(CoachIdentity.name())",
                     subtitle: "Describe what to fix · 20 s",
                     leading: .tile(TQTile("AI", style: .ai)),
                     verticalPadding: DesignSystem.Spacing.rowVertical,

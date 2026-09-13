@@ -17,6 +17,8 @@ protocol AICoachServiceProtocol: AnyObject {
 
     func fetchDailyCoachingIfNeeded(for player: Player) async
     func setWeeklyCheckInAvailable(weekNumber: Int)
-    func fetchPlanAdaptation(for player: Player, plan: TrainingPlanModel, weekNumber: Int) async
+    func fetchPlanAdaptation(for player: Player, plan: TrainingPlanModel, weekNumber: Int, recap: WeekRecap?) async
+    func refreshWeeklyReview(for player: Player, now: Date, calendar: Calendar)
+    func markWeekReviewed(planID: UUID, weekNumber: Int)
     func dismissWeeklyCheckIn()
 }

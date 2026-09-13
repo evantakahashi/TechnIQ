@@ -21,6 +21,7 @@ struct EnhancedProfileView: View {
     @State private var showingAvatarCustomization = false
     @State private var showingShop = false
     @State private var showingReminders = false
+    @State private var showingCoachName = false
     @State private var showingPaywall = false
     @State private var showingSignOutAlert = false
     @State private var restoreMessage: String?
@@ -137,6 +138,10 @@ struct EnhancedProfileView: View {
         }
         .sheet(isPresented: $showingShop) {
             ShopView()
+        }
+        .sheet(isPresented: $showingCoachName) {
+            CoachNameView()
+                .presentationDetents([.height(300)])
         }
         .sheet(isPresented: $showingReminders) {
             if let player = currentPlayer {
@@ -280,6 +285,7 @@ struct EnhancedProfileView: View {
                 TQRow("Edit profile") { showingEditProfile = true }
                 TQRow("Kit & avatar") { showingAvatarCustomization = true }
                 TQRow("Reminders", meta: .init(ReminderSettings.load().timeLabel())) { showingReminders = true }
+                TQRow("Your coach", meta: .init(CoachIdentity.name())) { showingCoachName = true }
                 TQRow("Shop", meta: .init("", accent: "\(currentPlayer.map { Int($0.coins) } ?? 0) C")) { showingShop = true }
                 if subscriptionManager.isPro {
                     TQRow("TechnIQ Pro", subtitle: "Manage subscription", badge: TQBadge(.status("Active"))) {

@@ -105,7 +105,7 @@ struct SessionCompleteView: View {
             NotificationManager.shared.refresh(for: player)
         }
         .sheet(isPresented: $showingWeeklyCheckIn) {
-            WeeklyCheckInView(weekNumber: aiCoachService.completedWeekNumber, player: player)
+            WeeklyReviewView(weekNumber: aiCoachService.completedWeekNumber, player: player)
         }
         .sheet(isPresented: $showingShareSheet) {
             ShareToCommunitySheet(
@@ -264,13 +264,13 @@ struct SessionCompleteView: View {
                 }
                 if aiCoachService.weeklyCheckInAvailable {
                     if subscriptionManager.isPro {
-                        TQRow("Week \(aiCoachService.completedWeekNumber) complete · coach review",
-                              subtitle: "Adapt next week's plan",
+                        TQRow("Week \(aiCoachService.completedWeekNumber) done · \(CoachIdentity.name())'s review",
+                              subtitle: "See the week and what changes next",
                               leading: .tile(TQTile("AI", style: .ai)),
                               verticalPadding: DesignSystem.Spacing.rowVertical,
                               action: { showingWeeklyCheckIn = true })
                     } else {
-                        TQRow("Week \(aiCoachService.completedWeekNumber) complete · coach review", note: "Pro")
+                        TQRow("Week \(aiCoachService.completedWeekNumber) done · \(CoachIdentity.name())'s review", note: "Pro")
                             .disabled(true)
                     }
                 }

@@ -403,7 +403,7 @@ struct PlayerProgressView: View {
 
     private var insightsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Coach Tips")
+            Text("\(CoachIdentity.name())'s tips")
                 .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.textPrimary)
                 .fontWeight(.semibold)

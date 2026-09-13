@@ -127,7 +127,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after match history")
 
         // Coach drills row → pushed screen → back
-        let coachRow = row("Drills from the coach")
+        let coachRow = row("Drills from Coach")
         XCTAssertTrue(coachRow.waitForExistence(timeout: 5), "coach row")
         XCTAssertTrue(tapWhenHittable(coachRow), "coach row hittable")
         XCTAssertTrue(text(containing: "Pick what to fix").waitForExistence(timeout: 8), "coach drills opened")
@@ -270,7 +270,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Start session"].waitForExistence(timeout: 40), "offline hero still offers Start")
         dismissCoachMarkIfPresent()
         XCTAssertTrue(text(containing: "You're offline").exists, "offline banner")
-        XCTAssertTrue(text(containing: "unavailable offline").exists, "offline coach note")
+        XCTAssertTrue(text(containing: "comes back with the connection").exists, "offline coach note")
         XCTAssertTrue(text(containing: "needs connection").exists, "coach row disabled note")
         shot("home-offline")
 

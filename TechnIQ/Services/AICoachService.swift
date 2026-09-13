@@ -90,12 +90,51 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
         weeklyCheckInAvailable = true
     }
 
-    func fetchPlanAdaptation(for player: Player, plan: TrainingPlanModel, weekNumber: Int) async {
+    // MARK: - Weekly review (calendar-driven)
+
+    private func reviewedWeeksKey(_ planID: UUID) -> String { "weeklyReview.reviewed.\(planID.uuidString)" }
+
+    /// Weeks of the active plan whose seven-day window has ended and that have not been reviewed yet.
+    /// Called on app open and after sessions; the first pending week becomes the check-in.
+    func refreshWeeklyReview(for player: Player, now: Date = Date(), calendar: Calendar = .current) {
+        guard let plan = TrainingPlanService.shared.fetchActivePlan(for: player) else {
+            weeklyCheckInAvailable = false
+            return
+        }
+        let reviewed = Set(UserDefaults.standard.array(forKey: reviewedWeeksKey(plan.id)) as? [Int] ?? [])
+        let startDate = PlanSchedule.startDate(of: plan)
+        let todayStart = calendar.startOfDay(for: now)
+        let pending = plan.weeks
+            .filter { week in
+                guard !reviewed.contains(week.weekNumber) else { return false }
+                let weekStart = PlanSchedule.date(week: week.weekNumber, dayNumber: 1, dayOfWeek: nil, startDate: startDate, calendar: calendar)
+                guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else { return false }
+                let hasSessions = week.days.contains { !$0.isRestDay }
+                return hasSessions && weekEnd <= todayStart
+            }
+            .map(\.weekNumber)
+            .sorted()
+        if let week = pending.first {
+            setWeeklyCheckInAvailable(weekNumber: week)
+        } else if weeklyCheckInAvailable == false {
+            weeklyCheckInAvailable = false
+        }
+    }
+
+    /// Marks a week reviewed (applied or kept) so the row on Home goes away.
+    func markWeekReviewed(planID: UUID, weekNumber: Int) {
+        var reviewed = UserDefaults.standard.array(forKey: reviewedWeeksKey(planID)) as? [Int] ?? []
+        if !reviewed.contains(weekNumber) { reviewed.append(weekNumber) }
+        UserDefaults.standard.set(reviewed, forKey: reviewedWeeksKey(planID))
+        dismissWeeklyCheckIn()
+    }
+
+    func fetchPlanAdaptation(for player: Player, plan: TrainingPlanModel, weekNumber: Int, recap: WeekRecap? = nil) async {
         isLoadingAdaptation = true
         adaptationError = nil
 
         do {
-            adaptationResponse = try await callPlanAdaptationFunction(for: player, plan: plan, weekNumber: weekNumber)
+            adaptationResponse = try await callPlanAdaptationFunction(for: player, plan: plan, weekNumber: weekNumber, recap: recap)
         } catch {
             #if DEBUG
             print("AICoachService: Failed to fetch plan adaptation: \(error)")
@@ -111,7 +150,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
         adaptationResponse = nil
     }
 
-    private func callPlanAdaptationFunction(for player: Player, plan: TrainingPlanModel, weekNumber: Int) async throws -> PlanAdaptationResponse {
+    private func callPlanAdaptationFunction(for player: Player, plan: TrainingPlanModel, weekNumber: Int, recap: WeekRecap? = nil) async throws -> PlanAdaptationResponse {
         let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/get_plan_adaptation"
 
         guard let url = URL(string: functionsURL) else {
@@ -171,7 +210,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             nextWeekData = ["days": daysData]
         }
 
-        let requestBody: [String: Any] = [
+        var requestBody: [String: Any] = [
             "user_id": userUID,
             "player_profile": playerContext.profile,
             "plan_structure": [
@@ -179,8 +218,10 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
                 "next_week": nextWeekData
             ],
             "completed_week": completedWeekData,
-            "week_number": weekNumber
+            "week_number": weekNumber,
+            "coach_name": CoachIdentity.name()
         ]
+        if let recap { requestBody["recap"] = recap.payload }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -270,7 +311,7 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
         let userUID = auth.currentUser?.uid ?? "anonymous_user"
         let playerContext = buildPlayerContext(for: player)
 
-        let requestBody: [String: Any] = [
+        var requestBody: [String: Any] = [
             "user_id": userUID,
             "player_profile": playerContext.profile,
             "recent_sessions": playerContext.sessions,
@@ -278,8 +319,11 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             "active_plan": playerContext.activePlan,
             "streak_days": Int(player.currentStreak),
             "days_since_last_session": playerContext.daysSinceLastSession,
-            "total_sessions": player.sessions?.count ?? 0
+            "total_sessions": player.sessions?.count ?? 0,
+            "library": Self.libraryPayload(for: player),
+            "coach_name": CoachIdentity.name()
         ]
+        if let today = Self.todayPayload(for: player) { requestBody["today"] = today }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -305,20 +349,8 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
                     throw URLError(.badServerResponse, userInfo: [NSLocalizedDescriptionKey: "Server returned \(statusCode)"])
                 }
 
-                // Parse response
-                var coaching = try JSONDecoder().decode(DailyCoaching.self, from: data)
-                // Server won't include fetchDate, so we set it client-side
-                let mirror = coaching
-                coaching = DailyCoaching(
-                    focusArea: mirror.focusArea,
-                    reasoning: mirror.reasoning,
-                    recommendedDrill: mirror.recommendedDrill,
-                    additionalTips: mirror.additionalTips,
-                    streakMessage: mirror.streakMessage,
-                    insights: mirror.insights,
-                    fetchDate: Date()
-                )
-                return coaching
+                // Snake-case contract with explicit keys; the decoder stamps today's fetch date.
+                return try JSONDecoder().decode(DailyCoaching.self, from: data)
             } catch {
                 lastError = error
                 if attempt == 0 {
@@ -327,6 +359,60 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             }
         }
         throw lastError ?? URLError(.unknown)
+    }
+
+    // MARK: - Library and today's session (what the coach may pick from)
+
+    /// Up to 40 library drills, most recently used first, with the ids the model must echo back.
+    nonisolated static func libraryPayload(for player: Player, now: Date = Date(), calendar: Calendar = .current) -> [[String: Any]] {
+        let exercises = ((player.exercises as? Set<Exercise>) ?? []).filter { $0.id != nil }
+        let ordered = exercises.sorted { lhs, rhs in
+            switch (lhs.lastUsedAt, rhs.lastUsedAt) {
+            case let (l?, r?): return l > r
+            case (nil, _?): return false
+            case (_?, nil): return true
+            default: return (lhs.name ?? "") < (rhs.name ?? "")
+            }
+        }
+        return ordered.prefix(40).map { exercise in
+            var dict: [String: Any] = [
+                "id": exercise.id!.uuidString,
+                "name": exercise.name ?? "Drill",
+                "category": exercise.category ?? "Technical",
+                "difficulty": Int(exercise.difficulty),
+                "minutes": exercise.estimatedDurationSeconds > 0 ? Int(exercise.estimatedDurationSeconds) / 60 : 15,
+                "skills": Array((exercise.targetSkills ?? []).prefix(4)),
+                "source": exercise.drillSource.rawValue
+            ]
+            if let used = exercise.lastUsedAt {
+                dict["last_used_days_ago"] = calendar.dateComponents([.day], from: calendar.startOfDay(for: used), to: calendar.startOfDay(for: now)).day ?? 0
+            }
+            return dict
+        }
+    }
+
+    /// Today's plan session as the model sees it (drills with ids), or nil without a plan.
+    static func todayPayload(for player: Player, now: Date = Date(), calendar: Calendar = .current) -> [String: Any]? {
+        guard let plan = TrainingPlanService.shared.fetchActivePlan(for: player) else { return nil }
+        switch PlanSchedule.today(in: plan, startDate: PlanSchedule.startDate(of: plan), now: now, calendar: calendar) {
+        case .rest, .complete:
+            return ["is_rest": true]
+        case .session(let week, let dayNumber, _, _):
+            guard let weekModel = plan.weeks.first(where: { $0.weekNumber == week }),
+                  let day = weekModel.days.first(where: { $0.dayNumber == dayNumber }) else { return ["is_rest": true] }
+            let session = day.sessions.sorted { $0.orderIndex < $1.orderIndex }.first { !$0.isCompleted } ?? day.sessions.first
+            let ids = Set(session?.exerciseIDs ?? [])
+            let drills = ((player.exercises as? Set<Exercise>) ?? [])
+                .filter { $0.id.map(ids.contains) ?? false }
+                .map { ["id": $0.id!.uuidString, "name": $0.name ?? "Drill"] }
+            return [
+                "is_rest": false,
+                "session_type": session?.sessionType.displayName ?? "Training",
+                "minutes": session?.duration ?? day.totalDuration,
+                "week": week,
+                "drills": drills
+            ]
+        }
     }
 
     // MARK: - Player Context Builder
