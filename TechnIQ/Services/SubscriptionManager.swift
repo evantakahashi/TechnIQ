@@ -154,6 +154,22 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
 
     var freeDrillsRemaining: Int { freeDrills.remaining }
 
+    /// Before the tap: nil when the tap is free, else "2 free left" / "Pro".
+    var drillGateLabel: String? { ProGates.drillGateLabel(isPro: isPro, freeDrillsRemaining: freeDrillsRemaining) }
+
+    /// AI plans: the first (onboarding or generator) is free.
+    func canGeneratePlan(for player: Player) -> Bool {
+        ProGates.canGeneratePlan(isPro: isPro, existingAIPlans: Self.aiPlanCount(for: player))
+    }
+
+    func planGateLabel(for player: Player) -> String? {
+        ProGates.planGateLabel(isPro: isPro, existingAIPlans: Self.aiPlanCount(for: player))
+    }
+
+    private static func aiPlanCount(for player: Player) -> Int {
+        ((player.trainingPlans as? Set<TrainingPlan>) ?? []).filter { !$0.isPrebuilt }.count
+    }
+
     var freeDrillsLabel: String { freeDrills.label }
 
     func canGenerateDrill() -> Bool {

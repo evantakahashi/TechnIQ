@@ -100,7 +100,8 @@ struct ExerciseLibraryView: View {
             NewDrillSheet(
                 onAI: { showingNewDrillMenu = false; openAIGenerator() },
                 onManual: { showingNewDrillMenu = false; showingManualDrillCreator = true },
-                onVideo: { showingNewDrillMenu = false; loadYouTubeContent() }
+                onVideo: { showingNewDrillMenu = false; loadYouTubeContent() },
+                aiLabel: subscriptionManager.drillGateLabel
             )
             .presentationDetents([.height(300)])
             .presentationDragIndicator(.hidden)
@@ -376,6 +377,8 @@ struct NewDrillSheet: View {
     let onAI: () -> Void
     let onManual: () -> Void
     let onVideo: () -> Void
+    /// "2 free left" / "Pro" before the tap; nil for Pro players.
+    var aiLabel: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
@@ -386,6 +389,7 @@ struct NewDrillSheet: View {
                     "Generate with \(CoachIdentity.name())",
                     subtitle: "Describe what to fix · 20 s",
                     leading: .tile(TQTile("AI", style: .ai)),
+                    badge: aiLabel.map { TQBadge(.text($0)) },
                     verticalPadding: DesignSystem.Spacing.rowVertical,
                     action: onAI
                 )

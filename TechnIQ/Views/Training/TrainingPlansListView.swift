@@ -86,9 +86,10 @@ struct TrainingPlansListView: View {
             NewPlanSheet(
                 onAI: {
                     showingNewPlanMenu = false
-                    if subscriptionManager.isPro { showingAIGenerator = true } else { showingPaywall = true }
+                    if let player = players.first, subscriptionManager.canGeneratePlan(for: player) { showingAIGenerator = true } else { showingPaywall = true }
                 },
-                onCustom: { showingNewPlanMenu = false; showingCustomBuilder = true }
+                onCustom: { showingNewPlanMenu = false; showingCustomBuilder = true },
+                aiLabel: players.first.flatMap { subscriptionManager.planGateLabel(for: $0) }
             )
             .presentationDetents([.height(240)])
             .presentationDragIndicator(.hidden)
@@ -188,6 +189,8 @@ struct TrainingPlansListView: View {
 struct NewPlanSheet: View {
     let onAI: () -> Void
     let onCustom: () -> Void
+    /// "First one free" / "Pro" before the tap; nil for Pro players.
+    var aiLabel: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
@@ -196,8 +199,9 @@ struct NewPlanSheet: View {
             TQRowList {
                 TQRow(
                     "Build it with \(CoachIdentity.name())",
-                    subtitle: "Position, weak spots, schedule · Pro",
+                    subtitle: "Position, weak spots, schedule",
                     leading: .tile(TQTile("AI", style: .ai)),
+                    badge: aiLabel.map { TQBadge(.text($0)) },
                     verticalPadding: DesignSystem.Spacing.rowVertical,
                     action: onAI
                 )

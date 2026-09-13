@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2EC1B0EBD3449890BF66A7A8 /* ProGatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */; };
+		353548E8AAEF5F2938EBFA7A /* ProGates.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5867845374DA82A184F5D1 /* ProGates.swift */; };
 		C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804B18528216721B69177A23 /* CoachTests.swift */; };
 		F96E2B06284F47CEC02E5AAD /* CoachNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */; };
 		3AE3C1A470994AC877B03118 /* WeeklyReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */; };
@@ -129,7 +131,6 @@
 		AB1234567890ABCD12340008 /* MatchHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340018 /* MatchHistoryView.swift */; };
 		AB1234567890ABCD12340009 /* SeasonManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890ABCD12340019 /* SeasonManagementView.swift */; };
 		AF80E380774AEB62A33122F3 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08B8B634101079B3C2823BD /* AppLogger.swift */; };
-		B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */; };
 		B27D510330BD10FBFB2A3278 /* WeaknessAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BBAE7C46723F74FE43F105 /* WeaknessAnalysisService.swift */; };
 		5F884C06C6E74364A1A2FEB0 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B395E80411D6420B8D990AC7 /* NotificationManager.swift */; };
 		B9E40B1CD6CD65CAD6E52C01 /* OwnedAvatarItem+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */; };
@@ -255,6 +256,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGatesTests.swift; sourceTree = "<group>"; };
+		ED5867845374DA82A184F5D1 /* ProGates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGates.swift; sourceTree = "<group>"; };
 		804B18528216721B69177A23 /* CoachTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTests.swift; sourceTree = "<group>"; };
 		1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachNameView.swift; sourceTree = "<group>"; };
 		2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReviewView.swift; sourceTree = "<group>"; };
@@ -308,6 +311,7 @@
 		123429899A8D0DD376CF65C1 /* TQPitchMarkings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQPitchMarkings.swift; sourceTree = "<group>"; };
 		GDLN0000FILEREF00000001A /* CommunityGuidelinesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityGuidelinesSheet.swift; sourceTree = "<group>"; };
 		DFSEC0001XCCONFIG0000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Secrets.xcconfig; path = Config/Secrets.xcconfig; sourceTree = "<group>"; };
+		DFSTOREKIT0000000000001 /* TechnIQ.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = TechnIQ.storekit; path = Config/TechnIQ.storekit; sourceTree = "<group>"; };
 		07FE3E9147AD4F0CFD63A186 /* SubscriptionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		09591F5BD921A84250BC934D /* AvatarCustomizationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarCustomizationView.swift; sourceTree = "<group>"; };
 		0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanGeneratorView.swift; sourceTree = "<group>"; };
@@ -389,7 +393,6 @@
 		B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedDrillDetailView.swift; sourceTree = "<group>"; };
 		BCFEF141B2128364546B9BC4 /* OwnedAvatarItem+CoreDataProperties.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "OwnedAvatarItem+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		C0D94F0335FDF068598A32FC /* PublicProfileView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PublicProfileView.swift; sourceTree = "<group>"; };
-		C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPaywallView.swift; sourceTree = "<group>"; };
 		C31C301512D7EBA8397649E2 /* AICoachModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AICoachModels.swift; sourceTree = "<group>"; };
 		C4CF39D90503597CBA6BE3E7 /* CommunityView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		C7B3DAEC18D917858DC31B68 /* AIRecommendationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AIRecommendationService.swift; sourceTree = "<group>"; };
@@ -633,6 +636,7 @@
 				C2301FED0997F0B9056B6F83 /* PlanSchedule.swift */,
 				B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */,
 				0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */,
+				ED5867845374DA82A184F5D1 /* ProGates.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -792,7 +796,6 @@
 		D5F734158CD9E7B39E3C6990 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
-				C2D3E4F5A6B7C8D9E0F1A2B3 /* OnboardingPaywallView.swift */,
 			);
 			name = Onboarding;
 			path = Onboarding;
@@ -820,6 +823,7 @@
 			isa = PBXGroup;
 			children = (
 				DFSEC0001XCCONFIG0000001 /* Secrets.xcconfig */,
+				DFSTOREKIT0000000000001 /* TechnIQ.storekit */,
 				DF1635FA2E133001001E8CF9 /* TechnIQ */,
 				DF16360B2E133003001E8CF9 /* TechnIQTests */,
 				DF1636152E133003001E8CF9 /* TechnIQUITests */,
@@ -889,6 +893,7 @@
 				F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */,
 				E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */,
 				804B18528216721B69177A23 /* CoachTests.swift */,
+				A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1247,7 +1252,6 @@
 				FBC9072A7F63E8B888B79150 /* WeaknessPickerView.swift in Sources */,
 				B27D510330BD10FBFB2A3278 /* WeaknessAnalysisService.swift in Sources */,
 				5F884C06C6E74364A1A2FEB0 /* NotificationManager.swift in Sources */,
-				B1C2D3E4F5A6B7C8D9E0F1A2 /* OnboardingPaywallView.swift in Sources */,
 				AF80E380774AEB62A33122F3 /* AppLogger.swift in Sources */,
 				8925E101D04C6B7E6E30EFFC /* YouTubeService.swift in Sources */,
 				4C102640228EE14C374F878D /* CoreDataFetchRequests.swift in Sources */,
@@ -1315,6 +1319,7 @@
 				86DFD01FC4F6A1C806C32203 /* WeekRecap.swift in Sources */,
 				3AE3C1A470994AC877B03118 /* WeeklyReviewView.swift in Sources */,
 				F96E2B06284F47CEC02E5AAD /* CoachNameView.swift in Sources */,
+				353548E8AAEF5F2938EBFA7A /* ProGates.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1343,6 +1348,7 @@
 				4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */,
 				565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */,
 				C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */,
+				2EC1B0EBD3449890BF66A7A8 /* ProGatesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

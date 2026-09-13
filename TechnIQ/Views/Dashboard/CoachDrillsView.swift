@@ -61,7 +61,7 @@ struct CoachDrillsView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear(perform: loadSuggestions)
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(feature: .quickDrill)
+            PaywallView(feature: .customDrill)
         }
         .sheet(isPresented: $showingQuickDrill) {
             CustomDrillGeneratorView(player: player, prefill: .init(weakness: selectedWeakness, difficulty: difficultyForPlayer())) { exercise in
