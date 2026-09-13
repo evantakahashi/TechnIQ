@@ -613,7 +613,7 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         }
     }
 
-    func shareDrill(exercise: Exercise, player: Player) async throws {
+    func shareDrill(exercise: Exercise, player: Player, message: String? = nil) async throws {
         let userID = try requireAuth()
         try assertCleanText(exercise.name ?? "", exercise.exerciseDescription ?? "")
         let authorName = Self.displayName(for: player.name)
@@ -628,11 +628,11 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
             "category": exercise.category ?? "technical",
             "difficulty": Int(exercise.difficulty),
             "targetSkills": exercise.targetSkills ?? [],
-            "duration": 15,
+            "duration": exercise.estimatedDurationSeconds > 0 ? max(1, Int(exercise.estimatedDurationSeconds) / 60) : 15,
             "equipment": [],
-            "steps": (exercise.instructions ?? "").components(separatedBy: "\n").filter { !$0.isEmpty },
-            "sets": 3,
-            "reps": 10,
+            "steps": Self.shareableSteps(from: exercise.instructions),
+            "sets": 0,
+            "reps": 0,
             "timestamp": FieldValue.serverTimestamp(),
             "saveCount": 0,
             "savedBy": [],
@@ -646,7 +646,9 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
             "authorName": authorName,
             "authorLevel": player.currentLevel,
             "authorPosition": player.position ?? "",
-            "content": "Shared a drill: \(exercise.name ?? "Untitled")",
+            "content": (message ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? "Shared a drill: \(exercise.name ?? "Untitled")"
+                : message!.trimmingCharacters(in: .whitespacesAndNewlines),
             "postType": CommunityPostType.sharedDrill.rawValue,
             "timestamp": FieldValue.serverTimestamp(),
             "likesCount": 0,
@@ -666,6 +668,16 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         try await batch.commit()
     }
 
+    /// Numbered steps as the receiving detail screen shows them: parsed drill steps when the
+    /// instructions follow the drill format, otherwise the non-empty lines.
+    nonisolated static func shareableSteps(from instructions: String?) -> [String] {
+        let parsed = DrillContent.parse(instructions).steps
+        if !parsed.isEmpty { return parsed }
+        return (instructions ?? "").components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
     func saveDrillToLibrary(drill: SharedDrill, player: Player, context: NSManagedObjectContext) async throws {
         let userID = try requireAuth()
 
@@ -682,7 +694,8 @@ class CommunityService: ObservableObject, CommunityServiceProtocol {
         let exercise = Exercise(context: context)
         exercise.id = UUID()
         exercise.name = drill.title
-        exercise.exerciseDescription = "[AI-Generated Custom Drill]\n\(drill.description)"
+        exercise.source = TrainDrill.Source.community.rawValue
+        exercise.exerciseDescription = drill.description
         exercise.category = drill.category
         exercise.difficulty = Int16(drill.difficulty)
         exercise.targetSkills = drill.targetSkills

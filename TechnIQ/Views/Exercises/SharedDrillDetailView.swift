@@ -100,7 +100,9 @@ struct SharedDrillDetailView: View {
                     ModernCard {
                         HStack(spacing: DesignSystem.Spacing.lg) {
                             detailItem(icon: "clock", value: "\(drill.duration) min", label: "Duration")
-                            detailItem(icon: "repeat", value: "\(drill.sets) × \(drill.reps)", label: "Sets × Reps")
+                            if drill.sets > 0 && drill.reps > 0 {
+                                detailItem(icon: "repeat", value: "\(drill.sets) × \(drill.reps)", label: "Sets × Reps")
+                            }
                         }
                     }
 

@@ -23,7 +23,7 @@ protocol CommunityServiceProtocol: AnyObject {
     func addComment(to postID: String, content: String, player: Player) async throws
     func reportPost(_ post: CommunityPost, reason: String) async throws
     func fetchSharedDrills(refresh: Bool, category: String?, difficulty: Int?) async
-    func shareDrill(exercise: Exercise, player: Player) async throws
+    func shareDrill(exercise: Exercise, player: Player, message: String?) async throws
     func saveDrillToLibrary(drill: SharedDrill, player: Player, context: NSManagedObjectContext) async throws
     func fetchLeaderboard(forceRefresh: Bool) async
     func fetchCurrentPlayerRank(playerXP: Int) async

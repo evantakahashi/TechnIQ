@@ -5,6 +5,8 @@ import SwiftUI
 struct ProgrammaticAvatarView: View {
     let avatarState: AvatarState
     let size: AvatarSize
+    /// The player's kit number on the jersey; nil draws a plain shirt.
+    let kitNumber: Int?
 
     enum AvatarSize {
         case small, medium, large, xlarge
@@ -21,9 +23,10 @@ struct ProgrammaticAvatarView: View {
         var height: CGFloat { dimension * 1.5 }
     }
 
-    init(avatarState: AvatarState, size: AvatarSize = .medium) {
+    init(avatarState: AvatarState, size: AvatarSize = .medium, kitNumber: Int? = nil) {
         self.avatarState = avatarState
         self.size = size
+        self.kitNumber = kitNumber
     }
 
     private var scale: CGFloat { size.dimension / 200 }
@@ -117,13 +120,15 @@ struct ProgrammaticAvatarView: View {
         context.stroke(collarPath, with: .color(collarColor), style: StrokeStyle(lineWidth: 3 * s, lineCap: .round, lineJoin: .round))
 
         // Jersey number (subtle)
-        let numberPosition = CGPoint(x: center.x, y: center.y + 28 * s)
-        context.draw(
-            Text("10")
-                .font(.system(size: 14 * s, weight: .bold))
-                .foregroundColor(collarColor.opacity(0.6)),
-            at: numberPosition
-        )
+        if let kitNumber {
+            let numberPosition = CGPoint(x: center.x, y: center.y + 28 * s)
+            context.draw(
+                Text("\(kitNumber)")
+                    .font(.system(size: 14 * s, weight: .bold))
+                    .foregroundColor(collarColor.opacity(0.6)),
+                at: numberPosition
+            )
+        }
 
         // Shorts
         var shortsPath = Path()

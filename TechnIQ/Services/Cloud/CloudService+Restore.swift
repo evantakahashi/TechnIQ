@@ -358,6 +358,8 @@ extension CloudService {
         exercise.isFavorite = data["isFavorite"] as? Bool ?? false
         exercise.personalNotes = data["personalNotes"] as? String
         exercise.diagramJSON = data["diagramJSON"] as? String
+        exercise.animationJSON = (data["animationJSON"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.source = (data["source"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         exercise.metabolicLoad = Self.int16Value(from: data["metabolicLoad"])
         exercise.technicalComplexity = Self.int16Value(from: data["technicalComplexity"])
         exercise.estimatedDurationSeconds = Self.int16Value(from: data["estimatedDurationSeconds"])

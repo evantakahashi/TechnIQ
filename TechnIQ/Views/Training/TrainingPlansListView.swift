@@ -157,7 +157,8 @@ struct TrainingPlansListView: View {
             return plan.isCompleted ? "Plan complete" : "Next: pick up where you left off"
         }
         let what = exerciseName ?? (day.sessions.first.map { "\($0.sessionType.displayName) session" } ?? "Training")
-        let when = day.dayOfWeek?.shortName ?? "Day \(day.dayNumber)"
+        // Plan days are ordinal until Phase 2 binds them to dates; a weekday here would be a promise.
+        let when = "Wk \(weekDay.week) day \(day.dayNumber)"
         return "Next: \(what) · \(when)"
     }
 

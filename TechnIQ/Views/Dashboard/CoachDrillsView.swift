@@ -103,7 +103,7 @@ struct CoachDrillsView: View {
 
     private func generate(_ suggestion: DrillSuggestion) {
         selectedWeakness = suggestion.weakness
-        if subscriptionManager.canUseQuickDrill() {
+        if subscriptionManager.canGenerateDrill() {
             showingQuickDrill = true
         } else {
             showingPaywall = true

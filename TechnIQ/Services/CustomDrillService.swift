@@ -287,6 +287,7 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         exercise.name = response.name
         exercise.category = response.category.capitalized
         exercise.difficulty = Int16(originalRequest.difficulty.numericValue)
+        exercise.source = TrainDrill.Source.ai.rawValue
         exercise.exerciseDescription = "[AI-Generated Custom Drill]\n\n" + response.description
         exercise.targetSkills = response.targetSkills
         exercise.setValue(player, forKey: "player")

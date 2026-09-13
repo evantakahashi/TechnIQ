@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @State private var restoreMessage: String?
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authManager: AuthenticationManager
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
@@ -65,11 +66,19 @@ struct SettingsView: View {
                     }
 
                     Button {
-                        Task { await subscriptionManager.restorePurchases() }
+                        Task {
+                            await subscriptionManager.restorePurchases()
+                            restoreMessage = subscriptionManager.isPro ? "Your subscription is active." : (subscriptionManager.errorMessage ?? "No active subscription found.")
+                        }
                     } label: {
                         Text("Restore Purchases")
                     }
                     .disabled(subscriptionManager.isLoading)
+                    .alert("Restore Purchases", isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } })) {
+                        Button("OK", role: .cancel) { restoreMessage = nil }
+                    } message: {
+                        Text(restoreMessage ?? "")
+                    }
                 } header: {
                     Text("Subscription")
                 }

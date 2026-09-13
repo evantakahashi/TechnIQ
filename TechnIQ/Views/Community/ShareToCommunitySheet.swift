@@ -237,7 +237,7 @@ struct ShareToCommunitySheet: View {
         Task {
             do {
                 if case .drill(let exercise) = shareType {
-                    try await communityService.shareDrill(exercise: exercise, player: player)
+                    try await communityService.shareDrill(exercise: exercise, player: player, message: content)
                 } else {
                     try await communityService.createRichPost(
                         content: content,

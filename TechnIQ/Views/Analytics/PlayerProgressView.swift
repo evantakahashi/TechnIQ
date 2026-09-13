@@ -576,12 +576,12 @@ struct PlayerProgressView: View {
             let improvement = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0
 
             // Calculate streaks
-            let streaks = calculateStreaks(sessions: sessions)
+            let streaks = storedStreaks
 
             // Calculate sessions per week
             let validSessions = sessions.filter { $0.date != nil }
             guard let firstDate = validSessions.first?.date, let lastDate = validSessions.last?.date else {
-                let streaks = calculateStreaks(sessions: sessions)
+                let streaks = storedStreaks
                 let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
                 return OverallStats(
                     totalSessions: totalSessions,
@@ -617,7 +617,7 @@ struct PlayerProgressView: View {
             )
         }
 
-        let streaks = calculateStreaks(sessions: sessions)
+        let streaks = storedStreaks
         let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
 
         return OverallStats(
@@ -634,53 +634,9 @@ struct PlayerProgressView: View {
         )
     }
 
-    private func calculateStreaks(sessions: [TrainingSession]) -> (current: Int, longest: Int) {
-        guard !sessions.isEmpty else { return (0, 0) }
-
-        let calendar = Calendar.current
-        let dates = sessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) }.sorted()
-
-        var currentStreak = 1
-        var longestStreak = 1
-        var tempStreak = 1
-
-        let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-
-        // Check if current streak is active
-        if let lastDate = dates.last {
-            if lastDate == today || lastDate == yesterday {
-                currentStreak = 1
-
-                for i in (0..<dates.count - 1).reversed() {
-                    let current = dates[i]
-                    let next = dates[i + 1]
-
-                    if let dayDiff = calendar.dateComponents([.day], from: current, to: next).day, dayDiff == 1 {
-                        currentStreak += 1
-                    } else {
-                        break
-                    }
-                }
-            } else {
-                currentStreak = 0
-            }
-        }
-
-        // Calculate longest streak
-        for i in 0..<dates.count - 1 {
-            let current = dates[i]
-            let next = dates[i + 1]
-
-            if let dayDiff = calendar.dateComponents([.day], from: current, to: next).day, dayDiff == 1 {
-                tempStreak += 1
-                longestStreak = max(longestStreak, tempStreak)
-            } else {
-                tempStreak = 1
-            }
-        }
-
-        return (currentStreak, longestStreak)
+    /// The one streak the app shows everywhere: XPService maintains it on the player.
+    private var storedStreaks: (current: Int, longest: Int) {
+        (Int(player.currentStreak), Int(player.longestStreak))
     }
 
     private func calculateCategoryBreakdown(sessions: [TrainingSession]) -> (technical: Double, physical: Double, tactical: Double) {
