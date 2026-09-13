@@ -145,4 +145,65 @@ final class PlanEditingTests: XCTestCase {
         XCTAssertFalse(coach.weeklyCheckInAvailable, "week 2 has not ended yet")
         UserDefaults.standard.removeObject(forKey: "weeklyReview.reviewed.\(plan.id!.uuidString)")
     }
+
+    // MARK: - Training profile → plan re-bind
+
+    private func trainingWeekdays(_ plan: TrainingPlanModel, week: Int) -> [DayOfWeek] {
+        plan.weeks.first { $0.weekNumber == week }!.days.filter { !$0.isRestDay }.sorted { $0.dayNumber < $1.dayNumber }.compactMap { $0.dayOfWeek }
+    }
+
+    func test_rebindTrainingDays_movesFutureWeeksAndLeavesTheCurrentOne() {
+        var plan = makePlan(weeks: 3, days: [.monday, .thursday])
+        XCTAssertTrue(service.rebindTrainingDays(planId: plan.id, to: [.saturday, .tuesday]))
+        plan = reload(plan)
+        XCTAssertEqual(trainingWeekdays(plan, week: 1), [.monday, .thursday], "the week in progress keeps its days")
+        XCTAssertEqual(trainingWeekdays(plan, week: 2), [.tuesday, .saturday])
+        XCTAssertEqual(trainingWeekdays(plan, week: 3), [.tuesday, .saturday])
+        for week in plan.weeks where week.weekNumber > 1 {
+            XCTAssertEqual(week.days.flatMap(\.sessions).count, 2, "sessions move, none are lost or duplicated")
+            XCTAssertTrue(week.days.filter { $0.isRestDay }.allSatisfy { $0.sessions.isEmpty })
+        }
+    }
+
+    func test_rebindTrainingDays_fewerDaysStackSessions_moreDaysCopyTheLast() {
+        var plan = makePlan(weeks: 2, days: [.monday, .thursday])
+        XCTAssertTrue(service.rebindTrainingDays(planId: plan.id, to: [.wednesday]))
+        plan = reload(plan)
+        let wednesday = plan.weeks.first { $0.weekNumber == 2 }!.days.first { $0.dayOfWeek == .wednesday }!
+        XCTAssertFalse(wednesday.isRestDay)
+        XCTAssertEqual(wednesday.sessions.count, 2, "two sessions land on the one training day")
+        XCTAssertEqual(wednesday.sessions.map(\.orderIndex).sorted(), [0, 1])
+
+        XCTAssertTrue(service.rebindTrainingDays(planId: plan.id, to: [.monday, .wednesday, .friday]))
+        plan = reload(plan)
+        XCTAssertEqual(trainingWeekdays(plan, week: 2), [.monday, .wednesday, .friday])
+        let week2 = plan.weeks.first { $0.weekNumber == 2 }!
+        XCTAssertEqual(week2.days.flatMap(\.sessions).count, 3, "the third day gets a copy of the last session")
+        XCTAssertTrue(week2.days.filter { !$0.isRestDay }.allSatisfy { $0.sessions.count == 1 })
+    }
+
+    func test_rebindTrainingDays_isANoOpWithoutFutureWeeksOrDays() {
+        let plan = makePlan(weeks: 1)
+        XCTAssertFalse(service.rebindTrainingDays(planId: plan.id, to: [.friday]))
+        XCTAssertEqual(trainingWeekdays(reload(plan), week: 1), [.monday, .thursday])
+        XCTAssertFalse(service.rebindTrainingDays(planId: makePlan(weeks: 2).id, to: []))
+    }
+
+    func test_trainingDayList_roundTripsSortedAndFallsBackToTheDefault() throws {
+        let profile = PlayerProfile(context: context)
+        profile.id = UUID()
+        profile.player = player
+        XCTAssertEqual(profile.trainingDayList, [.monday, .wednesday, .friday], "unset means the onboarding default")
+
+        profile.trainingDayList = [.saturday, .tuesday, .saturday]
+        XCTAssertEqual(profile.trainingDays, "Tuesday,Saturday")
+        XCTAssertEqual(profile.trainingDayList, [.tuesday, .saturday])
+
+        profile.trainingDays = "Friday, Monday,notaday"
+        XCTAssertEqual(profile.trainingDayList, [.monday, .friday], "unknown names are ignored")
+
+        profile.trainingDayList = []
+        XCTAssertNil(profile.trainingDays)
+        context.delete(profile)
+    }
 }

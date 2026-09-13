@@ -15,6 +15,10 @@ extension PlayerProfile {
     @NSManaged public var preferredSessionDuration: Int16
     @NSManaged public var preferredDrillComplexity: String?
     @NSManaged public var trainingBackground: String?
+    // Training profile (editable after onboarding): the goal chosen and the weekdays the player trains,
+    // comma-separated DayOfWeek raw values.
+    @NSManaged public var trainingGoal: String?
+    @NSManaged public var trainingDays: String?
     @NSManaged public var yearsPlaying: Int16
     @NSManaged public var createdAt: Date?
     @NSManaged public var updatedAt: Date?

@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		66F2C187FAD617B8D4CC8CE6 /* SessionResumeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */; };
+		35AAC69F91A3BF11FDC1A3B9 /* PlayerRecordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */; };
+		BF4020CE9201BEDDD6A1C3E9 /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE908BF5789ED39B34D5356 /* RecordsView.swift */; };
+		19C2529295603B4FABE087A2 /* PlayerRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F4E22C88ED6976458912A4 /* PlayerRecords.swift */; };
+		005873C98311C6D216D3DFE3 /* SessionPreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6BD28C8462C7CAC8081AC3 /* SessionPreviewSheet.swift */; };
+		29FFAA067D6D523A0297F430 /* TrainingProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F17553E013AD8B583F75FEA /* TrainingProfileView.swift */; };
+		96694704ACC0806D7DDE653D /* ActiveSessionManager+Resume.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */; };
 		2EC1B0EBD3449890BF66A7A8 /* ProGatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */; };
 		353548E8AAEF5F2938EBFA7A /* ProGates.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5867845374DA82A184F5D1 /* ProGates.swift */; };
 		C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 804B18528216721B69177A23 /* CoachTests.swift */; };
@@ -256,6 +263,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResumeTests.swift; sourceTree = "<group>"; };
+		04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRecordsTests.swift; sourceTree = "<group>"; };
+		BAE908BF5789ED39B34D5356 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
+		99F4E22C88ED6976458912A4 /* PlayerRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRecords.swift; sourceTree = "<group>"; };
+		7C6BD28C8462C7CAC8081AC3 /* SessionPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPreviewSheet.swift; sourceTree = "<group>"; };
+		8F17553E013AD8B583F75FEA /* TrainingProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingProfileView.swift; sourceTree = "<group>"; };
+		B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActiveSessionManager+Resume.swift"; sourceTree = "<group>"; };
 		A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGatesTests.swift; sourceTree = "<group>"; };
 		ED5867845374DA82A184F5D1 /* ProGates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGates.swift; sourceTree = "<group>"; };
 		804B18528216721B69177A23 /* CoachTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTests.swift; sourceTree = "<group>"; };
@@ -564,6 +578,7 @@
 				E3CA20E5627CAAD14F4673F5 /* SessionDrillPickerView.swift */,
 				92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */,
 				2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */,
+				7C6BD28C8462C7CAC8081AC3 /* SessionPreviewSheet.swift */,
 			);
 			name = Training;
 			path = Training;
@@ -637,6 +652,7 @@
 				B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */,
 				0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */,
 				ED5867845374DA82A184F5D1 /* ProGates.swift */,
+				99F4E22C88ED6976458912A4 /* PlayerRecords.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -685,6 +701,7 @@
 				C7B3DAEC18D917858DC31B68 /* AIRecommendationService.swift */,
 				AA3B619E508C8D3AA87F169A /* ServiceError.swift */,
 				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
+				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -772,6 +789,7 @@
 				583400EE0778DD7E8FE7F9FE /* CalendarHeatMapView.swift */,
 				FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */,
 				0AB3DE834286D73E6899C750 /* WeaknessPickerView.swift */,
+				BAE908BF5789ED39B34D5356 /* RecordsView.swift */,
 			);
 			name = Analytics;
 			path = Analytics;
@@ -894,6 +912,8 @@
 				E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */,
 				804B18528216721B69177A23 /* CoachTests.swift */,
 				A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */,
+				04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */,
+				EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -919,6 +939,7 @@
 				7D4A98FAC2B67DC5BC336B5B /* PaywallView.swift */,
 				76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */,
 				1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */,
+				8F17553E013AD8B583F75FEA /* TrainingProfileView.swift */,
 			);
 			name = Settings;
 			path = Settings;
@@ -1320,6 +1341,11 @@
 				3AE3C1A470994AC877B03118 /* WeeklyReviewView.swift in Sources */,
 				F96E2B06284F47CEC02E5AAD /* CoachNameView.swift in Sources */,
 				353548E8AAEF5F2938EBFA7A /* ProGates.swift in Sources */,
+				96694704ACC0806D7DDE653D /* ActiveSessionManager+Resume.swift in Sources */,
+				29FFAA067D6D523A0297F430 /* TrainingProfileView.swift in Sources */,
+				005873C98311C6D216D3DFE3 /* SessionPreviewSheet.swift in Sources */,
+				19C2529295603B4FABE087A2 /* PlayerRecords.swift in Sources */,
+				BF4020CE9201BEDDD6A1C3E9 /* RecordsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1349,6 +1375,8 @@
 				565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */,
 				C4CC79B62B4119344F1FEC41 /* CoachTests.swift in Sources */,
 				2EC1B0EBD3449890BF66A7A8 /* ProGatesTests.swift in Sources */,
+				35AAC69F91A3BF11FDC1A3B9 /* PlayerRecordsTests.swift in Sources */,
+				66F2C187FAD617B8D4CC8CE6 /* SessionResumeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

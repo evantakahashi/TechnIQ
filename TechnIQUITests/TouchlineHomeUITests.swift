@@ -65,6 +65,12 @@ final class TouchlineHomeUITests: XCTestCase {
         settle(0.8)
     }
 
+    /// A multi-drill session shows a preview sheet first; start from it when it appears.
+    private func passPreviewIfShown() {
+        let start = app.buttons["preview.start"]
+        if start.waitForExistence(timeout: 3) { start.tap() }
+    }
+
     private func dismissSheet() {
         let cancel = app.buttons["Cancel"]
         if cancel.waitForExistence(timeout: 2), cancel.isHittable {
@@ -135,6 +141,14 @@ final class TouchlineHomeUITests: XCTestCase {
         goBack()
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after coach drills")
 
+        // Next session row → plan detail → back
+        let nextRow = app.buttons["home.nextSession"]
+        XCTAssertTrue(nextRow.waitForExistence(timeout: 5), "next session row")
+        XCTAssertTrue(tapWhenHittable(nextRow), "next session row hittable")
+        XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan opened from next session")
+        goBack()
+        XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after next session")
+
         // Tab bar round trip
         let trainTab = app.buttons["Train"]
         XCTAssertTrue(trainTab.waitForExistence(timeout: 5), "Train tab")
@@ -146,6 +160,7 @@ final class TouchlineHomeUITests: XCTestCase {
 
         // Start session → active training → end early → Home
         XCTAssertTrue(tapWhenHittable(start), "start button hittable")
+        passPreviewIfShown()
         let endSession = app.buttons["End session"]
         XCTAssertTrue(endSession.waitForExistence(timeout: 10), "active training opened")
         shot("active-training")
@@ -173,6 +188,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 40), "Home hero")
         dismissCoachMarkIfPresent()
         XCTAssertTrue(tapWhenHittable(start), "start hittable")
+        passPreviewIfShown()
 
         let plusReps = app.buttons["+ 10 reps"]
         XCTAssertTrue(plusReps.waitForExistence(timeout: 15), "active session opened with the reps button")
@@ -217,6 +233,50 @@ final class TouchlineHomeUITests: XCTestCase {
         let backHome = start.waitForExistence(timeout: 15) || app.buttons["Train anyway"].waitForExistence(timeout: 5)
         XCTAssertTrue(backHome, "back on Home")
         shot("home-after-full-session")
+    }
+
+    // MARK: - Interrupted session → Home "Session in progress" → continue (6a)
+
+    func test_interruptedSession_resumesFromHomeAfterRelaunch() throws {
+        launch([])
+        let start = app.buttons["Start session"]
+        XCTAssertTrue(start.waitForExistence(timeout: 40), "Home hero")
+        dismissCoachMarkIfPresent()
+        XCTAssertTrue(tapWhenHittable(start), "start hittable")
+        passPreviewIfShown()
+
+        let plusReps = app.buttons["+ 10 reps"]
+        XCTAssertTrue(plusReps.waitForExistence(timeout: 15), "active session opened")
+        plusReps.tap()
+        XCTAssertTrue(app.staticTexts["10"].waitForExistence(timeout: 3), "reps counted")
+        let pause = app.buttons["Pause"]
+        if pause.waitForExistence(timeout: 3) { pause.tap() }
+        settle(1)
+
+        // A phone call: the app dies mid-session.
+        app.terminate()
+        launch([])
+        let resume = app.buttons["home.resumeSession"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 40), "Home offers the interrupted session")
+        XCTAssertTrue(text(containing: "Session in progress").exists, "resume strip eyebrow")
+        dismissCoachMarkIfPresent()
+        shot("home-resume-strip")
+
+        XCTAssertTrue(tapWhenHittable(resume), "resume strip hittable")
+        XCTAssertTrue(app.buttons["End session"].waitForExistence(timeout: 15), "back on the pitch")
+        XCTAssertTrue(app.staticTexts["10"].waitForExistence(timeout: 5), "reps survived the relaunch")
+        XCTAssertTrue(text(containing: "Drill 1 of").exists, "same drill")
+        shot("session-resumed")
+
+        // Ending it clears the snapshot: Home no longer offers it.
+        app.buttons["End session"].tap()
+        let confirm = app.alerts.buttons["End Session"]
+        if confirm.waitForExistence(timeout: 4) { confirm.tap() }
+        let done = app.buttons["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 15), "nothing-saved card")
+        done.tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 15), "back on Home")
+        XCTAssertFalse(resume.waitForExistence(timeout: 2), "resume strip gone after ending")
     }
 
     // MARK: - First-run Home (9b)

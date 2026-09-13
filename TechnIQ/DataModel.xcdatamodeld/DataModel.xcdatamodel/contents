@@ -129,6 +129,8 @@
         <attribute name="preferredSessionDuration" optional="YES" attributeType="Integer 16" defaultValueString="60" usesScalarValueType="YES"/>
         <attribute name="preferredDrillComplexity" optional="YES" attributeType="String"/>
         <attribute name="trainingBackground" optional="YES" attributeType="String"/>
+        <attribute name="trainingGoal" optional="YES" attributeType="String"/>
+        <attribute name="trainingDays" optional="YES" attributeType="String"/>
         <attribute name="yearsPlaying" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

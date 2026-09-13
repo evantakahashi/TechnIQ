@@ -429,6 +429,8 @@ extension CloudService {
             "preferredDrillComplexity": profile.preferredDrillComplexity ?? "",
             "yearsPlaying": profile.yearsPlaying,
             "trainingBackground": profile.trainingBackground ?? "",
+            "trainingGoal": profile.trainingGoal ?? "",
+            "trainingDays": profile.trainingDays ?? "",
             "totalXP": player.totalXP,
             "currentLevel": player.currentLevel,
             "currentStreak": player.currentStreak,

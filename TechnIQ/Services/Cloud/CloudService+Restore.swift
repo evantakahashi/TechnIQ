@@ -177,6 +177,8 @@ extension CloudService {
         profile.preferredDrillComplexity = data["preferredDrillComplexity"] as? String
         profile.yearsPlaying = Self.int16Value(from: data["yearsPlaying"])
         profile.trainingBackground = data["trainingBackground"] as? String
+        profile.trainingGoal = (data["trainingGoal"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        profile.trainingDays = (data["trainingDays"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         profile.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         profile.updatedAt = Date()
         profile.player = player

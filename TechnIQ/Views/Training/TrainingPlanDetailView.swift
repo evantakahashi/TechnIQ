@@ -30,6 +30,7 @@ struct TrainingPlanDetailView: View {
     @State private var showingAllPlans = false
     @State private var showingConfirmDelete = false
     @State private var showingConfirmRemoveWeek = false
+    @State private var showingPreview = false
     @State private var skippedDayID: UUID?
     @State private var weekBanner: String?
     @State private var currentWeekDay: (week: Int, day: Int)?
@@ -104,6 +105,17 @@ struct TrainingPlanDetailView: View {
         }
         .sheet(isPresented: $showingEditor) {
             PlanEditorView(plan: plan, player: player) { refreshPlanData() }
+        }
+        .sheet(isPresented: $showingPreview) {
+            SessionPreviewSheet(
+                eyebrow: currentWeekDay.map { "Today · WK \($0.week) Day \($0.day)" } ?? "Today",
+                title: todaysExercises.first?.name ?? "Today's session",
+                exercises: todaysExercises
+            ) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: todaysSession)
+                }
+            }
         }
         .sheet(isPresented: $showingShareSheet) {
             SharePlanView(plan: plan)
@@ -329,6 +341,8 @@ struct TrainingPlanDetailView: View {
     private func startToday() {
         if todaysExercises.isEmpty {
             showingLogSession = true
+        } else if todaysExercises.count > 1 {
+            showingPreview = true
         } else {
             trainingLaunch = TrainingLaunch(exercises: todaysExercises, planSession: todaysSession)
         }

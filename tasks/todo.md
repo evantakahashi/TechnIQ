@@ -73,12 +73,13 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - `Models/ProGates.swift` is the free-tier contract (first AI plan free, 3 AI drills for life); `Config/TechnIQ.storekit` + scheme reference for local purchases
 - Tests: `ProGatesTests`, `test_freeTier_labelsGatesBeforeTheTap` (-TQFree) — 213 unit
 
-## Phase 6 — Retention additions — PR(s)
-- [ ] Resume session: persist `ActiveSessionManager` state, `scenePhase` handling, "Session in progress" card on Home
-- [ ] Training profile screen (goal, days/week, position, foot, weak spots) under You; plan re-binds on change
-- [ ] Pre-session preview (drills · minutes · equipment) + next-session peek on Home
+## Phase 6 — Retention additions — 6a PR (branch feat/audit-phase6a), 6b next
+- Tests (6a): `PlayerRecordsTests`, `SessionResumeTests`, `PlanEditingTests` (re-bind, `trainingDayList`); UI: resume after relaunch, Next session row, Records + Training profile in the You tour
+- [x] Resume session: `SessionSnapshot` (UserDefaults, 12 h) written on start/pause/reps/every 5 s; Home "Session in progress" strip continues it paused; ending/finishing clears it
+- [x] Training profile screen (goal, training days, position, foot, level, weak spots) under You; `PlayerProfile.trainingGoal/trainingDays` synced; changing days re-binds the active plan's future weeks (`rebindTrainingDays`) + reminders
+- [x] Pre-session preview sheet (drills in order · minutes · top level · set-up lines) before multi-drill sessions; "Next session" row on Home
 - [ ] Celebration pattern: level-up, achievement toast anywhere, plan complete summary
-- [ ] Records + week-over-week on You/Progress; "Improvement %" tile removed
+- [x] Records (`Models/PlayerRecords.swift`, `RecordsView`): this week vs last, longest session, best week, most drills in a day, longest streak; You "This week" row; Progress "This week" card replaces "Improvement %"
 - [ ] Drill detail: completions + last used, persistent rating, "Make it harder" opens the generator prefilled
 - [ ] Sync/offline banner on every tab, last synced under You
 - [ ] Share card (`ShareLink` image) for a session and a completed week; Help row; review request after 3rd session

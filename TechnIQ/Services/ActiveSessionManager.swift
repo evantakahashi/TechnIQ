@@ -142,9 +142,19 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         }
     }
 
+    /// Counters restored from a snapshot (see +Resume). The clock stays paused.
+    func restoreClock(reps: [Int], durations: [Int], elapsed: Int) {
+        let count = exercises.count
+        self.reps = Array(reps.prefix(count)) + Array(repeating: 0, count: max(0, count - reps.count))
+        self.exerciseDurations = Array(durations.prefix(count)) + Array(repeating: 0, count: max(0, count - durations.count))
+        self.elapsedSeconds = max(0, elapsed)
+        self.isRunning = false
+    }
+
     func startClock() {
         guard !isRunning, phase == .exercise else { return }
         isRunning = true
+        persistSnapshot()
         clockTimer?.invalidate()
         clockTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.tick() }
@@ -155,6 +165,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         isRunning = false
         clockTimer?.invalidate()
         clockTimer = nil
+        persistSnapshot()
     }
 
     func toggleClock() {
@@ -165,6 +176,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
     func tick() {
         guard isRunning, phase == .exercise else { return }
         elapsedSeconds += 1
+        if elapsedSeconds % 5 == 0 { persistSnapshot() }
         if isTimeUp {
             pauseClock()
             HapticManager.shared.exerciseComplete()
@@ -175,6 +187,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         guard currentExerciseIndex < reps.count else { return }
         reps[currentExerciseIndex] += count
         HapticManager.shared.lightTap()
+        persistSnapshot()
     }
 
     /// Touchline "next": completes the current drill with a provisional rating (the session-level
@@ -189,7 +202,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         rateExercise(provisionalRating, notes: "")
         nextExercise()
         elapsedSeconds = 0
-        if phase == .exercise { startClock() }
+        if phase == .exercise { startClock() } else { clearSnapshot() }
     }
 
     /// Applies the session-level "How did it feel?" answer to every completed drill and to the saved
@@ -256,6 +269,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
             exerciseDurations[currentExerciseIndex] = elapsedSeconds
         }
         phase = .sessionComplete
+        clearSnapshot()
         HapticManager.shared.sessionComplete()
     }
 
@@ -271,6 +285,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         player: Player,
         context: NSManagedObjectContext
     ) -> (xpBreakdown: SessionXPBreakdown?, newLevel: Int?, achievements: [Achievement]) {
+        clearSnapshot()
 
         let completedCount = exerciseRatings.filter { $0 > 0 }.count
         let isFullCompletion = completedCount == exercises.count
