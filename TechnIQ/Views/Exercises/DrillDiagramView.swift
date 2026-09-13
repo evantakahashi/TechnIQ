@@ -1,21 +1,5 @@
 import SwiftUI
 
-// MARK: - Backward-Compatible Wrapper
-
-/// Simple wrapper that preserves the old API for existing callers
-struct DrillDiagramView: View {
-    let diagram: DrillDiagram
-
-    var body: some View {
-        AnimatedDrillDiagramView(
-            diagram: diagram,
-            instructions: [],
-            currentStep: .constant(nil),
-            isAutoPlaying: .constant(false)
-        )
-    }
-}
-
 // MARK: - Animated Drill Diagram View
 
 struct AnimatedDrillDiagramView: View {

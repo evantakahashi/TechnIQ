@@ -153,7 +153,11 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingLogPlanSession, onDismiss: { loadPlan() }) {
             if let player = currentPlayer, let session = todaysSession {
-                NewSessionView(player: player, planSession: session)
+                SessionDrillPickerView(player: player, planSession: session) { exercises in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        trainingLaunch = TrainingLaunch(exercises: exercises, planSession: session)
+                    }
+                }
             }
         }
         .sheet(isPresented: $showingProfileCreation) {
@@ -161,14 +165,12 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {
-                QuickDrillSheet(player: player, onGenerated: { exercise in
-                    guard showingQuickDrill else { return }
-                    showingQuickDrill = false
+                CustomDrillGeneratorView(player: player, prefill: .init(weakness: quickDrillWeakness)) { exercise in
                     quickDrillWeakness = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         trainingLaunch = TrainingLaunch(exercises: [exercise])
                     }
-                }, prefilledWeakness: quickDrillWeakness)
+                }
             }
         }
         .fullScreenCover(item: $trainingLaunch, onDismiss: { loadPlan() }) { launch in

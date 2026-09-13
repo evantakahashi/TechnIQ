@@ -33,8 +33,6 @@ struct SessionHistoryView: View {
     @State private var selectedSession: TrainingSession?
     @State private var showingSessionDetail = false
     @State private var viewMode: SessionViewMode = .list
-    @State private var activePlan: TrainingPlanModel?
-    @State private var showingTodaysTraining = false
     
     init() {
         // Predicates are derived from the signed-in user here (not only in onAppear): SwiftUI
@@ -58,13 +56,6 @@ struct SessionHistoryView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Today's Training Card (if active plan exists)
-                if let plan = activePlan {
-                    todaysTrainingCard(plan: plan)
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                        .padding(.top, DesignSystem.Spacing.md)
-                }
-
                 // View Mode Picker
                 viewModePickerSection
 
@@ -92,20 +83,13 @@ struct SessionHistoryView: View {
                 SessionDetailView(session: session)
             }
         }
-        .sheet(isPresented: $showingTodaysTraining) {
-            if let plan = activePlan, let player = players.first {
-                TodaysTrainingView(player: player, activePlan: plan)
-            }
-        }
         .onAppear {
             updateSessionsFilter()
             updatePlayersFilter()
-            loadActivePlan()
         }
         .onChange(of: authManager.userUID) {
             updateSessionsFilter()
             updatePlayersFilter()
-            loadActivePlan()
         }
     }
     
@@ -244,39 +228,6 @@ struct SessionHistoryView: View {
         return Double(totalIntensity) / Double(sessions.count)
     }
     
-    // MARK: - Today's Training Card
-
-    private func todaysTrainingCard(plan: TrainingPlanModel) -> some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-
-                    Text("Today's Training")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-
-                    Spacer()
-                }
-
-                Text(plan.name)
-                    .font(DesignSystem.Typography.titleMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                if let (week, day) = TrainingPlanService.peekCurrentWeekAndDay(in: plan) {
-                    Text("Week \(week), Day \(day)")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                ModernButton("View Today's Sessions", icon: "arrow.right.circle.fill", style: .primary) {
-                    showingTodaysTraining = true
-                }
-            }
-        }
-    }
-
     // MARK: - Helper Methods
 
     private func toggleViewMode() {
@@ -300,10 +251,6 @@ struct SessionHistoryView: View {
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
     }
 
-    private func loadActivePlan() {
-        guard let player = players.first else { return }
-        activePlan = TrainingPlanService.shared.fetchActivePlan(for: player)
-    }
 
     private func deleteSessions(offsets: IndexSet) {
         withAnimation {

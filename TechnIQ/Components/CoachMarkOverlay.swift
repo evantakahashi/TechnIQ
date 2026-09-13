@@ -36,7 +36,6 @@ extension CoachMarkInfo {
     static let train = CoachMarkInfo(id: "train", text: "Browse drills or generate a custom AI drill")
     static let plans = CoachMarkInfo(id: "plans", text: "Your AI plan lives here. Complete sessions to progress")
     static let progress = CoachMarkInfo(id: "progress", text: "Track your XP, streaks, and skill growth")
-    static let avatar = CoachMarkInfo(id: "avatar", text: "Earn coins from training to unlock gear")
 }
 
 // MARK: - CoachMarkModifier

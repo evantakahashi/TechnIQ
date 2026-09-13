@@ -108,9 +108,6 @@ struct UnifiedOnboardingView: View {
                 playerName = prefillName
                 UserDefaults.standard.removeObject(forKey: "onboarding_prefill_name")
             }
-            if playerName.isEmpty, authManager.currentUser?.isAnonymous == true {
-                playerName = "Player"
-            }
         }
         .onDisappear {
             generationTask?.cancel()

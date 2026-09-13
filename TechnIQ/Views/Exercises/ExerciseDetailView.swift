@@ -112,14 +112,9 @@ struct ExerciseDetailView: View {
             loadExistingFeedback()
         }
         .sheet(isPresented: $showingHarderPaywall) { PaywallView(feature: .customDrill) }
-        .sheet(isPresented: $showingHarderDrill) {
+        .sheet(isPresented: $showingHarderDrill, onDismiss: { onFavoriteChanged?() }) {
             if let player = exercise.player {
-                QuickDrillSheet(
-                    player: player,
-                    onGenerated: { _ in onFavoriteChanged?() },
-                    initialDescription: harderDrillPrompt,
-                    difficultyOverride: harderDifficulty
-                )
+                CustomDrillGeneratorView(player: player, prefill: .init(text: harderDrillPrompt, difficulty: harderDifficulty))
             }
         }
         .sheet(isPresented: $showingEditor) {

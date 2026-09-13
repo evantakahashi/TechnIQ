@@ -421,41 +421,6 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         }
     }
 
-    /// Session-row variant used by manual logging (NewSessionView): same recording
-    /// math as finishSession, sourced from persisted SessionExercise rows.
-    static func recordCompletedSession(_ session: TrainingSession, player: Player, context: NSManagedObjectContext) {
-        var counts: [String: Int] = [:]
-        var samples: [String: [Double]] = [:]
-        for sessionExercise in (session.exercises as? Set<SessionExercise>) ?? [] {
-            guard let exercise = sessionExercise.exercise else { continue }
-            var skills = exercise.targetSkills ?? []
-            if let raw = exercise.weaknessCategories, !raw.isEmpty {
-                let names = weaknessCategoryNames(from: raw)
-                names.forEach { counts[$0, default: 0] += 1 }
-                skills.append(contentsOf: names)
-            }
-            let rating = Int(sessionExercise.performanceRating)
-            guard rating > 0 else { continue }
-            let scaled = Double(rating) * 20.0
-            for skill in skills where !skill.isEmpty {
-                samples[skill, default: []].append(scaled)
-            }
-        }
-        if session.focusWeakness == nil {
-            session.focusWeakness = counts.max { $0.value < $1.value }?.key
-        }
-        guard !samples.isEmpty else { return }
-        let stats = Self.latestOrNewStats(for: player, context: context)
-        var ratings = stats.skillRatings ?? [:]
-        for (skill, values) in samples {
-            let sample = values.reduce(0, +) / Double(values.count)
-            ratings[skill] = ratings[skill].map { ($0 + sample) / 2.0 } ?? sample
-        }
-        stats.skillRatings = ratings
-        stats.date = Date()
-        stats.updatedAt = Date()
-    }
-
     // MARK: - Helpers
 
     func averageRating() -> Int {

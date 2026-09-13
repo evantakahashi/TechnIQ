@@ -310,52 +310,6 @@ extension Array {
     }
 }
 
-// MARK: - Modern Alert Component
-struct ModernAlert: View {
-    let title: String
-    let message: String
-    let primaryButtonTitle: String
-    let secondaryButtonTitle: String?
-    let primaryAction: () -> Void
-    let secondaryAction: (() -> Void)?
-
-    init(title: String, message: String, primaryButtonTitle: String, primaryAction: @escaping () -> Void, secondaryButtonTitle: String? = nil, secondaryAction: (() -> Void)? = nil) {
-        self.title = title
-        self.message = message
-        self.primaryButtonTitle = primaryButtonTitle
-        self.primaryAction = primaryAction
-        self.secondaryButtonTitle = secondaryButtonTitle
-        self.secondaryAction = secondaryAction
-    }
-
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            VStack(spacing: DesignSystem.Spacing.md) {
-                Text(title)
-                    .font(DesignSystem.Typography.headlineSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .multilineTextAlignment(.center)
-
-                Text(message)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                TQButton(primaryButtonTitle, action: primaryAction)
-
-                if let secondaryButtonTitle = secondaryButtonTitle {
-                    TQButton(secondaryButtonTitle, style: .ghost, action: secondaryAction ?? {})
-                }
-            }
-        }
-        .padding(DesignSystem.Spacing.xl)
-        .background(DesignSystem.Colors.surfaceRaised)
-        .cornerRadius(DesignSystem.CornerRadius.card)
-    }
-}
-
 // MARK: - Loading Spinner
 
 /// Deprecated: use TQSpinner. Grass ring, 24 pt.

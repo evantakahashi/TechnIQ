@@ -11,7 +11,6 @@ protocol AuthenticationManagerProtocol: AnyObject {
 
     func signIn(email: String, password: String) async
     func signUp(email: String, password: String) async
-    func signInAnonymously() async
     func signInWithGoogle() async
     func signOut()
     func deleteAccount() async throws
