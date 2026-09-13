@@ -37,6 +37,7 @@ struct DashboardView: View {
     // Plan + today's session
     @State private var activePlan: TrainingPlanModel?
     @State private var currentWeekDay: (week: Int, day: Int)?
+    @State private var todayState: PlanSchedule.Today?
     @State private var planIsComplete = false
     @State private var todaysSession: PlanSession?
     @State private var todaysExercises: [Exercise] = []
@@ -330,12 +331,43 @@ struct DashboardView: View {
         return "WK \(wd.week) · DAY \(wd.day)"
     }
 
+    /// "Today's session", or "Catch-up session" when the plan's last training day went by untrained.
+    private var sessionEyebrow: String {
+        if case .session(_, _, _, let overdue)? = todayState, overdue { return "Catch-up session" }
+        return "Today's session"
+    }
+
+    private var isRestDay: Bool {
+        if case .rest? = todayState { return true }
+        return false
+    }
+
+    private func restHero(session: PlanSession, player: Player) -> some View {
+        var next = "Next session soon"
+        if case .rest(let upcoming)? = todayState, let upcoming {
+            let name = todaysExercises.first?.name ?? (SessionType(rawValue: session.sessionType ?? "") ?? .technical).displayName + " session"
+            next = "Next: \(PlanSchedule.label(for: upcoming.date, now: Date(), calendar: Calendar.current)) · \(name)"
+        }
+        return TQHeroCard(
+            eyebrow: "Rest day",
+            trailingMeta: weekDayMeta,
+            title: "Recover today",
+            body: next + ". Rest is part of the plan; a light touch of the ball is fine.",
+            actionTitle: "Train anyway",
+            linkTitle: nil,
+            markings: .heroSimple,
+            action: { startPlanSession(session) }
+        )
+    }
+
     @ViewBuilder
     private func hero(player: Player) -> some View {
         if coachIsLoading {
             TQHeroCard(eyebrow: "Today's session", trailingMeta: weekDayMeta, title: "", actionTitle: "", state: .loading, markings: .heroSimple, action: {})
-        } else if coachEnabled, let coaching = aiCoachService.dailyCoaching {
+        } else if coachEnabled, let coaching = aiCoachService.dailyCoaching, !isRestDay {
             coachHero(coaching: coaching, player: player)
+        } else if let session = todaysSession, isRestDay {
+            restHero(session: session, player: player)
         } else if let session = todaysSession {
             planHero(session: session, player: player)
         } else if planIsComplete, let plan = activePlan {
@@ -380,7 +412,7 @@ struct DashboardView: View {
         if drill.difficulty > 0 { figures.append(("\(drill.difficulty)", "lvl")) }
         if let foot = weakFootLabel(for: player, skills: drill.targetSkills, focus: coaching.focusArea) { figures.append((foot, "foot")) }
         return TQHeroCard(
-            eyebrow: "Today's session",
+            eyebrow: sessionEyebrow,
             trailingMeta: weekDayMeta,
             title: drill.name,
             figures: figures,
@@ -414,7 +446,7 @@ struct DashboardView: View {
         }
 
         return TQHeroCard(
-            eyebrow: isOffline ? "Today's session · from plan" : "Today's session",
+            eyebrow: isOffline ? "\(sessionEyebrow) · from plan" : sessionEyebrow,
             trailingMeta: weekDayMeta,
             title: title,
             figures: figures,
@@ -446,18 +478,15 @@ struct DashboardView: View {
 
     private var week: HomeWeekModel.Week {
         let sessionDates = recentSessions.compactMap { $0.date }
-        var planWeek: HomeWeekModel.PlanWeek? = nil
-        if let plan = activePlan, let wd = currentWeekDay, let weekModel = plan.weeks.first(where: { $0.weekNumber == wd.week }) {
-            planWeek = HomeWeekModel.PlanWeek(days: weekModel.days.map { day in
-                HomeWeekModel.PlanDay(
-                    weekday: day.dayOfWeek.map { $0.sortOrder + 1 },
-                    isRest: day.isRestDay,
-                    isCompleted: day.isCompleted || day.isSkipped,
-                    sessionCount: day.sessions.count
-                )
-            })
+        let calendar = Calendar.current
+        var plannedDays: [HomeWeekModel.PlannedDay]? = nil
+        if let plan = activePlan {
+            let startDate = PlanSchedule.startDate(of: plan)
+            plannedDays = PlanSchedule.trainingDays(in: plan, startDate: startDate, calendar: calendar)
+                .filter { !$0.day.isSkipped }
+                .map { HomeWeekModel.PlannedDay(date: $0.date, sessionCount: $0.day.sessions.count, isDone: $0.day.isDone) }
         }
-        return HomeWeekModel.build(today: Date(), calendar: Calendar.current, sessionDates: sessionDates, plan: planWeek)
+        return HomeWeekModel.build(today: Date(), calendar: calendar, sessionDates: sessionDates, plannedDays: plannedDays)
     }
 
     private var weekSection: some View {
@@ -668,6 +697,8 @@ struct DashboardView: View {
             return
         }
         currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        todayState = PlanSchedule.today(in: plan, startDate: PlanSchedule.startDate(of: plan), now: Date(), calendar: Calendar.current)
+        NotificationManager.shared.refresh(for: player)
         // A plan with no schedule at all (empty prebuilt shell) is not "complete"; it just has nothing to start.
         planIsComplete = currentWeekDay == nil && plan.totalDays > 0
         let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)

@@ -31,6 +31,8 @@ struct TrainingPlanDetailView: View {
     @State private var showingConfirmDelete = false
     @State private var skippedDayID: UUID?
     @State private var currentWeekDay: (week: Int, day: Int)?
+    @State private var todayState: PlanSchedule.Today?
+    @State private var overdueDayIDs: Set<UUID> = []
     @State private var todaysExercises: [Exercise] = []
     @State private var todaysSession: PlanSession?
     @State private var showingConfirmStart = false
@@ -216,7 +218,7 @@ struct TrainingPlanDetailView: View {
                     state = .done
                 } else if isToday(day, in: week) {
                     state = .today
-                } else if day.isSkipped {
+                } else if day.isSkipped || overdueDayIDs.contains(day.id) {
                     state = .missed
                 } else {
                     state = .planned
@@ -236,12 +238,23 @@ struct TrainingPlanDetailView: View {
 
     @ViewBuilder
     private var pinnedCard: some View {
-        if plan.isActive, let current = currentWeekDay {
+        if plan.isActive, let current = currentWeekDay, case .rest(let next)? = todayState {
+            TQPitchCard(.pinned, markings: .pinned) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        TQEyebrow("Rest day · WK \(current.week)", size: 11)
+                        TQDisplayTitle(next.map { "Next: \(PlanSchedule.label(for: $0.date, now: Date(), calendar: Calendar.current))" } ?? "Next session soon", size: .strip)
+                            .lineLimit(2)
+                    }
+                    TQButton("Start anyway", icon: "play.fill", size: .compact, fullWidth: false) { startToday() }
+                }
+            }
+        } else if plan.isActive, let current = currentWeekDay {
             TQPitchCard(.pinned, markings: .pinned) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
-                            TQEyebrow("Today · WK \(current.week) Day \(current.day)", size: 11)
+                            TQEyebrow("\(isCatchUp ? "Catch-up" : "Today") · WK \(current.week) Day \(current.day)", size: 11)
                             TQDisplayTitle(todaysExercises.first?.name ?? "\(todaysSessionType) session", size: .strip)
                                 .lineLimit(2)
                         }
@@ -272,6 +285,11 @@ struct TrainingPlanDetailView: View {
                 }
             }
         }
+    }
+
+    private var isCatchUp: Bool {
+        if case .session(_, _, _, let overdue)? = todayState { return overdue }
+        return false
     }
 
     private var sessionsPerWeek: Int {
@@ -349,13 +367,21 @@ struct TrainingPlanDetailView: View {
         } else {
             isStored = false
         }
+        let calendar = Calendar.current
+        let startDate = PlanSchedule.startDate(of: plan)
+        let today = calendar.startOfDay(for: Date())
+        overdueDayIDs = Set(PlanSchedule.trainingDays(in: plan, startDate: startDate, calendar: calendar)
+            .filter { !$0.day.isDone && $0.date < today }
+            .map { $0.day.id })
         guard plan.isActive else {
             currentWeekDay = nil
+            todayState = nil
             todaysExercises = []
             todaysSession = nil
             return
         }
         currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
+        todayState = PlanSchedule.today(in: plan, startDate: startDate, now: Date(), calendar: calendar)
         let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
         todaysSession = sessions.first { !$0.isCompleted } ?? sessions.first
         todaysExercises = sessions.filter { !$0.isCompleted }

@@ -464,6 +464,10 @@ struct UnifiedOnboardingView: View {
                 await MainActor.run {
                     phaseTimer?.invalidate()
                     planGenerationComplete = true
+                    // The plan now has dates: ask once, then schedule the training-day reminders.
+                    NotificationManager.shared.requestPermissionIfNeeded {
+                        NotificationManager.shared.refresh(for: player)
+                    }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step = .paywall }
                     }

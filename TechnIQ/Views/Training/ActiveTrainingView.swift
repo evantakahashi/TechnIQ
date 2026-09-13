@@ -352,20 +352,14 @@ struct ActiveTrainingView: View {
     /// "That's 4 of 4 this week." from this week's sessions (including the one just saved) and the plan target.
     private func weekSummary(for player: Player) -> String? {
         let sessions = ((player.sessions as? Set<TrainingSession>) ?? []).compactMap { $0.date }
-        var planWeek: HomeWeekModel.PlanWeek? = nil
-        if let plan = TrainingPlanService.shared.fetchActivePlan(for: player),
-           let wd = TrainingPlanService.peekCurrentWeekAndDay(in: plan),
-           let week = plan.weeks.first(where: { $0.weekNumber == wd.week }) {
-            planWeek = HomeWeekModel.PlanWeek(days: week.days.map {
-                HomeWeekModel.PlanDay(
-                    weekday: $0.dayOfWeek.map { $0.sortOrder + 1 },
-                    isRest: $0.isRestDay,
-                    isCompleted: $0.isCompleted || $0.isSkipped,
-                    sessionCount: $0.sessions.count
-                )
-            })
+        let calendar = Calendar.current
+        var plannedDays: [HomeWeekModel.PlannedDay]? = nil
+        if let plan = TrainingPlanService.shared.fetchActivePlan(for: player) {
+            plannedDays = PlanSchedule.trainingDays(in: plan, startDate: PlanSchedule.startDate(of: plan), calendar: calendar)
+                .filter { !$0.day.isSkipped }
+                .map { HomeWeekModel.PlannedDay(date: $0.date, sessionCount: $0.day.sessions.count, isDone: $0.day.isDone) }
         }
-        let week = HomeWeekModel.build(today: Date(), calendar: Calendar.current, sessionDates: sessions, plan: planWeek)
+        let week = HomeWeekModel.build(today: Date(), calendar: calendar, sessionDates: sessions, plannedDays: plannedDays)
         guard let target = week.target else { return nil }
         return "That's \(week.done) of \(max(target, week.done)) this week."
     }
