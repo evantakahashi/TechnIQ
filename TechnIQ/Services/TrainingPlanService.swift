@@ -363,6 +363,12 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         }
     }
 
+    /// "Stop following": the plan keeps its progress and stays in My plans; nothing is active.
+    func deactivatePlan(_ planModel: TrainingPlanModel, for player: Player) {
+        deactivateAllPlans(for: player)
+        if activePlan?.id == planModel.id { activePlan = nil }
+    }
+
     func deactivateAllPlans(for player: Player) {
         let request: NSFetchRequest<TrainingPlan> = TrainingPlan.fetchRequest()
         request.predicate = NSPredicate(format: "player == %@ AND isActive == YES", player)
@@ -928,6 +934,32 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         } catch {
             #if DEBUG
             print("Failed to skip day: \(error)")
+            #endif
+        }
+    }
+
+    /// Undo for `skipDay`: reopens the day and any week or plan completion the skip triggered.
+    func unskipDay(dayId: UUID) {
+        let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", dayId as CVarArg)
+        request.fetchLimit = 1
+
+        do {
+            guard let day = try context.fetch(request).first, day.isSkipped else { return }
+            day.isSkipped = false
+            if let week = day.week, week.isCompleted {
+                week.isCompleted = false
+                week.completedAt = nil
+                if let plan = week.plan, plan.completedAt != nil {
+                    plan.completedAt = nil
+                    plan.isActive = true
+                }
+            }
+            refreshProgress(of: day.week?.plan)
+            try context.save()
+        } catch {
+            #if DEBUG
+            print("Failed to unskip day: \(error)")
             #endif
         }
     }

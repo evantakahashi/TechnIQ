@@ -5,7 +5,8 @@ import CoreData
 //
 // Pitch card (avatar, tier · position eyebrow, condensed name, LVL · XP · coins, level bar, ghosted
 // kit number), a stat rail (sessions / hours / streak / season G A), then row groups under
-// TRAINING / ACCOUNT / APP eyebrows. TechnIQ Pro shows an ACTIVE badge; Sign out is a ghost button.
+// TRAINING / ACCOUNT / ABOUT eyebrows. This is the whole account surface: subscription (manage /
+// restore), legal, version, Sign out, and Delete account all live here; there is no Settings sheet.
 
 struct EnhancedProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -19,9 +20,14 @@ struct EnhancedProfileView: View {
     @State private var showingEditProfile = false
     @State private var showingAvatarCustomization = false
     @State private var showingShop = false
-    @State private var showingSettings = false
     @State private var showingPaywall = false
     @State private var showingSignOutAlert = false
+    @State private var restoreMessage: String?
+    @State private var showingDeleteAlert = false
+    @State private var showingDeleteConfirmation = false
+    @State private var deleteConfirmationText = ""
+    @State private var isDeletingAccount = false
+    @State private var deleteError: String?
 
     private enum ProfileRoute: Hashable {
         case progress, achievements, sessionHistory, matches
@@ -81,11 +87,8 @@ struct EnhancedProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sectionLarge) {
-                TQScreenTitle("You") {
-                    TQIconAction("gearshape", accessibilityLabel: "Settings") { showingSettings = true }
-                        .accessibilityIdentifier("profile.settings")
-                }
-                .padding(.top, 8)
+                TQScreenTitle("You")
+                    .padding(.top, 8)
 
                 if let player = currentPlayer {
                     identityCard(player)
@@ -95,11 +98,20 @@ struct EnhancedProfileView: View {
 
                     trainingGroup
                     accountGroup
-                    appGroup
+                    aboutGroup
 
                     TQButton("Sign out", style: .ghost, face: .text) { showingSignOutAlert = true }
                         .padding(.top, DesignSystem.Spacing.sm)
                         .accessibilityIdentifier("profile.signOut")
+
+                    HStack {
+                        Spacer()
+                        TQTextLink("Delete account", arrow: false) { showingDeleteAlert = true }
+                            .disabled(isDeletingAccount)
+                            .accessibilityIdentifier("profile.deleteAccount")
+                            .accessibilityHint("Permanently deletes your account and training data")
+                        Spacer()
+                    }
                 } else {
                     TQRowList {
                         TQRow("No profile yet", note: "sign in to get started").disabled(true)
@@ -125,9 +137,6 @@ struct EnhancedProfileView: View {
         .sheet(isPresented: $showingShop) {
             ShopView()
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-        }
         .sheet(isPresented: $showingPaywall) {
             PaywallView(feature: .trainingPlan)
         }
@@ -138,6 +147,50 @@ struct EnhancedProfileView: View {
             }
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+        .alert("Restore purchases", isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } })) {
+            Button("OK", role: .cancel) { restoreMessage = nil }
+        } message: {
+            Text(restoreMessage ?? "")
+        }
+        .alert("Delete account?", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Continue", role: .destructive) {
+                deleteConfirmationText = ""
+                showingDeleteConfirmation = true
+            }
+        } message: {
+            Text("This permanently deletes your account, training data, plans and progress. It cannot be undone.")
+        }
+        .alert("Type DELETE to confirm", isPresented: $showingDeleteConfirmation) {
+            TextField("Type DELETE", text: $deleteConfirmationText)
+                .autocapitalization(.allCharacters)
+            Button("Cancel", role: .cancel) { deleteConfirmationText = "" }
+            Button("Delete account", role: .destructive) { performAccountDeletion() }
+                .disabled(deleteConfirmationText != "DELETE")
+        } message: {
+            Text("This action is permanent and cannot be reversed.")
+        }
+        .alert("Deletion failed", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
+            Button("Try again", role: .destructive) { performAccountDeletion() }
+            Button("Cancel", role: .cancel) { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "Something went wrong. Please try again.")
+        }
+        .overlay {
+            if isDeletingAccount {
+                ZStack {
+                    Color.black.opacity(0.5).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        TQSpinner(color: DesignSystem.Colors.grass, lineWidth: 3, size: 28)
+                        Text("Deleting account…")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    }
+                    .padding(28)
+                    .background(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card, style: .continuous).fill(DesignSystem.Colors.surfaceRaised))
+                }
+            }
         }
         .onAppear {
             updateFilters()
@@ -221,21 +274,56 @@ struct EnhancedProfileView: View {
                 TQRow("Kit & avatar") { showingAvatarCustomization = true }
                 TQRow("Shop", meta: .init("", accent: "\(currentPlayer.map { Int($0.coins) } ?? 0) C")) { showingShop = true }
                 if subscriptionManager.isPro {
-                    TQRow("TechnIQ Pro", badge: TQBadge(.status("Active"))) { showingSettings = true }
+                    TQRow("TechnIQ Pro", subtitle: "Manage subscription", badge: TQBadge(.status("Active"))) {
+                        open("https://apps.apple.com/account/subscriptions")
+                    }
                 } else {
                     TQRow("TechnIQ Pro", meta: .init("Upgrade")) { showingPaywall = true }
+                    TQRow("Restore purchases", accessory: .none) { restorePurchases() }
+                        .disabled(subscriptionManager.isLoading)
                 }
             }
         }
     }
 
-    private var appGroup: some View {
+    private var versionLine: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
+    }
+
+    private var aboutGroup: some View {
         VStack(alignment: .leading, spacing: 0) {
-            TQGroupHeader("App")
+            TQGroupHeader("About")
             TQRowList {
-                TQRow("Settings") { showingSettings = true }
                 TQRow("Privacy policy") { open("https://techniq-b9a27.web.app/privacy-policy.html") }
                 TQRow("Terms of service") { open("https://techniq-b9a27.web.app/terms-of-service.html") }
+                TQRow("Version", meta: .init(versionLine), accessory: .none)
+            }
+        }
+    }
+
+    // MARK: - Account actions
+
+    private func restorePurchases() {
+        Task {
+            await subscriptionManager.restorePurchases()
+            restoreMessage = subscriptionManager.isPro ? "Your subscription is active." : (subscriptionManager.errorMessage ?? "No active subscription found.")
+        }
+    }
+
+    private func performAccountDeletion() {
+        isDeletingAccount = true
+        deleteError = nil
+        Task {
+            do {
+                try await authManager.deleteAccount()
+                await MainActor.run { isDeletingAccount = false }
+            } catch {
+                await MainActor.run {
+                    isDeletingAccount = false
+                    deleteError = error.localizedDescription
+                }
             }
         }
     }

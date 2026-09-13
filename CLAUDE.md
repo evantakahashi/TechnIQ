@@ -119,7 +119,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | TQGallery (DEBUG) | `-TQGallery [-TQGalleryPage n] [-TQGallerySnapshot]` renders every component for eyeballing |
 
 **Debug launch arguments (DEBUG builds):** `-TQLocalUser` (signed-in with a fixed local UID, no Firebase auth), `-TQFree` (free tier: DEBUG is otherwise always Pro), `-TQSeedDemo` (creates the player if needed; kit #9, streak, XP, 8-week plan, sessions, match, community drills), `-TQTab n`, `-TQHomeState offline|loading|empty`, `-TQRoute planDetail|matchHistory|coachDrills` (Home) or `drill` (Train), `-TQDrillPhase generating|failed`, `-TQTrainState empty`, `-TQRoute skill` (Train: Passing See-all list), `-TQScreen signIn|onboarding`.
-**UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift`, `TechnIQUITests.swift` launch with `-TQLocalUser -TQSeedDemo` so they run on a fresh simulator (screenshots land in the runner's tmp `touchlineshots/`). `TouchlineTourUITests` is a local screenshot tour of every secondary screen and sheet (run it before a release and eyeball the `T*.png` shots). `WalkthroughUITests` needs a real login and is not run in CI.
+**UI tests:** `TechnIQUITests/TouchlineHomeUITests.swift`, `TouchlineScreensUITests.swift`, `TechnIQUITests.swift` launch with `-TQLocalUser -TQSeedDemo` so they run on a fresh simulator (screenshots land in the runner's tmp `touchlineshots/`). `TouchlineTourUITests` is a local screenshot tour of every secondary screen and sheet (run it before a release and eyeball the `T*.png` shots).
 **Fetch predicates:** derive `@FetchRequest` predicates from `AuthenticationManager.shared.playerPredicate` / `ownedByPlayerPredicate` in `init`, never only in `onAppear` (SwiftUI re-runs `init` on parent re-renders).
 **Pure logic for tests:** `Models/TrainLibraryModel.swift` (Train sections: skill mapping, My drills first, two-drill minimum, pins, usage order, row meta), `Models/FreeDrillAllowance.swift` (3 free AI drills for life, per user), `TrainingPlanService.progressPercentage(of:)`, `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
 
@@ -136,16 +136,16 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 ## View Structure
 | Area | Key Views |
 |------|-----------|
-| Auth | AuthenticationView (SignInLandingView + EmailAuthView), UnifiedOnboardingView (5 decision steps → plan gen → OnboardingPaywallView) |
+| Auth | AuthenticationView (SignInLandingView + EmailAuthView; no guest mode), UnifiedOnboardingView (5 decision steps → plan gen → OnboardingPaywallView) |
 | Dashboard | DashboardView (Home; HomeWeekModel), CoachDrillsView, TrainHubView, PlayerProgressView |
-| Training Plans | AITrainingPlanGeneratorView, TrainingPlansListView, TrainingPlanDetailView, PlanEditorView, DayEditorView |
-| Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet), SessionCompleteView, TodaysTrainingView, NewSessionView, SessionHistoryView, SessionCalendarView |
-| Exercises | ExerciseLibraryView (Train tab: My drills + per-skill sections from `Models/TrainLibraryModel.swift`), TrainSkillListView (See all), ExerciseDetailView, CustomDrillGeneratorView, DrillDiagramView (+TQDiagram), QuickDrillSheet, SharedDrillDetailView |
+| Training Plans | PlanTabView (tab 3: active plan's TrainingPlanDetailView with "All plans", else the library), TrainingPlansListView, AITrainingPlanGeneratorView, PlanEditorView, DayEditorView |
+| Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet; the only session engine), SessionDrillPickerView (plan day without drills), SessionCompleteView, SessionHistoryView, SessionCalendarView |
+| Exercises | ExerciseLibraryView (Train tab: My drills + per-skill sections from `Models/TrainLibraryModel.swift`), TrainSkillListView (See all), ExerciseDetailView, CustomDrillGeneratorView (the one generator: quick by default, More options collapsed; `prefill` + `onCreated` for Home / coach / Make-it-harder entry points), DrillDiagramView (+TQDiagram), SharedDrillDetailView |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
 | Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
 | Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |
 | Community | CommunityView (Feed / Drills / Leaderboard), DrillMarketplaceView (drill of the week) |
-| Settings | EnhancedProfileView (You tab), SettingsView, EditProfileView, SharePlanView |
+| Settings | EnhancedProfileView (You tab: also subscription, restore, legal, version, sign out, delete account — no Settings sheet), EditProfileView, SharePlanView |
 
 ## Deferred / Outstanding
 - API key rotation (keys in functions/.env.yaml need revoking) — USER ACTION

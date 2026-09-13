@@ -149,15 +149,15 @@ final class TouchlineScreensUITests: XCTestCase {
         dismissSheet()
         XCTAssertTrue(row("Edit profile").waitForExistence(timeout: 8), "back on You after edit profile")
 
-        XCTAssertTrue(tapWhenHittable(app.buttons["profile.settings"]), "gear opens settings")
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 8) || text(containing: "Settings").waitForExistence(timeout: 2), "settings sheet")
-        dismissSheet(buttonTitles: ["Done", "Close", "Cancel"])
+        XCTAssertFalse(app.buttons["profile.settings"].exists, "no separate settings sheet any more")
 
         // Sign out lives at the bottom as a ghost button behind a confirmation alert.
         let signOut = app.buttons["profile.signOut"]
         XCTAssertTrue(scrollTo(signOut), "sign out button reachable")
         shot("you-bottom")
         XCTAssertTrue(text(containing: "TechnIQ Pro").exists, "pro row visible")
+        XCTAssertTrue(text(containing: "Version").exists, "version line lives on You")
+        XCTAssertTrue(app.buttons["profile.deleteAccount"].exists, "delete account lives on You")
         signOut.tap()
         let cancel = app.alerts.buttons["Cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 5), "sign out confirmation alert")
@@ -263,7 +263,7 @@ final class TouchlineScreensUITests: XCTestCase {
 
         XCTAssertTrue(text(containing: "Train with").exists, "headline")
         XCTAssertTrue(app.buttons["signin.google"].exists, "google button")
-        XCTAssertTrue(app.buttons["signin.guest"].exists, "guest link")
+        XCTAssertFalse(app.buttons["signin.guest"].exists, "no guest mode")
 
         XCTAssertTrue(tapWhenHittable(app.buttons["signin.email"]), "email button")
         XCTAssertTrue(text(containing: "Welcome back").waitForExistence(timeout: 8), "email sign-in form")

@@ -4,7 +4,7 @@ import SwiftUI
 //
 // Landing: a 470 pt pitch header that fades into the base surface, app mark + wordmark top-left,
 // eyebrow, 60 pt headline, one-paragraph pitch, then Apple (inverse) / Google (raised) /
-// Email (raised) buttons, "Train as a guest →" as text, and the legal line. Email pushes the
+// Email (raised) buttons and the legal line (no guest mode: progress lives on an account). Email pushes the
 // existing email form onto its own screen.
 
 struct AuthenticationView: View {
@@ -67,17 +67,6 @@ struct SignInLandingView: View {
                             .accessibilityIdentifier("signin.email")
                         }
                         .disabled(authManager.isLoading)
-
-                        HStack {
-                            Spacer()
-                            TQTextLink("Train as a guest") {
-                                Task { await authManager.signInAnonymously() }
-                            }
-                            .disabled(authManager.isLoading)
-                            .accessibilityIdentifier("signin.guest")
-                            Spacer()
-                        }
-                        .padding(.top, 2)
 
                         legalLine
                             .padding(.bottom, 8)

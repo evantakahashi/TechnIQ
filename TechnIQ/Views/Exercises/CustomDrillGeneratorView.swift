@@ -2,18 +2,36 @@ import SwiftUI
 
 // MARK: - AI drill generator (Touchline 9f / 9g)
 //
-// Form → generating (pitch card with spinner, pipeline step rows, Cancel) → created (open the drill)
-// or failed (error banner above Try again / Edit the request, close matches from the library).
+// The one generator behind every entry point (Train's + New drill, the Home hero, the coach's
+// suggestions, a drill's "Make it harder"). Quick by default: pick a weak spot or write a sentence
+// and go; category, level, equipment, players and pitch size sit behind "More options" with sane
+// defaults. Form → generating (pitch card with spinner, pipeline step rows, Cancel) → created
+// (open the drill, or hand it straight to `onCreated` when a caller starts training with it) or
+// failed (error banner above Try again / Edit the request, close matches from the library).
 // Offline disables Try again; a quota error turns it into Upgrade; a moderation block leaves Edit only.
 
 struct CustomDrillGeneratorView: View {
+    /// What an entry point already knows: a weak spot, a sentence, a level.
+    struct Prefill {
+        var weakness: SelectedWeakness? = nil
+        var text: String = ""
+        var difficulty: DifficultyLevel? = nil
+    }
+
     let player: Player
+    var prefill: Prefill? = nil
+    /// When set, a created drill is handed over and the sheet closes instead of showing "Drill ready".
+    var onCreated: ((Exercise) -> Void)? = nil
+
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var drillService = CustomDrillService.shared
     @ObservedObject private var cloudService = CloudService.shared
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
     @State private var request = CustomDrillRequest.empty
+    @State private var showingMoreOptions = false
+    @State private var touchedCategory = false
+    @State private var didApplyPrefill = false
     @State private var phase: Phase = .form
     @State private var showingDrillDetail = false
     @State private var showingPaywall = false
@@ -73,7 +91,47 @@ struct CustomDrillGeneratorView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(feature: .customDrill)
         }
-        .onAppear { applyDebugPhase() }
+        .onAppear {
+            applyPrefill()
+            applyDebugPhase()
+        }
+    }
+
+    // MARK: - Defaults and prefill
+
+    private var playerDifficulty: DifficultyLevel {
+        switch player.experienceLevel?.lowercased() {
+        case "beginner": return .beginner
+        case "advanced", "professional", "elite": return .advanced
+        default: return .intermediate
+        }
+    }
+
+    /// Quick mode starts from what a solo player usually has: a ball, a few cones and a goal,
+    /// their own level, one player, a medium space. Everything is still editable under More options.
+    private func applyPrefill() {
+        guard !didApplyPrefill else { return }
+        didApplyPrefill = true
+        request.equipment = [.ball, .cones, .goals]
+        request.difficulty = prefill?.difficulty ?? playerDifficulty
+        if let weakness = prefill?.weakness { request.selectedWeaknesses = [weakness] }
+        if let text = prefill?.text, !text.isEmpty { request.skillDescription = text }
+    }
+
+    /// The category follows the weak spot unless the player set it themselves.
+    static func inferredCategory(for weaknesses: [SelectedWeakness]) -> DrillCategory {
+        guard let first = weaknesses.first else { return .technical }
+        switch first.category {
+        case "Defending", "Positioning": return .tactical
+        case "Speed & Agility", "Stamina": return .physical
+        default: return .technical
+        }
+    }
+
+    private var moreOptionsSummary: String {
+        let equipment = request.equipment.isEmpty ? "no equipment" : request.equipment.map { $0.rawValue.lowercased() }.sorted().joined(separator: ", ")
+        let category = touchedCategory ? request.category.displayName : Self.inferredCategory(for: request.selectedWeaknesses).displayName
+        return "\(category) · \(request.difficulty.displayName) · \(equipment) · \(request.numberOfPlayers) player\(request.numberOfPlayers == 1 ? "" : "s") · \(request.fieldSize.displayName.lowercased())"
     }
 
     /// `-TQDrillPhase generating|failed` (DEBUG) opens the sheet in a given state for screenshots.
@@ -291,27 +349,44 @@ struct CustomDrillGeneratorView: View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.lg) {
                 headerSection
-
-                // Weakness suggestions (context-aware)
-                WeaknessSuggestionsCard(player: player) { weakness in
-                    if !request.selectedWeaknesses.contains(where: { $0.category == weakness.category && $0.specific == weakness.specific }) {
-                        request.selectedWeaknesses.append(weakness)
-                    }
-                }
-
-                // Two-tier weakness picker
                 weaknessPickerSection
-
                 skillDescriptionSection
-                categorySection
-                difficultySection
-                equipmentSection
-                numberOfPlayersSection
-                fieldSizeSection
+                moreOptionsSection
                 generateButton
+                if !subscriptionManager.isPro {
+                    TQBody(subscriptionManager.freeDrillsLabel, tone: .muted, size: 13)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("generator.freeDrills")
+                }
                 DrillSafetyDisclaimer()
             }
             .padding(.bottom, DesignSystem.Spacing.xxl)
+        }
+    }
+
+    // MARK: - More options (collapsed by default)
+
+    private var moreOptionsSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            TQRowList {
+                TQRow(
+                    showingMoreOptions ? "Fewer options" : "More options",
+                    subtitle: showingMoreOptions ? nil : moreOptionsSummary,
+                    accessory: .none,
+                    verticalPadding: DesignSystem.Spacing.rowVertical,
+                    action: { withAnimation(DesignSystem.Animation.quick) { showingMoreOptions.toggle() } }
+                )
+                .accessibilityIdentifier("generator.moreOptions")
+            }
+            if showingMoreOptions {
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    categorySection
+                    difficultySection
+                    equipmentSection
+                    numberOfPlayersSection
+                    fieldSizeSection
+                }
+            }
         }
     }
 
@@ -381,6 +456,7 @@ struct CustomDrillGeneratorView: View {
                         isSelected: request.category == category
                     ) {
                         request.category = category
+                        touchedCategory = true
                     }
                 }
             }
@@ -519,6 +595,9 @@ struct CustomDrillGeneratorView: View {
     // MARK: - Actions
     
     private func generateDrill() {
+        if !touchedCategory {
+            request.category = Self.inferredCategory(for: request.selectedWeaknesses)
+        }
         phase = .generating
         generationTask?.cancel()
         generationTask = Task {
@@ -528,6 +607,11 @@ struct CustomDrillGeneratorView: View {
                 // "Cancel keeps nothing": a cancelled request never saves or spends quota.
                 guard !Task.isCancelled else { return }
                 SubscriptionManager.shared.markDrillGenerated()
+                if let onCreated {
+                    dismiss()
+                    onCreated(exercise)
+                    return
+                }
                 var warnings: [String] = []
                 if case .success(let response) = drillService.generationState {
                     warnings = response.validationWarnings ?? []

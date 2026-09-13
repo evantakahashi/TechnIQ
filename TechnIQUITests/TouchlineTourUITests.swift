@@ -79,6 +79,18 @@ final class TouchlineTourUITests: XCTestCase {
         settle(1.0)
     }
 
+    @discardableResult
+    private func scrollTo(_ element: XCUIElement, maxSwipes: Int = 6) -> Bool {
+        var swipes = 0
+        while swipes < maxSwipes {
+            if element.exists, element.isHittable { return true }
+            app.swipeUp(velocity: .slow)
+            settle(0.5)
+            swipes += 1
+        }
+        return element.exists && element.isHittable
+    }
+
     private func dismissSheet(_ titles: [String] = ["Cancel", "Close", "Done"]) {
         for title in titles {
             let b = app.buttons[title]
@@ -96,9 +108,27 @@ final class TouchlineTourUITests: XCTestCase {
     // MARK: - Plans
 
     func test_tour_plans() throws {
+        // The tab opens on the active plan's schedule; "All plans" pushes the library.
         launch(["-TQTab", "2"])
-        XCTAssertTrue(button(containing: "New plan").waitForExistence(timeout: 40), "plans tab")
+        XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 40), "plan tab roots on the active plan")
         dismissCoachMarkIfPresent()
+        settle(0.8)
+        shot("plan-detail-top")
+        XCTAssertTrue(app.buttons["plan.skipToday"].exists, "skip today on the pinned card")
+        app.swipeUp(velocity: .slow)
+        settle(0.6)
+        shot("plan-detail-scrolled")
+        let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] 'WK 3'")).firstMatch
+        if tapWhenHittable(cell, timeout: 4) {
+            settle(1.0)
+            shot("plan-day-sheet")
+            dismissSheet(["Done", "Close", "Cancel"])
+        }
+        app.swipeDown(velocity: .fast)
+        settle(0.6)
+
+        XCTAssertTrue(tapWhenHittable(app.buttons["plan.allPlans"]), "All plans opens the library")
+        XCTAssertTrue(button(containing: "New plan").waitForExistence(timeout: 8), "plans library")
         shot("plans-prebuilt")
 
         tapWhenHittable(button(containing: "My plans"))
@@ -117,22 +147,8 @@ final class TouchlineTourUITests: XCTestCase {
         } else {
             dismissBottomSheet()
         }
-
-        // Active plan card → plan detail → day sheet
-        tapWhenHittable(button(containing: "Active plan"))
-        XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan detail")
-        settle(0.8)
-        shot("plan-detail-top")
-        app.swipeUp(velocity: .slow)
-        settle(0.6)
-        shot("plan-detail-scrolled")
-        let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] 'WK 3'")).firstMatch
-        if tapWhenHittable(cell, timeout: 4) {
-            settle(1.0)
-            shot("plan-day-sheet")
-            dismissSheet(["Done", "Close", "Cancel"])
-        }
         goBack()
+        XCTAssertTrue(app.buttons["plan.allPlans"].waitForExistence(timeout: 8), "back on the active plan")
     }
 
     // MARK: - Train
@@ -195,10 +211,9 @@ final class TouchlineTourUITests: XCTestCase {
         shot("shop")
         dismissSheet(["Done", "Close", "Cancel"])
 
-        tapWhenHittable(app.buttons["profile.settings"])
-        settle(1.5)
-        shot("settings")
-        dismissSheet(["Done", "Close", "Cancel"])
+        scrollTo(app.buttons["profile.deleteAccount"])
+        settle(1)
+        shot("you-account-bottom")
     }
 
     // MARK: - Session drill sheet + Community feed

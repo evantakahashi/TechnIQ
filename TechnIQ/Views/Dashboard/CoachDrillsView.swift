@@ -64,13 +64,11 @@ struct CoachDrillsView: View {
             PaywallView(feature: .quickDrill)
         }
         .sheet(isPresented: $showingQuickDrill) {
-            QuickDrillSheet(player: player, onGenerated: { exercise in
-                guard showingQuickDrill else { return }
-                showingQuickDrill = false
+            CustomDrillGeneratorView(player: player, prefill: .init(weakness: selectedWeakness, difficulty: difficultyForPlayer())) { exercise in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     trainingLaunch = TrainingLaunch(exercises: [exercise])
                 }
-            }, prefilledWeakness: selectedWeakness)
+            }
         }
         .fullScreenCover(item: $trainingLaunch) { launch in
             ActiveTrainingView(exercises: launch.exercises)

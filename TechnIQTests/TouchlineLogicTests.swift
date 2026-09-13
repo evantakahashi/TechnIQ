@@ -248,3 +248,16 @@ final class PlayerKitNumberTests: XCTestCase {
         XCTAssertNil(player.kitNumberValue, "negative numbers are never a shirt number")
     }
 }
+
+// MARK: - Generator quick-mode defaults
+
+final class DrillGeneratorDefaultsTests: XCTestCase {
+    func test_inferredCategory_followsTheWeakSpot() {
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: []), .technical)
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: [SelectedWeakness(category: "Shooting", specific: "Weak foot")]), .technical)
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: [SelectedWeakness(category: "Defending", specific: "1v1")]), .tactical)
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: [SelectedWeakness(category: "Positioning", specific: "Off the ball")]), .tactical)
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: [SelectedWeakness(category: "Stamina", specific: "Late-game legs")]), .physical)
+        XCTAssertEqual(CustomDrillGeneratorView.inferredCategory(for: [SelectedWeakness(category: "Speed & Agility", specific: "First step")]), .physical)
+    }
+}

@@ -42,10 +42,10 @@ final class TechnIQUITests: XCTestCase {
         XCTAssertTrue(hasContent, "Training area should have scrollable content")
     }
 
-    func test_settingsNavigation() {
+    func test_youTabShowsAccountRows() {
         guard tabBarPresent() else { return }
         app.buttons["You"].tap()
-        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 10), "You tab shows the settings action")
+        XCTAssertTrue(app.staticTexts["Edit profile"].waitForExistence(timeout: 10), "You tab shows the account rows")
     }
 
     func test_appDoesNotCrash_afterInteraction() {

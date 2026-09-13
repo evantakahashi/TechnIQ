@@ -292,7 +292,7 @@ struct TQLabelSquare: View {
     }
 }
 
-/// Text link with a grass arrow ("Train as a guest →", "or build a plan first").
+/// Text link with a grass arrow ("See all →", "or build a plan first").
 struct TQTextLink: View {
     let title: String
     var arrow: Bool = true
@@ -349,7 +349,7 @@ struct TQTextLink: View {
         }
         .padding(16)
         .background(DesignSystem.Colors.pitch)
-        TQTextLink("Train as a guest") {}
+        TQTextLink("See all") {}
     }
     .padding(20)
     .background(DesignSystem.Colors.surfaceBase)

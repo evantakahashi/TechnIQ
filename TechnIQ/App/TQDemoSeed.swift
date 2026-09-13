@@ -60,7 +60,7 @@ enum TQDemoSeed {
         seedMatch(for: player, calendar: calendar, now: now)
 
         // Coach marks would cover the hero in screenshots.
-        for id in ["dashboard", "train", "plans", "progress", "avatar"] { CoachMarkManager.shared.markSeen(id) }
+        for id in ["dashboard", "train", "plans", "progress"] { CoachMarkManager.shared.markSeen(id) }
 
         try? context.save()
     }

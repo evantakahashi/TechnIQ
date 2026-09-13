@@ -323,7 +323,7 @@ struct MainTabView: View {
                         case 1:
                             NavigationStack { TrainHubView() }
                         case 2:
-                            NavigationStack { TrainingPlansListView() }
+                            NavigationStack { PlanTabView() }
                         case 3:
                             NavigationStack { CommunityView() }
                         case 4:

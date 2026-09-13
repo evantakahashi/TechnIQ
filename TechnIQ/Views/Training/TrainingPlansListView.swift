@@ -1,13 +1,17 @@
 import SwiftUI
 
-// MARK: - Plans (Touchline 8a)
+// MARK: - Plans library (Touchline 8a)
 //
-// Title row with "+ New plan" (AI / custom sheet), the active plan as a pitch card (name, WK n/8,
-// progress bar, next session line), a Pre-built / My plans segment, and flat plan rows with a
-// weeks tile, name, meta (category · role · frequency), level badge and chevron.
+// The Plan tab's root only while no plan is active; otherwise pushed from the active plan's
+// "All plans". Title row with "+ New plan" (AI / custom sheet), a Pre-built / My plans segment,
+// and flat plan rows with a weeks tile, name, meta (category · role · frequency), level badge
+// and chevron.
 
 struct TrainingPlansListView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    /// Pushed from the active plan: shows a back button instead of the screen title.
+    let isPushed: Bool
     @EnvironmentObject private var authManager: AuthenticationManager
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @ObservedObject private var planService = TrainingPlanService.shared
@@ -20,12 +24,12 @@ struct TrainingPlansListView: View {
     @State private var showingShareSheet = false
     @State private var planToShare: TrainingPlanModel?
     @State private var myPlans: [TrainingPlanModel] = []
-    @State private var activeNextLine = ""
     @State private var route: TrainingPlanModel?
 
     @FetchRequest var players: FetchedResults<Player>
 
-    init() {
+    init(isPushed: Bool = false) {
+        self.isPushed = isPushed
         self._players = FetchRequest(
             sortDescriptors: [],
             predicate: AuthenticationManager.shared.playerPredicate,
@@ -33,17 +37,19 @@ struct TrainingPlansListView: View {
         )
     }
 
-    private var activePlan: TrainingPlanModel? { planService.activePlan }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
-                TQScreenTitle("Plans") {
-                    TQButton("+ New plan", size: .compact, fullWidth: false) { showingNewPlanMenu = true }
-                }
-
-                if let plan = activePlan {
-                    activePlanCard(plan)
+                if isPushed {
+                    TQNavBar("Plans") {
+                        TQBackButton { dismiss() }
+                    } trailing: {
+                        TQButton("+ New plan", size: .compact, fullWidth: false) { showingNewPlanMenu = true }
+                    }
+                } else {
+                    TQScreenTitle("Plans") {
+                        TQButton("+ New plan", size: .compact, fullWidth: false) { showingNewPlanMenu = true }
+                    }
                 }
 
                 TQSegment(options: ["Pre-built", myPlans.isEmpty ? "My plans" : "My plans · \(myPlans.count)"], selectedIndex: $tabIndex)
@@ -107,59 +113,6 @@ struct TrainingPlansListView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(feature: .trainingPlan)
         }
-    }
-
-    // MARK: - Active plan card
-
-    private func activePlanCard(_ plan: TrainingPlanModel) -> some View {
-        // Pure read: view bodies must not advance the plan (that happens in loadMyPlans()).
-        let weekDay = TrainingPlanService.peekCurrentWeekAndDay(in: plan)
-        let week = weekDay?.week ?? max(plan.currentWeek, 1)
-        let progress = min(1, max(0, plan.progressPercentage / 100))
-        return Button {
-            HapticManager.shared.lightTap()
-            route = plan
-        } label: {
-            TQPitchCard(.card, markings: .plan) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        TQEyebrow("Active plan", size: 11)
-                        Spacer()
-                        TQMeta("WK \(week) / \(plan.durationWeeks)", tone: .onPitch)
-                    }
-                    TQDisplayTitle(plan.name, size: .card)
-                    HStack(spacing: 12) {
-                        TQProgressBar(progress: progress, height: 6)
-                        Text("\(Int((progress * 100).rounded()))%")
-                            .font(Font.system(size: 15, weight: .semibold).width(.condensed).monospacedDigit())
-                            .foregroundColor(DesignSystem.Colors.chalkWhite)
-                    }
-                    HStack {
-                        Text(activeNextLine.isEmpty ? nextSessionLine(for: plan, weekDay: weekDay) : activeNextLine)
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textOnPitch)
-                            .lineLimit(1)
-                        Spacer()
-                        TQChevron(color: DesignSystem.Colors.textOnPitch)
-                    }
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens the plan")
-    }
-
-    private func nextSessionLine(for plan: TrainingPlanModel, weekDay: (week: Int, day: Int)?, exerciseName: String? = nil) -> String {
-        guard let weekDay,
-              let week = plan.weeks.first(where: { $0.weekNumber == weekDay.week }),
-              let day = week.days.first(where: { $0.dayNumber == weekDay.day }) else {
-            return plan.isCompleted ? "Plan complete" : "Next: pick up where you left off"
-        }
-        let what = exerciseName ?? (day.sessions.first.map { "\($0.sessionType.displayName) session" } ?? "Training")
-        // Plan days are ordinal until Phase 2 binds them to dates; a weekday here would be a promise.
-        let when = "Wk \(weekDay.week) day \(day.dayNumber)"
-        return "Next: \(what) · \(when)"
     }
 
     // MARK: - Rows
@@ -227,16 +180,6 @@ struct TrainingPlansListView: View {
         guard let player = players.first else { return }
         myPlans = planService.fetchAllPlans(for: player)
         planService.activePlan = planService.fetchActivePlan(for: player)
-        // Progression (auto-completing pending rest days) happens here, once per load; the card
-        // body only peeks at the model.
-        if let plan = planService.activePlan {
-            let weekDay = planService.getCurrentWeekAndDay(for: plan)
-            let sessions = planService.getTodaysSessions(for: plan)
-            let exerciseName = sessions.first?.exercises?.allObjects.compactMap { ($0 as? Exercise)?.name }.sorted().first
-            activeNextLine = nextSessionLine(for: plan, weekDay: weekDay, exerciseName: exerciseName)
-        } else {
-            activeNextLine = ""
-        }
     }
 }
 

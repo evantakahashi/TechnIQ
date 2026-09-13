@@ -146,9 +146,9 @@ struct ExerciseLibraryView: View {
                 TQPitchCard(.strip, markings: .strip) {
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 4) {
-                            TQEyebrow("From your coach · \(coachSuggestions.count) new", size: 11)
-                            TQDisplayTitle("\(first.category) block", size: .strip)
-                            Text("\(coachSuggestions.count) drill\(coachSuggestions.count == 1 ? "" : "s") · \(coachSuggestions.count * 15) min · targets your weakest skill")
+                            TQEyebrow("From your coach · \(coachSuggestions.count) suggestion\(coachSuggestions.count == 1 ? "" : "s")", size: 11)
+                            TQDisplayTitle("Fix your \(first.category.lowercased())", size: .strip)
+                            Text("Your weak spots, built into drills in about 20 seconds")
                                 .font(DesignSystem.Typography.bodySmall)
                                 .foregroundColor(DesignSystem.Colors.textOnPitch)
                                 .lineLimit(1)
