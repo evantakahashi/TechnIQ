@@ -91,7 +91,9 @@ def add_file(text: str, group_id: str, group_path: str, filename: str, phase: st
     idx = text.index("/* Begin PBXBuildFile section */") + len("/* Begin PBXBuildFile section */\n")
     text = text[:idx] + bf + text[idx:]
     # PBXFileReference
-    fr = f"\t\t{fid} /* {filename} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {filename}; sourceTree = \"<group>\"; }};\n"
+    # Old-style plist strings need quotes once they contain anything beyond [A-Za-z0-9_./].
+    quoted = filename if all(c.isalnum() or c in "_./" for c in filename) else f'"{filename}"'
+    fr = f"\t\t{fid} /* {filename} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = {quoted}; sourceTree = \"<group>\"; }};\n"
     idx = text.index("/* Begin PBXFileReference section */") + len("/* Begin PBXFileReference section */\n")
     text = text[:idx] + fr + text[idx:]
     # group child

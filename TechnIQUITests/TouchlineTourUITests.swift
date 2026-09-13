@@ -121,7 +121,9 @@ final class TouchlineTourUITests: XCTestCase {
         let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] 'WK 3'")).firstMatch
         if tapWhenHittable(cell, timeout: 4) {
             settle(1.0)
-            shot("plan-day-sheet")
+            // A stored plan opens the one-screen day editor.
+            XCTAssertTrue(app.buttons["dayEditor.done"].waitForExistence(timeout: 6), "day editor opens for a stored plan")
+            shot("plan-day-editor")
             dismissSheet(["Done", "Close", "Cancel"])
         }
         app.swipeDown(velocity: .fast)
@@ -141,7 +143,21 @@ final class TouchlineTourUITests: XCTestCase {
         // "Build it with the coach" → AI plan generator sheet
         if tapWhenHittable(row("Build it with the coach"), timeout: 3) {
             settle(1.5)
+            XCTAssertTrue(app.buttons["planGenerator.build"].waitForExistence(timeout: 6), "generator form")
             shot("plan-generator")
+            dismissSheet()
+            settle(0.8)
+        } else {
+            dismissBottomSheet()
+        }
+
+        // "Build it yourself" → custom builder
+        tapWhenHittable(button(containing: "New plan"))
+        settle(1.0)
+        if tapWhenHittable(row("Build it yourself"), timeout: 3) {
+            settle(1.2)
+            XCTAssertTrue(app.buttons["customPlan.create"].waitForExistence(timeout: 6), "custom builder form")
+            shot("custom-builder")
             dismissSheet()
             settle(0.8)
         } else {

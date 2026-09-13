@@ -1,6 +1,12 @@
 import SwiftUI
 import CoreData
 
+// MARK: - New plan · AI (Touchline)
+//
+// Form → generating (pitch surface with spinner and phase rows, Cancel keeps nothing) → preview
+// sheet (Save / Regenerate / Modify) → saved. The form asks only what the coach cannot infer:
+// weeks, level, focus, and the days you can train; name and position are prefilled and optional.
+
 struct AITrainingPlanGeneratorView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
@@ -11,81 +17,59 @@ struct AITrainingPlanGeneratorView: View {
     // Form inputs
     @State private var planName: String = ""
     @State private var duration: Int = 6
-    @State private var difficulty: PlanDifficulty = .intermediate
-    @State private var category: PlanCategory = .technical
+    @State private var difficultyIndex: Int = 1
+    @State private var categoryIndex: Int = 0
     @State private var targetRole: String = ""
     @State private var focusAreas: [String] = []
     @State private var newFocusArea: String = ""
-
-    // Schedule preferences (Phase 2)
     @State private var preferredDays: Set<DayOfWeek> = []
     @State private var restDays: Set<DayOfWeek> = []
-    @State private var showScheduleConflict = false
 
-    // UI state
+    // Generation state
     @State private var isGenerating = false
     @State private var showError = false
     @State private var errorMessage = ""
-    @State private var showSuccess = false
     @State private var generatedPlan: TrainingPlan?
-
-    // Preview state (Phase 1 enhancement)
     @State private var generatedStructure: GeneratedPlanStructure?
     @State private var showPreview = false
     @State private var regenerationCount = 0
-
-    // Loading phases for better UX
     @State private var loadingPhase: LoadingPhase = .connecting
-
-    // Task management to prevent orphaned tasks
     @State private var generationTask: Task<Void, Never>?
 
+    private let difficulties = PlanDifficulty.allCases
+    private let categories = PlanCategory.allCases
+    private let weekdays = DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }
+
+    private var difficulty: PlanDifficulty { difficulties[min(max(difficultyIndex, 0), difficulties.count - 1)] }
+    private var category: PlanCategory { categories[min(max(categoryIndex, 0), categories.count - 1)] }
+
     var body: some View {
-        ZStack {
-            AdaptiveBackground()
-                .ignoresSafeArea()
-
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Header
-                    headerCard
-
-                    // Basic Info
-                    basicInfoCard
-
-                    // Focus Areas
-                    focusAreasCard
-
-                    // Schedule Preferences (Phase 2)
-                    schedulePreferencesCard
-
-                    // Generate Button
-                    if !isGenerating {
-                        ModernButton("Generate Training Plan", icon: "sparkles", style: .primary) {
-                            generatePlan()
-                        }
-                        .disabled(!isFormValid)
-                        .opacity(isFormValid ? 1.0 : 0.6)
-                    } else {
-                        loadingView
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                TQNavBar("New plan · AI", tone: .grass) {
+                    TQNavAction("Cancel") { cancelGeneration(); dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                 }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.vertical, DesignSystem.Spacing.lg)
+                .padding(.top, 8)
+
+                if let plan = generatedPlan {
+                    savedContent(plan)
+                } else if isGenerating {
+                    generatingContent
+                } else {
+                    form
+                }
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .navigationTitle("AI Plan Generator")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
-                    .disabled(isGenerating)
-            }
-        }
-        .alert("Generation Failed", isPresented: $showError) {
-            Button("Retry") {
-                generatePlan()
-            }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        .interactiveDismissDisabled(isGenerating)
+        .alert("Couldn't build the plan", isPresented: $showError) {
+            Button("Try again") { generatePlan() }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text(errorMessage)
@@ -100,371 +84,171 @@ struct AITrainingPlanGeneratorView: View {
                         regenerationCount += 1
                         generatePlan()
                     },
-                    onModifyParameters: {
-                        // Return to form - preview is dismissed, user can modify
-                    },
-                    onSave: {
-                        savePlanFromStructure(structure)
-                    }
+                    onModifyParameters: {},
+                    onSave: { savePlanFromStructure(structure) }
                 )
             }
         }
-        .sheet(isPresented: $showSuccess) {
-            if let plan = generatedPlan {
-                successView(plan: plan)
+        .onAppear { prefillFromPlayerProfile() }
+        .onDisappear { cancelGeneration() }
+    }
+
+    // MARK: - Form
+
+    private var form: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            VStack(alignment: .leading, spacing: 8) {
+                TQEyebrow("Built around you", size: 11)
+                TQDisplayTitle("What should\nthe plan do?", size: .medium)
+                TQBody("The coach uses your position, level and weak spots. Add what matters this block and the days you can train.")
             }
-        }
-        .onAppear {
-            prefillFromPlayerProfile()
-        }
-        .onDisappear {
-            // Cancel any running generation task when view is dismissed
-            cancelGeneration()
+
+            VStack(alignment: .leading, spacing: 0) {
+                TQGroupHeader("Shape")
+                TQRule()
+                TQValueStepper(label: "Weeks", value: $duration, range: 2...12) { "\($0)" }
+                TQRule()
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Level")
+                TQSegment(options: difficulties.map(\.displayName), selectedIndex: $difficultyIndex)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Focus")
+                TQChipRow {
+                    ForEach(Array(categories.enumerated()), id: \.offset) { index, item in
+                        TQChip(item == .position ? "Position" : item.displayName, isSelected: categoryIndex == index) { categoryIndex = index }
+                    }
+                }
+                if category == .position {
+                    TQFormField("Position", text: $targetRole, placeholder: "Striker")
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Work on")
+                HStack(spacing: 10) {
+                    TQFormField("Skill or area", text: $newFocusArea, placeholder: "Weak-foot finishing")
+                        .onSubmit { addFocusArea() }
+                    TQIconButton("plus", style: .raised, shape: .square, size: 44, accessibilityLabel: "Add focus area") { addFocusArea() }
+                        .disabled(newFocusArea.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .padding(.top, 18)
+                }
+                if !focusAreas.isEmpty {
+                    TQChipRow {
+                        ForEach(focusAreas, id: \.self) { area in
+                            TQChip(area, isSelected: true, icon: "xmark") { removeFocusArea(area) }
+                        }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Days you can train")
+                TQChipRow {
+                    ForEach(weekdays, id: \.self) { day in
+                        TQChip(day.shortName, isSelected: preferredDays.contains(day)) { toggle(day, in: &preferredDays, removingFrom: &restDays) }
+                    }
+                }
+                TQGroupHeader("Days you must rest")
+                TQChipRow {
+                    ForEach(weekdays, id: \.self) { day in
+                        TQChip(day.shortName, isSelected: restDays.contains(day)) { toggle(day, in: &restDays, removingFrom: &preferredDays) }
+                    }
+                }
+                TQBody("Leave both empty and the coach lays out the week.", tone: .muted, size: 13)
+            }
+
+            TQFormField("Plan name (optional)", text: $planName, placeholder: "The coach names it otherwise")
+
+            TQButton("Build the plan", icon: "sparkles") { generatePlan() }
+                .disabled(!isFormValid)
+                .accessibilityIdentifier("planGenerator.build")
         }
     }
 
-    // MARK: - Header Card
+    private func toggle(_ day: DayOfWeek, in set: inout Set<DayOfWeek>, removingFrom other: inout Set<DayOfWeek>) {
+        if set.contains(day) {
+            set.remove(day)
+        } else {
+            set.insert(day)
+            other.remove(day)
+        }
+    }
 
-    private var headerCard: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .font(.title)
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
+    // MARK: - Generating
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("AI-Powered Plan")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+    private var phaseRows: [(String, TQStepRow.State)] {
+        let all: [LoadingPhase] = [.connecting, .analyzing, .generating, .structuring, .finalizing]
+        let current = all.firstIndex(of: loadingPhase) ?? 0
+        return all.enumerated().map { index, phase in
+            (phase.title, index < current ? .done : (index == current ? .running : .pending))
+        }
+    }
 
-                        Text("Personalized to your profile")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-                }
-
-                Divider()
-
-                Text("Our AI will analyze your profile and create a customized training plan with weekly schedules, daily sessions, and specific exercises tailored to your goals.")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+    private var generatingContent: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            VStack(alignment: .leading, spacing: 6) {
+                TQEyebrow("You asked for", tone: .muted, size: 11)
+                Text(requestSummary)
+                    .font(Font.system(size: 15, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
                     .fixedSize(horizontal: false, vertical: true)
             }
-        }
-    }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous).fill(DesignSystem.Colors.surfaceRaised))
 
-    // MARK: - Basic Info Card
-
-    private var basicInfoCard: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Plan Details")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                // Plan Name (Optional)
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Plan Name (Optional)")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    TextField("Leave empty for AI-generated name", text: $planName)
-                        .textFieldStyle(.plain)
-                        .modernTextFieldStyle()
-                }
-
-                // Duration
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    HStack {
-                        Text("Duration")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        Spacer()
-
-                        Text("\(duration) weeks")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
-
-                    Slider(value: Binding(
-                        get: { Double(duration) },
-                        set: { duration = Int($0) }
-                    ), in: 2...12, step: 1)
-                    .tint(DesignSystem.Colors.primaryGreen)
-                }
-
-                // Difficulty
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Difficulty Level")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    Picker("Difficulty", selection: $difficulty) {
-                        ForEach(PlanDifficulty.allCases, id: \.self) { level in
-                            Text(level.displayName).tag(level)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-
-                // Category
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Focus Category")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    Picker("Category", selection: $category) {
-                        ForEach(PlanCategory.allCases, id: \.self) { cat in
-                            Label(cat.displayName, systemImage: cat.icon)
-                                .tag(cat)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                // Target Role (Optional)
-                if category == .position {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Target Position")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        TextField("e.g., Striker, Midfielder", text: $targetRole)
-                            .textFieldStyle(.plain)
-                        .modernTextFieldStyle()
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Focus Areas Card
-
-    private var focusAreasCard: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Specific Focus Areas")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text("Add skills or areas you want to improve (e.g., Passing, Speed, Finishing)")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                // Add new focus area
-                HStack {
-                    TextField("Add focus area", text: $newFocusArea)
-                        .textFieldStyle(.plain)
-                        .modernTextFieldStyle()
-
-                    Button(action: addFocusArea) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
-                    .disabled(newFocusArea.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-
-                // Focus area chips
-                if !focusAreas.isEmpty {
-                    FlowLayout(spacing: DesignSystem.Spacing.xs) {
-                        ForEach(focusAreas, id: \.self) { area in
-                            FocusAreaChip(text: area) {
-                                removeFocusArea(area)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Schedule Preferences Card (Phase 2)
-
-    private var schedulePreferencesCard: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                HStack {
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.title2)
-                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
-
-                    Text("Schedule Preferences")
-                        .font(DesignSystem.Typography.titleSmall)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Spacer()
-
-                    // Optional toggle
-                    Text("Optional")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(DesignSystem.Colors.textSecondary.opacity(0.1))
-                        .cornerRadius(DesignSystem.CornerRadius.xs)
-                }
-
-                Text("Customize when you prefer to train. Leave empty to let AI optimize your schedule.")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                // Preferred Training Days
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    Text("Preferred Training Days")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    DaySelector(
-                        selectedDays: $preferredDays,
-                        disabledDays: restDays,
-                        accentColor: DesignSystem.Colors.primaryGreen
-                    )
-                }
-
-                // Rest Days
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    Text("Required Rest Days")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    DaySelector(
-                        selectedDays: $restDays,
-                        disabledDays: preferredDays,
-                        accentColor: DesignSystem.Colors.accentYellow
-                    )
-                }
-
-                // Conflict warning
-                if hasScheduleConflict {
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(DesignSystem.Colors.warning)
-
-                        Text("A day cannot be both a training day and rest day")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.warning)
-                    }
-                    .padding(DesignSystem.Spacing.sm)
-                    .background(DesignSystem.Colors.warning.opacity(0.1))
-                    .cornerRadius(DesignSystem.CornerRadius.sm)
-                }
-
-                // Summary
-                if !preferredDays.isEmpty || !restDays.isEmpty {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        if !preferredDays.isEmpty {
-                            Text("Training: \(preferredDays.sorted(by: { $0.sortOrder < $1.sortOrder }).map { $0.shortName }.joined(separator: ", "))")
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
-                        if !restDays.isEmpty {
-                            Text("Rest: \(restDays.sorted(by: { $0.sortOrder < $1.sortOrder }).map { $0.shortName }.joined(separator: ", "))")
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.accentYellow)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var hasScheduleConflict: Bool {
-        !preferredDays.isDisjoint(with: restDays)
-    }
-
-    // MARK: - Loading View (Enhanced with phases)
-
-    private var loadingView: some View {
-        ModernCard {
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                // Animated soccer ball icon
-                ZStack {
-                    Circle()
-                        .stroke(DesignSystem.Colors.primaryGreen.opacity(0.2), lineWidth: 4)
-                        .frame(width: 60, height: 60)
-
-                    Circle()
-                        .trim(from: 0, to: 0.3)
-                        .stroke(DesignSystem.Colors.primaryGreen, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                        .frame(width: 60, height: 60)
-                        .rotationEffect(.degrees(loadingRotation))
-
-                    Image(systemName: "soccerball")
-                        .font(.title)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text(loadingPhase.title)
-                        .font(DesignSystem.Typography.titleMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                        .animation(.easeInOut, value: loadingPhase)
-
+            ZStack {
+                VStack(spacing: 10) {
+                    TQSpinner(color: DesignSystem.Colors.grass, lineWidth: 3, size: 28)
                     Text(loadingPhase.description)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .font(Font.system(size: 14, weight: .semibold).width(.condensed))
+                        .textCase(.uppercase)
+                        .tracking(1.1)
+                        .foregroundColor(DesignSystem.Colors.textOnPitch)
                         .multilineTextAlignment(.center)
-                        .animation(.easeInOut, value: loadingPhase)
                 }
-
-                // Progress indicator
-                ProgressView(value: loadingPhase.progress, total: 1.0)
-                    .tint(DesignSystem.Colors.primaryGreen)
-                    .animation(.easeInOut, value: loadingPhase)
-
-                if regenerationCount > 0 {
-                    Text("Regeneration attempt \(regenerationCount + 1)")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                }
-
-                // Cancel button
-                Button(action: cancelGeneration) {
-                    Text("Cancel")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-                .padding(.top, DesignSystem.Spacing.sm)
+                .padding(.horizontal, 24)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, DesignSystem.Spacing.xl)
+            .frame(height: 200)
+            .pitchSurface(.diagram, cornerRadius: DesignSystem.CornerRadius.pitchCardCompact)
+
+            TQRowList {
+                ForEach(Array(phaseRows.enumerated()), id: \.offset) { _, row in
+                    TQStepRow(text: row.0, state: row.1)
+                }
+            }
+
+            if regenerationCount > 0 {
+                TQBody("Attempt \(regenerationCount + 1).", tone: .muted, size: 13)
+            }
+
+            TQButton("Cancel", style: .ghost) { cancelGeneration() }
+
+            Text("Usually 20–40 s. Cancel keeps nothing.")
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(DesignSystem.Colors.textTertiary)
+                .frame(maxWidth: .infinity)
         }
-        .onAppear {
-            startLoadingAnimation()
-            startPhaseProgression()
-        }
+        .onAppear { startPhaseProgression() }
     }
 
-    @State private var loadingRotation: Double = 0
-
-    private func startLoadingAnimation() {
-        withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
-            loadingRotation = 360
-        }
+    private var requestSummary: String {
+        var parts = ["\(duration) weeks", difficulty.displayName.lowercased(), category == .position ? (targetRole.isEmpty ? "position" : targetRole) : category.displayName.lowercased()]
+        if !focusAreas.isEmpty { parts.append(focusAreas.joined(separator: ", ")) }
+        if !preferredDays.isEmpty { parts.append(preferredDays.sorted().map(\.shortName).joined(separator: " ")) }
+        return parts.joined(separator: " · ")
     }
 
     private func startPhaseProgression() {
-        // Simulate phase progression
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            if isGenerating { loadingPhase = .analyzing }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if isGenerating { loadingPhase = .generating }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
-            if isGenerating { loadingPhase = .structuring }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
-            if isGenerating { loadingPhase = .finalizing }
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { if isGenerating { loadingPhase = .analyzing } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { if isGenerating { loadingPhase = .generating } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { if isGenerating { loadingPhase = .structuring } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25) { if isGenerating { loadingPhase = .finalizing } }
     }
 
     private func cancelGeneration() {
@@ -474,98 +258,45 @@ struct AITrainingPlanGeneratorView: View {
         loadingPhase = .connecting
     }
 
-    // MARK: - Success View
+    // MARK: - Saved
 
-    private func successView(plan: TrainingPlan) -> some View {
-        NavigationStack {
-            ZStack {
-                AdaptiveBackground()
-                    .ignoresSafeArea()
-
-                VStack(spacing: DesignSystem.Spacing.xl) {
-                    Spacer()
-
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(DesignSystem.Colors.success)
-
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Plan Created!")
-                            .font(DesignSystem.Typography.titleLarge)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text(plan.name ?? "Training Plan")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                        Text("\(plan.durationWeeks) weeks • \(plan.difficulty ?? "Intermediate")")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    ModernCard {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text("Your AI-generated plan is ready!")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            Text("You can view it in the Training Plans tab and activate it to start tracking your progress.")
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        }
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
-
-                    Spacer()
-
-                    ModernButton("Done", icon: "checkmark", style: .primary) {
-                        showSuccess = false
-                        dismiss()
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
+    private func savedContent(_ plan: TrainingPlan) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            TQHeroCard(
+                eyebrow: "Plan saved · \(plan.durationWeeks) weeks · \(plan.difficulty ?? "Intermediate")",
+                title: plan.name ?? "Your plan",
+                body: "It's in My plans. Open it and tap Start to make it your active plan.",
+                actionTitle: "Done",
+                actionIcon: nil,
+                markings: .heroSimple,
+                action: { dismiss() }
+            )
         }
     }
 
-    // MARK: - Helper Methods
+    // MARK: - Helpers
 
     private var isFormValid: Bool {
-        // At minimum need duration and difficulty
-        return duration >= 2 && duration <= 12
+        duration >= 2 && duration <= 12
     }
 
     private func prefillFromPlayerProfile() {
-        // Pre-fill target role from player position
         if let position = player.position {
             targetRole = position.capitalized
         }
-
-        // Pre-fill focus areas from player goals
         if let goals = player.playerGoals?.allObjects as? [PlayerGoal] {
             focusAreas = goals.compactMap { $0.skillName }
         }
-
-        // Set difficulty based on experience level
-        if let experience = player.experienceLevel {
-            switch experience.lowercased() {
-            case "beginner":
-                difficulty = .beginner
-            case "intermediate":
-                difficulty = .intermediate
-            case "advanced", "expert":
-                difficulty = .advanced
-            default:
-                difficulty = .intermediate
-            }
+        switch player.experienceLevel?.lowercased() {
+        case "beginner": difficultyIndex = difficulties.firstIndex(of: .beginner) ?? 0
+        case "advanced", "expert", "professional": difficultyIndex = difficulties.firstIndex(of: .advanced) ?? 2
+        default: difficultyIndex = difficulties.firstIndex(of: .intermediate) ?? 1
         }
     }
 
     private func addFocusArea() {
         let trimmed = newFocusArea.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, !focusAreas.contains(trimmed) else { return }
-
         focusAreas.append(trimmed)
         newFocusArea = ""
     }
@@ -577,20 +308,13 @@ struct AITrainingPlanGeneratorView: View {
     private func generatePlan() {
         isGenerating = true
         loadingPhase = .connecting
-
-        // Cancel any existing task before starting a new one
         generationTask?.cancel()
 
         generationTask = Task {
             do {
-                // Check for cancellation before starting
                 try Task.checkCancellation()
-
-                // Convert schedule preferences to string arrays
                 let preferredDayStrings = preferredDays.sorted().map { $0.rawValue }
                 let restDayStrings = restDays.sorted().map { $0.rawValue }
-
-                // Call AI generation service
                 let structure = try await AIRecommendationService.shared.generateTrainingPlan(
                     for: player,
                     duration: duration,
@@ -601,20 +325,14 @@ struct AITrainingPlanGeneratorView: View {
                     preferredDays: preferredDayStrings,
                     restDays: restDayStrings
                 )
-
-                // Check for cancellation before updating UI
                 try Task.checkCancellation()
-
-                // Show preview instead of auto-saving
                 await MainActor.run {
                     generatedStructure = structure
                     isGenerating = false
                     loadingPhase = .connecting
                     showPreview = true
                 }
-
             } catch is CancellationError {
-                // Task was cancelled, clean up silently
                 await MainActor.run {
                     isGenerating = false
                     loadingPhase = .connecting
@@ -623,7 +341,7 @@ struct AITrainingPlanGeneratorView: View {
                 await MainActor.run {
                     isGenerating = false
                     loadingPhase = .connecting
-                    errorMessage = "AI generation failed: \(error.localizedDescription)\n\nPlease check your internet connection and try again."
+                    errorMessage = "\(error.localizedDescription)\n\nCheck your connection and try again."
                     showError = true
                 }
             }
@@ -632,18 +350,16 @@ struct AITrainingPlanGeneratorView: View {
 
     private func savePlanFromStructure(_ structure: GeneratedPlanStructure) {
         if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player) {
-            // Override name if user provided one
             if !planName.trimmingCharacters(in: .whitespaces).isEmpty {
                 plan.name = planName
                 try? viewContext.save()
             }
-
             generatedPlan = plan
             showPreview = false
-            showSuccess = true
+            HapticManager.shared.success()
         } else {
             showPreview = false
-            errorMessage = "Failed to save generated plan. Please try again."
+            errorMessage = "The plan came back but couldn't be saved. Please try again."
             showError = true
         }
     }
@@ -660,21 +376,21 @@ enum LoadingPhase: Equatable {
 
     var title: String {
         switch self {
-        case .connecting: return "Connecting..."
-        case .analyzing: return "Analyzing Your Profile..."
-        case .generating: return "Generating Plan..."
-        case .structuring: return "Structuring Weeks..."
-        case .finalizing: return "Finalizing Details..."
+        case .connecting: return "Reaching the coach"
+        case .analyzing: return "Reading your profile and history"
+        case .generating: return "Writing the weeks"
+        case .structuring: return "Laying out days and sessions"
+        case .finalizing: return "Checking the schedule"
         }
     }
 
     var description: String {
         switch self {
-        case .connecting: return "Establishing connection to AI service"
-        case .analyzing: return "Reviewing your skills, goals, and preferences"
-        case .generating: return "Creating personalized training sessions"
-        case .structuring: return "Organizing weekly schedules and rest days"
-        case .finalizing: return "Adding exercises and final touches"
+        case .connecting: return "Connecting"
+        case .analyzing: return "Reading your profile"
+        case .generating: return "Writing the plan"
+        case .structuring: return "Building the schedule"
+        case .finalizing: return "Almost there"
         }
     }
 
@@ -682,176 +398,9 @@ enum LoadingPhase: Equatable {
         switch self {
         case .connecting: return 0.1
         case .analyzing: return 0.3
-        case .generating: return 0.5
-        case .structuring: return 0.7
-        case .finalizing: return 0.9
+        case .generating: return 0.6
+        case .structuring: return 0.8
+        case .finalizing: return 0.95
         }
-    }
-}
-
-// MARK: - Focus Area Chip
-
-struct FocusAreaChip: View {
-    let text: String
-    let onRemove: () -> Void
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Spacing.xs) {
-            Text(text)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.sm)
-        .padding(.vertical, DesignSystem.Spacing.xs)
-        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
-        .cornerRadius(DesignSystem.CornerRadius.xs)
-    }
-}
-
-// MARK: - Flow Layout (for chips)
-
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + result.frames[index].minX, y: bounds.minY + result.frames[index].minY), proposal: .unspecified)
-        }
-    }
-
-    struct FlowResult {
-        var frames: [CGRect] = []
-        var size: CGSize = .zero
-
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var currentX: CGFloat = 0
-            var currentY: CGFloat = 0
-            var lineHeight: CGFloat = 0
-
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-
-                if currentX + size.width > maxWidth && currentX > 0 {
-                    currentX = 0
-                    currentY += lineHeight + spacing
-                    lineHeight = 0
-                }
-
-                frames.append(CGRect(x: currentX, y: currentY, width: size.width, height: size.height))
-                lineHeight = max(lineHeight, size.height)
-                currentX += size.width + spacing
-            }
-
-            self.size = CGSize(width: maxWidth, height: currentY + lineHeight)
-        }
-    }
-}
-
-// MARK: - Day Selector (Phase 2)
-
-struct DaySelector: View {
-    @Binding var selectedDays: Set<DayOfWeek>
-    let disabledDays: Set<DayOfWeek>
-    let accentColor: Color
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(DayOfWeek.allCases, id: \.self) { day in
-                DayButton(
-                    day: day,
-                    isSelected: selectedDays.contains(day),
-                    isDisabled: disabledDays.contains(day),
-                    accentColor: accentColor
-                ) {
-                    toggleDay(day)
-                }
-            }
-        }
-    }
-
-    private func toggleDay(_ day: DayOfWeek) {
-        if selectedDays.contains(day) {
-            selectedDays.remove(day)
-        } else {
-            selectedDays.insert(day)
-        }
-    }
-}
-
-struct DayButton: View {
-    let day: DayOfWeek
-    let isSelected: Bool
-    let isDisabled: Bool
-    let accentColor: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(String(day.shortName.prefix(1)))
-                .font(DesignSystem.Typography.labelSmall)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(foregroundColor)
-                .frame(width: 36, height: 36)
-                .background(backgroundColor)
-                .cornerRadius(DesignSystem.CornerRadius.sm)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
-                        .stroke(borderColor, lineWidth: isSelected ? 0 : 1)
-                )
-        }
-        .disabled(isDisabled)
-        .opacity(isDisabled ? 0.4 : 1.0)
-    }
-
-    private var foregroundColor: Color {
-        if isSelected {
-            return .white
-        } else if isDisabled {
-            return DesignSystem.Colors.textSecondary
-        } else {
-            return DesignSystem.Colors.textPrimary
-        }
-    }
-
-    private var backgroundColor: Color {
-        if isSelected {
-            return accentColor
-        } else {
-            return Color.clear
-        }
-    }
-
-    private var borderColor: Color {
-        if isDisabled {
-            return DesignSystem.Colors.textSecondary.opacity(0.3)
-        } else {
-            return DesignSystem.Colors.textSecondary.opacity(0.3)
-        }
-    }
-}
-
-#Preview {
-    let context = CoreDataManager.shared.context
-    let samplePlayer = Player(context: context)
-    samplePlayer.name = "John Doe"
-    samplePlayer.position = "midfielder"
-    samplePlayer.experienceLevel = "intermediate"
-
-    return NavigationStack {
-        AITrainingPlanGeneratorView(player: samplePlayer)
-            .environment(\.managedObjectContext, context)
-            .environmentObject(AuthenticationManager.shared)
     }
 }

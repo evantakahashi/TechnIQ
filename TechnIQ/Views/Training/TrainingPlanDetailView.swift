@@ -6,7 +6,7 @@ import CoreData
 // Pushed from the library, or the Plan tab's root for the active plan (then the nav bar's leading
 // action is "All plans" instead of back). Eyebrow "ACTIVE · role · level", condensed title,
 // one-line description, a stat rail (% complete, week n/8, total h, sessions done), the whole
-// schedule as a grid (tap a cell → day sheet), and a pinned pitch card: "TODAY" with Start and
+// schedule as a grid (tap a cell → day sheet, or the day editor for a stored plan), and a pinned pitch card: "TODAY" with Start and
 // "Skip today" (with undo) for the active plan, or "START THIS PLAN" for any other. The Edit menu
 // also carries Stop following and Delete for stored plans.
 
@@ -29,7 +29,9 @@ struct TrainingPlanDetailView: View {
     @State private var isStored = false
     @State private var showingAllPlans = false
     @State private var showingConfirmDelete = false
+    @State private var showingConfirmRemoveWeek = false
     @State private var skippedDayID: UUID?
+    @State private var weekBanner: String?
     @State private var currentWeekDay: (week: Int, day: Int)?
     @State private var todayState: PlanSchedule.Today?
     @State private var overdueDayIDs: Set<UUID> = []
@@ -88,6 +90,12 @@ struct TrainingPlanDetailView: View {
         .navigationDestination(isPresented: $showingAllPlans) {
             TrainingPlansListView(isPushed: true)
         }
+        .confirmationDialog("Remove week \(plan.weeks.count)?", isPresented: $showingConfirmRemoveWeek, titleVisibility: .visible) {
+            Button("Remove week", role: .destructive) { removeLastWeek() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Only a week with no completed sessions can be removed.")
+        }
         .confirmationDialog("Delete this plan?", isPresented: $showingConfirmDelete, titleVisibility: .visible) {
             Button("Delete plan", role: .destructive) { deletePlan() }
             Button("Cancel", role: .cancel) {}
@@ -100,8 +108,12 @@ struct TrainingPlanDetailView: View {
         .sheet(isPresented: $showingShareSheet) {
             SharePlanView(plan: plan)
         }
-        .sheet(item: $selectedDay) { selection in
-            PlanDaySheet(week: selection.week, day: selection.day, isToday: isToday(selection.day, in: selection.week))
+        .sheet(item: $selectedDay, onDismiss: { refreshPlanData() }) { selection in
+            if isStored {
+                PlanDayEditorView(player: player, planID: plan.id, weekID: selection.week.id, dayID: selection.day.id) { refreshPlanData() }
+            } else {
+                PlanDaySheet(week: selection.week, day: selection.day, isToday: isToday(selection.day, in: selection.week))
+            }
         }
         .sheet(isPresented: $showingLogSession, onDismiss: { refreshPlanData() }) {
             if let session = todaysSession {
@@ -136,6 +148,9 @@ struct TrainingPlanDetailView: View {
         if skippedDayID != nil {
             TQBanner(.info, lead: "Day skipped.", message: "Tomorrow's session is up next.", actionTitle: "Undo") { undoSkip() }
         }
+        if let weekBanner {
+            TQBanner(.info, lead: weekBanner, message: "", actionTitle: "OK") { self.weekBanner = nil }
+        }
     }
 
     private func selectCell(rowIndex: Int, dayIndex: Int) {
@@ -160,10 +175,15 @@ struct TrainingPlanDetailView: View {
 
     private var editMenu: some View {
         Menu {
-            if !plan.isPrebuilt {
+            if isStored {
                 Button { showingEditor = true } label: { Label("Edit plan", systemImage: "pencil") }
+                Button { appendWeek() } label: { Label("Add a week", systemImage: "plus.rectangle.on.rectangle") }
+                if plan.weeks.count > 1 {
+                    Button { showingConfirmRemoveWeek = true } label: { Label("Remove last week", systemImage: "minus.rectangle") }
+                }
+                Divider()
             }
-            Button { duplicatePlan() } label: { Label("Duplicate plan", systemImage: "doc.on.doc") }
+            Button { duplicatePlan() } label: { Label(isStored ? "Duplicate plan" : "Copy to My plans", systemImage: "doc.on.doc") }
             Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
             if isStored {
                 Divider()
@@ -315,8 +335,30 @@ struct TrainingPlanDetailView: View {
     }
 
     private func duplicatePlan() {
-        if let clonedPlan = TrainingPlanService.shared.clonePlan(plan, for: player) {
-            duplicatedPlanName = clonedPlan.name ?? "Copy of \(plan.name)"
+        // A template copies with its drills attached (instantiate); a stored plan clones as is.
+        let copy = isStored
+            ? TrainingPlanService.shared.clonePlan(plan, for: player)
+            : TrainingPlanService.shared.instantiatePrebuiltPlan(plan, for: player)
+        if let copy {
+            duplicatedPlanName = copy.name ?? "Copy of \(plan.name)"
+        }
+    }
+
+    private func appendWeek() {
+        if TrainingPlanService.shared.appendWeek(planId: plan.id) {
+            HapticManager.shared.success()
+            weekBanner = "Week \(plan.weeks.count + 1) added."
+            refreshPlanData()
+        }
+    }
+
+    private func removeLastWeek() {
+        if TrainingPlanService.shared.removeLastWeek(planId: plan.id) {
+            HapticManager.shared.selectionChanged()
+            weekBanner = "Week \(plan.weeks.count) removed."
+            refreshPlanData()
+        } else {
+            weekBanner = "That week has completed sessions, so it stays."
         }
     }
 

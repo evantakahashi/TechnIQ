@@ -236,7 +236,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(buildRow.waitForExistence(timeout: 5), "build plan row")
         XCTAssertTrue(tapWhenHittable(buildRow), "build plan row hittable")
         XCTAssertTrue(
-            text(containing: "AI Plan Generator").waitForExistence(timeout: 8) || app.navigationBars["AI Plan Generator"].waitForExistence(timeout: 2),
+            app.buttons["planGenerator.build"].waitForExistence(timeout: 8) || text(containing: "New plan · AI").waitForExistence(timeout: 2),
             "plan generator opened"
         )
         shot("plan-generator")

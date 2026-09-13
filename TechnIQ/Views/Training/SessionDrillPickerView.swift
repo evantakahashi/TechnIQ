@@ -9,11 +9,17 @@ import CoreData
 // session is recorded by the one engine.
 
 struct SessionDrillPickerView: View {
+    /// `.start` saves the picks onto the plan session and starts training; `.add` just hands them back
+    /// (the plan editor's "+ Add drill").
+    enum Mode { case start, add }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var viewContext
 
     let player: Player
     let planSession: PlanSession?
+    var mode: Mode = .start
+    var excluding: Set<UUID> = []
     let onStart: ([Exercise]) -> Void
 
     @State private var library: [Exercise] = []
@@ -47,7 +53,7 @@ struct SessionDrillPickerView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
-                    TQNavBar("Pick drills") {
+                    TQNavBar(mode == .start ? "Pick drills" : "Add drills") {
                         TQNavAction("Cancel") { dismiss() }
                     } trailing: {
                         Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
@@ -56,8 +62,10 @@ struct SessionDrillPickerView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         TQEyebrow(sessionEyebrow, size: 11)
-                        TQDisplayTitle("What will\nyou run?", size: .medium)
-                        TQBody("This day has no drills attached yet. Pick from your library and they stay on the day.")
+                        TQDisplayTitle(mode == .start ? "What will\nyou run?" : "Add from\nyour library", size: .medium)
+                        TQBody(mode == .start
+                               ? "This day has no drills attached yet. Pick from your library and they stay on the day."
+                               : "Tap drills in the order you want them. They are added to this session.")
                     }
 
                     TQSearchField("Search \(library.count) drills", text: $query)
@@ -80,7 +88,7 @@ struct SessionDrillPickerView: View {
             }
 
             VStack(spacing: 6) {
-                TQButton(startTitle, icon: "play.fill") { start() }
+                TQButton(startTitle, icon: mode == .start ? "play.fill" : "plus") { start() }
                     .disabled(picked.isEmpty)
                     .accessibilityIdentifier("picker.start")
             }
@@ -95,8 +103,15 @@ struct SessionDrillPickerView: View {
     }
 
     private var startTitle: String {
-        guard !picked.isEmpty else { return "Pick a drill to start" }
-        return "Start · \(picked.count) drill\(picked.count == 1 ? "" : "s") · \(totalMinutes) min"
+        let count = "\(picked.count) drill\(picked.count == 1 ? "" : "s")"
+        switch mode {
+        case .start:
+            guard !picked.isEmpty else { return "Pick a drill to start" }
+            return "Start · \(count) · \(totalMinutes) min"
+        case .add:
+            guard !picked.isEmpty else { return "Pick drills to add" }
+            return "Add · \(count) · \(totalMinutes) min"
+        }
     }
 
     private func row(_ exercise: Exercise) -> some View {
@@ -124,7 +139,10 @@ struct SessionDrillPickerView: View {
     }
 
     private func load() {
-        let exercises = CoreDataManager.shared.fetchExercises(for: player)
+        let exercises = CoreDataManager.shared.fetchExercises(for: player).filter { exercise in
+            guard let id = exercise.id else { return true }
+            return !excluding.contains(id)
+        }
         let byID = Dictionary(exercises.map { ($0.trainDrill.id, $0) }, uniquingKeysWith: { first, _ in first })
         library = TrainLibraryModel.orderedByUse(exercises.map(\.trainDrill)).compactMap { byID[$0.id] }
     }
@@ -132,7 +150,7 @@ struct SessionDrillPickerView: View {
     private func start() {
         let exercises = pickedExercises
         guard !exercises.isEmpty else { return }
-        if let planSession {
+        if mode == .start, let planSession {
             planSession.exercises = NSSet(array: exercises)
             try? viewContext.save()
         }
