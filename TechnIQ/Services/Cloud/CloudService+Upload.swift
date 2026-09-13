@@ -121,6 +121,7 @@ extension CloudService {
     // MARK: - Training Session Sync
 
     func syncTrainingSession(_ session: TrainingSession) async throws {
+        guard !Self.isRunningUnitTests else { return }
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
         }

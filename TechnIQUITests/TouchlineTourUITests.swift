@@ -206,9 +206,10 @@ final class TouchlineTourUITests: XCTestCase {
         shot("avatar")
         dismissSheet(["Done", "Close", "Cancel"])
 
-        tapWhenHittable(row("Reminders"))
+        scrollTo(row("Reminders"))
+        XCTAssertTrue(tapWhenHittable(row("Reminders")), "reminders row")
         settle(1.2)
-        XCTAssertTrue(app.switches["reminders.trainingDays"].waitForExistence(timeout: 5) || text(containing: "Training days").exists, "reminders sheet")
+        XCTAssertTrue(text(containing: "Training days").waitForExistence(timeout: 5), "reminders sheet")
         shot("reminders")
         dismissSheet(["Done", "Close", "Cancel"])
 

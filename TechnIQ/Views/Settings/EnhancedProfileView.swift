@@ -280,7 +280,6 @@ struct EnhancedProfileView: View {
                 TQRow("Edit profile") { showingEditProfile = true }
                 TQRow("Kit & avatar") { showingAvatarCustomization = true }
                 TQRow("Reminders", meta: .init(ReminderSettings.load().timeLabel())) { showingReminders = true }
-                    .accessibilityIdentifier("profile.reminders")
                 TQRow("Shop", meta: .init("", accent: "\(currentPlayer.map { Int($0.coins) } ?? 0) C")) { showingShop = true }
                 if subscriptionManager.isPro {
                     TQRow("TechnIQ Pro", subtitle: "Manage subscription", badge: TQBadge(.status("Active"))) {

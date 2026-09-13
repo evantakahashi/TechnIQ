@@ -67,7 +67,11 @@ struct TechnIQApp: App {
     @ViewBuilder
     private var rootView: some View {
         #if DEBUG
-        if TQGalleryView.isRequested {
+        if CloudService.isRunningUnitTests {
+            // The unit-test host must not stand up the real UI: its @FetchRequests race the test
+            // stack's second Core Data container and can abort the process after the tests pass.
+            Color.clear
+        } else if TQGalleryView.isRequested {
             TQGalleryView()
         } else if let screen = TQDebugScreen.requested {
             TQDebugScreenHost(screen: screen)
