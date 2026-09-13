@@ -31,16 +31,17 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - Tests: `TechnIQTests/TrustTheNumbersTests.swift` (provenance, free allowance, live progress, share steps, rating labels) — 185 unit, 25 UI green
 - Also: `Exercise.source` attribute (additive, synced) replaces description sniffing; `animationJSON` now syncs; coach pick only credits the plan day when it is the plan's drill; "Make it harder" gated on the budget
 
-## Phase 1 — Shape (IA) — PR
-- [ ] Plan tab roots on `TrainingPlanDetailView` of the active plan; nav "Change plan" → list (Pre-built / My plans / New plan); no-plan state = list
-- [ ] Deactivate + delete plan (detail Edit menu), Skip day with undo on the Today card; delete `TodaysTrainingView`
-- [ ] One session engine: `NewSessionView` becomes a drill picker feeding `ActiveTrainingView`; its save path deleted
-- [ ] `QuickDrillSheet` folded into `CustomDrillGeneratorView` (quick mode: skill + sentence; advanced collapsed; category/difficulty/equipment defaulted)
-- [ ] One coach surface: Home card + Train strip say the same thing ("2 drills the coach suggests"); `CoachDrillsView` renamed/copy fixed
-- [ ] Settings merged into You (Touchline): Account · Training profile (Phase 6) · Notifications (Phase 2) · Help · Legal · Sign out · Delete account
-- [ ] Guest mode removed: no "Train as a guest", no anonymous auth path
-- [ ] Dead code deleted: ConfettiView*, CoinDisplay animations, CalendarComponents.swift, legacy DrillDiagramView, ModernAlert, ProgressRing, ProLockedCardView, `.avatar` coach mark, cloud `get_advanced_recommendations` client path
-- Tests: UI tests updated (tab 2, You rows), unit tests for quick-mode defaults
+## Phase 1 — Shape (IA) — PR (branch feat/audit-phase1)
+- [x] Plan tab roots on `TrainingPlanDetailView` of the active plan; nav "Change plan" → list (Pre-built / My plans / New plan); no-plan state = list
+- [x] Deactivate + delete plan (detail Edit menu), Skip day with undo on the Today card; delete `TodaysTrainingView`
+- [x] One session engine: `NewSessionView` becomes a drill picker feeding `ActiveTrainingView`; its save path deleted
+- [x] `QuickDrillSheet` folded into `CustomDrillGeneratorView` (quick mode: skill + sentence; advanced collapsed; category/difficulty/equipment defaulted)
+- [x] One coach surface: Home card + Train strip say the same thing ("2 drills the coach suggests"); `CoachDrillsView` renamed/copy fixed
+- [x] Settings merged into You (Touchline): Account · Training profile (Phase 6) · Notifications (Phase 2) · Help · Legal · Sign out · Delete account
+- [x] Guest mode removed: no "Train as a guest", no anonymous auth path
+- [x] Dead code deleted: ConfettiView*, CoinDisplay animations, CalendarComponents.swift, legacy DrillDiagramView wrapper, ModernAlert, ProLockedCardView, `.avatar` coach mark, WeaknessSuggestionsCard, WalkthroughUITests (ProgressRing stays: StatCard uses it)
+- [ ] Deferred: the cloud `get_advanced_recommendations` client path in AIRecommendationService is dead but entangled with the plan generator; remove in Phase 4 when the coach functions are reworked
+- Tests: UI tests updated (plan tab root + All plans, You account rows, no guest link), `DrillGeneratorDefaultsTests`
 
 ## Phase 2 — Dated plans + reminders — PR
 - [ ] Additive Core Data: `TrainingPlan.startDate`, `PlanDay.scheduledDate` (both .xcdatamodel + +CoreDataProperties, synced)

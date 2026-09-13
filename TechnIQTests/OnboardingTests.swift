@@ -109,7 +109,6 @@ final class CoachMarkInfoTests: XCTestCase {
         XCTAssertEqual(CoachMarkInfo.train.id, "train")
         XCTAssertEqual(CoachMarkInfo.plans.id, "plans")
         XCTAssertEqual(CoachMarkInfo.progress.id, "progress")
-        XCTAssertEqual(CoachMarkInfo.avatar.id, "avatar")
     }
 
     func test_predefinedCoachMarks_haveNonEmptyText() {
@@ -117,6 +116,5 @@ final class CoachMarkInfoTests: XCTestCase {
         XCTAssertFalse(CoachMarkInfo.train.text.isEmpty)
         XCTAssertFalse(CoachMarkInfo.plans.text.isEmpty)
         XCTAssertFalse(CoachMarkInfo.progress.text.isEmpty)
-        XCTAssertFalse(CoachMarkInfo.avatar.text.isEmpty)
     }
 }
