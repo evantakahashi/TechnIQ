@@ -85,6 +85,7 @@ class YouTubeService: YouTubeServiceProtocol {
 
         let exercise = Exercise(context: context)
         exercise.id = UUID()
+        exercise.source = TrainDrill.Source.video.rawValue
         exercise.name = title
         exercise.category = category
         exercise.difficulty = Int16(difficulty)
@@ -313,6 +314,7 @@ class YouTubeService: YouTubeServiceProtocol {
     ) -> Exercise {
         let exercise = Exercise(context: context)
         exercise.id = UUID()
+        exercise.source = TrainDrill.Source.video.rawValue
         exercise.name = title
         exercise.category = category
         exercise.difficulty = Int16(difficultyAnalysis.difficulty)

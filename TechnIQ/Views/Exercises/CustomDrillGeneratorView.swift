@@ -221,7 +221,7 @@ struct CustomDrillGeneratorView: View {
                         ForEach(matches, id: \.objectID) { exercise in
                             TQRow(exercise.name ?? "Drill",
                                   subtitle: "\(exercise.category ?? "Drill") · Lvl \(max(exercise.difficulty, 1))" + (exercise.estimatedDurationSeconds > 0 ? " · \(max(1, Int(exercise.estimatedDurationSeconds) / 60)) min" : ""),
-                                  leading: .tile(TQTile.category(exercise.category, isAI: exercise.isAIGenerated, isVideo: exercise.isYouTubeExercise)),
+                                  leading: .tile(TQTile.category(exercise.category, isAI: exercise.drillSource == .ai, isVideo: exercise.drillSource == .video)),
                                   verticalPadding: DesignSystem.Spacing.rowVertical,
                                   action: { closeMatch = exercise })
                         }
@@ -527,7 +527,7 @@ struct CustomDrillGeneratorView: View {
                 let exercise = try await drillService.generateCustomDrill(request: request, for: player)
                 // "Cancel keeps nothing": a cancelled request never saves or spends quota.
                 guard !Task.isCancelled else { return }
-                SubscriptionManager.shared.markCustomDrillUsed()
+                SubscriptionManager.shared.markDrillGenerated()
                 var warnings: [String] = []
                 if case .success(let response) = drillService.generationState {
                     warnings = response.validationWarnings ?? []

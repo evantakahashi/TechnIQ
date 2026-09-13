@@ -6,7 +6,9 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
     static let shared = SubscriptionManager()
 
     #if DEBUG
-    @Published var isPro: Bool = true
+    /// DEBUG builds are Pro unless launched with `-TQFree`, which exercises the free tier end to end.
+    static let debugForcesFree = ProcessInfo.processInfo.arguments.contains("-TQFree")
+    @Published var isPro: Bool = !SubscriptionManager.debugForcesFree
     #else
     @Published var isPro: Bool = false
     #endif
@@ -52,7 +54,7 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
             }
         }
         #if DEBUG
-        isPro = true
+        isPro = !Self.debugForcesFree || hasEntitlement
         #else
         isPro = hasEntitlement
         #endif
@@ -143,42 +145,24 @@ class SubscriptionManager: ObservableObject, SubscriptionManagerProtocol {
         return "\(offer.period.value) \(offer.period.unit)"
     }
 
-    // MARK: - Free Drill Tracking (1 per day, resets at midnight)
+    // MARK: - Free AI drills (three for life, then Pro)
 
-    static let customDrillLastUsedKey = "customDrillLastUsedDate"
-    static let quickDrillLastUsedKey = "quickDrillLastUsedDate"
-
-    private func usedToday(_ key: String) -> Bool {
-        let timestamp = UserDefaults.standard.double(forKey: key)
-        guard timestamp > 0 else { return false }
-        return Calendar.current.isDateInToday(Date(timeIntervalSince1970: timestamp))
+    /// One budget for every generator entry point (Train, Home hero, coach suggestions).
+    private var freeDrills: FreeDrillAllowance {
+        FreeDrillAllowance(userUID: AuthenticationManager.shared.userUID)
     }
 
-    private func markUsedToday(_ key: String) {
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: key)
+    var freeDrillsRemaining: Int { freeDrills.remaining }
+
+    var freeDrillsLabel: String { freeDrills.label }
+
+    func canGenerateDrill() -> Bool {
+        freeDrills.canGenerate(isPro: isPro)
     }
 
-    var hasUsedFreeCustomDrill: Bool {
-        usedToday(Self.customDrillLastUsedKey)
-    }
-
-    var hasUsedFreeQuickDrill: Bool {
-        usedToday(Self.quickDrillLastUsedKey)
-    }
-
-    func canUseCustomDrill() -> Bool {
-        isPro || !hasUsedFreeCustomDrill
-    }
-
-    func canUseQuickDrill() -> Bool {
-        isPro || !hasUsedFreeQuickDrill
-    }
-
-    func markCustomDrillUsed() {
-        if !isPro { markUsedToday(Self.customDrillLastUsedKey) }
-    }
-
-    func markQuickDrillUsed() {
-        if !isPro { markUsedToday(Self.quickDrillLastUsedKey) }
+    /// Record a drill that actually came back; a cancelled or failed generation costs nothing.
+    func markDrillGenerated() {
+        freeDrills.recordGeneration(isPro: isPro)
+        objectWillChange.send()
     }
 }

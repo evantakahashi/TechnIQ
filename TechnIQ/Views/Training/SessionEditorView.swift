@@ -11,7 +11,7 @@ struct SessionEditorView: View {
     // Editable fields
     @State private var selectedSessionType: SessionType = .technical
     @State private var duration: Int = 30
-    @State private var intensity: Int = 5
+    @State private var intensity: Int = 3
     @State private var editedNotes: String = ""
     @State private var hasChanges = false
 
@@ -182,7 +182,7 @@ struct SessionEditorView: View {
 
                         Spacer()
 
-                        Text("\(intensity)/10")
+                        Text("\(intensity)/5")
                             .font(DesignSystem.Typography.labelMedium)
                             .foregroundColor(intensityColor)
                     }
@@ -190,7 +190,7 @@ struct SessionEditorView: View {
                     Slider(value: Binding(
                         get: { Double(intensity) },
                         set: { intensity = Int($0); hasChanges = true }
-                    ), in: 1...10, step: 1)
+                    ), in: 1...5, step: 1)
                     .tint(intensityColor)
 
                     HStack {
@@ -218,9 +218,9 @@ struct SessionEditorView: View {
     }
 
     private var intensityColor: Color {
-        if intensity <= 3 {
+        if intensity <= 2 {
             return DesignSystem.Colors.success
-        } else if intensity <= 6 {
+        } else if intensity <= 3 {
             return DesignSystem.Colors.accentYellow
         } else {
             return DesignSystem.Colors.accentOrange

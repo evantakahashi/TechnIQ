@@ -25,6 +25,7 @@
         <attribute name="estimatedDurationSeconds" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="variationsJSON" optional="YES" attributeType="String"/>
         <attribute name="weaknessCategories" optional="YES" attributeType="String"/>
+        <attribute name="source" optional="YES" attributeType="String"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="sessionExercises" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SessionExercise" inverseName="exercise" inverseEntity="SessionExercise"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="exercises" inverseEntity="Player"/>

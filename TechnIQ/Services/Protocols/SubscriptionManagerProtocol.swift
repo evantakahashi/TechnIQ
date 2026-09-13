@@ -12,15 +12,13 @@ protocol SubscriptionManagerProtocol: AnyObject {
     var subscriptionPeriod: String { get }
     var hasTrialOffer: Bool { get }
     var trialDuration: String { get }
-    var hasUsedFreeCustomDrill: Bool { get }
-    var hasUsedFreeQuickDrill: Bool { get }
+    var freeDrillsRemaining: Int { get }
+    var freeDrillsLabel: String { get }
 
     func checkEntitlement() async
     func loadProduct() async
     func purchase() async
     func restorePurchases() async
-    func canUseCustomDrill() -> Bool
-    func canUseQuickDrill() -> Bool
-    func markCustomDrillUsed()
-    func markQuickDrillUsed()
+    func canGenerateDrill() -> Bool
+    func markDrillGenerated()
 }

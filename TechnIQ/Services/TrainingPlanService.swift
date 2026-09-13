@@ -242,6 +242,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
     private func createExerciseFromTemplate(_ template: TemplateExercise, for player: Player) -> Exercise? {
         let exercise = Exercise(context: context)
         exercise.id = UUID()
+        exercise.source = TrainDrill.Source.template.rawValue
         exercise.name = template.name
         exercise.category = template.category
         exercise.exerciseDescription = template.description
@@ -398,6 +399,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                 if let day = session.day {
                     checkAndMarkDayCompleted(day)
                 }
+                refreshProgress(of: session.day?.week?.plan)
 
                 try context.save()
             }
@@ -527,25 +529,31 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
     }
 
     private func updatePlanProgress(_ plan: TrainingPlan) {
-        let weeks = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
-        guard !weeks.isEmpty else { return }
+        plan.progressPercentage = Self.progressPercentage(of: plan)
+    }
 
+    /// Keeps the stored percentage live after every session or skip, not only when a week closes.
+    /// A finished plan keeps its 100 %.
+    private func refreshProgress(of plan: TrainingPlan?) {
+        guard let plan, plan.completedAt == nil else { return }
+        updatePlanProgress(plan)
+        plan.updatedAt = Date()
+    }
+
+    /// Completed sessions over all sessions on days that are neither skipped nor rest, 0–100.
+    nonisolated static func progressPercentage(of plan: TrainingPlan) -> Double {
+        let weeks = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
         var totalSessions = 0
         var completedSessions = 0
-
         for week in weeks {
             let days = (week.days?.allObjects as? [PlanDay]) ?? []
-            for day in days {
-                // Exclude skipped and rest days from progress calculation
-                if day.isSkipped || day.isRestDay { continue }
-
+            for day in days where !day.isSkipped && !day.isRestDay {
                 let sessions = (day.sessions?.allObjects as? [PlanSession]) ?? []
                 totalSessions += sessions.count
                 completedSessions += sessions.filter { $0.isCompleted }.count
             }
         }
-
-        plan.progressPercentage = totalSessions > 0 ? Double(completedSessions) / Double(totalSessions) * 100.0 : 0.0
+        return totalSessions > 0 ? Double(completedSessions) / Double(totalSessions) * 100.0 : 0.0
     }
 
     // MARK: - Delete Plans
@@ -914,6 +922,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             if let week = day.week {
                 checkAndMarkWeekCompleted(week)
             }
+            refreshProgress(of: day.week?.plan)
 
             try context.save()
         } catch {

@@ -269,17 +269,17 @@ struct DashboardView: View {
             let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: now), to: Calendar.current.startOfDay(for: next)).day ?? 0
             return "\(today) · Matchday −\(days)"
         }
-        let calendar = Calendar.current
-        let trainedDays = Set(recentSessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) })
-        let trainedToday = trainedDays.contains(calendar.startOfDay(for: now))
-        return "\(today) · Day \(trainedDays.count + (trainedToday ? 0 : 1))"
+        if let plan = activePlan, let weekDay = TrainingPlanService.peekCurrentWeekAndDay(in: plan) {
+            return "\(today) · Week \(weekDay.week) of \(plan.durationWeeks)"
+        }
+        return today
     }
 
     @ViewBuilder
     private func avatar(player: Player) -> some View {
         TQAvatarCircle {
             if player.avatarConfiguration != nil {
-                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .small)
+                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .small, kitNumber: player.kitNumberValue)
                     .frame(width: 60, height: 90)
                     .scaleEffect(1.05, anchor: .top)
                     .offset(y: -2)
@@ -589,7 +589,7 @@ struct DashboardView: View {
     // MARK: - Actions
 
     private func startQuickDrill() {
-        if subscriptionManager.canUseQuickDrill() {
+        if subscriptionManager.canGenerateDrill() {
             quickDrillWeakness = nil
             showingQuickDrill = true
         } else {
@@ -611,13 +611,17 @@ struct DashboardView: View {
             request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             request.fetchLimit = 1
             if let existing = try? viewContext.fetch(request).first {
-                trainingLaunch = TrainingLaunch(exercises: [existing], planSession: todaysSession)
+                // Only a pick that IS today's plan drill counts toward the plan day.
+                let isPlanDrill = todaysExercises.contains { $0.objectID == existing.objectID }
+                trainingLaunch = TrainingLaunch(exercises: [existing], planSession: isPlanDrill ? todaysSession : nil)
                 return
             }
         }
 
+        // A coach pick is its own session: it never stands in for today's plan day.
         let exercise = Exercise(context: viewContext)
         exercise.id = UUID()
+        exercise.source = TrainDrill.Source.ai.rawValue
         exercise.name = drill.name
         exercise.exerciseDescription = "AI Coach Recommendation: \(drill.description)"
         exercise.category = drill.category
@@ -629,7 +633,7 @@ struct DashboardView: View {
         exercise.player = player
 
         try? viewContext.save()
-        trainingLaunch = TrainingLaunch(exercises: [exercise], planSession: todaysSession)
+        trainingLaunch = TrainingLaunch(exercises: [exercise], planSession: nil)
     }
 
     // MARK: - Data

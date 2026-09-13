@@ -8,6 +8,9 @@ struct QuickDrillSheet: View {
     let player: Player
     let onGenerated: (Exercise) -> Void
     var prefilledWeakness: SelectedWeakness? = nil
+    /// Seeds the prompt (drill detail's "Make it harder"); the player can still edit it.
+    var initialDescription: String = ""
+    var difficultyOverride: DifficultyLevel? = nil
 
     @State private var skillDescription: String = ""
     @State private var errorMessage: String?
@@ -19,6 +22,7 @@ struct QuickDrillSheet: View {
     }
 
     private var difficulty: DifficultyLevel {
+        if let difficultyOverride { return difficultyOverride }
         switch player.experienceLevel?.lowercased() {
         case "beginner": return .beginner
         case "advanced": return .advanced
@@ -31,6 +35,7 @@ struct QuickDrillSheet: View {
             ZStack {
                 AdaptiveBackground()
                     .ignoresSafeArea()
+                    .onAppear { if skillDescription.isEmpty { skillDescription = initialDescription } }
 
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.lg) {
@@ -166,7 +171,7 @@ struct QuickDrillSheet: View {
                 let exercise = try await drillService.generateCustomDrill(request: request, for: player)
                 await MainActor.run {
                     guard !Task.isCancelled else { return }
-                    SubscriptionManager.shared.markQuickDrillUsed()
+                    SubscriptionManager.shared.markDrillGenerated()
                     // Show the success card; the kid taps "Go to Drill" to start.
                     generatedExercise = exercise
                 }

@@ -9,7 +9,7 @@ import Foundation
 
 /// A drill as the Train screen needs it: a value copy of `Exercise`.
 struct TrainDrill: Identifiable, Equatable {
-    enum Source: Equatable {
+    enum Source: String, Equatable {
         case template, ai, manual, community, video
     }
 

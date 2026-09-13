@@ -631,11 +631,13 @@ struct ManualDrillCreatorView: View {
     private func saveDrill() {
         let exercise = Exercise(context: viewContext)
         exercise.id = UUID()
+        exercise.source = TrainDrill.Source.manual.rawValue
         exercise.name = drillName
         exercise.category = selectedCategory.rawValue
         exercise.difficulty = Int16(selectedDifficulty.numericValue)
         exercise.targetSkills = Array(selectedSkills)
         exercise.isYouTubeContent = false
+        exercise.estimatedDurationSeconds = Int16(clamping: max(duration, 1) * 60)
 
         if useStructuredMode {
             // Use formatted instructions for structured mode

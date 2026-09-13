@@ -46,6 +46,10 @@ extension Exercise {
     @NSManaged public var variationsJSON: String?
     @NSManaged public var weaknessCategories: String?
 
+    // Provenance: TrainDrill.Source raw value (template / ai / manual / community / video).
+    // Nil on rows written before 1.0; `drillSource` falls back to description heuristics.
+    @NSManaged public var source: String?
+
     // Sync change tracking
     @NSManaged public var updatedAt: Date?
 

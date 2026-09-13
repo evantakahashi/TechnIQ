@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Main avatar customization view where players can edit their avatar
 struct AvatarCustomizationView: View {
+    var kitNumber: Int? = nil
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = AvatarCustomizationViewModel()
 
@@ -58,7 +59,7 @@ struct AvatarCustomizationView: View {
             )
 
             VStack(spacing: DesignSystem.Spacing.md) {
-                ProgrammaticAvatarView(avatarState: viewModel.currentState, size: .xlarge)
+                ProgrammaticAvatarView(avatarState: viewModel.currentState, size: .xlarge, kitNumber: kitNumber)
                     .animation(.spring(response: 0.3), value: viewModel.currentState)
 
                 // Current selection label

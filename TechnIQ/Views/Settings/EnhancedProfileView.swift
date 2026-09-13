@@ -120,7 +120,7 @@ struct EnhancedProfileView: View {
             }
         }
         .sheet(isPresented: $showingAvatarCustomization) {
-            AvatarCustomizationView()
+            AvatarCustomizationView(kitNumber: currentPlayer?.kitNumberValue)
         }
         .sheet(isPresented: $showingShop) {
             ShopView()
@@ -152,7 +152,7 @@ struct EnhancedProfileView: View {
         let coins = Int(player.coins)
         return TQPitchCard(.hero, markings: .profile) {
             HStack(alignment: .top, spacing: 16) {
-                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium)
+                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium, kitNumber: kit)
                     .scaleEffect(0.65)
                     .frame(width: 78, height: 117)
                     .background(DesignSystem.Colors.surfaceBase)

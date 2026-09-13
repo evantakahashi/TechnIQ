@@ -32,9 +32,11 @@ struct ExerciseDetailView: View {
     @State private var hasFeedback: Bool = false
     @State private var showingFeedbackSuccess: Bool = false
     @State private var showingShareSheet = false
+    @State private var showingHarderDrill = false
+    @State private var showingHarderPaywall = false
 
     private var isAIGeneratedDrill: Bool {
-        exercise.exerciseDescription?.contains("AI-Generated") == true
+        exercise.drillSource == .ai
     }
 
     private var isVideoDrill: Bool {
@@ -107,6 +109,18 @@ struct ExerciseDetailView: View {
         .onAppear {
             isFavorite = exercise.isFavorite
             personalNotes = exercise.personalNotes ?? ""
+            loadExistingFeedback()
+        }
+        .sheet(isPresented: $showingHarderPaywall) { PaywallView(feature: .customDrill) }
+        .sheet(isPresented: $showingHarderDrill) {
+            if let player = exercise.player {
+                QuickDrillSheet(
+                    player: player,
+                    onGenerated: { _ in onFavoriteChanged?() },
+                    initialDescription: harderDrillPrompt,
+                    difficultyOverride: harderDifficulty
+                )
+            }
         }
         .sheet(isPresented: $showingEditor) {
             ExerciseEditorView(
@@ -176,7 +190,14 @@ struct ExerciseDetailView: View {
     }
 
     private var eyebrow: String {
-        let kind = isAIGeneratedDrill ? "AI drill" : (isVideoDrill ? "Video" : (exercise.isCommunityDrill ? "Community drill" : "Drill"))
+        let kind: String
+        switch exercise.drillSource {
+        case .ai: kind = "AI drill"
+        case .video: kind = "Video"
+        case .community: kind = "Community drill"
+        case .manual: kind = "Your drill"
+        case .template: kind = "Drill"
+        }
         return "\(kind) · \(exercise.category ?? "Technical")"
     }
 
@@ -528,10 +549,17 @@ struct ExerciseDetailView: View {
         }
     }
 
+    private func loadExistingFeedback() {
+        guard let player = exercise.player,
+              let existing = CoreDataManager.shared.fetchFeedback(for: exercise, player: player) else { return }
+        feedbackRating = Int(existing.rating)
+        difficultyFeedback = CoreDataManager.difficultyFeedbackLabel(for: existing.difficultyRating)
+        feedbackNotes = existing.notes ?? ""
+        hasFeedback = true
+    }
+
     private func saveDrillFeedback() {
-        // Need to get player - for now use a simple approach
-        let players = try? CoreDataManager.shared.context.fetch(Player.fetchRequest())
-        guard let player = players?.first else { return }
+        guard let player = exercise.player else { return }
 
         CoreDataManager.shared.saveDrillFeedback(
             for: exercise,
@@ -566,16 +594,38 @@ struct ExerciseDetailView: View {
                     .font(.subheadline)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
 
-                Text("Go to Exercises → AI Drill Generator to create a harder version.")
-                    .font(.caption)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .italic()
+                TQButton("Make it harder", style: .raised, size: .compact) {
+                    if SubscriptionManager.shared.canGenerateDrill() {
+                        showingHarderDrill = true
+                    } else {
+                        showingHarderPaywall = true
+                    }
+                }
+                .accessibilityIdentifier("drill.makeHarder")
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(DesignSystem.Colors.secondaryBlue.opacity(0.1))
             )
+        }
+    }
+}
+
+// MARK: - Harder version
+
+private extension ExerciseDetailView {
+    /// Seeds the generator so the coach builds a progression of this drill rather than a new idea.
+    var harderDrillPrompt: String {
+        let skills = (exercise.targetSkills ?? []).prefix(3).joined(separator: ", ")
+        let focus = skills.isEmpty ? "" : " Skills: \(skills)."
+        return "A harder version of \"\(exercise.name ?? "this drill")\": same setup, faster tempo, tighter space, a defender or a time limit.\(focus)"
+    }
+
+    var harderDifficulty: DifficultyLevel {
+        switch exercise.difficulty {
+        case ..<2: return .intermediate
+        default: return .advanced
         }
     }
 }

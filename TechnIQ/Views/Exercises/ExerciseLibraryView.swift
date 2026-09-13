@@ -256,7 +256,7 @@ struct ExerciseLibraryView: View {
     // MARK: - Actions
 
     private func openAIGenerator() {
-        if subscriptionManager.canUseQuickDrill() {
+        if subscriptionManager.canGenerateDrill() {
             showingCustomDrillGenerator = true
         } else {
             showingDrillPaywall = true
@@ -274,6 +274,7 @@ struct ExerciseLibraryView: View {
         for template in TemplateExerciseLibrary.shared.allExercises where !existing.contains(template.name) {
             let exercise = Exercise(context: viewContext)
             exercise.id = UUID()
+            exercise.source = TrainDrill.Source.template.rawValue
             exercise.name = template.name
             exercise.category = template.category
             exercise.exerciseDescription = template.description
@@ -431,17 +432,24 @@ extension Exercise {
     }
 
     var isManualDrill: Bool {
-        exerciseDescription?.contains("Manual Custom Drill") == true
+        exerciseDescription?.contains("Manual Custom Drill") == true || exerciseDescription == "Manual Drill"
+    }
+
+    /// Where the drill came from. Rows written since the `source` attribute exists carry it; older
+    /// rows fall back to the description markers each creation path used to leave behind.
+    var drillSource: TrainDrill.Source {
+        if let raw = source, let stored = TrainDrill.Source(rawValue: raw) { return stored }
+        if isYouTubeExercise { return .video }
+        if isCommunityDrill { return .community }
+        if isAIGenerated { return .ai }
+        if isManualDrill { return .manual }
+        return .template
     }
 
     /// Value copy for the Train layout rules. The id falls back to the object URI hash when a legacy
     /// row has no UUID, so lookups from the layout back to the row stay stable within one build.
     var trainDrill: TrainDrill {
-        let source: TrainDrill.Source = isYouTubeExercise ? .video
-            : isAIGenerated ? .ai
-            : isCommunityDrill ? .community
-            : isManualDrill ? .manual
-            : .template
+        let source = drillSource
         let minutes = isYouTubeExercise ? max(1, Int(videoDuration) / 60) : (estimatedDurationSeconds > 0 ? max(1, Int(estimatedDurationSeconds) / 60) : 0)
         return TrainDrill(
             id: id ?? UUID(uuidString: String(format: "%08X-0000-4000-8000-%012X", objectID.uriRepresentation().absoluteString.hashValue & 0xFFFFFFFF, abs(objectID.uriRepresentation().absoluteString.hashValue) & 0xFFFFFFFFFFFF)) ?? UUID(),

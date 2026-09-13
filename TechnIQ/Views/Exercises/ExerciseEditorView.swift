@@ -39,7 +39,7 @@ struct ExerciseEditorView: View {
 
     // Check if exercise is AI-generated
     private var isAIGenerated: Bool {
-        exercise.exerciseDescription?.contains("AI-Generated Custom Drill") == true
+        exercise.drillSource == .ai
     }
 
     var body: some View {

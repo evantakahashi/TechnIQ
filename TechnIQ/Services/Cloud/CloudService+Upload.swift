@@ -614,6 +614,8 @@ extension CloudService {
             "lastUsedAt": exercise.lastUsedAt as Any,
             "personalNotes": exercise.personalNotes ?? "",
             "diagramJSON": exercise.diagramJSON ?? "",
+            "animationJSON": exercise.animationJSON ?? "",
+            "source": exercise.source ?? "",
             "metabolicLoad": exercise.metabolicLoad,
             "technicalComplexity": exercise.technicalComplexity,
             "estimatedDurationSeconds": exercise.estimatedDurationSeconds,

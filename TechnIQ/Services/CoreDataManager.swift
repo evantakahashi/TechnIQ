@@ -221,6 +221,7 @@ extension CoreDataManager {
             if !exerciseExists(name: name, for: player) {
                 let exercise = Exercise(context: context)
                 exercise.id = UUID()
+                exercise.source = TrainDrill.Source.template.rawValue
                 exercise.name = name
                 exercise.category = category
                 exercise.difficulty = Int16(difficulty)
@@ -365,10 +366,14 @@ extension CoreDataManager {
         difficultyFeedback: String,
         notes: String
     ) {
-        let feedback = RecommendationFeedback(context: context)
-        feedback.id = UUID()
+        // One row per player and drill: a second rating edits the first.
+        let feedback = fetchFeedback(for: exercise, player: player) ?? {
+            let created = RecommendationFeedback(context: context)
+            created.id = UUID()
+            created.exerciseID = exercise.id?.uuidString
+            return created
+        }()
         feedback.createdAt = Date()
-        feedback.exerciseID = exercise.id?.uuidString
         feedback.rating = Int16(rating)
         feedback.recommendationSource = "AI-Generated"
         feedback.feedbackType = rating >= 4 ? "Positive" : rating <= 2 ? "Negative" : "Neutral"
@@ -417,9 +422,19 @@ extension CoreDataManager {
             format: "player == %@ AND exerciseID == %@ AND recommendationSource == %@",
             player, exerciseID, "AI-Generated"
         )
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \RecommendationFeedback.createdAt, ascending: false)]
         request.fetchLimit = 1
 
         return try? context.fetch(request).first
+    }
+
+    /// The label the rating card uses for a stored difficulty score.
+    static func difficultyFeedbackLabel(for rating: Int16) -> String {
+        switch rating {
+        case ..<3: return "easy"
+        case 3: return "right"
+        default: return "hard"
+        }
     }
 
     func getCompletionCount(for exercise: Exercise) -> Int {

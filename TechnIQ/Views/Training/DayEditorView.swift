@@ -266,7 +266,7 @@ struct SessionEditorRow: View {
                             .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(DesignSystem.Colors.textSecondary)
 
-                        Text("Intensity: \(session.intensity)/10")
+                        Text("Intensity: \(session.intensity)/5")
                             .font(DesignSystem.Typography.bodySmall)
                             .foregroundColor(intensityColor)
                     }
@@ -301,9 +301,9 @@ struct SessionEditorRow: View {
     }
 
     private var intensityColor: Color {
-        if session.intensity <= 3 {
+        if session.intensity <= 2 {
             return DesignSystem.Colors.success
-        } else if session.intensity <= 6 {
+        } else if session.intensity <= 3 {
             return DesignSystem.Colors.accentYellow
         } else {
             return DesignSystem.Colors.accentOrange

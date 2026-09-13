@@ -182,6 +182,7 @@ enum TQDemoSeed {
         if !exercises.contains(where: { $0.trainDrill.isMine }) {
             let mine = Exercise(context: context)
             mine.id = UUID()
+            mine.source = TrainDrill.Source.ai.rawValue
             mine.name = "Weak-foot finishing"
             mine.category = "Technical"
             mine.exerciseDescription = "AI-Generated Custom Drill: finish first time with the weaker foot from cut-backs."
@@ -247,6 +248,7 @@ enum TQDemoSeed {
             if let found = existing.first(where: { $0.name == name }) { return found }
             let exercise = Exercise(context: context)
             exercise.id = UUID()
+            exercise.source = TrainDrill.Source.template.rawValue
             exercise.name = name
             exercise.exerciseDescription = description
             exercise.category = "Technical"
