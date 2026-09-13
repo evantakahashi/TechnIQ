@@ -50,11 +50,11 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - [x] Reminders: plan-day + streak-at-risk scheduled; permission asked after "You're all set"; Notifications row (time, toggles)
 - Tests: `PlanScheduleTests` (dates, rotation, today/rest/overdue/complete, labels, reminder planning, settings), `HomeWeekModelTests` rewritten for dated days
 
-## Phase 3 — Plan editor + custom builder — PR
-- [ ] One editor: plan → tap a day → edit its sessions and drills (add/remove session, pick drills from library, duration, difficulty, rest toggle); add/remove week and day from the grid
-- [ ] Custom builder generates a skeleton from weeks × days/week × preferred days (no empty shells); prebuilt copies editable
-- [ ] Duplicate keeps drills; AI generator + preview on Touchline chrome
-- Tests: `PlanEditingTests` (structure ops keep ordinals/dates consistent), skeleton generation
+## Phase 3 — Plan editor + custom builder — PR (branch feat/audit-phase3)
+- [x] One editor: plan → tap a day → edit its sessions and drills (add/remove session, pick drills from library, duration, difficulty, rest toggle); add/remove week and day from the grid
+- [x] Custom builder generates a skeleton from weeks × days/week × preferred days (no empty shells); prebuilt copies editable
+- [x] Duplicate keeps drills; AI generator + preview on Touchline chrome
+- Tests: `PlanEditingTests` (skeleton, append/remove week with progress guard, sessions + drills, rest toggle, details) — 204 unit; tour visits the day editor, generator and builder
 
 ## Phase 4 — Coach — PR (+ functions deploy)
 - [ ] Daily coaching prefetched on app open / after a session, cached per day; hero never waits (6 s fallback only cold)

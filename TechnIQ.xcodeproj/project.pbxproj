@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */; };
+		9342ED1699DC2EBAA4B7DC21 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C28DF7DEA23142931CB645 /* FlowLayout.swift */; };
+		F1DD5121464FBB7B25111B1B /* PlanDayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */; };
+		40BCDDC12C4BA858B3CE198B /* TrainingPlanService+Editing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */; };
 		4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */; };
 		F2E59BA579CC00B14EA7D0FB /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */; };
 		6AD991F7EACD13025FCA8EE6 /* ReminderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */; };
@@ -84,7 +88,6 @@
 		538C65AB427B2E42962B5B19 /* CommunityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD37D4FDA3200EBA08F2F61 /* CommunityService.swift */; };
 		59C9BA907069951B8BFA63A6 /* ActiveSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56ACF65466BE2837D6786F /* ActiveSessionManager.swift */; };
 		5E36B250ED840BC0C10003B4 /* TransitionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E993CCC222121E16CC2F0587 /* TransitionSystem.swift */; };
-		5FB2A74699C3EFDEF1677742 /* WeekEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB606D20EB0F9A45D449238F /* WeekEditorView.swift */; };
 		5FCF92ADAC7BC98998D587B2 /* AITrainingPlanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */; };
 		6035CBEC54184A5ED1D058C8 /* XPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26B160D4D25B47C1EDD7846 /* XPService.swift */; };
 		6153A0BE886FC3C2FB4A7563 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 404FDED0C603AACD8A21910F /* PrivacyInfo.xcprivacy */; };
@@ -109,7 +112,6 @@
 		9F796348FDD7369884EDB583 /* MatchServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFF8FF555626C3A57587806 /* MatchServiceProtocol.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DrillDiagramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DrillDiagramTests.swift */; };
 		A8F6F5C667CCD1DBB5A1B3E2 /* CoinServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DAD104EEA40223936134617 /* CoinServiceProtocol.swift */; };
-		A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F31304560398E5F65665084 /* DayEditorView.swift */; };
 		AA01BB02CC03DD04EE05FF06 /* ProgressComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */; };
 		AA01BB02CC03DD04EE05FF08 /* ProgressModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE05FF09 /* ProgressModels.swift */; };
 		AAEA4FBDE9B0A7FC7A86EF50 /* ExerciseEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */; };
@@ -139,7 +141,6 @@
 		D29F7CA7496246BDB968E062 /* MockCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46BFAE362D84EE56A2328A8 /* MockCoreDataManager.swift */; };
 		D34B59801612065F91EE488E /* CoinService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B6C171E3237BDE2F5B5E30 /* CoinService.swift */; };
 		D3A14147BB9A8F7CDF15A8FC /* PublicProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D94F0335FDF068598A32FC /* PublicProfileView.swift */; };
-		D46F7C2F5DD956FE0C38B8FB /* SessionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2465CE756CC3395B14507526 /* SessionEditorView.swift */; };
 		D80B10729408A8596E6B0465 /* SubscriptionManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75A834C3935B479CF9C936C /* SubscriptionManagerProtocol.swift */; };
 		D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AD26664A9C012346D58B4E /* PlanEditorView.swift */; };
 		D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BCABE3F51087BE30EEB66E /* InsightsEngine.swift */; };
@@ -251,6 +252,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanEditingTests.swift; sourceTree = "<group>"; };
+		B5C28DF7DEA23142931CB645 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
+		92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDayEditorView.swift; sourceTree = "<group>"; };
+		D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingPlanService+Editing.swift"; sourceTree = "<group>"; };
 		F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanScheduleTests.swift; sourceTree = "<group>"; };
 		76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		B031DB2336D6A77EB497D7E4 /* ReminderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderSettings.swift; sourceTree = "<group>"; };
@@ -310,8 +315,6 @@
 		18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AITrainingPlanPreviewView.swift; sourceTree = "<group>"; };
 		1986206B3B3D0F8C77240541 /* AvatarModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarModels.swift; sourceTree = "<group>"; };
 		1A6B09EB848B731D4D1E7563 /* MatchServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchServiceTests.swift; sourceTree = "<group>"; };
-		1F31304560398E5F65665084 /* DayEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayEditorView.swift; sourceTree = "<group>"; };
-		2465CE756CC3395B14507526 /* SessionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionEditorView.swift; sourceTree = "<group>"; };
 		25BE580DDBB22F74CB2AB410 /* TestCoreDataStack.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestCoreDataStack.swift; sourceTree = "<group>"; };
 		CDT01A0D59D4452739F8E7A1 /* CloudServicePersistenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudServicePersistenceTests.swift; sourceTree = "<group>"; };
 		87964F854E694D04A998F579 /* CloudSyncRoundTripTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudSyncRoundTripTests.swift; sourceTree = "<group>"; };
@@ -388,7 +391,6 @@
 		COACH00000000000000000001 /* CoachMarkOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachMarkOverlay.swift; sourceTree = "<group>"; };
 		D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionCompleteView.swift; sourceTree = "<group>"; };
 		D75A834C3935B479CF9C936C /* SubscriptionManagerProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionManagerProtocol.swift; sourceTree = "<group>"; };
-		DB606D20EB0F9A45D449238F /* WeekEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekEditorView.swift; sourceTree = "<group>"; };
 		DF1635F82E133001001E8CF9 /* TechnIQ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TechnIQ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF1635FB2E133001001E8CF9 /* TechnIQApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnIQApp.swift; sourceTree = "<group>"; };
 		DF1635FD2E133001001E8CF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -546,15 +548,13 @@
 				0A474B2A18EB4A1A8CD6281C /* AITrainingPlanGeneratorView.swift */,
 				18301FEF8E7B49E252C4D4C4 /* AITrainingPlanPreviewView.swift */,
 				E9AD26664A9C012346D58B4E /* PlanEditorView.swift */,
-				DB606D20EB0F9A45D449238F /* WeekEditorView.swift */,
-				1F31304560398E5F65665084 /* DayEditorView.swift */,
-				2465CE756CC3395B14507526 /* SessionEditorView.swift */,
 				D058EE0B32BF0287AD870E1A /* SessionCompleteView.swift */,
 				TRAINHUB01234567890ABCDEF /* TrainHubView.swift */,
 				0AA18311F41B034E3F4EA29A /* ActiveTrainingView.swift */,
 				7F9F257E72835390ADFAD4EC /* WeeklyCheckInView.swift */,
 				A8A42A145BF4FDDDB40D4405 /* PlanTabView.swift */,
 				E3CA20E5627CAAD14F4673F5 /* SessionDrillPickerView.swift */,
+				92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */,
 			);
 			name = Training;
 			path = Training;
@@ -673,6 +673,7 @@
 				3238C8CCD258CF04FE87F152 /* Cloud */,
 				C7B3DAEC18D917858DC31B68 /* AIRecommendationService.swift */,
 				AA3B619E508C8D3AA87F169A /* ServiceError.swift */,
+				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -776,6 +777,7 @@
 				78D7779549A456AC11ADAA02 /* AccessibilityModifiers.swift */,
 				E993CCC222121E16CC2F0587 /* TransitionSystem.swift */,
 				543ED38229705BF69BBD79C4 /* Touchline */,
+				B5C28DF7DEA23142931CB645 /* FlowLayout.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -878,6 +880,7 @@
 				DCA70A17A2BA0B19D9055B7D /* TrainLibraryModelTests.swift */,
 				883166737FF17224528FEC3D /* TrustTheNumbersTests.swift */,
 				F151853ECB6B858808DDEF25 /* PlanScheduleTests.swift */,
+				E7334C92667B8D52D494CF64 /* PlanEditingTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1192,9 +1195,6 @@
 				F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */,
 				5FCF92ADAC7BC98998D587B2 /* AITrainingPlanPreviewView.swift in Sources */,
 				D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */,
-				5FB2A74699C3EFDEF1677742 /* WeekEditorView.swift in Sources */,
-				A90A5A6E5AD7F93E8AC251AB /* DayEditorView.swift in Sources */,
-				D46F7C2F5DD956FE0C38B8FB /* SessionEditorView.swift in Sources */,
 				AAEA4FBDE9B0A7FC7A86EF50 /* ExerciseEditorView.swift in Sources */,
 				6035CBEC54184A5ED1D058C8 /* XPService.swift in Sources */,
 				63D86C44FCB11CEF497C3A2F /* AchievementService.swift in Sources */,
@@ -1301,6 +1301,9 @@
 				1B063906C319AD0180CD07A1 /* PlanSchedule.swift in Sources */,
 				6AD991F7EACD13025FCA8EE6 /* ReminderSettings.swift in Sources */,
 				F2E59BA579CC00B14EA7D0FB /* NotificationSettingsView.swift in Sources */,
+				40BCDDC12C4BA858B3CE198B /* TrainingPlanService+Editing.swift in Sources */,
+				F1DD5121464FBB7B25111B1B /* PlanDayEditorView.swift in Sources */,
+				9342ED1699DC2EBAA4B7DC21 /* FlowLayout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1327,6 +1330,7 @@
 				B998652CFABAE10DE8A418A8 /* TrainLibraryModelTests.swift in Sources */,
 				DB0DFBD7F71606FA0C21AA4D /* TrustTheNumbersTests.swift in Sources */,
 				4F20B7E1A438F7611B7E7BF4 /* PlanScheduleTests.swift in Sources */,
+				565469AA12836DE5C1FF32A8 /* PlanEditingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -140,7 +140,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 |------|-----------|
 | Auth | AuthenticationView (SignInLandingView + EmailAuthView; no guest mode), UnifiedOnboardingView (5 decision steps → plan gen → OnboardingPaywallView) |
 | Dashboard | DashboardView (Home; HomeWeekModel), CoachDrillsView, TrainHubView, PlayerProgressView |
-| Training Plans | PlanTabView (tab 3: active plan's TrainingPlanDetailView with "All plans", else the library), TrainingPlansListView, AITrainingPlanGeneratorView, PlanEditorView, DayEditorView |
+| Training Plans | PlanTabView (tab 3: active plan's TrainingPlanDetailView with "All plans", else the library), TrainingPlansListView, AITrainingPlanGeneratorView + AITrainingPlanPreviewView, CustomPlanBuilderView (full skeleton), PlanEditorView (name/description/level), PlanDayEditorView (the one editing screen: tap a day of a stored plan; sessions, drills, rest toggle; Add/Remove week from the Edit menu; `Services/TrainingPlanService+Editing.swift`) |
 | Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet; the only session engine), SessionDrillPickerView (plan day without drills), SessionCompleteView, SessionHistoryView, SessionCalendarView |
 | Exercises | ExerciseLibraryView (Train tab: My drills + per-skill sections from `Models/TrainLibraryModel.swift`), TrainSkillListView (See all), ExerciseDetailView, CustomDrillGeneratorView (the one generator: quick by default, More options collapsed; `prefill` + `onCreated` for Home / coach / Make-it-harder entry points), DrillDiagramView (+TQDiagram), SharedDrillDetailView |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |

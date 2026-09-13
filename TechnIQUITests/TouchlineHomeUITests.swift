@@ -213,7 +213,9 @@ final class TouchlineHomeUITests: XCTestCase {
         let done = app.buttons["Done"]
         XCTAssertTrue(done.waitForExistence(timeout: 3), "Done button")
         done.tap()
-        XCTAssertTrue(start.waitForExistence(timeout: 15), "back on Home")
+        // The day is done now: Home offers the next session, or a rest-day hero with "Train anyway".
+        let backHome = start.waitForExistence(timeout: 15) || app.buttons["Train anyway"].waitForExistence(timeout: 5)
+        XCTAssertTrue(backHome, "back on Home")
         shot("home-after-full-session")
     }
 
@@ -234,7 +236,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(buildRow.waitForExistence(timeout: 5), "build plan row")
         XCTAssertTrue(tapWhenHittable(buildRow), "build plan row hittable")
         XCTAssertTrue(
-            text(containing: "AI Plan Generator").waitForExistence(timeout: 8) || app.navigationBars["AI Plan Generator"].waitForExistence(timeout: 2),
+            app.buttons["planGenerator.build"].waitForExistence(timeout: 8) || text(containing: "New plan · AI").waitForExistence(timeout: 2),
             "plan generator opened"
         )
         shot("plan-generator")

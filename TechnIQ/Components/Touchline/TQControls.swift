@@ -384,3 +384,40 @@ struct TQProgressBar: View {
     .background(DesignSystem.Colors.surfaceBase)
 }
 #endif
+
+// MARK: - Value stepper (minutes, intensity, weeks)
+
+/// A labelled number with minus / plus buttons. `format` renders the value ("45 min", "3 / 5").
+struct TQValueStepper: View {
+    let label: String
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+    var step: Int = 1
+    var format: (Int) -> String = { "\($0)" }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(DesignSystem.Typography.titleMedium)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+            Spacer(minLength: 8)
+            Text(format(value))
+                .font(Font.system(size: 16, weight: .semibold).width(.condensed).monospacedDigit())
+                .foregroundColor(DesignSystem.Colors.grass)
+                .frame(minWidth: 56, alignment: .trailing)
+            TQIconButton("minus", style: .raised, shape: .square, size: 32, accessibilityLabel: "Decrease \(label.lowercased())") {
+                value = max(range.lowerBound, value - step)
+            }
+            .disabled(value <= range.lowerBound)
+            .opacity(value <= range.lowerBound ? 0.4 : 1)
+            TQIconButton("plus", style: .raised, shape: .square, size: 32, accessibilityLabel: "Increase \(label.lowercased())") {
+                value = min(range.upperBound, value + step)
+            }
+            .disabled(value >= range.upperBound)
+            .opacity(value >= range.upperBound ? 0.4 : 1)
+        }
+        .padding(.vertical, DesignSystem.Spacing.rowVertical)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(format(value))
+    }
+}
