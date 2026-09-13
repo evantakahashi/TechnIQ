@@ -66,11 +66,12 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - Also removed the dead `get_advanced_recommendations` client path (deferred from Phase 1); coach name is player-chosen (You → Your coach)
 - Tests: `CoachTests` (decoding, library payload, week recap), review trigger in `PlanEditingTests`, `functions/test_coach_prompts.py` — 210 unit
 
-## Phase 5 — Monetization — PR
-- [ ] One `TQPaywall` (replaces PaywallView + OnboardingPaywallView); benefits = real gates only
-- [ ] 3 lifetime free AI drills, counter on the generator ("2 free drills left"); "Pro" tag on every gated row; AI plans Pro from Home too
-- [ ] StoreKit configuration file for local purchase testing; `-TQFree` path in UI tests
-- Tests: gate/counter unit tests, UI test for the free path
+## Phase 5 — Monetization — PR (branch feat/audit-phase5)
+- [x] One `TQPaywall` (replaces PaywallView + OnboardingPaywallView); benefits = real gates only
+- [x] 3 lifetime free AI drills, counter on the generator ("2 free drills left"); "Pro" tag on every gated row; AI plans Pro from Home too
+- [x] StoreKit configuration file for local purchase testing; `-TQFree` path in UI tests
+- `Models/ProGates.swift` is the free-tier contract (first AI plan free, 3 AI drills for life); `Config/TechnIQ.storekit` + scheme reference for local purchases
+- Tests: `ProGatesTests`, `test_freeTier_labelsGatesBeforeTheTap` (-TQFree) — 213 unit
 
 ## Phase 6 — Retention additions — PR(s)
 - [ ] Resume session: persist `ActiveSessionManager` state, `scenePhase` handling, "Session in progress" card on Home

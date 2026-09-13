@@ -95,8 +95,9 @@ struct UnifiedOnboardingView: View {
             } else if step == .generating {
                 planGenerationStep
             } else {
-                OnboardingPaywallView(
-                    planName: selectedGoal,
+                PaywallView(
+                    feature: .dailyCoaching,
+                    mode: .onboarding(planName: "Your plan"),
                     onContinueFree: { isOnboardingComplete = true },
                     onPurchaseComplete: { isOnboardingComplete = true }
                 )

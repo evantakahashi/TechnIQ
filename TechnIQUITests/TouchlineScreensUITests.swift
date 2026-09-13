@@ -167,6 +167,37 @@ final class TouchlineScreensUITests: XCTestCase {
 
     // MARK: - Train sections
 
+    // MARK: - Free tier (Phase 5)
+
+    func test_freeTier_labelsGatesBeforeTheTap() throws {
+        launch(["-TQSeedDemo", "-TQLocalUser", "-TQFree", "-TQTab", "1"])
+        XCTAssertTrue(button(containing: "New drill").waitForExistence(timeout: 60), "train tab")
+        dismissCoachMarkIfPresent()
+
+        // + New drill → the AI row carries the free budget; the generator repeats it.
+        tapWhenHittable(button(containing: "New drill"))
+        XCTAssertTrue(text(containing: "free left").waitForExistence(timeout: 6), "drill budget on the AI row")
+        shot("free-new-drill-sheet")
+        tapWhenHittable(row("Generate with Coach"))
+        XCTAssertTrue(app.staticTexts["generator.freeDrills"].waitForExistence(timeout: 8), "free drills counter on the generator")
+        XCTAssertTrue(app.staticTexts["generator.freeDrills"].label.contains("free drill"), "counter reads the budget")
+        shot("free-generator")
+        dismissSheet()
+
+        // Plans → All plans → + New plan: a second AI plan says Pro, and the tap opens the paywall.
+        app.buttons["Plans"].tap()
+        XCTAssertTrue(app.buttons["plan.allPlans"].waitForExistence(timeout: 20), "plan tab")
+        tapWhenHittable(app.buttons["plan.allPlans"])
+        XCTAssertTrue(button(containing: "New plan").waitForExistence(timeout: 8), "library")
+        tapWhenHittable(button(containing: "New plan"))
+        XCTAssertTrue(text(containing: "Pro").waitForExistence(timeout: 6), "AI plan row labelled Pro")
+        tapWhenHittable(row("Build it with Coach"))
+        XCTAssertTrue(text(containing: "TechnIQ Pro").waitForExistence(timeout: 8) && text(containing: "Pro adds").exists, "paywall opened")
+        XCTAssertTrue(text(containing: "Always free").exists, "paywall lists what stays free")
+        shot("free-paywall")
+        dismissSheet(buttonTitles: ["Close", "Cancel", "Done"])
+    }
+
     func test_train_sectionsSeeAllPinAndSearch() throws {
         launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "1"])
         XCTAssertTrue(button(containing: "New drill").waitForExistence(timeout: 60), "train tab")

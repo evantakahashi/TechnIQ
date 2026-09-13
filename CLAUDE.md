@@ -123,6 +123,8 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 **Fetch predicates:** derive `@FetchRequest` predicates from `AuthenticationManager.shared.playerPredicate` / `ownedByPlayerPredicate` in `init`, never only in `onAppear` (SwiftUI re-runs `init` on parent re-renders).
 **Dated plans:** progression is still completion-based, but `Models/PlanSchedule.swift` puts a date on every plan day (anchor = `startedAt ?? createdAt`; week n = seven days from anchor + 7(n−1); pinned weekdays land inside their week, so a mid-week anchor rotates the walk order — `getCurrentDay`/`peekCurrentDay` walk in calendar order). `PlanSchedule.today` drives Home and the plan tab: `.session(overdue:)` (catch-up), `.rest(next:)` ("Rest day · Next Thu"), `.complete`. Reminders: `NotificationManager.refresh(for:)` rebuilds every local notification from the plan's dates + `ReminderSettings` (You → Reminders; permission is asked after onboarding's plan generation).
 
+**Free tier:** `Models/ProGates.swift` is the contract (first AI plan free, 3 AI drills for life via `FreeDrillAllowance`, coaching + weekly review + further AI plans are Pro). Every gate is labelled before the tap (row badges from `SubscriptionManager.drillGateLabel` / `planGateLabel(for:)`), and `PaywallView(feature:mode:)` is the one paywall (onboarding mode adds Continue with Free). `Config/TechnIQ.storekit` is wired into the scheme's Run action for local purchases; `-TQFree` exercises the free tier in DEBUG.
+
 **Coach:** `AICoachService` sends the player's library (ids) and today's plan session to `get_daily_coaching`; the answer is snake_case and decoded through explicit `CodingKeys` in `Models/AICoachModels.swift` (never switch to a key strategy). Home never waits on the coach: the plan hero shows at once and the coach's cue lands as the body line ("Marta: …"); a different library pick appears as "swap in …". No plan → `coachHero` (library pick, or "Build a fresh one" through the generator, which counts). Weekly review: `refreshWeeklyReview(for:)` fires when a plan week's seven-day window has ended (`weeklyReview.reviewed.<planId>` in UserDefaults); `WeeklyReviewView` = `WeekRecap` (pure) + per-change accept. The coach's name is player-chosen (`CoachIdentity`, You → Your coach) and fronts every coach label. Prompts live in `functions/coach_prompts.py` (tested).
 
 **Pure logic for tests:** `Models/PlanSchedule.swift` + `NotificationManager.plan(...)` (`PlanScheduleTests`), `Models/TrainLibraryModel.swift` (Train sections: skill mapping, My drills first, two-drill minimum, pins, usage order, row meta), `Models/FreeDrillAllowance.swift` (3 free AI drills for life, per user), `TrainingPlanService.progressPercentage(of:)`, `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
@@ -140,7 +142,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 ## View Structure
 | Area | Key Views |
 |------|-----------|
-| Auth | AuthenticationView (SignInLandingView + EmailAuthView; no guest mode), UnifiedOnboardingView (5 decision steps → plan gen → OnboardingPaywallView) |
+| Auth | AuthenticationView (SignInLandingView + EmailAuthView; no guest mode), UnifiedOnboardingView (5 decision steps → plan gen → PaywallView in onboarding mode) |
 | Dashboard | DashboardView (Home; HomeWeekModel), CoachDrillsView, TrainHubView, PlayerProgressView |
 | Training Plans | PlanTabView (tab 3: active plan's TrainingPlanDetailView with "All plans", else the library), TrainingPlansListView, AITrainingPlanGeneratorView + AITrainingPlanPreviewView, CustomPlanBuilderView (full skeleton), PlanEditorView (name/description/level), PlanDayEditorView (the one editing screen: tap a day of a stored plan; sessions, drills, rest toggle; Add/Remove week from the Edit menu; `Services/TrainingPlanService+Editing.swift`) |
 | Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet; the only session engine), SessionDrillPickerView (plan day without drills), SessionCompleteView, WeeklyReviewView (end-of-week recap + coach changes), SessionHistoryView, SessionCalendarView |
@@ -149,7 +151,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
 | Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |
 | Community | CommunityView (Feed / Drills / Leaderboard), DrillMarketplaceView (drill of the week) |
-| Settings | EnhancedProfileView (You tab: also subscription, restore, legal, version, sign out, delete account — no Settings sheet), EditProfileView, SharePlanView |
+| Settings | EnhancedProfileView (You tab: also subscription, restore, legal, version, sign out, delete account — no Settings sheet), EditProfileView, NotificationSettingsView, CoachNameView, PaywallView, SharePlanView |
 
 ## Deferred / Outstanding
 - API key rotation (keys in functions/.env.yaml need revoking) — USER ACTION

@@ -44,6 +44,7 @@ struct DashboardView: View {
 
     // Coach (Pro)
     @State private var coachSwapExercise: Exercise?
+    @State private var paywallFeature: PaywallFeature?
     @State private var showingWeeklyReview = false
     @State private var showingCoachBuild = false
     @State private var coachDrillCount = 0
@@ -157,7 +158,7 @@ struct DashboardView: View {
             destination(for: route)
         }
         .sheet(isPresented: $showingQuickDrillPaywall) {
-            PaywallView(feature: .quickDrill)
+            PaywallView(feature: .customDrill)
         }
         .sheet(isPresented: $showingMatchLog) {
             if let player = currentPlayer {
@@ -182,6 +183,9 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingProfileCreation) {
             UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
+        }
+        .sheet(item: $paywallFeature) { feature in
+            PaywallView(feature: feature)
         }
         .sheet(isPresented: $showingWeeklyReview) {
             if let player = currentPlayer {
@@ -368,6 +372,13 @@ struct DashboardView: View {
         return false
     }
 
+    /// " 3 free AI drills left." on the free tier, so the gate is known before the tap.
+    private var freeDrillsSuffix: String {
+        guard !subscriptionManager.isPro else { return "" }
+        let remaining = subscriptionManager.freeDrillsRemaining
+        return remaining == 0 ? " AI drills need Pro now." : " \(remaining) free AI drill\(remaining == 1 ? "" : "s") left."
+    }
+
     private func restHero(session: PlanSession, player: Player) -> some View {
         var next = "Next session soon"
         if case .rest(let upcoming)? = todayState, let upcoming {
@@ -411,23 +422,23 @@ struct DashboardView: View {
             TQHeroCard(
                 eyebrow: "Your first session",
                 title: "Ten minutes, one ball, a wall",
-                body: "No plan yet. Start with a quick drill built for your position and the coach will learn from how it goes.",
+                body: "No plan yet. Start with a quick drill built for your position and \(coachName) will learn from how it goes.\(freeDrillsSuffix)",
                 actionTitle: "Start quick drill",
                 linkTitle: "build a plan first",
                 markings: .heroSimple,
                 action: { startQuickDrill() },
-                linkAction: { showingPlanGenerator = true }
+                linkAction: { openPlanGenerator(for: player) }
             )
         } else {
             TQHeroCard(
                 eyebrow: "Today's session",
                 title: "Quick drill for your weakest skill",
-                body: "No active plan. The coach builds a ten-minute drill around what needs work most.",
+                body: "No active plan. \(coachName) builds a ten-minute drill around what needs work most.\(freeDrillsSuffix)",
                 actionTitle: "Start quick drill",
                 linkTitle: "build a plan",
                 markings: .heroSimple,
                 action: { startQuickDrill() },
-                linkAction: { showingPlanGenerator = true }
+                linkAction: { openPlanGenerator(for: player) }
             )
         }
     }
@@ -573,15 +584,17 @@ struct DashboardView: View {
         TQRowList {
             if let plan = activePlan {
                 TQRow(plan.name, meta: .init(planRowMeta(plan)), action: { route = .planDetail(plan) })
-                if aiCoachService.weeklyCheckInAvailable, subscriptionManager.isPro {
+                if aiCoachService.weeklyCheckInAvailable {
                     TQRow("Week \(aiCoachService.completedWeekNumber) review ready",
-                          subtitle: "\(coachName) read the week; see what changes",
-                          badge: TQBadge(.status("New")),
-                          action: { showingWeeklyReview = true })
+                          subtitle: subscriptionManager.isPro ? "\(coachName) read the week; see what changes" : "\(coachName)'s review of the week · Pro",
+                          badge: TQBadge(.status(subscriptionManager.isPro ? "New" : "Pro")),
+                          action: { if subscriptionManager.isPro { showingWeeklyReview = true } else { paywallFeature = .weeklyAdaptation } })
                         .accessibilityIdentifier("home.weeklyReview")
                 }
             } else {
-                TQRow("Build a training plan", badge: TQBadge(.text("AI")), action: { showingPlanGenerator = true })
+                TQRow("Build a training plan",
+                      badge: TQBadge(.text(subscriptionManager.planGateLabel(for: player) ?? "AI")),
+                      action: { openPlanGenerator(for: player) })
             }
 
             if forcedState != "empty", let match = recentMatches.first(where: { ($0.date ?? .distantFuture) <= Date() }) {
@@ -686,6 +699,14 @@ struct DashboardView: View {
     }
 
     // MARK: - Actions
+
+    private func openPlanGenerator(for player: Player) {
+        if subscriptionManager.canGeneratePlan(for: player) {
+            showingPlanGenerator = true
+        } else {
+            paywallFeature = .trainingPlan
+        }
+    }
 
     private func startQuickDrill() {
         if subscriptionManager.canGenerateDrill() {
