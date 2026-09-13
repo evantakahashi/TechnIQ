@@ -15,11 +15,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
     @Published var recommendationStatus: RecommendationStatus = .idle
     @Published var isTrainingModel: Bool = false
     
-    // Local cache for recommendations
-    private var cachedRecommendations: [MLDrillRecommendation] = []
-    private var lastRecommendationFetch: Date?
-    private let cacheExpirationTime: TimeInterval = 30 * 60 // 30 minutes
-
     // Rate limiting
     private var lastRequestTimes: [String: Date] = [:]
     private let requestCooldown: TimeInterval = 30
@@ -144,51 +139,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         // If all attempts failed or returned duplicates
         recommendationStatus = .error("No unique recommendations found")
         throw MLError.insufficientData
-    }
-    
-    func getCloudRecommendations(for player: Player, limit: Int = 5) async throws -> [MLDrillRecommendation] {
-        try checkRateLimit(for: "get_advanced_recommendations")
-        #if DEBUG
-        print("CloudMLService: Fetching ML-powered recommendations for \(player.name ?? "Unknown")")
-
-        #endif
-        // Check cache first
-        if let cachedRecs = getCachedRecommendations(limit: limit) {
-            #if DEBUG
-            print("Returning cached recommendations")
-            #endif
-            return cachedRecs
-        }
-        
-        recommendationStatus = .loading
-        
-        do {
-            // Try cloud-based ML recommendations first
-            let cloudRecommendations = try await fetchFromCloudML(player: player, limit: limit)
-            
-            // Cache the results
-            cacheRecommendations(cloudRecommendations)
-            recommendationStatus = .success
-            
-            #if DEBUG
-            
-            print("CloudMLService: Successfully fetched \(cloudRecommendations.count) ML recommendations")
-            
-            #endif
-            return cloudRecommendations
-            
-        } catch {
-            #if DEBUG
-            print("CloudMLService: Cloud ML failed (\(error.localizedDescription)), falling back to enhanced rules")
-            #endif
-            recommendationStatus = .fallbackToRules
-            
-            // Fallback to enhanced rule-based recommendations
-            let fallbackRecs = generateEnhancedRuleRecommendations(for: player, limit: limit)
-            cacheRecommendations(fallbackRecs)
-            
-            return fallbackRecs
-        }
     }
     
     // MARK: - YouTube Recommendations Integration
@@ -584,213 +534,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         throw lastError ?? MLError.networkError
     }
 
-    // MARK: - Cloud ML Functions Integration
-
-    private func fetchFromCloudML(player: Player, limit: Int) async throws -> [MLDrillRecommendation] {
-        guard let userUID = auth.currentUser?.uid else {
-            throw MLError.notAuthenticated
-        }
-        
-        // Prepare user context for ML model
-        let userContext = try await buildUserContext(for: player)
-        
-        // Try real Firebase Functions first, fallback to simulation
-        do {
-            return try await callFirebaseFunctionRecommendations(userUID: userUID, player: player, limit: limit)
-        } catch {
-            #if DEBUG
-            print("Firebase Functions not available, using simulation: \(error.localizedDescription)")
-            #endif
-            return try await simulateCloudMLRecommendations(player: player, context: userContext, limit: limit)
-        }
-    }
-    
-    private func callFirebaseFunctionRecommendations(userUID: String, player: Player, limit: Int) async throws -> [MLDrillRecommendation] {
-        // get_advanced_recommendations is the deployed endpoint (functions/main.py); it requires
-        // user_id + player_profile and returns a "recommendations" array.
-        let functionsURL = "https://us-central1-techniq-b9a27.cloudfunctions.net/get_advanced_recommendations"
-
-        guard let url = URL(string: functionsURL) else {
-            throw MLError.networkError
-        }
-
-        // Prepare request body
-        let requestBody: [String: Any] = [
-            "user_id": userUID,
-            "player_profile": buildPlayerProfile(for: player),
-            "limit": limit
-        ]
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        if let user = auth.currentUser {
-            let idToken = try await user.getIDToken()
-            request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        }
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        // Make the request
-        let (data, response) = try await performRequestWithRetry(request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw MLError.networkError
-        }
-
-        // Parse response
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let recommendations = json["recommendations"] as? [[String: Any]] else {
-            throw MLError.modelNotAvailable
-        }
-
-        // The collaborative-filtering path returns camelCase (exerciseName/matchPercentage/
-        // reason/confidenceScore); the fallback path returns snake_case (exercise_id/
-        // match_percentage/confidence/reason). Accept either.
-        var mlRecommendations: [MLDrillRecommendation] = []
-
-        for recData in recommendations {
-            let exerciseName = (recData["exerciseName"] as? String)
-                ?? (recData["exercise_name"] as? String)
-                ?? (recData["exercise_id"] as? String)
-                ?? "Unknown Exercise"
-
-            let matchPercentage = (recData["matchPercentage"] as? Double)
-                ?? (recData["match_percentage"] as? Double)
-
-            let confidenceScore = (recData["confidenceScore"] as? Double)
-                ?? (recData["confidence_score"] as? Double)
-                ?? (recData["confidence"] as? Double)
-                ?? matchPercentage.map { $0 / 100.0 }
-                ?? 0.5
-
-            let mlRec = MLDrillRecommendation(
-                exerciseId: (recData["exercise_id"] as? String) ?? (recData["exerciseId"] as? String) ?? "",
-                exerciseName: exerciseName,
-                category: recData["category"] as? String ?? "General",
-                difficulty: recData["difficulty"] as? Int ?? 3,
-                confidenceScore: confidenceScore,
-                reasoning: (recData["reason"] as? String) ?? (recData["reasoning"] as? String) ?? "ML Recommendation",
-                recommendationType: .collaborativeFiltering,
-                estimatedDuration: recData["estimated_duration"] as? Int ?? 15,
-                targetSkills: recData["target_skills"] as? [String] ?? [],
-                personalizedInstructions: "Complete this ML-recommended exercise focusing on technique",
-                expectedImprovement: 0.15,
-                similarUserSuccess: recData["similar_user_success"] as? Double ?? 0.8,
-                createdAt: Date()
-            )
-            mlRecommendations.append(mlRec)
-        }
-
-        #if DEBUG
-
-        print("Received \(mlRecommendations.count) recommendations from get_advanced_recommendations")
-
-        #endif
-        return mlRecommendations
-    }
-    
-    private func buildUserContext(for player: Player) async throws -> UserMLContext {
-        // Fetch recent training data
-        let recentSessions = try await fetchRecentTrainingSessions(for: player, limit: 10)
-        let userFeedback = try await fetchUserFeedback(for: player, limit: 20)
-        let skillProgress = analyzeSkillProgress(for: player)
-        
-        return UserMLContext(
-            playerId: player.id?.uuidString ?? "",
-            skillLevels: skillProgress.skillLevels,
-            recentPerformance: skillProgress.recentPerformance,
-            trainingFrequency: calculateTrainingFrequency(from: recentSessions),
-            preferredDifficulty: mapExperienceLevelToNumber(player.experienceLevel ?? "Beginner"),
-            feedbackPatterns: analyzeFeedbackPatterns(from: userFeedback),
-            lastActiveDate: Date(),
-            sessionCount: recentSessions.count
-        )
-    }
-    
-    // MARK: - Enhanced Rule-Based Fallback
-    
-    private func generateEnhancedRuleRecommendations(for player: Player, limit: Int) -> [MLDrillRecommendation] {
-        #if DEBUG
-        print("Generating enhanced rule-based recommendations with ML insights")
-        
-        #endif
-        // Use the existing CoreDataManager logic but enhance it with ML concepts
-        let coreRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: limit * 2)
-        
-        // Convert to ML format and add ML-specific scoring
-        var mlRecommendations: [MLDrillRecommendation] = []
-        
-        for (index, rec) in coreRecommendations.enumerated() {
-            if index >= limit { break }
-            
-            let mlRec = MLDrillRecommendation(
-                exerciseId: rec.exercise.id?.uuidString ?? "",
-                exerciseName: rec.exercise.name ?? "Unknown Exercise",
-                category: categoryToString(rec.category),
-                difficulty: Int(rec.exercise.difficulty),
-                confidenceScore: calculateEnhancedConfidence(for: rec, player: player),
-                reasoning: enhanceReasoning(rec.reason, with: "Enhanced rule-based analysis"),
-                recommendationType: .enhancedRules,
-                estimatedDuration: 15, // Default 15 minutes
-                targetSkills: extractTargetSkills(from: rec),
-                personalizedInstructions: generatePersonalizedInstructions(for: rec, player: player),
-                expectedImprovement: estimateImprovement(for: rec, player: player),
-                similarUserSuccess: 0.7, // Default for rule-based
-                createdAt: Date()
-            )
-            
-            mlRecommendations.append(mlRec)
-        }
-        
-        return mlRecommendations
-    }
-    
-    // MARK: - ML Simulation (Temporary)
-    
-    private func simulateCloudMLRecommendations(player: Player, context: UserMLContext, limit: Int) async throws -> [MLDrillRecommendation] {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        
-        // This simulates what the cloud ML function would return
-        // In reality, this would be collaborative filtering + content-based recommendations
-        
-        let baseRecommendations = YouTubeService.shared.getSmartRecommendations(for: player, limit: limit * 2)
-        var mlRecommendations: [MLDrillRecommendation] = []
-        
-        for (index, rec) in baseRecommendations.enumerated() {
-            if index >= limit { break }
-            
-            // Simulate ML confidence scoring
-            let mlConfidence = simulateMLConfidenceScore(for: rec, context: context)
-            
-            let mlRec = MLDrillRecommendation(
-                exerciseId: rec.exercise.id?.uuidString ?? "",
-                exerciseName: rec.exercise.name ?? "Unknown Exercise",
-                category: categoryToString(rec.category),
-                difficulty: Int(rec.exercise.difficulty),
-                confidenceScore: mlConfidence,
-                reasoning: enhanceReasoning(rec.reason, with: "Collaborative filtering + content analysis"),
-                recommendationType: .simulatedML,
-                estimatedDuration: 15, // Default 15 minutes
-                targetSkills: extractTargetSkills(from: rec),
-                personalizedInstructions: generatePersonalizedInstructions(for: rec, player: player),
-                expectedImprovement: estimateImprovement(for: rec, player: player),
-                similarUserSuccess: Double.random(in: 0.6...0.95), // Simulated user success rate
-                createdAt: Date()
-            )
-            
-            mlRecommendations.append(mlRec)
-        }
-        
-        // Sort by ML confidence
-        mlRecommendations.sort { $0.confidenceScore > $1.confidenceScore }
-        
-        return Array(mlRecommendations.prefix(limit))
-    }
-    
     // MARK: - Helper Functions
     
     private func getExistingYouTubeVideoIds(for player: Player) -> Set<String> {
@@ -819,21 +562,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         return videoIds
     }
     
-    private func getCachedRecommendations(limit: Int) -> [MLDrillRecommendation]? {
-        guard let lastFetch = lastRecommendationFetch,
-              Date().timeIntervalSince(lastFetch) < cacheExpirationTime,
-              !cachedRecommendations.isEmpty else {
-            return nil as [MLDrillRecommendation]?
-        }
-        
-        return Array(cachedRecommendations.prefix(limit))
-    }
-    
-    private func cacheRecommendations(_ recommendations: [MLDrillRecommendation]) {
-        cachedRecommendations = recommendations
-        lastRecommendationFetch = Date()
-    }
-    
     private func calculateEnhancedConfidence(for rec: YouTubeService.DrillRecommendation, player: Player) -> Double {
         // Enhanced confidence calculation that mimics ML scoring
         var confidence = rec.confidenceScore
@@ -850,21 +578,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         }
         
         return min(confidence, 1.0)
-    }
-    
-    private func simulateMLConfidenceScore(for rec: YouTubeService.DrillRecommendation, context: UserMLContext) -> Double {
-        // Simulate more sophisticated ML confidence scoring
-        var score = rec.confidenceScore
-        
-        // Simulate collaborative filtering boost
-        score += Double.random(in: 0.05...0.25)
-        
-        // Simulate user pattern matching
-        if context.trainingFrequency > 3 {
-            score += 0.1 // Active users get better recommendations
-        }
-        
-        return min(score, 1.0)
     }
     
     private func enhanceReasoning(_ originalReasoning: String, with mlInsight: String) -> String {
@@ -957,46 +670,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         return try CoreDataManager.shared.context.fetch(request)
     }
     
-    private func fetchUserFeedback(for player: Player, limit: Int) async throws -> [RecommendationFeedback] {
-        // Fetch from Core Data for now
-        let request: NSFetchRequest<RecommendationFeedback> = RecommendationFeedback.fetchRequest()
-        request.predicate = NSPredicate(format: "player == %@", player)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \RecommendationFeedback.createdAt, ascending: false)]
-        request.fetchLimit = limit
-        
-        return try CoreDataManager.shared.context.fetch(request)
-    }
-    
-    private func analyzeSkillProgress(for player: Player) -> SkillProgressAnalysis {
-        // Analyze player's skill progression
-        return SkillProgressAnalysis(
-            skillLevels: ["Ball Control": 7.5, "Passing": 6.0, "Shooting": 5.5],
-            recentPerformance: 0.75,
-            improvementTrend: 0.1
-        )
-    }
-    
-    private func calculateTrainingFrequency(from sessions: [TrainingSession]) -> Int {
-        // Calculate sessions per week
-        let oneWeekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let recentSessions = sessions.filter { session in
-            (session.date ?? Date()) > oneWeekAgo
-        }
-        return recentSessions.count
-    }
-    
-    private func analyzeFeedbackPatterns(from feedback: [RecommendationFeedback]) -> FeedbackPatterns {
-        let positiveCount = feedback.filter { $0.rating >= 4 }.count
-        let totalCount = feedback.count
-        let satisfaction = totalCount > 0 ? Double(positiveCount) / Double(totalCount) : 0.5
-        
-        return FeedbackPatterns(
-            averageSatisfaction: satisfaction,
-            preferredDifficulty: 3, // Default
-            mostLikedCategories: ["Technical", "Physical"]
-        )
-    }
-    
     // MARK: - Helper Functions for Type Conversion
     
     private func categoryToString(_ category: YouTubeService.RecommendationCategory) -> String {
@@ -1031,54 +704,6 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
 }
 
 // MARK: - Data Models
-
-struct MLDrillRecommendation: Identifiable {
-    let id = UUID()
-    let exerciseId: String
-    let exerciseName: String
-    let category: String
-    let difficulty: Int
-    let confidenceScore: Double
-    let reasoning: String
-    let recommendationType: RecommendationType
-    let estimatedDuration: Int
-    let targetSkills: [String]
-    let personalizedInstructions: String
-    let expectedImprovement: Double
-    let similarUserSuccess: Double
-    let createdAt: Date
-    
-    enum RecommendationType {
-        case collaborativeFiltering
-        case contentBased
-        case hybrid
-        case enhancedRules
-        case simulatedML
-    }
-}
-
-struct UserMLContext {
-    let playerId: String
-    let skillLevels: [String: Double]
-    let recentPerformance: Double
-    let trainingFrequency: Int
-    let preferredDifficulty: Int
-    let feedbackPatterns: FeedbackPatterns
-    let lastActiveDate: Date
-    let sessionCount: Int
-}
-
-struct SkillProgressAnalysis {
-    let skillLevels: [String: Double]
-    let recentPerformance: Double
-    let improvementTrend: Double
-}
-
-struct FeedbackPatterns {
-    let averageSatisfaction: Double
-    let preferredDifficulty: Int
-    let mostLikedCategories: [String]
-}
 
 struct YouTubeVideoRecommendation: Identifiable {
     let id = UUID()

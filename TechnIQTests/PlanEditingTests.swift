@@ -122,4 +122,27 @@ final class PlanEditingTests: XCTestCase {
         XCTAssertEqual(plan.description, "Sharper")
         XCTAssertEqual(plan.difficulty, .advanced)
     }
+
+    // MARK: Weekly review trigger
+
+    func test_weeklyReview_firesWhenTheWeeksWindowHasEnded_andClearsWhenReviewed() throws {
+        let spec = TrainingPlanService.CustomPlanSpec(name: "Review", description: "", weeks: 3, trainingDays: [.monday], sessionType: .technical, minutes: 30, intensity: 3, difficulty: .beginner, category: .technical)
+        let plan = service.createCustomPlan(spec, for: player)!
+        service.activatePlan(plan.toModel(), for: player)
+        // Anchor 10 days back: week 1 has ended, week 2 is in progress.
+        plan.startedAt = Calendar.current.date(byAdding: .day, value: -10, to: Calendar.current.startOfDay(for: Date()))
+        try context.save()
+
+        let coach = AICoachService.shared
+        coach.dismissWeeklyCheckIn()
+        coach.refreshWeeklyReview(for: player, now: Date(), calendar: Calendar.current)
+        XCTAssertTrue(coach.weeklyCheckInAvailable)
+        XCTAssertEqual(coach.completedWeekNumber, 1)
+
+        coach.markWeekReviewed(planID: plan.id!, weekNumber: 1)
+        XCTAssertFalse(coach.weeklyCheckInAvailable)
+        coach.refreshWeeklyReview(for: player, now: Date(), calendar: Calendar.current)
+        XCTAssertFalse(coach.weeklyCheckInAvailable, "week 2 has not ended yet")
+        UserDefaults.standard.removeObject(forKey: "weeklyReview.reviewed.\(plan.id!.uuidString)")
+    }
 }

@@ -195,7 +195,7 @@ struct NewPlanSheet: View {
                 .padding(.top, 4)
             TQRowList {
                 TQRow(
-                    "Build it with the coach",
+                    "Build it with \(CoachIdentity.name())",
                     subtitle: "Position, weak spots, schedule · Pro",
                     leading: .tile(TQTile("AI", style: .ai)),
                     verticalPadding: DesignSystem.Spacing.rowVertical,

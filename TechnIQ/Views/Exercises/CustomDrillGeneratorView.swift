@@ -401,8 +401,8 @@ struct CustomDrillGeneratorView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             TQEyebrow("Describe what you want to fix")
-            TQDisplayTitle("What should the coach build?", size: .medium)
-            TQBody("Pick a weak spot or write a sentence. The coach turns it into a drill with a diagram in about 20 seconds.")
+            TQDisplayTitle("What should \(CoachIdentity.name()) build?", size: .medium)
+            TQBody("Pick a weak spot or write a sentence. \(CoachIdentity.name()) turns it into a drill with a diagram in about 20 seconds.")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

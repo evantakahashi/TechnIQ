@@ -43,8 +43,9 @@ struct DashboardView: View {
     @State private var todaysExercises: [Exercise] = []
 
     // Coach (Pro)
-    @State private var coachTimedOut = false
-    @State private var coachAttempt = 0
+    @State private var coachSwapExercise: Exercise?
+    @State private var showingWeeklyReview = false
+    @State private var showingCoachBuild = false
     @State private var coachDrillCount = 0
 
     // Presentation
@@ -102,8 +103,26 @@ struct DashboardView: View {
     private var isOffline: Bool { forcedState == "offline" || !cloudService.isNetworkAvailable }
     private var hasSessions: Bool { forcedState != "empty" && !recentSessions.isEmpty }
     private var coachEnabled: Bool { subscriptionManager.isPro && !isOffline }
-    private var coachIsLoading: Bool { forcedState == "loading" || (coachEnabled && aiCoachService.dailyCoaching == nil && aiCoachService.isLoading && !coachTimedOut) }
-    private var coachFailed: Bool { forcedState != "loading" && coachEnabled && aiCoachService.dailyCoaching == nil && (coachTimedOut || (!aiCoachService.isLoading && aiCoachService.error != nil)) }
+    /// The hero never waits on the network: the plan's drill shows at once and the coach's note lands
+    /// when it arrives. Only the `-TQHomeState loading` screenshot state shows the skeleton.
+    private var coachIsLoading: Bool { forcedState == "loading" }
+    private var coachName: String { CoachIdentity.name() }
+
+    /// Today's coaching when it is today's and the player is Pro.
+    private var todaysCoaching: DailyCoaching? {
+        guard coachEnabled, let coaching = aiCoachService.dailyCoaching, Calendar.current.isDateInToday(coaching.fetchDate) else { return nil }
+        return coaching
+    }
+
+    /// The library drill the coach picked, when it resolves.
+    private func coachPick(_ coaching: DailyCoaching) -> Exercise? {
+        guard coaching.recommendedDrill.isFromLibrary,
+              let idString = coaching.recommendedDrill.libraryExerciseID, let id = UUID(uuidString: idString) else { return nil }
+        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        return try? viewContext.fetch(request).first
+    }
 
     // MARK: Body
 
@@ -163,6 +182,20 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingProfileCreation) {
             UnifiedOnboardingView(isOnboardingComplete: $isOnboardingComplete)
+        }
+        .sheet(isPresented: $showingWeeklyReview) {
+            if let player = currentPlayer {
+                WeeklyReviewView(weekNumber: aiCoachService.completedWeekNumber, player: player)
+            }
+        }
+        .sheet(isPresented: $showingCoachBuild) {
+            if let player = currentPlayer, let coaching = todaysCoaching {
+                CustomDrillGeneratorView(player: player, prefill: .init(text: "\(coaching.recommendedDrill.name): \(coaching.recommendedDrill.description)")) { exercise in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        trainingLaunch = TrainingLaunch(exercises: [exercise])
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showingQuickDrill) {
             if let player = currentPlayer {
@@ -307,13 +340,6 @@ struct DashboardView: View {
                      actionTitle: "Retry") {
                 if let player = currentPlayer { Task { await fetchCoaching(for: player, force: true) } }
             }
-        } else if coachFailed, activePlan != nil {
-            TQBanner(.info,
-                     lead: "Coach is slow to answer.",
-                     message: "Today's drill comes from your plan.",
-                     actionTitle: "Retry") {
-                if let player = currentPlayer { Task { await fetchCoaching(for: player, force: true) } }
-            }
         } else if showWelcomeBack && daysInactive >= 3 {
             TQBanner(.info,
                      lead: "Welcome back.",
@@ -364,12 +390,12 @@ struct DashboardView: View {
     private func hero(player: Player) -> some View {
         if coachIsLoading {
             TQHeroCard(eyebrow: "Today's session", trailingMeta: weekDayMeta, title: "", actionTitle: "", state: .loading, markings: .heroSimple, action: {})
-        } else if coachEnabled, let coaching = aiCoachService.dailyCoaching, !isRestDay {
-            coachHero(coaching: coaching, player: player)
         } else if let session = todaysSession, isRestDay {
             restHero(session: session, player: player)
         } else if let session = todaysSession {
             planHero(session: session, player: player)
+        } else if let coaching = todaysCoaching, !planIsComplete {
+            coachHero(coaching: coaching, player: player)
         } else if planIsComplete, let plan = activePlan {
             TQHeroCard(
                 eyebrow: "Plan complete",
@@ -406,21 +432,36 @@ struct DashboardView: View {
         }
     }
 
+    /// No plan session today: the coach's pick from the library, or an offer to build one.
     private func coachHero(coaching: DailyCoaching, player: Player) -> some View {
         let drill = coaching.recommendedDrill
-        var figures: [(String, String)] = [("\(max(drill.duration, 1))", "min")]
-        if drill.difficulty > 0 { figures.append(("\(drill.difficulty)", "lvl")) }
-        if let foot = weakFootLabel(for: player, skills: drill.targetSkills, focus: coaching.focusArea) { figures.append((foot, "foot")) }
+        let pick = coachPick(coaching)
+        var figures: [(String, String)] = [("\(max(pick.map { Int($0.estimatedDurationSeconds) / 60 } ?? drill.duration, 1))", "min")]
+        let level = pick.map { Int($0.difficulty) } ?? drill.difficulty
+        if level > 0 { figures.append(("\(level)", "lvl")) }
+        if let foot = weakFootLabel(for: player, skills: pick?.targetSkills ?? drill.targetSkills, focus: coaching.focusArea) { figures.append((foot, "foot")) }
         return TQHeroCard(
-            eyebrow: sessionEyebrow,
+            eyebrow: "\(coachName)'s pick · \(coaching.focusArea)",
             trailingMeta: weekDayMeta,
-            title: drill.name,
+            title: pick?.name ?? drill.name,
             figures: figures,
-            body: coaching.reasoning,
-            actionTitle: "Start session",
+            body: coachNote(coaching),
+            actionTitle: pick == nil ? "Build a fresh one" : "Start session",
             markings: .hero,
-            action: { launchAIDrill(drill, focusArea: coaching.focusArea, for: player) }
+            action: {
+                if let pick {
+                    trainingLaunch = TrainingLaunch(exercises: [pick], planSession: nil)
+                } else {
+                    showingCoachBuild = true
+                }
+            }
         )
+    }
+
+    /// "Marta: Open your hips before the second touch."
+    private func coachNote(_ coaching: DailyCoaching) -> String {
+        let line = (coaching.cue ?? coaching.reasoning).trimmingCharacters(in: .whitespacesAndNewlines)
+        return line.isEmpty ? coaching.reasoning : "\(coachName): \(line)"
     }
 
     private func planHero(session: PlanSession, player: Player) -> some View {
@@ -434,9 +475,20 @@ struct DashboardView: View {
 
         let bodyText: String?
         let bodyTone: TQBody.Tone
+        let coaching = todaysCoaching
+        let pick = coaching.flatMap { coachPick($0) }
+        let pickIsTodays = pick.map { candidate in todaysExercises.contains { $0.objectID == candidate.objectID } } ?? false
+        var linkTitle: String? = nil
         if isOffline {
-            bodyText = "Coach's note unavailable offline."
+            bodyText = "\(coachName)'s note comes back with the connection."
             bodyTone = .italicMuted
+        } else if let coaching, pick == nil || pickIsTodays || coachSwapExercise != nil {
+            bodyText = coachNote(coaching)
+            bodyTone = .onPitch
+        } else if let coaching, let pick {
+            bodyText = coachNote(coaching)
+            bodyTone = .onPitch
+            linkTitle = "swap in \(pick.name ?? "the coach's pick")"
         } else if let focus = currentWeekFocus {
             bodyText = "This week: \(focus)."
             bodyTone = .onPitch
@@ -445,16 +497,25 @@ struct DashboardView: View {
             bodyTone = .onPitch
         }
 
+        let swapped = coachSwapExercise
         return TQHeroCard(
-            eyebrow: isOffline ? "\(sessionEyebrow) · from plan" : sessionEyebrow,
+            eyebrow: isOffline ? "\(sessionEyebrow) · from plan" : (swapped == nil ? sessionEyebrow : "\(coachName)'s pick"),
             trailingMeta: weekDayMeta,
-            title: title,
+            title: swapped?.name ?? title,
             figures: figures,
             body: bodyText,
             bodyTone: bodyTone,
             actionTitle: "Start session",
+            linkTitle: linkTitle,
             markings: isOffline ? .heroSimple : .hero,
-            action: { startPlanSession(session) }
+            action: {
+                if let swapped {
+                    trainingLaunch = TrainingLaunch(exercises: [swapped], planSession: session)
+                } else {
+                    startPlanSession(session)
+                }
+            },
+            linkAction: { withAnimation(DesignSystem.Animation.quick) { coachSwapExercise = pick } }
         )
     }
 
@@ -512,6 +573,13 @@ struct DashboardView: View {
         TQRowList {
             if let plan = activePlan {
                 TQRow(plan.name, meta: .init(planRowMeta(plan)), action: { route = .planDetail(plan) })
+                if aiCoachService.weeklyCheckInAvailable, subscriptionManager.isPro {
+                    TQRow("Week \(aiCoachService.completedWeekNumber) review ready",
+                          subtitle: "\(coachName) read the week; see what changes",
+                          badge: TQBadge(.status("New")),
+                          action: { showingWeeklyReview = true })
+                        .accessibilityIdentifier("home.weeklyReview")
+                }
             } else {
                 TQRow("Build a training plan", badge: TQBadge(.text("AI")), action: { showingPlanGenerator = true })
             }
@@ -529,12 +597,12 @@ struct DashboardView: View {
     @ViewBuilder
     private var coachRow: some View {
         if !hasSessions {
-            TQRow("Drills from the coach", note: "after your first session").disabled(true)
+            TQRow("Drills from \(coachName)", note: "after your first session").disabled(true)
         } else if isOffline {
-            TQRow("Drills from the coach", note: "needs connection").disabled(true)
+            TQRow("Drills from \(coachName)", note: "needs connection").disabled(true)
         } else if coachIsLoading {
             HStack(spacing: 12) {
-                Text("Drills from the coach")
+                Text("Drills from \(coachName)")
                     .font(DesignSystem.Typography.titleMedium)
                     .foregroundColor(DesignSystem.Colors.chalkWhite)
                 Spacer()
@@ -544,7 +612,7 @@ struct DashboardView: View {
             .padding(.vertical, DesignSystem.Spacing.rowVerticalLarge)
             .overlay(alignment: .bottom) { TQRule() }
         } else {
-            TQRow("Drills from the coach",
+            TQRow("Drills from \(coachName)",
                   badge: coachDrillCount > 0 ? TQBadge(.count(coachDrillCount)) : nil,
                   action: { route = .coachDrills })
         }
@@ -636,37 +704,6 @@ struct DashboardView: View {
         }
     }
 
-    private func launchAIDrill(_ drill: RecommendedDrill, focusArea: String, for player: Player) {
-        if drill.isFromLibrary, let idString = drill.libraryExerciseID, let uuid = UUID(uuidString: idString) {
-            let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
-            request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            request.fetchLimit = 1
-            if let existing = try? viewContext.fetch(request).first {
-                // Only a pick that IS today's plan drill counts toward the plan day.
-                let isPlanDrill = todaysExercises.contains { $0.objectID == existing.objectID }
-                trainingLaunch = TrainingLaunch(exercises: [existing], planSession: isPlanDrill ? todaysSession : nil)
-                return
-            }
-        }
-
-        // A coach pick is its own session: it never stands in for today's plan day.
-        let exercise = Exercise(context: viewContext)
-        exercise.id = UUID()
-        exercise.source = TrainDrill.Source.ai.rawValue
-        exercise.name = drill.name
-        exercise.exerciseDescription = "AI Coach Recommendation: \(drill.description)"
-        exercise.category = drill.category
-        exercise.difficulty = Int16(drill.difficulty)
-        exercise.targetSkills = drill.targetSkills
-        exercise.weaknessCategories = focusArea
-        exercise.estimatedDurationSeconds = Int16(clamping: max(drill.duration, 1) * 60)
-        exercise.instructions = drill.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
-        exercise.player = player
-
-        try? viewContext.save()
-        trainingLaunch = TrainingLaunch(exercises: [exercise], planSession: nil)
-    }
-
     // MARK: - Data
 
     private func updateDataFilters() {
@@ -698,7 +735,9 @@ struct DashboardView: View {
         }
         currentWeekDay = TrainingPlanService.shared.getCurrentWeekAndDay(for: plan)
         todayState = PlanSchedule.today(in: plan, startDate: PlanSchedule.startDate(of: plan), now: Date(), calendar: Calendar.current)
+        coachSwapExercise = nil
         NotificationManager.shared.refresh(for: player)
+        aiCoachService.refreshWeeklyReview(for: player, now: Date(), calendar: Calendar.current)
         // A plan with no schedule at all (empty prebuilt shell) is not "complete"; it just has nothing to start.
         planIsComplete = currentWeekDay == nil && plan.totalDays > 0
         let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
@@ -716,24 +755,12 @@ struct DashboardView: View {
         coachDrillCount = min(profile.suggestedWeaknesses.count, 3)
     }
 
-    /// Fetches daily coaching for Pro players. Local data renders immediately; only the coach slots
-    /// wait. After 6 s with no answer the hero falls back to the plan's drill and a banner offers Retry.
+    /// Fetches today's coaching for Pro players in the background. Nothing on screen waits for it.
     @MainActor
     private func fetchCoaching(for player: Player, force: Bool) async {
         guard subscriptionManager.isPro, !isOffline else { return }
         if !force, let cached = aiCoachService.dailyCoaching, Calendar.current.isDateInToday(cached.fetchDate) { return }
-        coachAttempt += 1
-        let attempt = coachAttempt
-        coachTimedOut = false
-
-        let fetch = Task { await aiCoachService.fetchDailyCoachingIfNeeded(for: player) }
-        Task {
-            try? await Task.sleep(nanoseconds: 6_000_000_000)
-            if attempt == coachAttempt, aiCoachService.dailyCoaching == nil {
-                coachTimedOut = true
-            }
-        }
-        await fetch.value
+        await aiCoachService.fetchDailyCoachingIfNeeded(for: player)
     }
 }
 

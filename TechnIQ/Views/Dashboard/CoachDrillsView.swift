@@ -23,7 +23,7 @@ struct CoachDrillsView: View {
     var body: some View {
         TQScreen {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
-                TQNavBar("Drills from the coach") {
+                TQNavBar("Drills from \(CoachIdentity.name())") {
                     TQBackButton { dismiss() }
                 } trailing: {
                     Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
