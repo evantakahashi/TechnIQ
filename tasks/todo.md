@@ -40,7 +40,7 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - [x] Settings merged into You (Touchline): Account · Training profile (Phase 6) · Notifications (Phase 2) · Help · Legal · Sign out · Delete account
 - [x] Guest mode removed: no "Train as a guest", no anonymous auth path
 - [x] Dead code deleted: ConfettiView*, CoinDisplay animations, CalendarComponents.swift, legacy DrillDiagramView wrapper, ModernAlert, ProLockedCardView, `.avatar` coach mark, WeaknessSuggestionsCard, WalkthroughUITests (ProgressRing stays: StatCard uses it)
-- [ ] Deferred: the cloud `get_advanced_recommendations` client path in AIRecommendationService is dead but entangled with the plan generator; remove in Phase 4 when the coach functions are reworked
+- [x] Deferred to Phase 4 and done there: the cloud `get_advanced_recommendations` client path removed
 - Tests: UI tests updated (plan tab root + All plans, You account rows, no guest link), `DrillGeneratorDefaultsTests`
 
 ## Phase 2 — Dated plans + reminders — PR (branch feat/audit-phase2)
@@ -56,13 +56,15 @@ Home re-entry row, fires at end of calendar week · one coach voice.
 - [x] Duplicate keeps drills; AI generator + preview on Touchline chrome
 - Tests: `PlanEditingTests` (skeleton, append/remove week with progress guard, sessions + drills, rest toggle, details) — 204 unit; tour visits the day editor, generator and builder
 
-## Phase 4 — Coach — PR (+ functions deploy)
-- [ ] Daily coaching prefetched on app open / after a session, cached per day; hero never waits (6 s fallback only cold)
-- [ ] Function picks today's drill from the player's library/plan ids (`isFromLibrary`), returns one cue + reason; hero shows drill + one-line note
-- [ ] "Build a fresh one" → drill pipeline, counts as an AI drill
-- [ ] Weekly review: recap (done vs planned, minutes, effort trend, best drill) → changes with reasons → accept per change; fires end of calendar week; "Week n review ready" row on Home until answered
-- [ ] One coach voice across hero, strip, review, Progress tips (copy pass)
-- Tests: unit tests for review recap math; function tests in `functions/`
+## Phase 4 — Coach — PR (branch feat/audit-phase4; functions deploy pending — USER ACTION)
+- [x] Daily coaching prefetched on app open / after a session, cached per day; hero never waits (6 s fallback only cold)
+- [x] Function picks today's drill from the player's library/plan ids (`isFromLibrary`), returns one cue + reason; hero shows drill + one-line note
+- [x] "Build a fresh one" → drill pipeline, counts as an AI drill
+- [x] Weekly review: recap (done vs planned, minutes, effort trend, best drill) → changes with reasons → accept per change; fires end of calendar week; "Week n review ready" row on Home until answered
+- [x] One coach voice across hero, strip, review, Progress tips (copy pass)
+- Root cause found: the client decoded camelCase but the functions answer snake_case, so coaching never parsed. Fixed with explicit CodingKeys (`CoachTests`).
+- Also removed the dead `get_advanced_recommendations` client path (deferred from Phase 1); coach name is player-chosen (You → Your coach)
+- Tests: `CoachTests` (decoding, library payload, week recap), review trigger in `PlanEditingTests`, `functions/test_coach_prompts.py` — 210 unit
 
 ## Phase 5 — Monetization — PR
 - [ ] One `TQPaywall` (replaces PaywallView + OnboardingPaywallView); benefits = real gates only

@@ -229,6 +229,13 @@ final class TouchlineTourUITests: XCTestCase {
         shot("reminders")
         dismissSheet(["Done", "Close", "Cancel"])
 
+        scrollTo(row("Your coach"))
+        XCTAssertTrue(tapWhenHittable(row("Your coach")), "coach row")
+        settle(1.0)
+        XCTAssertTrue(app.buttons["coachName.save"].waitForExistence(timeout: 5), "coach name sheet")
+        shot("coach-name")
+        dismissSheet(["Cancel", "Close", "Done"])
+
         tapWhenHittable(row("Shop"))
         settle(1.5)
         shot("shop")
