@@ -213,7 +213,9 @@ final class TouchlineHomeUITests: XCTestCase {
         let done = app.buttons["Done"]
         XCTAssertTrue(done.waitForExistence(timeout: 3), "Done button")
         done.tap()
-        XCTAssertTrue(start.waitForExistence(timeout: 15), "back on Home")
+        // The day is done now: Home offers the next session, or a rest-day hero with "Train anyway".
+        let backHome = start.waitForExistence(timeout: 15) || app.buttons["Train anyway"].waitForExistence(timeout: 5)
+        XCTAssertTrue(backHome, "back on Home")
         shot("home-after-full-session")
     }
 
