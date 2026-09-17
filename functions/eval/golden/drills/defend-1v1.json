@@ -1,0 +1,267 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 16.0,
+    "y": 7.5,
+    "label": "P1",
+    "role": "server",
+    "display_label": "Attacker"
+   },
+   {
+    "type": "player",
+    "x": 11.0,
+    "y": 7.5,
+    "label": "P2",
+    "role": "worker",
+    "display_label": "Defender"
+   },
+   {
+    "type": "ball",
+    "x": 16.0,
+    "y": 7.5,
+    "label": "B1"
+   },
+   {
+    "type": "gate",
+    "x": 2.0,
+    "y": 3.0,
+    "label": "G1",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 2.0,
+    "y": 12.0,
+    "label": "G2",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "dribble",
+    "step": 1,
+    "fx": 16.0,
+    "fy": 7.5,
+    "tx": 11.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 2,
+    "alt": true,
+    "fx": 11.0,
+    "fy": 7.5,
+    "tx": 1.02,
+    "ty": 2.51
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "dribble",
+    "step": 3,
+    "alt": true,
+    "fx": 11.0,
+    "fy": 7.5,
+    "tx": 1.02,
+    "ty": 12.49
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up first \u2014 2-3 min light jogging, open-hip and lateral shuffles, a few easy side-to-side touches",
+  "How it works \u2014 attacker starts with the ball and attacks either gate; defender wins if they steal it clean, force a bad touch, or delay the attack 3+ seconds without lunging",
+  "Do NOT dive in \u2014 approach fast, brake early, arrive on the balls of your feet in a low staggered stance",
+  "Read the attacker's hips and the ball, not the shoulders \u2014 commit only when the touch is too far from their foot",
+  "Show them ONE gate \u2014 angle your body to force them onto their weaker foot toward the gate you choose to defend",
+  "Jockey and shepherd: stay half a body-width goal-side, match their pace, deny the straight line and wait for the mistake",
+  "6 attacks per set, then swap roles; 4 sets \u2014 the walk back between reps is your rest",
+  "Target \u2014 defender delays or wins the ball in 4 of every 6 attacks without fouling",
+  "Progression: attacker gets a 2-touch limit to speed up decisions; regression: widen the gap to give the defender more recovery time"
+ ],
+ "variations": [
+  "One gate only \u2014 defender commits fully to forcing the attacker away from a single target",
+  "Time-attack \u2014 attacker must beat the defender within 4 seconds or the defender wins the rep"
+ ],
+ "equipment": [
+  "ball",
+  "cones",
+  "partner"
+ ],
+ "category": "tactical",
+ "is_duel": true,
+ "_case": {
+  "id": "defend-1v1",
+  "request": {
+   "skill_description": "defending 1v1 without diving in",
+   "weakness": "Defending",
+   "experience_level": "advanced",
+   "player_age": 16,
+   "position": "Defender",
+   "equipment": [
+    "ball",
+    "cones",
+    "partner"
+   ],
+   "number_of_players": 2,
+   "category": "tactical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       16.0,
+       7.5
+      ],
+      [
+       11.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       16.0,
+       7.5
+      ],
+      [
+       11.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Read hips and ball, not shoulders \u2014 brake early on the balls of your feet",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       11.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       11.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Angle your body \u2014 show one gate, force the weaker foot",
+    "ease": "lin",
+    "kind": "action",
+    "step": 1
+   },
+   {
+    "d": 1200,
+    "tracks": {
+     "P1": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       1.02,
+       2.51
+      ]
+     ],
+     "__ball__": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       1.02,
+       2.51
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.894,
+      -0.447
+     ]
+    },
+    "label": "\u2026or P1 breaks to G1",
+    "ease": "out",
+    "kind": "outcome",
+    "step": 2
+   },
+   {
+    "d": 1200,
+    "tracks": {
+     "P1": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       1.02,
+       12.49
+      ]
+     ],
+     "__ball__": [
+      [
+       11.0,
+       7.5
+      ],
+      [
+       1.02,
+       12.49
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.894,
+      0.447
+     ]
+    },
+    "label": "\u2026or P1 breaks to G2",
+    "ease": "out",
+    "kind": "outcome",
+    "step": 3
+   }
+  ]
+ }
+}

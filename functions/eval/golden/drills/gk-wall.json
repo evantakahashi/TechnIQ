@@ -1,0 +1,463 @@
+{
+ "diagram": {
+  "field": {
+   "width": 16.0,
+   "length": 15.0
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 10.0,
+    "y": 3.0,
+    "label": "S1",
+    "role": "server",
+    "display_label": "Server"
+   },
+   {
+    "type": "player",
+    "x": 6.5,
+    "y": 9.0,
+    "label": "P1",
+    "role": "worker",
+    "display_label": "Keeper"
+   },
+   {
+    "type": "ball",
+    "x": 10.0,
+    "y": 3.0,
+    "label": "B1"
+   },
+   {
+    "type": "wall",
+    "x": 2.0,
+    "y": 6.0,
+    "label": "W1",
+    "width": 5.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "S1",
+    "to": "W1",
+    "style": "throw",
+    "step": 1,
+    "fx": 10.0,
+    "fy": 3.0,
+    "tx": 2.0,
+    "ty": 6.0
+   },
+   {
+    "from": "P1",
+    "to": "W1",
+    "style": "receive",
+    "step": 2,
+    "fx": 6.5,
+    "fy": 9.0,
+    "tx": 2.0,
+    "ty": 6.0
+   },
+   {
+    "from": "P1",
+    "to": "S1",
+    "style": "throw",
+    "step": 3,
+    "fx": 6.5,
+    "fy": 9.0,
+    "tx": 10.0,
+    "ty": 3.0
+   },
+   {
+    "from": "S1",
+    "to": "P1",
+    "style": "receive",
+    "step": 4,
+    "fx": 10.0,
+    "fy": 3.0,
+    "tx": 6.5,
+    "ty": 9.0
+   },
+   {
+    "from": "S1",
+    "to": "W1",
+    "style": "throw",
+    "step": 5,
+    "fx": 10.0,
+    "fy": 3.0,
+    "tx": 2.0,
+    "ty": 6.0
+   },
+   {
+    "from": "P1",
+    "to": "W1",
+    "style": "receive",
+    "step": 6,
+    "fx": 6.5,
+    "fy": 9.0,
+    "tx": 2.0,
+    "ty": 6.0
+   },
+   {
+    "from": "P1",
+    "to": "S1",
+    "style": "throw",
+    "step": 7,
+    "fx": 6.5,
+    "fy": 9.0,
+    "tx": 10.0,
+    "ty": 3.0
+   },
+   {
+    "from": "S1",
+    "to": "P1",
+    "style": "receive",
+    "step": 8,
+    "fx": 10.0,
+    "fy": 3.0,
+    "tx": 6.5,
+    "ty": 9.0
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, arm circles, wrist rolls, and easy two-hand catches of a soft toss",
+  "The wall is a MIRROR \u2014 server throws at an angle from 8m square-on, rebound comes off the OPPOSITE side; keeper sets on that mirror line, 4-5m off the wall and offset 2-3m to the side",
+  "This IS reaction work \u2014 a partner's throw hits the wall and the keeper can't predict the exact bounce; the unknown angle and pace is what trains true reactions",
+  "Set your feet BEFORE the rebound arrives \u2014 hands ready at hip height, eyes through the ball into the catch",
+  "Server varies pace and height every throw \u2014 flat skidders, hip height, head height \u2014 so the keeper reads the bounce late",
+  "One ball only: catch clean, throw it straight back to the server \u2014 that return is your reset before the next serve",
+  "Target: 8 of 10 rebounds held clean with no spills \u2014 count catches out loud",
+  "10 catches per set, 4 sets; swap keeper and server every set \u2014 collecting and returning the ball is the rest",
+  "Soft hands on low skidders \u2014 collapse behind the ball, land on forearm and hip, never elbows"
+ ],
+ "variations": [
+  "Low skidders \u2014 server drills the wall flat so rebounds stay under knee height for collapse catches",
+  "High hands \u2014 throws at head height for reflex catches above the shoulders",
+  "Catch-then-shuffle \u2014 two side steps back to the mirror spot after each hold, then reset for the next serve"
+ ],
+ "equipment": [
+  "ball",
+  "wall"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "gk-wall",
+  "request": {
+   "skill_description": "goalkeeper reaction saves off a rebound wall",
+   "weakness": "Goalkeeping",
+   "experience_level": "advanced",
+   "player_age": 16,
+   "position": "Goalkeeper",
+   "equipment": [
+    "ball",
+    "wall"
+   ],
+   "number_of_players": 1,
+   "category": "technical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 600,
+    "tracks": {
+     "__ball__": [
+      [
+       10.0,
+       3.0
+      ],
+      [
+       2.0,
+       6.0
+      ]
+     ]
+    },
+    "hips": {
+     "S1": [
+      -0.936,
+      0.351
+     ],
+     "P1": [
+      -0.832,
+      -0.555
+     ]
+    },
+    "label": "This is pure reaction \u2014 you can't predict the bounce",
+    "ease": "lin",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "__ball__": [
+      [
+       2.0,
+       6.0
+      ],
+      [
+       6.5,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.832,
+      -0.555
+     ]
+    },
+    "label": "Set your feet before the rebound arrives \u2014 hands at hip height",
+    "ease": "out",
+    "kind": "action",
+    "step": 2
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "__ball__": [
+      [
+       6.5,
+       9.0
+      ],
+      [
+       9.496128974475914,
+       3.863778900898433
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.504,
+      -0.864
+     ],
+     "S1": [
+      -0.504,
+      0.864
+     ]
+    },
+    "label": "Server varies pace and height \u2014 read the bounce late",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       9.496128974475914,
+       3.863778900898433
+      ],
+      [
+       10.3528,
+       2.3952
+      ]
+     ]
+    },
+    "hips": {
+     "S1": [
+      -0.504,
+      0.864
+     ]
+    },
+    "label": "Eyes through the ball, watch it off the wall",
+    "ease": "out",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "__ball__": [
+      [
+       10.3528,
+       2.3952
+      ],
+      [
+       2.0,
+       6.0
+      ]
+     ]
+    },
+    "hips": {
+     "S1": [
+      -0.936,
+      0.351
+     ],
+     "P1": [
+      -0.832,
+      -0.555
+     ]
+    },
+    "label": "Soft hands on the skidder \u2014 collapse behind the ball",
+    "ease": "lin",
+    "kind": "action",
+    "step": 5,
+    "steps": [
+     5
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "__ball__": [
+      [
+       2.0,
+       6.0
+      ],
+      [
+       6.5,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.832,
+      -0.555
+     ]
+    },
+    "label": "Catch it clean \u2014 no spill, absorb it into your chest",
+    "ease": "out",
+    "kind": "action",
+    "step": 6
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       6.5,
+       9.0
+      ],
+      [
+       6.5,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.832,
+      -0.555
+     ]
+    },
+    "label": "Feel it held \u2014 that's a clean save",
+    "ease": "lin",
+    "kind": "action",
+    "step": 6
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       6.5,
+       9.0
+      ],
+      [
+       9.496128974475914,
+       3.863778900898433
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.504,
+      -0.864
+     ],
+     "S1": [
+      -0.504,
+      0.864
+     ]
+    },
+    "label": "Throw it straight back \u2014 this is your reset",
+    "ease": "lin",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       9.496128974475914,
+       3.863778900898433
+      ],
+      [
+       10.3528,
+       2.3952
+      ]
+     ]
+    },
+    "hips": {
+     "S1": [
+      -0.504,
+      0.864
+     ]
+    },
+    "label": "Reload your feet on the mirror line",
+    "ease": "out",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "S1": [
+      [
+       10.0,
+       3.0
+      ],
+      [
+       10.0,
+       3.0
+      ]
+     ],
+     "P1": [
+      [
+       6.5,
+       9.0
+      ],
+      [
+       6.5,
+       9.0
+      ]
+     ],
+     "__ball__": [
+      [
+       10.3528,
+       2.3952
+      ],
+      [
+       10.0,
+       3.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Go again \u2014 be set before the next serve",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

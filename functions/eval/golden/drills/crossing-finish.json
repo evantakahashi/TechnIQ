@@ -1,0 +1,559 @@
+{
+ "diagram": {
+  "field": {
+   "width": 28.5,
+   "length": 50.0
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 24.0,
+    "y": 4.0,
+    "label": "P1",
+    "role": "server",
+    "display_label": "Crosser"
+   },
+   {
+    "type": "player",
+    "x": 6.0,
+    "y": 20.0,
+    "label": "P2",
+    "role": "worker",
+    "display_label": "Finisher"
+   },
+   {
+    "type": "ball",
+    "x": 24.0,
+    "y": 4.0,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 10.0,
+    "y": 24.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 10.0,
+    "y": 44.0,
+    "label": "C2"
+   },
+   {
+    "type": "gate",
+    "x": 27.5,
+    "y": 31.8,
+    "label": "G1",
+    "width": 1.5
+   },
+   {
+    "type": "gate",
+    "x": 27.5,
+    "y": 36.2,
+    "label": "G2",
+    "width": 1.5
+   },
+   {
+    "type": "goal",
+    "x": 27.5,
+    "y": 34.0,
+    "label": "GL",
+    "width": 7.32
+   }
+  ],
+  "paths": [
+   {
+    "from": "P2",
+    "to": "C1",
+    "style": "run",
+    "step": 1,
+    "fx": 6.0,
+    "fy": 20.0,
+    "tx": 9.36,
+    "ty": 23.36
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 2,
+    "fx": 24.0,
+    "fy": 4.0,
+    "tx": 9.36,
+    "ty": 23.36,
+    "sync": true
+   },
+   {
+    "from": "P2",
+    "to": "G1",
+    "style": "shoot",
+    "step": 3,
+    "fx": 9.36,
+    "fy": 23.36,
+    "tx": 27.5,
+    "ty": 31.8
+   },
+   {
+    "from": "P2",
+    "to": "G1",
+    "style": "run",
+    "step": 4,
+    "fx": 9.36,
+    "fy": 23.36,
+    "tx": 28.5,
+    "ty": 32.26,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "dribble",
+    "step": 5,
+    "fx": 28.5,
+    "fy": 32.26,
+    "tx": 24.0,
+    "ty": 4.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "receive",
+    "step": 6,
+    "fx": 24.0,
+    "fy": 4.0,
+    "tx": 24.0,
+    "ty": 4.0,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "C2",
+    "style": "run",
+    "step": 7,
+    "fx": 24.0,
+    "fy": 4.0,
+    "tx": 10.3,
+    "ty": 43.15
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 8,
+    "fx": 24.0,
+    "fy": 4.0,
+    "tx": 10.3,
+    "ty": 43.15
+   },
+   {
+    "from": "P2",
+    "to": "G2",
+    "style": "shoot",
+    "step": 9,
+    "fx": 10.3,
+    "fy": 43.15,
+    "tx": 27.5,
+    "ty": 36.2
+   },
+   {
+    "from": "P2",
+    "to": "G2",
+    "style": "run",
+    "step": 10,
+    "fx": 10.3,
+    "fy": 43.15,
+    "tx": 28.52,
+    "ty": 35.79,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "dribble",
+    "step": 11,
+    "fx": 28.52,
+    "fy": 35.79,
+    "tx": 24.0,
+    "ty": 4.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "receive",
+    "step": 12,
+    "fx": 24.0,
+    "fy": 4.0,
+    "tx": 24.0,
+    "ty": 4.0,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up together for two to three minutes \u2014 light jogging, hip openers, and easy two-touch passing before crossing at pace",
+  "One ball only \u2014 after each finish the finisher collects it and dribbles it back to the crosser; that jog IS the rest (keep a stack of balls near the crosser to speed resets)",
+  "Crosser whips the ball off the ground from near the byline between the near post and the penalty spot \u2014 vary it: rolling toward goal, driven flat, and cut back away from goal across the reps",
+  "Finisher takes a sharp 2-3m setup touch inside past the cone, then a first-time strike near or far post \u2014 plant foot beside the ball, head still at contact",
+  "Scan first \u2014 the finisher glances up at the near or far gate the crosser calls BEFORE the ball arrives, not down at their feet, then again between the setup touch and the strike",
+  "Target: 6 of 10 finishes through the called corner gate within two seconds of the setup touch \u2014 count them out loud",
+  "5 crosses per set, 4 sets; swap crosser and finisher after each set \u2014 collecting the ball is the rest",
+  "Cushion the setup touch across your body into space; never lunge or reach \u2014 land softly after the strike",
+  "Progression: cross from a deeper, wider position and demand one-touch finishes; regression: allow a settling touch and move the gates wider"
+ ],
+ "variations": [],
+ "equipment": [
+  "ball",
+  "cones",
+  "partner",
+  "goals"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "crossing-finish",
+  "request": {
+   "skill_description": "crossing and finishing combination",
+   "weakness": "Crossing",
+   "experience_level": "intermediate",
+   "player_age": 15,
+   "position": "Forward",
+   "equipment": [
+    "ball",
+    "cones",
+    "partner",
+    "goals"
+   ],
+   "number_of_players": 2,
+   "category": "technical",
+   "field_size": "medium"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 1861,
+    "tracks": {
+     "P2": [
+      [
+       6.0,
+       20.0
+      ],
+      [
+       9.36,
+       23.36
+      ]
+     ],
+     "__ball__": [
+      [
+       24.0,
+       4.0
+      ],
+      [
+       9.963159422033852,
+       22.56237934353993
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      0.603,
+      -0.798
+     ],
+     "P1": [
+      -0.603,
+      0.798
+     ]
+    },
+    "label": "Whip it off the ground from the byline, between near post and the spot",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1,
+     2
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "__ball__": [
+      [
+       9.963159422033852,
+       22.56237934353993
+      ],
+      [
+       27.5,
+       31.8
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      0.907,
+      0.422
+     ],
+     "P1": [
+      0.125,
+      0.992
+     ]
+    },
+    "label": "Scan first \u2014 read the gate before the ball comes",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 1794,
+    "tracks": {
+     "P2": [
+      [
+       9.36,
+       23.36
+      ],
+      [
+       28.5,
+       32.26
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Collect it \u2014 quick jog back",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 4
+   },
+   {
+    "d": 2432,
+    "tracks": {
+     "P2": [
+      [
+       28.5,
+       32.26
+      ],
+      [
+       24.0,
+       4.0
+      ]
+     ],
+     "__ball__": [
+      [
+       27.5,
+       31.8
+      ],
+      [
+       24.0,
+       4.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back \u2014 that jog is your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 5
+   },
+   {
+    "d": 1900,
+    "tracks": {
+     "P2": [
+      [
+       24.0,
+       4.0
+      ],
+      [
+       10.3,
+       43.15
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.33,
+      0.944
+     ]
+    },
+    "label": "Cushion the setup touch across your body into space",
+    "ease": "out",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7
+    ]
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "P2": [
+      [
+       10.3,
+       43.15
+      ],
+      [
+       10.3,
+       43.15
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.33,
+      0.944
+     ]
+    },
+    "label": "Glance up again \u2014 where's the corner?",
+    "ease": "lin",
+    "kind": "action",
+    "step": 7
+   },
+   {
+    "d": 1500,
+    "tracks": {
+     "__ball__": [
+      [
+       24.0,
+       4.0
+      ],
+      [
+       10.630296728758626,
+       42.20612285175911
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -0.33,
+      0.944
+     ],
+     "P2": [
+      0.33,
+      -0.944
+     ]
+    },
+    "label": "Feed's coming \u2014 plant foot beside it, head still",
+    "ease": "lin",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "__ball__": [
+      [
+       10.630296728758626,
+       42.20612285175911
+      ],
+      [
+       27.5,
+       36.2
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      0.927,
+      -0.375
+     ],
+     "P1": [
+      0.108,
+      0.994
+     ]
+    },
+    "label": "Strike first-time \u2014 low and firm through the corner",
+    "ease": "lin",
+    "kind": "action",
+    "step": 9,
+    "steps": [
+     9
+    ]
+   },
+   {
+    "d": 1670,
+    "tracks": {
+     "P2": [
+      [
+       10.3,
+       43.15
+      ],
+      [
+       28.52,
+       35.79
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Collect it \u2014 quick jog",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 10
+   },
+   {
+    "d": 2753,
+    "tracks": {
+     "P2": [
+      [
+       28.52,
+       35.79
+      ],
+      [
+       24.0,
+       4.0
+      ]
+     ],
+     "__ball__": [
+      [
+       27.5,
+       36.2
+      ],
+      [
+       24.0,
+       4.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back to the crosser",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 11
+   },
+   {
+    "d": 2047,
+    "tracks": {
+     "P1": [
+      [
+       24.0,
+       4.0
+      ],
+      [
+       24.0,
+       4.0
+      ]
+     ],
+     "P2": [
+      [
+       24.0,
+       4.0
+      ],
+      [
+       6.0,
+       20.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Reset and go again \u2014 land soft, stay sharp",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

@@ -53,7 +53,9 @@ CRAFT (your own style, made explicit):
   Never faster. Phases 300-2600ms.
 - Resets: the ball is BROUGHT by someone, never rolls home alone; captions coach
   ("Bring it back — that's your rest").
-- The loop must END exactly at its starting state (positions AND ball).
+- The loop must END exactly at its starting state (positions AND ball): the final
+  phase returns every actor and the ball to their first-phase coordinates, copied
+  digit-for-digit. A track's start always EQUALS that actor's previous end.
 - Captions: second person, technique and perception, no numbers.
 """
 
@@ -140,6 +142,25 @@ def _sanitize(timeline: dict[str, Any], drill: dict[str, Any]) -> dict[str, Any]
             "kind": kind,
             "step": p.get("step"),
         })
+    # continuity is geometry, not art: snap small phase-to-phase drifts shut
+    # (rounding artifacts), and close a near-miss loop boundary exactly.
+    last: dict[str, list[float]] = {}
+    first: dict[str, list[float]] = {}
+    for cp in clean:
+        for lbl, tr in cp["tracks"].items():
+            if lbl in last and math.hypot(tr[0][0] - last[lbl][0],
+                                          tr[0][1] - last[lbl][1]) <= 0.9:
+                tr[0] = [last[lbl][0], last[lbl][1]]
+            if lbl not in first:
+                first[lbl] = tr[0]
+            last[lbl] = tr[1]
+    for lbl, endpos in last.items():
+        f = first.get(lbl)
+        if f and 0.0 < math.hypot(endpos[0] - f[0], endpos[1] - f[1]) <= 1.5:
+            for cp in reversed(clean):
+                if lbl in cp["tracks"]:
+                    cp["tracks"][lbl][1] = [f[0], f[1]]
+                    break
     return {"phases": clean}
 
 

@@ -1,0 +1,498 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 3.0,
+    "y": 7.5,
+    "label": "P1",
+    "role": "server",
+    "display_label": "Server"
+   },
+   {
+    "type": "player",
+    "x": 13.0,
+    "y": 7.5,
+    "label": "P2",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 3.0,
+    "y": 7.5,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 13.0,
+    "y": 5.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 13.0,
+    "y": 10.0,
+    "label": "C2"
+   }
+  ],
+  "paths": [
+   {
+    "from": "P2",
+    "to": "C1",
+    "style": "run",
+    "step": 1,
+    "fx": 13.0,
+    "fy": 7.5,
+    "tx": 13.0,
+    "ty": 5.9
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 2,
+    "touches": 1,
+    "fx": 3.0,
+    "fy": 7.5,
+    "tx": 13.0,
+    "ty": 5.9
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "pass",
+    "step": 3,
+    "touches": 1,
+    "fx": 13.0,
+    "fy": 5.9,
+    "tx": 3.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P2",
+    "to": "C2",
+    "style": "run",
+    "step": 4,
+    "fx": 13.0,
+    "fy": 5.9,
+    "tx": 13.0,
+    "ty": 9.1
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 5,
+    "touches": 1,
+    "fx": 3.0,
+    "fy": 7.5,
+    "tx": 13.0,
+    "ty": 9.1,
+    "sync": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "pass",
+    "step": 6,
+    "touches": 1,
+    "fx": 13.0,
+    "fy": 9.1,
+    "tx": 3.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P2",
+    "to": "C1",
+    "style": "run",
+    "step": 7,
+    "fx": 13.0,
+    "fy": 9.1,
+    "tx": 13.0,
+    "ty": 5.9
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 8,
+    "touches": 1,
+    "fx": 3.0,
+    "fy": 7.5,
+    "tx": 13.0,
+    "ty": 5.9,
+    "sync": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "pass",
+    "step": 9,
+    "touches": 1,
+    "fx": 13.0,
+    "fy": 5.9,
+    "tx": 3.0,
+    "ty": 7.5
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up \u2014 two minutes of light jogging, dynamic leg swings and easy two-touch passing before working at pace",
+  "ONE ball only: the server feeds, you return first-time, then shuffle to the next cone \u2014 the shuffle is your reset",
+  "Shuffle to the cone and be SET before the feed arrives \u2014 plant, then strike; never receive flat-footed",
+  "Scan first \u2014 look up at the server for their body cue BEFORE the ball arrives, open your hips to the return line",
+  "Inside of the foot, ankle locked, plant foot pointing at the server \u2014 cushion and redirect in one motion",
+  "Beat the clock: receive-and-return inside 2 seconds under the server's pressure \u2014 that's game tempo",
+  "Target: 8 of 10 returns arrive to the server's correct foot at pace; count them out loud",
+  "10 reps per set, 4 sets \u2014 the walk back to the cone between shuffles is your rest; swap roles after each set",
+  "Progression: server fires harder and quicker; regression: allow a small settling touch before the return"
+ ],
+ "variations": [
+  "Weak foot only \u2014 every one-touch return with the weak foot",
+  "Alternate feet \u2014 right foot at C1, left foot at C2 each rep"
+ ],
+ "equipment": [
+  "ball",
+  "cones",
+  "partner"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "passing-pair",
+  "request": {
+   "skill_description": "sharper one touch passing with a partner",
+   "weakness": "Passing Accuracy",
+   "experience_level": "intermediate",
+   "player_age": 13,
+   "position": "Midfielder",
+   "equipment": [
+    "ball",
+    "cones",
+    "partner"
+   ],
+   "number_of_players": 2,
+   "category": "technical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 500,
+    "tracks": {
+     "P2": [
+      [
+       13.0,
+       7.5
+      ],
+      [
+       13.0,
+       5.9
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      0.0,
+      -1.0
+     ]
+    },
+    "label": "Shuffle to the cone \u2014 this reset is your setup",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "__ball__": [
+      [
+       3.0,
+       7.5
+      ],
+      [
+       12.012559368083295,
+       6.057990501106673
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.987,
+      -0.158
+     ],
+     "P2": [
+      -0.987,
+      0.158
+     ]
+    },
+    "label": "Scan up \u2014 read the server's hips before the ball leaves",
+    "ease": "lin",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "__ball__": [
+      [
+       12.012559368083295,
+       6.057990501106673
+      ],
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      0.158
+     ],
+     "P1": [
+      0.987,
+      -0.158
+     ]
+    },
+    "label": "Plant foot at the server, ankle locked, hips open to the return",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "__ball__": [
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ],
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      0.158
+     ],
+     "P1": [
+      0.987,
+      -0.158
+     ]
+    },
+    "label": "The touch \u2014 cushion and redirect in one motion",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3
+   },
+   {
+    "d": 450,
+    "tracks": {
+     "P2": [
+      [
+       13.0,
+       5.9
+      ],
+      [
+       13.0,
+       9.1
+      ]
+     ],
+     "__ball__": [
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ],
+      [
+       12.018497994153158,
+       8.90854814569029
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      -0.158
+     ],
+     "P1": [
+      0.987,
+      0.158
+     ]
+    },
+    "label": "Shuffle back \u2014 reset your feet, stay light",
+    "ease": "out",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4,
+     5
+    ]
+   },
+   {
+    "d": 550,
+    "tracks": {
+     "__ball__": [
+      [
+       12.018497994153158,
+       8.90854814569029
+      ],
+      [
+       3.987440631916705,
+       7.6579905011066725
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      -0.158
+     ],
+     "P1": [
+      0.987,
+      0.158
+     ]
+    },
+    "label": "Feed's coming \u2014 plant, then strike, never flat-footed",
+    "ease": "lin",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 450,
+    "tracks": {
+     "P2": [
+      [
+       13.0,
+       9.1
+      ],
+      [
+       13.0,
+       5.9
+      ]
+     ],
+     "__ball__": [
+      [
+       3.987440631916705,
+       7.6579905011066725
+      ],
+      [
+       12.018497994153158,
+       6.09145185430971
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      0.158
+     ],
+     "P1": [
+      0.987,
+      -0.158
+     ]
+    },
+    "label": "Shuffle back \u2014 beat the clock to the next cone",
+    "ease": "out",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7,
+     8
+    ]
+   },
+   {
+    "d": 550,
+    "tracks": {
+     "__ball__": [
+      [
+       12.018497994153158,
+       6.09145185430971
+      ],
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      -0.987,
+      0.158
+     ],
+     "P1": [
+      0.987,
+      -0.158
+     ]
+    },
+    "label": "Set before it arrives \u2014 feel the plant, then the strike",
+    "ease": "lin",
+    "kind": "action",
+    "step": 9,
+    "steps": [
+     9
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "P1": [
+      [
+       3.0,
+       7.5
+      ],
+      [
+       3.0,
+       7.5
+      ]
+     ],
+     "P2": [
+      [
+       13.0,
+       5.9
+      ],
+      [
+       13.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       3.987440631916705,
+       7.3420094988933275
+      ],
+      [
+       3.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back \u2014 go again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

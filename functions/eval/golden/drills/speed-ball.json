@@ -1,0 +1,782 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 2.0,
+    "y": 7.5,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 2.0,
+    "y": 7.5,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 4.0,
+    "y": 7.5,
+    "label": "C0"
+   },
+   {
+    "type": "cone",
+    "x": 7.0,
+    "y": 4.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 10.0,
+    "y": 11.0,
+    "label": "C2"
+   },
+   {
+    "type": "cone",
+    "x": 13.0,
+    "y": 4.0,
+    "label": "C3"
+   },
+   {
+    "type": "cone",
+    "x": 16.0,
+    "y": 11.0,
+    "label": "C4"
+   },
+   {
+    "type": "gate",
+    "x": 19.0,
+    "y": 7.5,
+    "label": "G1",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "C0",
+    "style": "dribble",
+    "step": 1,
+    "fx": 2.0,
+    "fy": 7.5,
+    "tx": 5.1,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 2,
+    "fx": 5.1,
+    "fy": 7.5,
+    "tx": 7.52,
+    "ty": 3.03
+   },
+   {
+    "from": "P1",
+    "to": "C2",
+    "style": "dribble",
+    "step": 3,
+    "fx": 7.52,
+    "fy": 3.03,
+    "tx": 10.33,
+    "ty": 12.05
+   },
+   {
+    "from": "P1",
+    "to": "C3",
+    "style": "dribble",
+    "step": 4,
+    "fx": 10.33,
+    "fy": 12.05,
+    "tx": 13.35,
+    "ty": 2.96
+   },
+   {
+    "from": "P1",
+    "to": "C4",
+    "style": "dribble",
+    "step": 5,
+    "fx": 13.35,
+    "fy": 2.96,
+    "tx": 16.34,
+    "ty": 12.04
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 6,
+    "fx": 16.34,
+    "fy": 12.04,
+    "tx": 19.55,
+    "ty": 6.55
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 7,
+    "fx": 19.55,
+    "fy": 6.55,
+    "tx": 2.0,
+    "ty": 7.5,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "C0",
+    "style": "dribble",
+    "step": 8,
+    "fx": 2.0,
+    "fy": 7.5,
+    "tx": 5.1,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 9,
+    "fx": 5.1,
+    "fy": 7.5,
+    "tx": 7.52,
+    "ty": 3.03
+   },
+   {
+    "from": "P1",
+    "to": "C2",
+    "style": "dribble",
+    "step": 10,
+    "fx": 7.52,
+    "fy": 3.03,
+    "tx": 10.33,
+    "ty": 12.05
+   },
+   {
+    "from": "P1",
+    "to": "C3",
+    "style": "dribble",
+    "step": 11,
+    "fx": 10.33,
+    "fy": 12.05,
+    "tx": 13.35,
+    "ty": 2.96
+   },
+   {
+    "from": "P1",
+    "to": "C4",
+    "style": "dribble",
+    "step": 12,
+    "fx": 13.35,
+    "fy": 2.96,
+    "tx": 16.34,
+    "ty": 12.04
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 13,
+    "fx": 16.34,
+    "fy": 12.04,
+    "tx": 19.55,
+    "ty": 6.55
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, leg swings, and easy ball rolls before sprinting with the ball",
+  "Explode off the start cone \u2014 first two touches are hard pushes to hit top speed fast",
+  "Low hips into every cut; push off the outside foot and change direction sharply, don't drift the turn",
+  "Eyes up between cones \u2014 glance ahead to the next cone the instant you finish a cut",
+  "One ball: after passing through the exit gate, jog back to the ball and dribble to the start \u2014 that jog is your rest",
+  "Target: complete each run through the gate in 6 seconds or less with no loss of control \u2014 time yourself",
+  "Volume: 6 runs per set, 4 sets; collecting the ball and walking back is the rest between reps",
+  "Progression: beat 6s cleanly on 5 of 6 \u2192 widen the cone stagger; lose control twice \u2192 slow the entry and rebuild speed",
+  "Keep the ball within one step of your feet on cuts \u2014 a big touch that runs past a cone counts as a miss"
+ ],
+ "variations": [
+  "Weak foot only \u2014 every touch and cut with the weak foot",
+  "Outside-of-boot cuts \u2014 turn the ball with the outside of the foot at each cone",
+  "Race mode \u2014 start on a partner's clap, sprint the whole course flat out"
+ ],
+ "equipment": [
+  "ball",
+  "cones"
+ ],
+ "category": "physical",
+ "is_duel": false,
+ "_case": {
+  "id": "speed-ball",
+  "request": {
+   "skill_description": "get way faster with the ball",
+   "weakness": "Speed & Agility",
+   "experience_level": "intermediate",
+   "player_age": 11,
+   "position": "Forward",
+   "equipment": [
+    "ball",
+    "cones"
+   ],
+   "number_of_players": 1,
+   "category": "physical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       5.1,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       5.1,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Explode off the start \u2014 two hard pushes to top speed",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       5.1,
+       7.5
+      ],
+      [
+       7.52,
+       3.03
+      ]
+     ],
+     "__ball__": [
+      [
+       5.1,
+       7.5
+      ],
+      [
+       7.52,
+       3.03
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.476,
+      -0.879
+     ]
+    },
+    "label": "Drop your hips and load the outside foot before the cut",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       7.52,
+       3.03
+      ],
+      [
+       10.33,
+       12.05
+      ]
+     ],
+     "__ball__": [
+      [
+       7.52,
+       3.03
+      ],
+      [
+       10.33,
+       12.05
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.297,
+      0.955
+     ]
+    },
+    "label": "Eyes up \u2014 find the next cone the instant you finish the turn",
+    "ease": "out",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 1100,
+    "tracks": {
+     "P1": [
+      [
+       10.33,
+       12.05
+      ],
+      [
+       13.35,
+       2.96
+      ]
+     ],
+     "__ball__": [
+      [
+       10.33,
+       12.05
+      ],
+      [
+       13.35,
+       2.96
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.315,
+      -0.949
+     ]
+    },
+    "label": "Drive the ball to C3",
+    "ease": "out",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4
+    ]
+   },
+   {
+    "d": 1100,
+    "tracks": {
+     "P1": [
+      [
+       13.35,
+       2.96
+      ],
+      [
+       16.34,
+       12.04
+      ]
+     ],
+     "__ball__": [
+      [
+       13.35,
+       2.96
+      ],
+      [
+       16.34,
+       12.04
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.313,
+      0.95
+     ]
+    },
+    "label": "Drive the ball to C4",
+    "ease": "out",
+    "kind": "action",
+    "step": 5,
+    "steps": [
+     5
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "P1": [
+      [
+       16.34,
+       12.04
+      ],
+      [
+       19.55,
+       6.55
+      ]
+     ],
+     "__ball__": [
+      [
+       16.34,
+       12.04
+      ],
+      [
+       19.55,
+       6.55
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.505,
+      -0.863
+     ]
+    },
+    "label": "Punch through the gate clean, still in control",
+    "ease": "out",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 1493,
+    "tracks": {
+     "P1": [
+      [
+       19.55,
+       6.55
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       19.55,
+       6.55
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog back and collect \u2014 this is your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 7
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "P1": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Feel your breath settle before you go again",
+    "ease": "lin",
+    "kind": "action",
+    "step": 7
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       5.1,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       5.1,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Explode again \u2014 first touches decide your speed",
+    "ease": "out",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       5.1,
+       7.5
+      ],
+      [
+       7.52,
+       3.03
+      ]
+     ],
+     "__ball__": [
+      [
+       5.1,
+       7.5
+      ],
+      [
+       7.52,
+       3.03
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.476,
+      -0.879
+     ]
+    },
+    "label": "Low hips, push off the outside foot, cut hard",
+    "ease": "out",
+    "kind": "action",
+    "step": 9,
+    "steps": [
+     9
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       7.52,
+       3.03
+      ],
+      [
+       10.33,
+       12.05
+      ]
+     ],
+     "__ball__": [
+      [
+       7.52,
+       3.03
+      ],
+      [
+       10.33,
+       12.05
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.297,
+      0.955
+     ]
+    },
+    "label": "Glance ahead \u2014 read the next cone early",
+    "ease": "out",
+    "kind": "action",
+    "step": 10,
+    "steps": [
+     10
+    ]
+   },
+   {
+    "d": 1100,
+    "tracks": {
+     "P1": [
+      [
+       10.33,
+       12.05
+      ],
+      [
+       13.35,
+       2.96
+      ]
+     ],
+     "__ball__": [
+      [
+       10.33,
+       12.05
+      ],
+      [
+       13.35,
+       2.96
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.315,
+      -0.949
+     ]
+    },
+    "label": "Drive the ball to C3",
+    "ease": "out",
+    "kind": "action",
+    "step": 11,
+    "steps": [
+     11
+    ]
+   },
+   {
+    "d": 1100,
+    "tracks": {
+     "P1": [
+      [
+       13.35,
+       2.96
+      ],
+      [
+       16.34,
+       12.04
+      ]
+     ],
+     "__ball__": [
+      [
+       13.35,
+       2.96
+      ],
+      [
+       16.34,
+       12.04
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.313,
+      0.95
+     ]
+    },
+    "label": "Drive the ball to C4",
+    "ease": "out",
+    "kind": "action",
+    "step": 12,
+    "steps": [
+     12
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "P1": [
+      [
+       16.34,
+       12.04
+      ],
+      [
+       19.55,
+       6.55
+      ]
+     ],
+     "__ball__": [
+      [
+       16.34,
+       12.04
+      ],
+      [
+       19.55,
+       6.55
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.505,
+      -0.863
+     ]
+    },
+    "label": "Fire through the gate under control",
+    "ease": "out",
+    "kind": "action",
+    "step": 13,
+    "steps": [
+     13
+    ]
+   },
+   {
+    "d": 1493,
+    "tracks": {
+     "P1": [
+      [
+       19.55,
+       6.55
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       19.55,
+       6.55
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back \u2014 collect and reset",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

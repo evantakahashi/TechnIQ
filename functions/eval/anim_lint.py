@@ -76,7 +76,8 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
                 findings.append(
                     f"{tag} {cid} phase{pi} '{p.get('label','')[:34]}': "
                     f"{lbl} starts {_d(tr[0], last[lbl]):.1f}m from {where} "
-                    f"({last[lbl][0]:.1f},{last[lbl][1]:.1f})")
+                    f"({last[lbl][0]:.1f},{last[lbl][1]:.1f}) — begin this "
+                    f"track at exactly those coordinates")
         # aloneness (fades only — kicks fly alone legitimately)
         if kind == "fade" and BALL in tracks and _d(*tracks[BALL]) > 1.5:
             bt = tracks[BALL]
@@ -84,8 +85,10 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
                           and _d(t2[1], bt[1]) < 1.8
                           for l, t2 in tracks.items())
             if not carried:
-                findings.append(f"ALONE {cid} phase{pi}: ball travels "
-                                f"{_d(*bt):.0f}m unaccompanied in a reset")
+                findings.append(
+                    f"ALONE {cid} phase{pi}: ball travels {_d(*bt):.0f}m "
+                    "unaccompanied in a reset — a player must carry it "
+                    "(give the collector a track along the same path)")
         # collisions mid-phase
         labs = [l for l in tracks if l != BALL]
         for x in range(len(labs)):
@@ -98,7 +101,8 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
                     if _d(pa, pb) < 0.7:
                         findings.append(
                             f"COLLIDE {cid} phase{pi}: {labs[x]} and "
-                            f"{labs[y]} merge mid-phase")
+                            f"{labs[y]} merge mid-phase — keep them at "
+                            "least 0.8m apart (stop arm's length short)")
                         break
                 else:
                     continue
@@ -163,7 +167,9 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
             if lbl in last and _d(tr[0], last[lbl]) > 0.5:
                 findings.append(
                     f"LOOP {cid}: {lbl} teleports {_d(tr[0], last[lbl]):.1f}m "
-                    "at the loop boundary")
+                    f"at the loop boundary — the final phase must return "
+                    f"{lbl} to ({tr[0][0]:.1f},{tr[0][1]:.1f}), where the "
+                    "film opens")
         if loop == 0 and not outs:
             break  # deterministic without rotation — one loop suffices
     # dedupe

@@ -1,0 +1,798 @@
+{
+ "diagram": {
+  "field": {
+   "width": 18.5,
+   "length": 47.0
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 6.0,
+    "y": 41.0,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 6.0,
+    "y": 41.0,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 10.0,
+    "y": 34.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 11.34,
+    "y": 31.32,
+    "label": "T1"
+   },
+   {
+    "type": "cone",
+    "x": 10.0,
+    "y": 6.0,
+    "label": "C2"
+   },
+   {
+    "type": "cone",
+    "x": 11.34,
+    "y": 8.68,
+    "label": "T2"
+   },
+   {
+    "type": "goal",
+    "x": 17.5,
+    "y": 20.0,
+    "label": "GL",
+    "width": 7.32
+   },
+   {
+    "type": "gate",
+    "x": 17.5,
+    "y": 17.8,
+    "label": "G1",
+    "width": 1.2
+   },
+   {
+    "type": "gate",
+    "x": 17.5,
+    "y": 22.2,
+    "label": "G2",
+    "width": 1.2
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 1,
+    "fx": 6.0,
+    "fy": 41.0,
+    "tx": 10.55,
+    "ty": 33.04
+   },
+   {
+    "from": "P1",
+    "to": "T1",
+    "style": "dribble",
+    "step": 2,
+    "fx": 10.55,
+    "fy": 33.04,
+    "tx": 11.8,
+    "ty": 30.32
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "shoot",
+    "step": 3,
+    "fx": 11.8,
+    "fy": 30.32,
+    "tx": 17.5,
+    "ty": 17.8
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "run",
+    "step": 4,
+    "fx": 11.8,
+    "fy": 30.32,
+    "tx": 17.96,
+    "ty": 16.8,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 5,
+    "fx": 17.96,
+    "fy": 16.8,
+    "tx": 9.54,
+    "ty": 35.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "T1",
+    "style": "dribble",
+    "step": 6,
+    "fx": 9.54,
+    "fy": 35.0,
+    "tx": 11.82,
+    "ty": 30.33
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "shoot",
+    "step": 7,
+    "fx": 11.82,
+    "fy": 30.33,
+    "tx": 17.5,
+    "ty": 22.2
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "run",
+    "step": 8,
+    "fx": 11.82,
+    "fy": 30.33,
+    "tx": 18.13,
+    "ty": 21.3,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "C2",
+    "style": "dribble",
+    "step": 9,
+    "fx": 18.13,
+    "fy": 21.3,
+    "tx": 9.48,
+    "ty": 5.03,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "T2",
+    "style": "dribble",
+    "step": 10,
+    "fx": 9.48,
+    "fy": 5.03,
+    "tx": 11.84,
+    "ty": 9.66
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "shoot",
+    "step": 11,
+    "fx": 11.84,
+    "fy": 9.66,
+    "tx": 17.5,
+    "ty": 17.8
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "run",
+    "step": 12,
+    "fx": 11.84,
+    "fy": 9.66,
+    "tx": 18.13,
+    "ty": 18.7,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "C2",
+    "style": "dribble",
+    "step": 13,
+    "fx": 18.13,
+    "fy": 18.7,
+    "tx": 9.41,
+    "ty": 5.07,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "T2",
+    "style": "dribble",
+    "step": 14,
+    "fx": 9.41,
+    "fy": 5.07,
+    "tx": 11.86,
+    "ty": 9.65
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "shoot",
+    "step": 15,
+    "fx": 11.86,
+    "fy": 9.65,
+    "tx": 17.5,
+    "ty": 22.2
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, leg swings, easy weak-foot rolls and side-foot passes before striking at pace",
+  "One ball: after every strike jog in to collect it from the goal and dribble back out wide to the start \u2014 that jog is your rest",
+  "Weak foot only \u2014 a strong-foot strike counts as a miss, no exceptions",
+  "The prep touch is the cut \u2014 dribble to the approach cone, then sharply cut across your body to the touch cone so the ball sits in your weak-foot zone; never strike from on top of the approach cone",
+  "Glance up at the corner gate between the cut and the strike; plant foot beside the ball, head still at contact",
+  "Target: 6 of 10 strikes through a corner gate within 2 seconds of the cut \u2014 count out loud; alternate near-post and far-post gates",
+  "Lock the ankle and keep the knee of the striking leg over the ball to drive it low and protect the joint",
+  "10 strikes per set, 4 sets; collecting the ball is the rest between reps",
+  "Hit 8/10 \u2192 step 3m further out; miss 5 \u2192 widen the gate to make contact clean first"
+ ],
+ "variations": [
+  "Both approach angles \u2014 alternate the wide-right and wide-left start every rep",
+  "One-touch finish \u2014 cut and strike in a single motion, no settle touch",
+  "Full version needs a server feeding your back-to-goal for the quick-turn finish; add a partner when you have one"
+ ],
+ "equipment": [
+  "ball",
+  "cones",
+  "goals"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "weakfoot-finish",
+  "request": {
+   "category": "technical",
+   "equipment": [
+    "ball",
+    "cones",
+    "goals"
+   ],
+   "experience_level": "advanced",
+   "field_size": "medium",
+   "number_of_players": 1,
+   "player_age": 15,
+   "position": "Forward",
+   "skill_description": "weak foot finishing accuracy",
+   "weakness": "Shooting Accuracy"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       6.0,
+       41.0
+      ],
+      [
+       10.55,
+       33.04
+      ]
+     ],
+     "__ball__": [
+      [
+       6.0,
+       41.0
+      ],
+      [
+       10.55,
+       33.04
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.496,
+      -0.868
+     ]
+    },
+    "label": "Dribble in, then cut sharp across your body into your weak-foot zone",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 520,
+    "tracks": {
+     "P1": [
+      [
+       10.55,
+       33.04
+      ],
+      [
+       11.8,
+       30.32
+      ]
+     ],
+     "__ball__": [
+      [
+       10.55,
+       33.04
+      ],
+      [
+       11.8,
+       30.32
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.418,
+      -0.909
+     ]
+    },
+    "label": "Glance up \u2014 pick your corner gate before you strike",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 620,
+    "tracks": {
+     "__ball__": [
+      [
+       11.8,
+       30.32
+      ],
+      [
+       17.5,
+       17.8
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.414,
+      -0.91
+     ]
+    },
+    "label": "Ankle locked, knee over the ball \u2014 drive it low and firm",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       17.5,
+       17.8
+      ],
+      [
+       17.5,
+       17.8
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.414,
+      -0.91
+     ]
+    },
+    "label": "Watch it run through the gate",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3
+   },
+   {
+    "d": 1262,
+    "tracks": {
+     "P1": [
+      [
+       11.8,
+       30.32
+      ],
+      [
+       17.96,
+       16.8
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog in and collect \u2014 this is your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 4
+   },
+   {
+    "d": 1704,
+    "tracks": {
+     "P1": [
+      [
+       17.96,
+       16.8
+      ],
+      [
+       9.54,
+       35.0
+      ]
+     ],
+     "__ball__": [
+      [
+       17.5,
+       17.8
+      ],
+      [
+       9.54,
+       35.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Dribble back out wide to the start",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 5
+   },
+   {
+    "d": 520,
+    "tracks": {
+     "P1": [
+      [
+       9.54,
+       35.0
+      ],
+      [
+       11.82,
+       30.33
+      ]
+     ],
+     "__ball__": [
+      [
+       9.54,
+       35.0
+      ],
+      [
+       11.82,
+       30.33
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.439,
+      -0.899
+     ]
+    },
+    "label": "Cut it into your weak foot \u2014 near post this time",
+    "ease": "out",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 620,
+    "tracks": {
+     "__ball__": [
+      [
+       11.82,
+       30.33
+      ],
+      [
+       17.5,
+       22.2
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.573,
+      -0.82
+     ]
+    },
+    "label": "Head still at contact \u2014 keep it low",
+    "ease": "lin",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7
+    ]
+   },
+   {
+    "d": 936,
+    "tracks": {
+     "P1": [
+      [
+       11.82,
+       30.33
+      ],
+      [
+       18.13,
+       21.3
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog in and collect \u2014 breathe",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 8
+   },
+   {
+    "d": 1610,
+    "tracks": {
+     "P1": [
+      [
+       18.13,
+       21.3
+      ],
+      [
+       9.48,
+       5.03
+      ]
+     ],
+     "__ball__": [
+      [
+       17.5,
+       22.2
+      ],
+      [
+       9.48,
+       5.03
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Back out wide, set up again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 9
+   },
+   {
+    "d": 520,
+    "tracks": {
+     "P1": [
+      [
+       9.48,
+       5.03
+      ],
+      [
+       11.84,
+       9.66
+      ]
+     ],
+     "__ball__": [
+      [
+       9.48,
+       5.03
+      ],
+      [
+       11.84,
+       9.66
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.454,
+      0.891
+     ]
+    },
+    "label": "Cut across your body \u2014 far post now",
+    "ease": "out",
+    "kind": "action",
+    "step": 10,
+    "steps": [
+     10
+    ]
+   },
+   {
+    "d": 620,
+    "tracks": {
+     "__ball__": [
+      [
+       11.84,
+       9.66
+      ],
+      [
+       17.5,
+       17.8
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.571,
+      0.821
+     ]
+    },
+    "label": "Plant beside the ball, drive it clean",
+    "ease": "lin",
+    "kind": "action",
+    "step": 11,
+    "steps": [
+     11
+    ]
+   },
+   {
+    "d": 936,
+    "tracks": {
+     "P1": [
+      [
+       11.84,
+       9.66
+      ],
+      [
+       18.13,
+       18.7
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog in and collect",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 12
+   },
+   {
+    "d": 1375,
+    "tracks": {
+     "P1": [
+      [
+       18.13,
+       18.7
+      ],
+      [
+       9.41,
+       5.07
+      ]
+     ],
+     "__ball__": [
+      [
+       17.5,
+       17.8
+      ],
+      [
+       9.41,
+       5.07
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back out wide",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 13
+   },
+   {
+    "d": 520,
+    "tracks": {
+     "P1": [
+      [
+       9.41,
+       5.07
+      ],
+      [
+       11.86,
+       9.65
+      ]
+     ],
+     "__ball__": [
+      [
+       9.41,
+       5.07
+      ],
+      [
+       11.86,
+       9.65
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.472,
+      0.882
+     ]
+    },
+    "label": "Sharp cut \u2014 weak foot only, no cheating",
+    "ease": "out",
+    "kind": "action",
+    "step": 14,
+    "steps": [
+     14
+    ]
+   },
+   {
+    "d": 640,
+    "tracks": {
+     "__ball__": [
+      [
+       11.86,
+       9.65
+      ],
+      [
+       17.5,
+       22.2
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.41,
+      0.912
+     ]
+    },
+    "label": "Knee over it, ankle firm \u2014 low through the corner",
+    "ease": "lin",
+    "kind": "action",
+    "step": 15,
+    "steps": [
+     15
+    ]
+   },
+   {
+    "d": 1169,
+    "tracks": {
+     "P1": [
+      [
+       11.86,
+       9.65
+      ],
+      [
+       17.5,
+       22.2
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog in and collect \u2014 settle your breathing",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   },
+   {
+    "d": 1873,
+    "tracks": {
+     "P1": [
+      [
+       17.5,
+       22.2
+      ],
+      [
+       6.0,
+       41.0
+      ]
+     ],
+     "__ball__": [
+      [
+       17.5,
+       22.2
+      ],
+      [
+       6.0,
+       41.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Back out wide \u2014 reset and go again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

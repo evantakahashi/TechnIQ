@@ -1,0 +1,596 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 2.0,
+    "y": 7.5,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 2.0,
+    "y": 7.5,
+    "label": "B1"
+   },
+   {
+    "type": "gate",
+    "x": 6.0,
+    "y": 5.0,
+    "label": "G1",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 10.0,
+    "y": 10.0,
+    "label": "G2",
+    "width": 2.0
+   },
+   {
+    "type": "cone",
+    "x": 13.0,
+    "y": 6.0,
+    "label": "C1"
+   },
+   {
+    "type": "gate",
+    "x": 18.0,
+    "y": 7.5,
+    "label": "G3",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 1,
+    "fx": 2.0,
+    "fy": 7.5,
+    "tx": 6.93,
+    "ty": 4.42
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "dribble",
+    "step": 2,
+    "fx": 6.93,
+    "fy": 4.42,
+    "tx": 10.53,
+    "ty": 10.96
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 3,
+    "fx": 10.53,
+    "fy": 10.96,
+    "tx": 13.49,
+    "ty": 5.02
+   },
+   {
+    "from": "P1",
+    "to": "G3",
+    "style": "dribble",
+    "step": 4,
+    "fx": 13.49,
+    "fy": 5.02,
+    "tx": 18.96,
+    "ty": 8.03
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 5,
+    "fx": 18.96,
+    "fy": 8.03,
+    "tx": 2.0,
+    "ty": 7.5,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 6,
+    "fx": 2.0,
+    "fy": 7.5,
+    "tx": 6.93,
+    "ty": 4.42
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "dribble",
+    "step": 7,
+    "fx": 6.93,
+    "fy": 4.42,
+    "tx": 10.53,
+    "ty": 10.96
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "dribble",
+    "step": 8,
+    "fx": 10.53,
+    "fy": 10.96,
+    "tx": 13.49,
+    "ty": 5.02
+   },
+   {
+    "from": "P1",
+    "to": "G3",
+    "style": "dribble",
+    "step": 9,
+    "fx": 13.49,
+    "fy": 5.02,
+    "tx": 18.96,
+    "ty": 8.03
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 10,
+    "fx": 18.96,
+    "fy": 8.03,
+    "tx": 2.0,
+    "ty": 7.5,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes first \u2014 jog gently, wiggle your ankles, and do easy toe-taps on top of the ball",
+  "Keep the ball close \u2014 take lots of little touches so the ball is never more than one step away from your feet",
+  "Wiggle through each gate! Steer the ball right through the little doors with the inside of your foot",
+  "Look up between gates to find the next door \u2014 eyes off the ball for a peek, then back to your touches",
+  "Push the ball and run to speed up after the last gate \u2014 a little burst through the finish door",
+  "Target \u2014 get through all 3 gates cleanly on 8 of 10 tries without the ball rolling away",
+  "6 runs per set, 3 sets \u2014 after you zoom through the finish gate, jog back to fetch the ball; that jog is your rest",
+  "Make it easier \u2014 if the gates feel hard, spread them wider; make it harder \u2014 get 8/10 clean, then slide the gates a step closer together",
+  "Bend your knees and land softly on your turns to keep your legs happy"
+ ],
+ "variations": [
+  "Weak foot only \u2014 steer every gate with your other foot",
+  "Beat the clock \u2014 count how many seconds the whole run takes and try to go a little faster each time",
+  "Silly touches \u2014 do a toe-tap or a roll before each gate for fun"
+ ],
+ "equipment": [
+  "ball",
+  "cones"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "u8-dribble",
+  "request": {
+   "category": "technical",
+   "equipment": [
+    "ball",
+    "cones"
+   ],
+   "experience_level": "beginner",
+   "field_size": "small",
+   "number_of_players": 1,
+   "player_age": 8,
+   "position": "Forward",
+   "skill_description": "fun easy dribbling for a little kid",
+   "weakness": "Dribbling Skills"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       6.93,
+       4.42
+      ]
+     ],
+     "__ball__": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       6.93,
+       4.42
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.848,
+      -0.53
+     ]
+    },
+    "label": "Keep the ball close \u2014 little taps, never more than one step away",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "P1": [
+      [
+       6.93,
+       4.42
+      ],
+      [
+       10.53,
+       10.96
+      ]
+     ],
+     "__ball__": [
+      [
+       6.93,
+       4.42
+      ],
+      [
+       10.53,
+       10.96
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.482,
+      0.876
+     ]
+    },
+    "label": "Peek up to find the next little door, then back to your touches",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       10.53,
+       10.96
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ],
+     "__ball__": [
+      [
+       10.53,
+       10.96
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.446,
+      -0.895
+     ]
+    },
+    "label": "Wiggle through the gate \u2014 steer with the inside of your foot",
+    "ease": "out",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "P1": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ],
+     "__ball__": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.446,
+      -0.895
+     ]
+    },
+    "label": "Nice and soft \u2014 bend your knees so your legs stay happy",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3
+   },
+   {
+    "d": 750,
+    "tracks": {
+     "P1": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       18.96,
+       8.03
+      ]
+     ],
+     "__ball__": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       18.96,
+       8.03
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.876,
+      0.482
+     ]
+    },
+    "label": "Push and burst through the finish door",
+    "ease": "out",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4
+    ]
+   },
+   {
+    "d": 1442,
+    "tracks": {
+     "P1": [
+      [
+       18.96,
+       8.03
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       18.96,
+       8.03
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog back to fetch the ball \u2014 that's your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 5
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       6.93,
+       4.42
+      ]
+     ],
+     "__ball__": [
+      [
+       2.0,
+       7.5
+      ],
+      [
+       6.93,
+       4.42
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.848,
+      -0.53
+     ]
+    },
+    "label": "First door coming up \u2014 little touches",
+    "ease": "out",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 800,
+    "tracks": {
+     "P1": [
+      [
+       6.93,
+       4.42
+      ],
+      [
+       10.53,
+       10.96
+      ]
+     ],
+     "__ball__": [
+      [
+       6.93,
+       4.42
+      ],
+      [
+       10.53,
+       10.96
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.482,
+      0.876
+     ]
+    },
+    "label": "Eyes up, find the next gate",
+    "ease": "out",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       10.53,
+       10.96
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ],
+     "__ball__": [
+      [
+       10.53,
+       10.96
+      ],
+      [
+       13.49,
+       5.02
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.446,
+      -0.895
+     ]
+    },
+    "label": "Wiggle it through with the inside of your foot",
+    "ease": "out",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 750,
+    "tracks": {
+     "P1": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       18.96,
+       8.03
+      ]
+     ],
+     "__ball__": [
+      [
+       13.49,
+       5.02
+      ],
+      [
+       18.96,
+       8.03
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.876,
+      0.482
+     ]
+    },
+    "label": "Zoom through the finish with a little burst",
+    "ease": "out",
+    "kind": "action",
+    "step": 9,
+    "steps": [
+     9
+    ]
+   },
+   {
+    "d": 1442,
+    "tracks": {
+     "P1": [
+      [
+       18.96,
+       8.03
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       18.96,
+       8.03
+      ],
+      [
+       2.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog back and go again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 10
+   }
+  ]
+ }
+}

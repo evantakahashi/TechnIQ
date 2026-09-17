@@ -1,0 +1,472 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 3.0,
+    "y": 7.0,
+    "label": "P1",
+    "role": "server"
+   },
+   {
+    "type": "player",
+    "x": 9.9,
+    "y": 7.0,
+    "label": "P2",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 3.0,
+    "y": 7.0,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 12.1,
+    "y": 7.0,
+    "label": "C1"
+   },
+   {
+    "type": "gate",
+    "x": 15.0,
+    "y": 3.0,
+    "label": "G1",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 16.0,
+    "y": 7.0,
+    "label": "G2",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 1,
+    "fx": 3.0,
+    "fy": 7.0,
+    "tx": 9.9,
+    "ty": 7.0
+   },
+   {
+    "from": "P2",
+    "to": "G2",
+    "style": "dribble",
+    "step": 2,
+    "fx": 9.9,
+    "fy": 7.0,
+    "tx": 17.1,
+    "ty": 7.0
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "dribble",
+    "step": 3,
+    "fx": 17.1,
+    "fy": 7.0,
+    "tx": 3.0,
+    "ty": 7.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "receive",
+    "step": 4,
+    "fx": 3.0,
+    "fy": 7.0,
+    "tx": 3.0,
+    "ty": 7.0,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "C1",
+    "style": "run",
+    "step": 5,
+    "fx": 3.0,
+    "fy": 7.0,
+    "tx": 11.2,
+    "ty": 7.0
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "pass",
+    "step": 6,
+    "fx": 3.0,
+    "fy": 7.0,
+    "tx": 11.2,
+    "ty": 7.0
+   },
+   {
+    "from": "P2",
+    "to": "G1",
+    "style": "dribble",
+    "step": 7,
+    "fx": 11.2,
+    "fy": 7.0,
+    "tx": 15.76,
+    "ty": 2.2
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "dribble",
+    "step": 8,
+    "fx": 15.76,
+    "fy": 2.2,
+    "tx": 3.0,
+    "ty": 7.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "receive",
+    "step": 9,
+    "fx": 3.0,
+    "fy": 7.0,
+    "tx": 3.0,
+    "ty": 7.0,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm-up 2-3 min \u2014 light jog, hip openers, leg swings, easy toe-taps on the ball before any hard reps.",
+  "HOW PRESSURE WORKS: partner alternates roles \u2014 after feeding, the server steps up to the worker's back as a live defender within 2-3m so the touch must escape real pressure. Swap server/worker every 6 feeds.",
+  "SCAN FIRST: before the ball arrives the worker glances over the shoulder to locate the pressure, then chooses the gate AWAY from it.",
+  "First touch is directional and firm \u2014 take it across the defender's momentum into space, then explode through the gate in 2 touches max.",
+  "Cushion the ball with a relaxed foot, push it into the gap, not under your feet \u2014 reset your body between reps to stay balanced.",
+  "Server VARIES height and pace of the feed each rep so the worker adjusts the receiving surface every time.",
+  "TARGET: 7 of 10 receptions must exit forward through a gate within 2 touches to count.",
+  "VOLUME: 10 feeds per set, 4 sets; jogging the ball back to the server is your rest.",
+  "Progression \u2014 hit 8/10 clean \u2192 server closes tighter and feeds harder; struggling at 5/10 \u2192 widen the gates and give a half-second more before closing."
+ ],
+ "variations": [
+  "Weak foot only \u2014 every first touch and exit with the weak foot.",
+  "Called gate \u2014 server shouts a gate as the ball travels; worker must exit through THAT one (forces late scan).",
+  "Half-volley \u2014 server tosses a bouncing feed; worker takes one direct touch through a gate."
+ ],
+ "equipment": [
+  "ball",
+  "cones"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "first-touch",
+  "request": {
+   "skill_description": "first touch under pressure then explode away",
+   "weakness": "First Touch",
+   "experience_level": "advanced",
+   "player_age": 16,
+   "position": "Midfielder",
+   "equipment": [
+    "ball",
+    "cones"
+   ],
+   "number_of_players": 1,
+   "category": "technical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 700,
+    "tracks": {
+     "__ball__": [
+      [
+       3.0,
+       7.0
+      ],
+      [
+       8.9,
+       7.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ],
+     "P2": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Server disguises the feed \u2014 read the height and pace early",
+    "ease": "lin",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P2": [
+      [
+       9.9,
+       7.0
+      ],
+      [
+       17.1,
+       7.0
+      ]
+     ],
+     "__ball__": [
+      [
+       8.9,
+       7.0
+      ],
+      [
+       17.1,
+       7.0
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Firm first touch across his momentum, into the gap",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 1198,
+    "tracks": {
+     "P2": [
+      [
+       17.1,
+       7.0
+      ],
+      [
+       3.0,
+       7.0
+      ]
+     ],
+     "__ball__": [
+      [
+       17.1,
+       7.0
+      ],
+      [
+       3.0,
+       7.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog it back, reset your body, breathe",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 3
+   },
+   {
+    "d": 1100,
+    "tracks": {
+     "P2": [
+      [
+       3.0,
+       7.0
+      ],
+      [
+       11.2,
+       7.0
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Glance over your shoulder \u2014 where's the pressure?",
+    "ease": "out",
+    "kind": "action",
+    "step": 5,
+    "steps": [
+     5
+    ]
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "P2": [
+      [
+       11.2,
+       7.0
+      ],
+      [
+       11.2,
+       7.0
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Pick the gate away from him",
+    "ease": "lin",
+    "kind": "action",
+    "step": 5
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "__ball__": [
+      [
+       3.0,
+       7.0
+      ],
+      [
+       10.2,
+       7.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ],
+     "P2": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Feed's coming \u2014 be set, weight on your toes",
+    "ease": "lin",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 1000,
+    "tracks": {
+     "P2": [
+      [
+       11.2,
+       7.0
+      ],
+      [
+       15.76,
+       2.2
+      ]
+     ],
+     "__ball__": [
+      [
+       10.2,
+       7.0
+      ],
+      [
+       15.76,
+       2.2
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      0.689,
+      -0.725
+     ]
+    },
+    "label": "Cushion, push into space, explode through the gate",
+    "ease": "out",
+    "kind": "action",
+    "step": 7,
+    "steps": [
+     7
+    ]
+   },
+   {
+    "d": 1158,
+    "tracks": {
+     "P2": [
+      [
+       15.76,
+       2.2
+      ],
+      [
+       3.0,
+       7.0
+      ]
+     ],
+     "__ball__": [
+      [
+       15.76,
+       2.2
+      ],
+      [
+       3.0,
+       7.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog it back \u2014 that's your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 8
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "P1": [
+      [
+       3.0,
+       7.0
+      ],
+      [
+       3.0,
+       7.0
+      ]
+     ],
+     "P2": [
+      [
+       3.0,
+       7.0
+      ],
+      [
+       9.9,
+       7.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Reset and go again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

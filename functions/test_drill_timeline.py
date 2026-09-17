@@ -4,8 +4,7 @@ from drill_timeline import compile_timeline, BALL
 
 
 def _first(drill_id):
-    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
-                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+    for f in glob.glob('eval/golden/drills/*.json'):
         d = json.load(open(f))
         if d['_case']['id'] == drill_id:
             return d
@@ -90,8 +89,7 @@ def test_ball_continuity_across_phases():
 def test_ball_never_glides_home_alone():
     """In every fade leg that moves the ball, a player travels WITH it."""
     import math
-    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
-                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+    for f in glob.glob('eval/golden/drills/*.json'):
         d = json.load(open(f))
         tl = compile_timeline(d)
         for p in tl['phases']:
@@ -114,8 +112,7 @@ def test_zero_lint_findings_on_golden_set():
     sys.path.insert(0, '.')
     from eval.anim_lint import lint
     total = []
-    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
-                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+    for f in glob.glob('eval/golden/drills/*.json'):
         d = json.load(open(f))
         d['animation'] = compile_timeline(d)
         total += lint(d)

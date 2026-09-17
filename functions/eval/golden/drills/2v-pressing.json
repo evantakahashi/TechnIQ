@@ -1,0 +1,314 @@
+{
+ "diagram": {
+  "field": {
+   "width": 30,
+   "length": 20
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 6.0,
+    "y": 10.0,
+    "label": "P1",
+    "role": "worker",
+    "display_label": "Presser A"
+   },
+   {
+    "type": "player",
+    "x": 14.0,
+    "y": 4.0,
+    "label": "P2",
+    "role": "defender",
+    "display_label": "Presser B"
+   },
+   {
+    "type": "player",
+    "x": 24.0,
+    "y": 10.0,
+    "label": "P3",
+    "role": "server",
+    "display_label": "Carrier"
+   },
+   {
+    "type": "ball",
+    "x": 24.0,
+    "y": 10.0,
+    "label": "B1"
+   },
+   {
+    "type": "gate",
+    "x": 2.0,
+    "y": 4.0,
+    "label": "G1",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 2.0,
+    "y": 16.0,
+    "label": "G2",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P3",
+    "to": "P1",
+    "style": "dribble",
+    "step": 1,
+    "fx": 24.0,
+    "fy": 10.0,
+    "tx": 6.0,
+    "ty": 10.0
+   },
+   {
+    "from": "P2",
+    "to": "P3",
+    "style": "run",
+    "step": 2,
+    "fx": 14.0,
+    "fy": 4.0,
+    "tx": 6.0,
+    "ty": 10.0,
+    "sync": true
+   },
+   {
+    "from": "P3",
+    "to": "G1",
+    "style": "dribble",
+    "step": 3,
+    "alt": true,
+    "fx": 6.0,
+    "fy": 10.0,
+    "tx": 1.39,
+    "ty": 3.08
+   },
+   {
+    "from": "P3",
+    "to": "G2",
+    "style": "dribble",
+    "step": 4,
+    "alt": true,
+    "fx": 6.0,
+    "fy": 10.0,
+    "tx": 1.39,
+    "ty": 16.92
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 min \u2014 light jogging, open-close hips, easy defensive shuffles and toe-taps on the ball",
+  "How it works \u2014 carrier (from the far side) drives at Presser A; the instant A engages, Presser B sprints across to trap. Carrier tries to escape through either back gate; pressers try to win it or pen him in",
+  "Presser A closes on the carrier's front foot and shows him ONE way \u2014 never square, always angled to steer him toward the waiting cover",
+  "Presser B reads A's angle and slams the escape door \u2014 arrive as A engages so the trap springs simultaneously, not late",
+  "Read the carrier's hips and touch \u2014 jockey until his head drops, then B steps in to win it; stay on your feet, no lunging or sliding",
+  "A press succeeds if the pair wins the ball OR pins the carrier \u22653 seconds without a foul \u2014 aim for 6 of 10 attempts",
+  "10 attacks per set, 3 sets; the carrier collecting and resetting to the far side is your rest between reps",
+  "Progression \u2014 carrier gets a free 5m head start; regression \u2014 narrow the gates so the trap is easier to spring"
+ ],
+ "variations": [
+  "Silent press \u2014 pressers communicate only with body angle, no shouting, to sharpen scanning",
+  "Swap roles every 5 attacks so all three train the pair-press trap"
+ ],
+ "equipment": [
+  "ball",
+  "partner",
+  "cones"
+ ],
+ "category": "tactical",
+ "is_duel": true,
+ "_case": {
+  "id": "2v-pressing",
+  "request": {
+   "skill_description": "pressing as a pair to trap the ball carrier",
+   "weakness": "Defending",
+   "experience_level": "advanced",
+   "player_age": 16,
+   "position": "Forward",
+   "equipment": [
+    "ball",
+    "partner",
+    "cones"
+   ],
+   "number_of_players": 3,
+   "category": "tactical",
+   "field_size": "medium"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 2000,
+    "tracks": {
+     "P3": [
+      [
+       24.0,
+       10.0
+      ],
+      [
+       6.0,
+       10.0
+      ]
+     ],
+     "__ball__": [
+      [
+       24.0,
+       10.0
+      ],
+      [
+       6.0,
+       10.0
+      ]
+     ],
+     "P2": [
+      [
+       14.0,
+       4.0
+      ],
+      [
+       6.88,
+       9.34
+      ]
+     ]
+    },
+    "hips": {
+     "P3": [
+      -1.0,
+      0.0
+     ],
+     "P2": [
+      -0.8,
+      0.6
+     ]
+    },
+    "label": "Close on his front foot \u2014 never square. Angle your body to show him one way only",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1,
+     2
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P3": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       6.0,
+       10.0
+      ]
+     ],
+     "__ball__": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       6.0,
+       10.0
+      ]
+     ],
+     "P2": [
+      [
+       6.88,
+       9.34
+      ],
+      [
+       6.88,
+       9.34
+      ]
+     ]
+    },
+    "hips": {
+     "P3": [
+      -1.0,
+      0.0
+     ],
+     "P2": [
+      -0.8,
+      0.6
+     ]
+    },
+    "label": "Feel B sprint in behind you \u2014 the door slams as you engage",
+    "ease": "lin",
+    "kind": "action",
+    "step": 1
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P3": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       1.39,
+       3.08
+      ]
+     ],
+     "__ball__": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       1.39,
+       3.08
+      ]
+     ]
+    },
+    "hips": {
+     "P3": [
+      -0.554,
+      -0.832
+     ]
+    },
+    "label": "\u2026if he breaks to this gate, you steered him wrong \u2014 reset your angle",
+    "ease": "out",
+    "kind": "outcome",
+    "step": 3
+   },
+   {
+    "d": 900,
+    "tracks": {
+     "P3": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       1.39,
+       16.92
+      ]
+     ],
+     "__ball__": [
+      [
+       6.0,
+       10.0
+      ],
+      [
+       1.39,
+       16.92
+      ]
+     ]
+    },
+    "hips": {
+     "P3": [
+      -0.554,
+      0.832
+     ]
+    },
+    "label": "\u2026jockey until his head drops, then B steps in to win it",
+    "ease": "out",
+    "kind": "outcome",
+    "step": 4
+   }
+  ]
+ }
+}

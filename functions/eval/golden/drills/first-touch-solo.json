@@ -1,0 +1,649 @@
+{
+ "diagram": {
+  "field": {
+   "width": 18.0,
+   "length": 15.0
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 9.0,
+    "y": 7.5,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 9.0,
+    "y": 7.5,
+    "label": "B1"
+   },
+   {
+    "type": "gate",
+    "x": 9.0,
+    "y": 4.5,
+    "label": "G1",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 12.0,
+    "y": 7.5,
+    "label": "G2",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 9.0,
+    "y": 10.5,
+    "label": "G3",
+    "width": 2.0
+   },
+   {
+    "type": "gate",
+    "x": 6.0,
+    "y": 7.5,
+    "label": "G4",
+    "width": 2.0
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "P1",
+    "style": "toss",
+    "step": 1,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "dribble",
+    "step": 2,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 13.1,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 3,
+    "fx": 13.1,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P1",
+    "style": "toss",
+    "step": 4,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 5,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 3.4
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 6,
+    "fx": 9.0,
+    "fy": 3.4,
+    "tx": 9.0,
+    "ty": 7.5,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P1",
+    "style": "toss",
+    "step": 7,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G3",
+    "style": "dribble",
+    "step": 8,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 11.6
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 9,
+    "fx": 9.0,
+    "fy": 11.6,
+    "tx": 9.0,
+    "ty": 7.5,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P1",
+    "style": "toss",
+    "step": 10,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G4",
+    "style": "dribble",
+    "step": 11,
+    "fx": 9.0,
+    "fy": 7.5,
+    "tx": 4.9,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 12,
+    "fx": 4.9,
+    "fy": 7.5,
+    "tx": 9.0,
+    "ty": 7.5,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, leg swings, ankle rolls and easy juggling touches before working at pace",
+  "One ball: after each rep jog to where the ball settled beyond the gate and dribble it back to the center spot \u2014 that jog is your rest",
+  "Toss the ball up softly to head-height so it drops bouncing in front of you \u2014 vary the height and which side it lands each rep",
+  "Scan the gates BEFORE the ball drops \u2014 pick your exit gate while the ball is in the air, then take ONE cushioned touch through it",
+  "Cushion with a relaxed foot \u2014 meet the dropping ball with a soft ankle so it dies exactly in your chosen direction, not bouncing away",
+  "The first touch itself must send the ball through the gate \u2014 a settle-then-push is two touches and doesn't count; direct redirect only",
+  "Target: 7 of 10 first touches carry the ball cleanly through a gate within one touch \u2014 count out loud, rotate all four gates",
+  "10 reps per set, 4 sets; collecting the ball and walking back is the rest between reps",
+  "Hit 8/10 \u2192 toss higher and faster for a harder bounce; miss 5 \u2192 widen the gates or toss softer to get clean contact first"
+ ],
+ "variations": [
+  "Weak foot only \u2014 every first touch with the weak foot, strong-foot touches don't count",
+  "Thigh-then-foot \u2014 cushion the drop on your thigh, drop it, then first-touch through the gate",
+  "Full version needs a server feeding varied bouncing balls with a defender at your back \u2014 add a partner when you have one"
+ ],
+ "equipment": [
+  "ball",
+  "cones",
+  "wall"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "first-touch-solo",
+  "request": {
+   "skill_description": "cleaner first touch on bouncing balls",
+   "weakness": "First Touch",
+   "experience_level": "intermediate",
+   "player_age": 12,
+   "position": "Midfielder",
+   "equipment": [
+    "ball",
+    "cones",
+    "wall"
+   ],
+   "number_of_players": 1,
+   "category": "technical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 750,
+    "tracks": {
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Toss it up \u2014 soft, just above head height",
+    "ease": "out",
+    "kind": "tossup",
+    "step": 1
+   },
+   {
+    "d": 650,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       13.1,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       13.1,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Scan the gates while it hangs \u2014 pick your exit now",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 550,
+    "tracks": {
+     "P1": [
+      [
+       13.1,
+       7.5
+      ],
+      [
+       13.1,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       13.1,
+       7.5
+      ],
+      [
+       13.1,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Ball dropping \u2014 relax the ankle, meet it soft",
+    "ease": "lin",
+    "kind": "action",
+    "step": 2
+   },
+   {
+    "d": 400,
+    "tracks": {
+     "P1": [
+      [
+       13.1,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       13.1,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog and collect \u2014 that's your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 3
+   },
+   {
+    "d": 750,
+    "tracks": {
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Toss it again \u2014 vary the side it lands",
+    "ease": "out",
+    "kind": "tossup",
+    "step": 4
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       3.4
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       3.4
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.0,
+      -1.0
+     ]
+    },
+    "label": "One cushioned touch redirects it clean through the gate",
+    "ease": "out",
+    "kind": "action",
+    "step": 5,
+    "steps": [
+     5
+    ]
+   },
+   {
+    "d": 400,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       3.4
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       3.4
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog and collect \u2014 that's your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 6
+   },
+   {
+    "d": 750,
+    "tracks": {
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Toss it up \u2014 read the bounce early",
+    "ease": "out",
+    "kind": "tossup",
+    "step": 7
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       11.6
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       11.6
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.0,
+      1.0
+     ]
+    },
+    "label": "Feel it die exactly where you want \u2014 no second touch",
+    "ease": "out",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 400,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       11.6
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       11.6
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog and collect \u2014 that's your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 9
+   },
+   {
+    "d": 750,
+    "tracks": {
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Toss it up \u2014 decide before it lands",
+    "ease": "out",
+    "kind": "tossup",
+    "step": 10
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       4.9,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       9.0,
+       7.5
+      ],
+      [
+       4.9,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Soft foot sends it straight through \u2014 direct redirect only",
+    "ease": "out",
+    "kind": "action",
+    "step": 11,
+    "steps": [
+     11
+    ]
+   },
+   {
+    "d": 400,
+    "tracks": {
+     "P1": [
+      [
+       4.9,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       4.9,
+       7.5
+      ],
+      [
+       9.0,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Jog and collect \u2014 reset for the next",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 12
+   }
+  ]
+ }
+}

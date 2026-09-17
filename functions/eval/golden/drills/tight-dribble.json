@@ -1,0 +1,487 @@
+{
+ "diagram": {
+  "field": {
+   "width": 20,
+   "length": 15
+  },
+  "elements": [
+   {
+    "type": "cone",
+    "x": 5.0,
+    "y": 4.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 5.0,
+    "y": 11.0,
+    "label": "C2"
+   },
+   {
+    "type": "gate",
+    "x": 6.0,
+    "y": 7.5,
+    "label": "G1",
+    "width": 1.2
+   },
+   {
+    "type": "gate",
+    "x": 9.0,
+    "y": 4.5,
+    "label": "G2",
+    "width": 1.0
+   },
+   {
+    "type": "gate",
+    "x": 11.5,
+    "y": 10.5,
+    "label": "G3",
+    "width": 1.0
+   },
+   {
+    "type": "gate",
+    "x": 14.0,
+    "y": 5.5,
+    "label": "G4",
+    "width": 1.0
+   },
+   {
+    "type": "gate",
+    "x": 16.5,
+    "y": 9.5,
+    "label": "G5",
+    "width": 1.2
+   },
+   {
+    "type": "gate",
+    "x": 18.5,
+    "y": 7.5,
+    "label": "GF",
+    "width": 1.5
+   },
+   {
+    "type": "player",
+    "x": 2.5,
+    "y": 7.5,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "ball",
+    "x": 2.5,
+    "y": 7.5,
+    "label": "B1"
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "dribble",
+    "step": 1,
+    "fx": 2.5,
+    "fy": 7.5,
+    "tx": 7.1,
+    "ty": 7.5
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "dribble",
+    "step": 2,
+    "fx": 7.1,
+    "fy": 7.5,
+    "tx": 9.59,
+    "ty": 3.57
+   },
+   {
+    "from": "P1",
+    "to": "G3",
+    "style": "dribble",
+    "step": 3,
+    "fx": 9.59,
+    "fy": 3.57,
+    "tx": 11.79,
+    "ty": 11.56
+   },
+   {
+    "from": "P1",
+    "to": "G4",
+    "style": "dribble",
+    "step": 4,
+    "fx": 11.79,
+    "fy": 11.56,
+    "tx": 14.38,
+    "ty": 4.47
+   },
+   {
+    "from": "P1",
+    "to": "G5",
+    "style": "dribble",
+    "step": 5,
+    "fx": 14.38,
+    "fy": 4.47,
+    "tx": 16.93,
+    "ty": 10.51
+   },
+   {
+    "from": "P1",
+    "to": "GF",
+    "style": "dribble",
+    "step": 6,
+    "fx": 16.93,
+    "fy": 10.51,
+    "tx": 19.01,
+    "ty": 6.52
+   },
+   {
+    "from": "P1",
+    "to": "B1",
+    "style": "dribble",
+    "step": 7,
+    "fx": 19.01,
+    "fy": 6.52,
+    "tx": 2.5,
+    "ty": 7.5,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, ankle and hip circles, then easy sole rolls and toe-taps on the ball before going full pace.",
+  "Keep the ball within one step of your body the whole way \u2014 tight spaces punish any touch that runs long; use inside and outside of both feet.",
+  "Scan up before every gate \u2014 glance at the next gate's angle while your foot is still on the ball, then pick your line early.",
+  "Because the gates zig-zag, each exit demands a sharp direction change \u2014 plant, cut across your body, and burst out as if slipping a defender in traffic.",
+  "Time cap \u2014 complete all six gates in under 15 seconds with control; a touch that leaves the tight zone or misses a gate voids the rep.",
+  "Target: 7 of 10 runs clean through every gate and reaching GF with the ball under control counts as success.",
+  "Volume \u2014 6 runs per set, 4 sets; dribbling the ball back from GF to the start (step 7) is your recovery jog and rest.",
+  "Safe technique \u2014 cushion each touch with a relaxed ankle and stay on the balls of your feet so you can change direction without losing balance.",
+  "This is the solo version \u2014 real tight-space dribbling adds a live defender; add a partner pressing between gates when you can to raise decision load.",
+  "Progression \u2014 hit 8/10 clean, shrink gate widths to 0.8m or pull the gates 0.5m closer; if you miss 5, widen the gates back out."
+ ],
+ "variations": [
+  "Weak foot only \u2014 every touch through and between gates with the weak foot.",
+  "Outside-only \u2014 beat each gate using just the outside of the boot.",
+  "Speed run \u2014 same course, drop the time cap by 2 seconds and keep control."
+ ],
+ "equipment": [
+  "ball",
+  "cones"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "tight-dribble",
+  "request": {
+   "skill_description": "tight dribbling in small spaces",
+   "weakness": "Dribbling Skills",
+   "experience_level": "intermediate",
+   "player_age": 13,
+   "position": "Midfielder",
+   "equipment": [
+    "ball",
+    "cones"
+   ],
+   "number_of_players": 1,
+   "category": "technical",
+   "field_size": "small"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 900,
+    "tracks": {
+     "P1": [
+      [
+       2.5,
+       7.5
+      ],
+      [
+       7.1,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       2.5,
+       7.5
+      ],
+      [
+       7.1,
+       7.5
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Keep the ball within one step of your body \u2014 inside and outside of both feet",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 1000,
+    "tracks": {
+     "P1": [
+      [
+       7.1,
+       7.5
+      ],
+      [
+       9.59,
+       3.57
+      ]
+     ],
+     "__ball__": [
+      [
+       7.1,
+       7.5
+      ],
+      [
+       9.59,
+       3.57
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.535,
+      -0.845
+     ]
+    },
+    "label": "Scan up while your foot's on the ball \u2014 pick your line into the next gate early",
+    "ease": "out",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       9.59,
+       3.57
+      ],
+      [
+       11.79,
+       11.56
+      ]
+     ],
+     "__ball__": [
+      [
+       9.59,
+       3.57
+      ],
+      [
+       11.79,
+       11.56
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.265,
+      0.964
+     ]
+    },
+    "label": "Stay on the balls of your feet, ankle relaxed to cushion every touch",
+    "ease": "out",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 2200,
+    "tracks": {
+     "P1": [
+      [
+       11.79,
+       11.56
+      ],
+      [
+       14.38,
+       4.47
+      ]
+     ],
+     "__ball__": [
+      [
+       11.79,
+       11.56
+      ],
+      [
+       14.38,
+       4.47
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.343,
+      -0.939
+     ]
+    },
+    "label": "Plant, cut sharp across your body, and burst out like you're slipping a defender",
+    "ease": "out",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4
+    ]
+   },
+   {
+    "d": 600,
+    "tracks": {
+     "P1": [
+      [
+       14.38,
+       4.47
+      ],
+      [
+       14.38,
+       4.47
+      ]
+     ],
+     "__ball__": [
+      [
+       14.38,
+       4.47
+      ],
+      [
+       14.38,
+       4.47
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.343,
+      -0.939
+     ]
+    },
+    "label": "Feel the ball settle before you explode into the next line",
+    "ease": "lin",
+    "kind": "action",
+    "step": 4
+   },
+   {
+    "d": 700,
+    "tracks": {
+     "P1": [
+      [
+       14.38,
+       4.47
+      ],
+      [
+       16.93,
+       10.51
+      ]
+     ],
+     "__ball__": [
+      [
+       14.38,
+       4.47
+      ],
+      [
+       16.93,
+       10.51
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.389,
+      0.921
+     ]
+    },
+    "label": "Drive through the last gate with control, eyes already on the exit",
+    "ease": "out",
+    "kind": "action",
+    "step": 5,
+    "steps": [
+     5
+    ]
+   },
+   {
+    "d": 500,
+    "tracks": {
+     "P1": [
+      [
+       16.93,
+       10.51
+      ],
+      [
+       19.01,
+       6.52
+      ]
+     ],
+     "__ball__": [
+      [
+       16.93,
+       10.51
+      ],
+      [
+       19.01,
+       6.52
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.462,
+      -0.887
+     ]
+    },
+    "label": "Finish clean, ball still glued to your feet",
+    "ease": "out",
+    "kind": "action",
+    "step": 6,
+    "steps": [
+     6
+    ]
+   },
+   {
+    "d": 1405,
+    "tracks": {
+     "P1": [
+      [
+       19.01,
+       6.52
+      ],
+      [
+       2.5,
+       7.5
+      ]
+     ],
+     "__ball__": [
+      [
+       19.01,
+       6.52
+      ],
+      [
+       2.5,
+       7.5
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back \u2014 easy jog, let your legs recover",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 7
+   }
+  ]
+ }
+}

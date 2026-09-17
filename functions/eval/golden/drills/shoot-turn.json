@@ -1,0 +1,690 @@
+{
+ "diagram": {
+  "field": {
+   "width": 28.5,
+   "length": 18.0
+  },
+  "elements": [
+   {
+    "type": "player",
+    "x": 13.4,
+    "y": 9.0,
+    "label": "P1",
+    "role": "worker"
+   },
+   {
+    "type": "player",
+    "x": 6.0,
+    "y": 9.0,
+    "label": "P2",
+    "role": "server",
+    "display_label": "feeder"
+   },
+   {
+    "type": "ball",
+    "x": 6.0,
+    "y": 9.0,
+    "label": "B1"
+   },
+   {
+    "type": "cone",
+    "x": 15.6,
+    "y": 9.0,
+    "label": "C1"
+   },
+   {
+    "type": "cone",
+    "x": 17.0,
+    "y": 6.0,
+    "label": "T1"
+   },
+   {
+    "type": "cone",
+    "x": 17.0,
+    "y": 12.0,
+    "label": "T2"
+   },
+   {
+    "type": "goal",
+    "x": 27.5,
+    "y": 9.0,
+    "label": "GL",
+    "width": 7.32
+   },
+   {
+    "type": "gate",
+    "x": 27.5,
+    "y": 6.8,
+    "label": "G1",
+    "width": 1.2
+   },
+   {
+    "type": "gate",
+    "x": 27.5,
+    "y": 11.2,
+    "label": "G2",
+    "width": 1.2
+   }
+  ],
+  "paths": [
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "run",
+    "step": 1,
+    "fx": 13.4,
+    "fy": 9.0,
+    "tx": 14.7,
+    "ty": 9.0
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "pass",
+    "step": 2,
+    "touches": 2,
+    "fx": 6.0,
+    "fy": 9.0,
+    "tx": 14.7,
+    "ty": 9.0
+   },
+   {
+    "from": "P1",
+    "to": "T1",
+    "style": "dribble",
+    "step": 3,
+    "fx": 14.7,
+    "fy": 9.0,
+    "tx": 17.67,
+    "ty": 5.13
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "shoot",
+    "step": 4,
+    "fx": 17.67,
+    "fy": 5.13,
+    "tx": 27.5,
+    "ty": 6.8
+   },
+   {
+    "from": "P1",
+    "to": "G1",
+    "style": "run",
+    "step": 5,
+    "fx": 17.67,
+    "fy": 5.13,
+    "tx": 28.58,
+    "ty": 6.98,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "dribble",
+    "step": 6,
+    "fx": 28.58,
+    "fy": 6.98,
+    "tx": 6.0,
+    "ty": 9.0,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "receive",
+    "step": 7,
+    "fx": 6.0,
+    "fy": 9.0,
+    "tx": 6.0,
+    "ty": 9.0,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "C1",
+    "style": "run",
+    "step": 8,
+    "fx": 6.0,
+    "fy": 9.0,
+    "tx": 14.7,
+    "ty": 9.0
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "pass",
+    "step": 9,
+    "touches": 2,
+    "fx": 6.0,
+    "fy": 9.0,
+    "tx": 14.7,
+    "ty": 9.0
+   },
+   {
+    "from": "P1",
+    "to": "T2",
+    "style": "dribble",
+    "step": 10,
+    "fx": 14.7,
+    "fy": 9.0,
+    "tx": 17.67,
+    "ty": 12.87
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "shoot",
+    "step": 11,
+    "fx": 17.67,
+    "fy": 12.87,
+    "tx": 27.5,
+    "ty": 11.2
+   },
+   {
+    "from": "P1",
+    "to": "G2",
+    "style": "run",
+    "step": 12,
+    "fx": 17.67,
+    "fy": 12.87,
+    "tx": 28.58,
+    "ty": 11.02,
+    "reset": true
+   },
+   {
+    "from": "P1",
+    "to": "P2",
+    "style": "dribble",
+    "step": 13,
+    "fx": 28.58,
+    "fy": 11.02,
+    "tx": 6.0,
+    "ty": 9.0,
+    "reset": true
+   },
+   {
+    "from": "P2",
+    "to": "P1",
+    "style": "receive",
+    "step": 14,
+    "fx": 6.0,
+    "fy": 9.0,
+    "tx": 6.0,
+    "ty": 9.0,
+    "reset": true
+   }
+  ]
+ },
+ "coaching_points": [
+  "Warm up 2-3 minutes \u2014 light jog, leg swings, easy side-foot passes and gentle turns before striking at pace",
+  "Stand at the spot cone with your BACK TO GOAL, facing the feeder \u2014 check your shoulder for the corner before the ball arrives",
+  "Receive the feed and take ONE turning touch out of your feet to the turn cone \u2014 open your hips as you turn, don't let the ball stick",
+  "Glance up at the corner gate between your turning touch and the strike; plant foot beside the ball, head still at contact",
+  "One ball: after each strike jog in, collect it and dribble it back to the feeder \u2014 that jog is your rest",
+  "Target: 6 of 10 strikes through a corner gate within 2 seconds of the turning touch \u2014 count out loud, alternate near and far post",
+  "Lock the ankle and keep the striking knee over the ball to drive it low and protect the joint",
+  "10 strikes per set, 4 sets; collecting the ball and returning it to the feeder is the rest",
+  "Hit 8/10 \u2192 step back so you receive further out; miss 5 \u2192 widen the gate to clean up contact first"
+ ],
+ "variations": [
+  "Weak foot only \u2014 a strong-foot finish counts as a miss",
+  "Turn both ways \u2014 alternate opening onto your right and left every rep",
+  "One-touch turn \u2014 turn and strike in a single motion, no settle touch"
+ ],
+ "equipment": [
+  "ball",
+  "cones",
+  "goals"
+ ],
+ "category": "technical",
+ "is_duel": false,
+ "_case": {
+  "id": "shoot-turn",
+  "request": {
+   "skill_description": "finishing after a quick turn in the box",
+   "weakness": "Shooting Accuracy",
+   "experience_level": "intermediate",
+   "player_age": 14,
+   "position": "Forward",
+   "equipment": [
+    "ball",
+    "cones",
+    "goals"
+   ],
+   "number_of_players": 1,
+   "category": "technical",
+   "field_size": "medium"
+  }
+ },
+ "animation": {
+  "phases": [
+   {
+    "d": 520,
+    "tracks": {
+     "P1": [
+      [
+       13.4,
+       9.0
+      ],
+      [
+       14.7,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Back to goal, facing the feeder \u2014 check your shoulder for the corner",
+    "ease": "out",
+    "kind": "action",
+    "step": 1,
+    "steps": [
+     1
+    ]
+   },
+   {
+    "d": 620,
+    "tracks": {
+     "__ball__": [
+      [
+       6.0,
+       9.0
+      ],
+      [
+       13.7,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      1.0,
+      0.0
+     ],
+     "P1": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Receive and open your hips \u2014 one turning touch, don't let it stick",
+    "ease": "lin",
+    "kind": "action",
+    "step": 2,
+    "steps": [
+     2
+    ]
+   },
+   {
+    "d": 720,
+    "tracks": {
+     "P1": [
+      [
+       14.7,
+       9.0
+      ],
+      [
+       17.67,
+       5.13
+      ]
+     ],
+     "__ball__": [
+      [
+       13.7,
+       9.0
+      ],
+      [
+       17.67,
+       5.13
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.609,
+      -0.793
+     ]
+    },
+    "label": "Glance up at the gate \u2014 see the corner before you strike",
+    "ease": "out",
+    "kind": "action",
+    "step": 3,
+    "steps": [
+     3
+    ]
+   },
+   {
+    "d": 420,
+    "tracks": {
+     "P1": [
+      [
+       17.67,
+       5.13
+      ],
+      [
+       17.67,
+       5.13
+      ]
+     ],
+     "__ball__": [
+      [
+       17.67,
+       5.13
+      ],
+      [
+       17.67,
+       5.13
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.609,
+      -0.793
+     ]
+    },
+    "label": "Plant beside the ball, head still, knee over it",
+    "ease": "lin",
+    "kind": "action",
+    "step": 3
+   },
+   {
+    "d": 560,
+    "tracks": {
+     "__ball__": [
+      [
+       17.67,
+       5.13
+      ],
+      [
+       27.5,
+       6.8
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.986,
+      0.167
+     ],
+     "P2": [
+      0.995,
+      -0.102
+     ]
+    },
+    "label": "Finish \u2014 lock the ankle and drive it low through the target",
+    "ease": "lin",
+    "kind": "action",
+    "step": 4,
+    "steps": [
+     4
+    ]
+   },
+   {
+    "d": 940,
+    "tracks": {
+     "P1": [
+      [
+       17.67,
+       5.13
+      ],
+      [
+       28.58,
+       6.98
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Collect it \u2014 that quick jog is your rest",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 5
+   },
+   {
+    "d": 1926,
+    "tracks": {
+     "P1": [
+      [
+       28.58,
+       6.98
+      ],
+      [
+       6.0,
+       9.0
+      ]
+     ],
+     "__ball__": [
+      [
+       27.5,
+       6.8
+      ],
+      [
+       6.0,
+       9.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Dribble it back to the feeder",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 6
+   },
+   {
+    "d": 640,
+    "tracks": {
+     "P1": [
+      [
+       6.0,
+       9.0
+      ],
+      [
+       14.7,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      1.0,
+      0.0
+     ]
+    },
+    "label": "Set at the spot before the ball arrives",
+    "ease": "out",
+    "kind": "action",
+    "step": 8,
+    "steps": [
+     8
+    ]
+   },
+   {
+    "d": 460,
+    "tracks": {
+     "__ball__": [
+      [
+       6.0,
+       9.0
+      ],
+      [
+       13.7,
+       9.0
+      ]
+     ]
+    },
+    "hips": {
+     "P2": [
+      1.0,
+      0.0
+     ],
+     "P1": [
+      -1.0,
+      0.0
+     ]
+    },
+    "label": "Feed comes in \u2014 be set, back to goal",
+    "ease": "lin",
+    "kind": "action",
+    "step": 9,
+    "steps": [
+     9
+    ]
+   },
+   {
+    "d": 720,
+    "tracks": {
+     "P1": [
+      [
+       14.7,
+       9.0
+      ],
+      [
+       17.67,
+       12.87
+      ]
+     ],
+     "__ball__": [
+      [
+       13.7,
+       9.0
+      ],
+      [
+       17.67,
+       12.87
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.609,
+      0.793
+     ]
+    },
+    "label": "Open your hips and turn out \u2014 see the far gate now",
+    "ease": "out",
+    "kind": "action",
+    "step": 10,
+    "steps": [
+     10
+    ]
+   },
+   {
+    "d": 560,
+    "tracks": {
+     "__ball__": [
+      [
+       17.67,
+       12.87
+      ],
+      [
+       27.5,
+       11.2
+      ]
+     ]
+    },
+    "hips": {
+     "P1": [
+      0.986,
+      -0.167
+     ],
+     "P2": [
+      0.995,
+      0.102
+     ]
+    },
+    "label": "Finish low and firm \u2014 knee over the ball",
+    "ease": "lin",
+    "kind": "action",
+    "step": 11,
+    "steps": [
+     11
+    ]
+   },
+   {
+    "d": 940,
+    "tracks": {
+     "P1": [
+      [
+       17.67,
+       12.87
+      ],
+      [
+       28.58,
+       11.02
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Collect it \u2014 breathe on the jog",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 12
+   },
+   {
+    "d": 1926,
+    "tracks": {
+     "P1": [
+      [
+       28.58,
+       11.02
+      ],
+      [
+       6.0,
+       9.0
+      ]
+     ],
+     "__ball__": [
+      [
+       27.5,
+       11.2
+      ],
+      [
+       6.0,
+       9.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Bring it back to the feeder",
+    "ease": "lin",
+    "kind": "fade",
+    "step": 13
+   },
+   {
+    "d": 629,
+    "tracks": {
+     "P1": [
+      [
+       6.0,
+       9.0
+      ],
+      [
+       13.4,
+       9.0
+      ]
+     ],
+     "P2": [
+      [
+       6.0,
+       9.0
+      ],
+      [
+       6.0,
+       9.0
+      ]
+     ]
+    },
+    "hips": {},
+    "label": "Reset your feet \u2014 go again",
+    "ease": "lin",
+    "kind": "fade",
+    "step": null
+   }
+  ]
+ }
+}

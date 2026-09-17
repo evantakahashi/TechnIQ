@@ -4,8 +4,7 @@ from drill_animator import author_timeline, _fidelity, BALL
 
 
 def _drill():
-    for f in glob.glob('/private/tmp/claude-501/-Users-evantakahashi-TechnIQ/'
-                       'b08d8283-5ffa-4cc9-a162-1b68b76fde40/scratchpad/goldenset_v3/*.json'):
+    for f in glob.glob('eval/golden/drills/*.json'):
         d = json.load(open(f))
         if d['_case']['id'] == 'passing-pair':
             return d
