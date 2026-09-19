@@ -222,6 +222,10 @@ is still a bad drill. Judge the drill, not the effort.
    lines from p1 to g1 or g2."
 16. **Cones are obstacles, not decoration near people.** No cone where a player
    stands; nothing passes or dribbles THROUGH a cone. Ring gates sit symmetrical.
+17b. **A first-time strike must be hittable** — the striker faces the serve AND
+    the target together; a toss from behind the shot line is an instant fail
+    ("how can they hit a volley like that... they would have to turn and shoot
+    simultaneously", authored sweep #12, 2026-09-19). Server goal-side, always.
 17. **Every action must LOOK like itself** — a header can't render as a running
    line; a turn needs its visible touch; the spot player stands in FRONT of the
    marker cone.
@@ -244,4 +248,5 @@ is still a bad drill. Judge the drill, not the effort.
 | On-skill regens (first with doc) | 4 | 3/4 direction | no — the miss was too LOW (gk-wall: Claude bad, Evan "not bad, needs variation"). Don't overcorrect simple-but-functional to bad. |
 | Golden set v3.2 | 13 | ~9/13 direction | mixed: heading-def Claude ok → Evan GOLDEN (too low); weakfoot golden↔golden MATCH; 2v/gk-wall slightly high. Recurring lesson: Evan judges the animated whole; positional nits don't sink a drill, missing beats do. |
 | Holdout v3 authored (open verbs + films) | 10 | overall "a lot better… very good", minor errors unspecified | direction strongly positive; his bar keeps rising with quality — "minor errors" now means polish, not correctness |
+| Authored sweep (12 exemplar films) | 12 | 11/12 "pretty good" | volley flagged unrealistic (serve behind shot line) — geometry class Claude missed entirely; now a validator |
 | next round | — | — | — |

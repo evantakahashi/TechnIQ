@@ -81,6 +81,43 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_duel_escapes_are_choices(elements, paths, bool(drill.get("is_duel")))
     _check_opponents_act(elements, paths)
     _check_players_out_of_goal(elements, paths)
+    _check_first_time_strikes_face_feed(elements, paths)
+
+
+def _check_first_time_strikes_face_feed(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """A first-time strike off an aerial serve must let the striker face the
+    serve AND the target together — 'how can they hit a volley like that,
+    they would have to turn and shoot simultaneously'. The serve must come
+    from goal-side of the striker (feed-to-target angle at the striker
+    within ~110 degrees), never from behind the shot line."""
+    import math as _math
+    seq = sorted((p for p in paths if not p.get("alt") and not p.get("reset")
+                  and p.get("fx") is not None),
+                 key=lambda p: p.get("step") or 0)
+    for prev, nxt in zip(seq, seq[1:]):
+        if prev.get("style") not in ("toss", "throw"):
+            continue
+        if nxt.get("style") not in ("shoot", "shot", "header"):
+            continue
+        if nxt.get("from") != prev.get("to") or prev.get("from") == prev.get("to"):
+            continue  # not the served player, or a self-toss (they choose the drop)
+        sx, sy = nxt["fx"], nxt["fy"]
+        a = (prev["fx"] - sx, prev["fy"] - sy)   # striker -> server
+        b = (nxt["tx"] - sx, nxt["ty"] - sy)     # striker -> target
+        la, lb = _math.hypot(*a), _math.hypot(*b)
+        if la < 0.5 or lb < 0.5:
+            continue
+        ang = _math.degrees(_math.acos(
+            max(-1.0, min(1.0, (a[0] * b[0] + a[1] * b[1]) / (la * lb)))))
+        if ang > 110:
+            raise ValidationError(
+                f"step {nxt.get('step')}: the first-time strike is unrealistic — "
+                f"the serve arrives from {ang:.0f}° behind the shot line, so "
+                f"{nxt.get('from')} would have to turn and shoot simultaneously. "
+                f"Place the server goal-side of the striker so they face the toss "
+                f"and the target together (angle 110° or less).")
 
 
 def _check_players_out_of_goal(
