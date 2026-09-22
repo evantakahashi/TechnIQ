@@ -134,18 +134,20 @@ def _check_no_self_chase(
                 continue
         else:
             continue  # headers = clearances into a zone; dribbles carry
-        # who touches the ball next in live play?
+        # who touches the ball next? Reset legs count: hiding the fetch in
+        # a reset is the same junk — only real finishes earn a collect, and
+        # those never reach this scan.
         for q in seq[i + 1:]:
-            if q.get("reset"):
-                continue
             st = q.get("style")
+            if st == "run":
+                continue  # a run is not a touch
             if st == "receive":
                 toucher = q.get("from")
             elif st in ("pass", "toss", "throw", "shoot", "shot",
                         "header", "dribble"):
                 toucher = q.get("from")
             else:
-                continue  # a run is not a touch
+                continue
             if toucher == p.get("from"):
                 raise ValidationError(
                     f"step {p.get('step')}: {p.get('from')} sends the ball "
