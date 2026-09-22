@@ -5,10 +5,13 @@ Classes:
   CONT-B   ball track starts away from where it was last rendered
   LOOP     loop boundary teleports (end state != start state)
   ALONE    a fade moves the ball with no companion alongside
-  COLLIDE  two players pass within 0.7m mid-phase
+  COLLIDE  moving players pass within 0.7m of another player
   STALL    an action phase where nothing meaningfully moves
   SPEED    implied speed outside the style's plausible band
   CAPTION  empty or consecutively duplicated captions
+  FACE     receiver faces away from an arriving feed
+  RHYTHM   four unequal movements are flattened to the same duration
+  RELEASE  ball launches away from every player and rebound surface
 """
 from __future__ import annotations
 
@@ -29,8 +32,17 @@ def _d(a, b):
     return math.hypot(b[0] - a[0], b[1] - a[1])
 
 
-def _lerp(a, b, k):
-    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
+def _closest_approach(a, b):
+    """Minimum separation for tracks sharing the renderer's easing curve.
+
+    Easing changes *when* a crossing happens, not the minimum separation.
+    Solving relative motion catches crossings between sampled frames too.
+    """
+    r = [a[0][j] - b[0][j] for j in (0, 1)]
+    v = [a[1][j] - a[0][j] - b[1][j] + b[0][j] for j in (0, 1)]
+    vv = sum(x * x for x in v)
+    k = max(0.0, min(1.0, -sum(x * y for x, y in zip(r, v)) / vv)) if vv else 0.5
+    return k, math.hypot(r[0] + k * v[0], r[1] + k * v[1])
 
 
 def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
@@ -41,7 +53,8 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
     elements = drill.get("diagram", {}).get("elements", [])
     home = {e["label"]: [float(e["x"]), float(e["y"])]
             for e in elements if e.get("type") == "player"}
-    defenders = {e["label"] for e in elements if e.get("role") == "defender"}
+    walls = [[float(e["x"]), float(e["y"])] for e in elements
+             if e.get("type") == "wall"]
     goal_boxes = []
     for e in elements:
         if e.get("type") == "goal":
@@ -49,8 +62,14 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
             goal_boxes.append((float(e["x"]), float(e["y"]), half))
     main = [p for p in phases_all if p.get("kind") != "outcome"]
     outs = [p for p in phases_all if p.get("kind") == "outcome"]
+    if not main:
+        return ["NOANIM: outcomes need a main timeline to branch from"]
     first_ball = next((p["tracks"][BALL][0] for p in main
                        if BALL in p.get("tracks", {})), None)
+    opening = {lbl: list(xy) for lbl, xy in home.items()}
+    opening.update({lbl: list(tr[0]) for lbl, tr in main[0].get("tracks", {}).items()})
+    if first_ball is not None:
+        opening[BALL] = list(first_ball)
 
     findings: list[str] = []
     last: dict[str, list[float]] = {lbl: list(xy) for lbl, xy in home.items()}
@@ -89,24 +108,45 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
                     f"ALONE {cid} phase{pi}: ball travels {_d(*bt):.0f}m "
                     "unaccompanied in a reset — a player must carry it "
                     "(give the collector a track along the same path)")
-        # collisions mid-phase
-        labs = [l for l in tracks if l != BALL]
+        # Stationary players remain on the pitch even with no current track.
+        # Reset handovers may end together; flag crossings through a body,
+        # rather than intentional contact at the beginning/end of a leg.
+        player_tracks = {l: tracks.get(l, [last[l], last[l]]) for l in home}
+        labs = list(player_tracks)
         for x in range(len(labs)):
             for y in range(x + 1, len(labs)):
-                if labs[x] in defenders and labs[y] in defenders:
-                    continue  # a closing trap converges by design
-                for k in (0.3, 0.5, 0.7):
-                    pa = _lerp(*tracks[labs[x]], k)
-                    pb = _lerp(*tracks[labs[y]], k)
-                    if _d(pa, pb) < 0.7:
-                        findings.append(
-                            f"COLLIDE {cid} phase{pi}: {labs[x]} and "
-                            f"{labs[y]} merge mid-phase — keep them at "
-                            "least 0.8m apart (stop arm's length short)")
-                        break
-                else:
+                if max(_d(*player_tracks[labs[x]]), _d(*player_tracks[labs[y]])) < 1e-6:
+                    continue  # a held contact beat is not a path crossing
+                k, separation = _closest_approach(player_tracks[labs[x]],
+                                                  player_tracks[labs[y]])
+                if 0 < k < 1 and separation < 0.7:
+                    findings.append(
+                        f"COLLIDE {cid} phase{pi}: {labs[x]} and "
+                        f"{labs[y]} merge mid-phase — keep them at "
+                        "least 0.8m apart (stop arm's length short)")
+        # A receiver must see an incoming feed before it reaches their feet.
+        # Use arrival positions for moving receivers too. A carrier is already
+        # next to the ball at launch, and has different facing requirements.
+        bt = tracks.get(BALL)
+        if kind in ("action", "outcome") and bt and _d(*bt) > 1.0:
+            origins = [tr[0] for tr in player_tracks.values()] + walls
+            if not any(_d(bt[0], xy) <= 1.8 for xy in origins):
+                findings.append(f"RELEASE {cid} phase{pi}: ball moves without "
+                                "a player or wall at its starting point")
+        carried = bt and any(_d(bt[0], tr[0]) <= 1.8 and _d(bt[1], tr[1]) <= 1.8
+                             for tr in player_tracks.values())
+        if kind == "action" and bt and _d(*bt) > 2.0 and not carried:
+            for lbl, tr in player_tracks.items():
+                xy = tr[1]
+                if _d(bt[1], xy) > 1.3 or _d(bt[0], tr[0]) <= 1.8:
                     continue
-                break
+                facing = (p.get("hips") or {}).get(lbl)
+                if facing is None:
+                    continue
+                incoming = [bt[0][0] - xy[0], bt[0][1] - xy[1]]
+                n = math.hypot(*incoming) * math.hypot(*facing)
+                if n > 0 and (facing[0] * incoming[0] + facing[1] * incoming[1]) / n < 0:
+                    findings.append(f"FACE {cid} phase{pi}: {lbl} faces away from the arriving ball")
         # stalls / speed
         mx = max((_d(*tr) for tr in tracks.values()), default=0.0)
         if kind == "action" and mx < 0.25 and not p.get("eye") \
@@ -143,11 +183,31 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
         for lbl, tr in tracks.items():
             last[lbl] = list(tr[1])
 
-    for loop in range(loops):
+    # Every escape must be judged, including a third or fourth choice.
+    for loop in range(max(1, loops, len(outs))):
         seq = list(main)
         if outs:
             seq.append(outs[loop % len(outs)])
+        # Repeated equal-distance passes can deliberately have a steady beat.
+        # Flag timing flattened across substantially different distances;
+        # pauses and resets break the run.
+        same_pace = 0
         for pi, p in enumerate(seq):
+            moving = p.get("kind") == "action" and max(
+                (_d(*tr) for tr in p.get("tracks", {}).values()), default=0) > 0.5
+            if moving and pi and p["d"] == seq[pi - 1].get("d") \
+                    and seq[pi - 1].get("kind") == "action" \
+                    and max((_d(*tr) for tr in seq[pi - 1].get("tracks", {}).values()),
+                            default=0) > 0.5:
+                same_pace += 1
+            else:
+                same_pace = 0
+            if same_pace >= 3:
+                lengths = [max(_d(*tr) for tr in q.get("tracks", {}).values())
+                           for q in seq[pi - 3:pi + 1]]
+                if max(lengths) >= 2 * min(lengths):
+                    findings.append(f"RHYTHM {cid} phase{pi}: four unequal moving actions "
+                                    "have identical duration — vary the timing")
             run_phase(p, pi)
         if outs:
             # engine synthesizes the home glide lazily, AFTER the escape ran
@@ -162,13 +222,12 @@ def lint(drill: dict[str, Any], loops: int = 2) -> list[str]:
             run_phase(hg, len(seq))
             seq.append(hg)
         # loop boundary teleports
-        first = seq[0]
-        for lbl, tr in first.get("tracks", {}).items():
-            if lbl in last and _d(tr[0], last[lbl]) > 0.5:
+        for lbl, xy in opening.items():
+            if lbl in last and _d(xy, last[lbl]) > 1e-4:
                 findings.append(
-                    f"LOOP {cid}: {lbl} teleports {_d(tr[0], last[lbl]):.1f}m "
+                    f"LOOP {cid}: {lbl} teleports {_d(xy, last[lbl]):.3f}m "
                     f"at the loop boundary — the final phase must return "
-                    f"{lbl} to ({tr[0][0]:.1f},{tr[0][1]:.1f}), where the "
+                    f"{lbl} to ({xy[0]:.1f},{xy[1]:.1f}), where the "
                     "film opens")
         if loop == 0 and not outs:
             break  # deterministic without rotation — one loop suffices

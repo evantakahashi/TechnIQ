@@ -1,6 +1,7 @@
 """Structural integrity checks for drill diagrams. Runs after post_processor."""
 from __future__ import annotations
 
+import math
 from typing import Any
 
 # Which element types each equipment string authorizes
@@ -47,13 +48,14 @@ class ValidationError(ValueError):
 
 
 def validate_drill(drill: dict[str, Any]) -> None:
-    """Raise ValidationError if the drill fails any of the 5 checks."""
+    """Raise ValidationError for geometry or actions that cannot be played."""
     diagram = drill.get("diagram", {})
     elements: list[dict[str, Any]] = diagram.get("elements", [])
     paths: list[dict[str, Any]] = diagram.get("paths", [])
     equipment: list[str] = drill.get("equipment", [])
     field: dict[str, Any] = diagram.get("field", {})
 
+    _check_geometry_values(elements, paths, field)
     _check_at_least_one_step(paths)
     _check_step_numbers_contiguous(paths)
     _check_step_targets_exist(elements, paths)
@@ -82,6 +84,82 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_opponents_act(elements, paths)
     _check_players_out_of_goal(elements, paths)
     _check_first_time_strikes_face_feed(elements, paths)
+    _check_players_clear_of_cones(elements)
+    _check_action_participants(elements, paths)
+    _check_simultaneous_actions(paths)
+
+
+def _check_geometry_values(elements, paths, field) -> None:
+    """Reject geometry that silently collapses actors or poisons arithmetic."""
+    def finite(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+    labels = set()
+    for element in elements:
+        label = element.get("label")
+        if not isinstance(label, str) or not label.strip() or label == "__ball__":
+            raise ValidationError("elements need nonempty labels; __ball__ is reserved for animation")
+        if label in labels:
+            raise ValidationError(f"duplicate element label {label!r} — each actor needs its own identity")
+        labels.add(label)
+        if not all(finite(element.get(k)) for k in ("x", "y")):
+            raise ValidationError(f"element {label!r} needs finite numeric coordinates")
+        if "width" in element and (not finite(element["width"]) or element["width"] <= 0):
+            raise ValidationError(f"element {label!r} width must be positive and finite")
+    for key in ("width", "length"):
+        if key in field and (not finite(field[key]) or field[key] <= 0):
+            raise ValidationError(f"field {key} must be positive and finite")
+    for path in paths:
+        keys = ("fx", "fy", "tx", "ty")
+        if any(k in path for k in keys) and not all(finite(path.get(k)) for k in keys):
+            raise ValidationError(f"step {path.get('step')}: provide all four finite path coordinates")
+
+
+def _check_action_participants(elements, paths) -> None:
+    """Props cannot execute actions or receive a partner's feed."""
+    types = {e["label"]: e.get("type") for e in elements}
+    for path in paths:
+        if types.get(path.get("from")) != "player":
+            raise ValidationError(f"step {path.get('step')}: only a player can perform an action")
+        if path.get("style") in ("pass", "throw", "toss"):
+            target = types.get(path.get("to"))
+            if target not in ("player", "wall", "goal", "gate"):
+                raise ValidationError(f"step {path.get('step')}: feed targets a {target} — "
+                                      "nobody is there to receive it")
+
+
+def _check_simultaneous_actions(paths) -> None:
+    """A sync group shares one ball and one track per moving player."""
+    movers, ball_actions = set(), 0
+    previous = None
+    for path in sorted((p for p in paths if not p.get("alt")), key=lambda p: p["step"]):
+        if path.get("sync"):
+            if previous is None or path.get("reset") or previous.get("reset"):
+                raise ValidationError(f"step {path['step']}: sync needs a preceding action in this repetition")
+        else:
+            movers, ball_actions = set(), 0
+        if path.get("style") in ("run", "dribble"):
+            actor = path.get("from")
+            if actor in movers:
+                raise ValidationError(f"step {path['step']}: {actor} cannot move to two places simultaneously")
+            movers.add(actor)
+        if path.get("style") in ("pass", "throw", "toss", "shoot", "shot", "header", "dribble"):
+            ball_actions += 1
+            if ball_actions > 1:
+                raise ValidationError(f"step {path['step']}: simultaneous actions move the same ball twice")
+        previous = path
+
+
+def _check_players_clear_of_cones(elements: list[dict[str, Any]]) -> None:
+    """A player cannot start a repetition standing on a physical marker."""
+    cones = [e for e in elements if e.get("type") == "cone"]
+    for player in (e for e in elements if e.get("type") == "player"):
+        for cone in cones:
+            if math.hypot(player["x"] - cone["x"],
+                          player["y"] - cone["y"]) < 0.8:
+                raise ValidationError(
+                    f"{player.get('label')} stands on cone {cone.get('label')} "
+                    "— move the player clear of the marker")
 
 
 def _check_first_time_strikes_face_feed(
@@ -93,14 +171,27 @@ def _check_first_time_strikes_face_feed(
     from goal-side of the striker (feed-to-target angle at the striker
     within ~110 degrees), never from behind the shot line."""
     import math as _math
-    seq = sorted((p for p in paths if not p.get("alt") and not p.get("reset")
+    seq = sorted((p for p in paths if not p.get("alt")
                   and p.get("fx") is not None),
                  key=lambda p: p.get("step") or 0)
-    for prev, nxt in zip(seq, seq[1:]):
-        if prev.get("style") not in ("toss", "throw"):
+    feed = None
+    for nxt in seq:
+        if nxt.get("reset"):
+            feed = None
             continue
+        if nxt.get("style") in ("toss", "throw"):
+            feed = nxt
+            continue
+        if feed is None:
+            continue
+        # An unrelated player's supporting run must not hide the feed. A
+        # receiver's own control/run, or another ball action, ends this link.
+        prev = feed
         if nxt.get("style") not in ("shoot", "shot", "header"):
+            if nxt.get("from") == prev.get("to") or nxt.get("style") != "run":
+                feed = None
             continue
+        feed = None
         if nxt.get("from") != prev.get("to") or prev.get("from") == prev.get("to"):
             continue  # not the served player, or a self-toss (they choose the drop)
         sx, sy = nxt["fx"], nxt["fy"]
@@ -639,8 +730,11 @@ def _check_serve_distances(
         if not a or not b:
             continue
         try:
-            d = ((float(a["x"]) - float(b["x"])) ** 2
-                 + (float(a["y"]) - float(b["y"])) ** 2) ** 0.5
+            if all(p.get(k) is not None for k in ("fx", "fy", "tx", "ty")):
+                d = math.hypot(p["tx"] - p["fx"], p["ty"] - p["fy"])
+            else:
+                d = math.hypot(float(a["x"]) - float(b["x"]),
+                               float(a["y"]) - float(b["y"]))
         except (TypeError, ValueError, KeyError):
             continue
         if d > 8.0:

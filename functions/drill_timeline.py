@@ -16,8 +16,8 @@ Timeline schema (attached to drill["animation"]):
         "step":   3                    # source step, for arrow highlighting
       }, ... ] }
 
-Fade phases teleport: tracks give [from,to] but the renderer snaps at the
-midpoint behind an opacity dip (hidden resets stay hidden).
+Fade phases are visible return legs: the renderer interpolates their tracks,
+so the ball must travel with a collector throughout the reset.
 """
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ import math
 from typing import Any
 
 BALL = "__ball__"
+_EPS = 1e-6
 
 # ms per meter by action, with floors/caps — a 3m touch snaps, a 20m jog lopes
 _SPEED = {"pass": 42, "throw": 42, "toss": 46, "shoot": 28, "shot": 28,
@@ -56,7 +57,10 @@ def _dist(a: tuple, b: tuple) -> float:
 
 def _dur(style: str, dist: float) -> int:
     ms = _SPEED.get(style, 80) * dist
-    return int(max(_FLOOR, min(_CAP, ms)))
+    # A catch/control needs a visible settling beat even over a short gap;
+    # a thrown serve also hangs longer than a sharp ground pass.
+    floor = {"receive": 520, "throw": 500, "toss": 500}.get(style, _FLOOR)
+    return int(max(floor, min(_CAP, ms)))
 
 
 def _norm(dx: float, dy: float) -> list[float]:
@@ -127,6 +131,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                 and p.get("style") in ("dribble", "run", "shoot", "shot")]
     used_cues: set = set()
     last_ball_style: str | None = None
+    last_feed: dict[str, Any] | None = None
     phases: list[dict[str, Any]] = []
     i = 0
     while i < len(ordered):
@@ -138,6 +143,8 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         # ---- resets compile leg-by-leg: the ball is BROUGHT, never rolls
         # ---- home alone (collect -> bring it back -> back to your spot)
         if p.get("reset"):
+            last_feed = None
+            last_ball_style = None
             j = i
             while j < len(ordered) and ordered[j].get("reset"):
                 r = ordered[j]
@@ -161,18 +168,22 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                     ball_pos = list(rt)
                     label = "Bring it back"
                 elif st == "receive":
-                    # handover: ball switches hands where they stand
+                    # Carry even a short handover: changing ball_pos alone
+                    # makes the following phase start at an unseen location.
                     rcv = pos.get(rsrc)
-                    if rcv is not None:
+                    carrier = r.get("to")
+                    if rcv is not None and carrier in pos and ball_pos is not None:
+                        leg_tracks[carrier] = [list(pos[carrier]), list(rcv)]
+                        leg_tracks[BALL] = [list(ball_pos), list(rcv)]
+                        pos[carrier] = list(rcv)
                         ball_pos = list(rcv)
-                    j += 1
-                    continue
+                        label = "Hand it back"
                 else:
                     j += 1
                     continue
                 gd = max((_dist(tuple(tr[0]), tuple(tr[1]))
                           for tr in leg_tracks.values()), default=0)
-                if gd > 0.4:
+                if gd > _EPS:
                     phases.append({"d": int(max(420, min(2600, gd * 85))),
                                    "tracks": leg_tracks, "hips": {},
                                    "label": label, "ease": "lin",
@@ -184,19 +195,20 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         tracks: dict[str, list] = {}
         hips: dict[str, list] = {}
 
-        def face_all_toward_ball(target_xy):
-            for lbl, xy in pos.items():
-                hips[lbl] = _norm(target_xy[0] - xy[0], target_xy[1] - xy[1])
-
         merged_step = p.get("step")
-        nxt = ordered[i + 1] if i + 1 < len(ordered) else None
-        sync = nxt if (nxt and nxt.get("sync")) else None
+        syncs = []
+        for candidate in ordered[i + 1:]:
+            if not candidate.get("sync") or candidate.get("reset"):
+                break
+            syncs.append(candidate)
 
-        # Anticipation: a still beat before every serve — the receiver scans.
+        # Scan before a new serve, but keep an explicitly one-touch return
+        # flowing straight off the feed. A pause there teaches two touches.
+        one_touch_return = (last_feed is not None and last_feed.get("to") == src
+                            and (last_feed.get("touches") == 1 or p.get("touches") == 1))
         if style in ("pass", "toss", "throw") \
-                and by_label.get(dst, {}).get("type") == "player" \
-                and (not phases or phases[-1]["kind"] == "fade"
-                     or BALL not in phases[-1]["tracks"]):
+                and src != dst and not one_touch_return \
+                and by_label.get(dst, {}).get("type") == "player":
             pressure = next((e for e in elements
                              if e.get("type") in ("mannequin", "defender")
                              or (e.get("type") == "player"
@@ -228,6 +240,8 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             pos[src] = list(t_end)
             hips[src] = _norm(t[0] - f[0], t[1] - f[1])
             if style == "dribble":
+                last_ball_style = "dribble"
+                last_feed = None
                 b0 = list(ball_pos) if ball_pos \
                     and _dist(tuple(ball_pos), tuple(f)) < 2.5 else f
                 tracks[BALL] = [b0, t_end]
@@ -242,6 +256,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             i += 1
             continue
         if style in ("shoot", "shot") and phases \
+                and last_ball_style in ("dribble", "receive") \
                 and phases[-1]["kind"] == "action" \
                 and BALL in phases[-1]["tracks"]:
             bp = list(ball_pos) if ball_pos else list(f)
@@ -249,11 +264,13 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             plant = {src: [sp, sp], BALL: [bp, bp]}
             phases.append({"d": 300, "tracks": plant,
                            "hips": {src: _norm(t[0]-sp[0], t[1]-sp[1])},
+                           "eye": {src: _norm(t[0]-sp[0], t[1]-sp[1])},
                            "label": "Plant beside the ball — head still",
                            "ease": "lin", "kind": "action",
                            "step": merged_step})
         if style in ("pass", "toss", "throw", "shoot", "shot", "header"):
             last_ball_style = style
+            last_feed = p if style in ("pass", "toss", "throw") else None
             t_ball = t
             if by_label.get(dst, {}).get("type") == "player" \
                     and style in ("pass", "toss", "throw"):
@@ -281,11 +298,13 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             # touched on — carried into a control point on the exit side
             start = list(ball_pos) if ball_pos else list(f)
             base_pt = list(pos.get(src, t))
-            if last_ball_style in ("throw", "toss") \
-                    and by_label.get(dst, {}).get("type") == "wall":
+            if last_ball_style == "throw" or (last_ball_style == "toss"
+                    and by_label.get(dst, {}).get("type") == "wall"):
                 arrive = base_pt
                 tracks[BALL] = [start, arrive]
                 ball_pos = list(arrive)
+                last_ball_style = "receive"
+                last_feed = None
                 hips[src] = _norm(start[0] - base_pt[0], start[1] - base_pt[1])
                 phases.append({"d": _dur("receive",
                                          _dist(tuple(start), tuple(arrive))),
@@ -296,7 +315,12 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                                "step": merged_step})
                 i += 1
                 continue
-            nxt_move = next((q for q in ordered[i + 1:]
+            next_rep = []
+            for q in ordered[i + 1:]:
+                if q.get("reset"):
+                    break
+                next_rep.append(q)
+            nxt_move = next((q for q in next_rep
                              if q.get("from") == src
                              and q.get("style") in ("dribble", "run", "pass",
                                                     "shoot", "shot")), None)
@@ -308,9 +332,11 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
             arrive = [base_pt[0] + ex[0] * 0.7, base_pt[1] + ex[1] * 0.7]
             tracks[BALL] = [start, arrive]
             ball_pos = arrive
+            last_ball_style = "receive"
+            last_feed = None
             hips[src] = _norm(start[0] - base_pt[0], start[1] - base_pt[1])
 
-        if sync is not None:
+        for sync in syncs:
             s_style, s_src = sync.get("style"), sync.get("from")
             sf = [sync["fx"], sync["fy"]]
             st = [sync["tx"], sync["ty"]]
@@ -325,12 +351,17 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                 pos[s_src] = list(st_end)
                 hips[s_src] = _norm(st[0] - sf[0], st[1] - sf[1])
                 if s_style == "dribble":
-                    tracks.setdefault(BALL, [sf, st])
-            elif s_style in ("pass", "toss", "throw"):
+                    b0 = list(ball_pos) if ball_pos is not None else sf
+                    tracks[BALL] = [b0, st_end]
+                    ball_pos = list(st_end)
+                    last_ball_style = "dribble"
+                    last_feed = None
+            elif s_style in ("pass", "toss", "throw", "shoot", "shot", "header"):
                 b0 = list(ball_pos) if ball_pos \
                     and _dist(tuple(ball_pos), tuple(sf)) < 2.5 else sf
                 st_ball = st
-                if by_label.get(sync.get("to"), {}).get("type") == "player":
+                if s_style in ("pass", "toss", "throw") \
+                        and by_label.get(sync.get("to"), {}).get("type") == "player":
                     dd = _dist(tuple(b0), tuple(st))
                     if dd > 1.6:  # land the feed short — the touch finishes it
                         kk = (dd - 1.0) / dd
@@ -338,21 +369,33 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
                                    b0[1] + (st[1] - b0[1]) * kk]
                 tracks[BALL] = [b0, st_ball]
                 ball_pos = list(st_ball)
+                last_ball_style = s_style
+                last_feed = sync if s_style in ("pass", "toss", "throw") else None
                 hips[s_src] = _norm(st[0] - sf[0], st[1] - sf[1])
                 rcv = sync.get("to")
                 if rcv in pos:
                     hips[rcv] = _norm(sf[0] - pos[rcv][0], sf[1] - pos[rcv][1])
             i += 1  # consumed
 
-        dist = max(_dist(tuple(f), tuple(t)),
-                   _dist(tuple(tracks[BALL][0]), tuple(tracks[BALL][1]))
-                   if BALL in tracks else 0)
+        # Resolve receiving orientation after all concurrent movement. A run
+        # listed after a feed must not overwrite the receiver's facing with
+        # their travel direction (shuffling sideways is still receiving).
+        group = [p] + syncs
+        current_feed = next((q for q in group
+                             if q.get("style") in ("pass", "toss", "throw")), None)
+        if current_feed is not None and current_feed.get("to") in pos and BALL in tracks:
+            receiver = current_feed["to"]
+            origin = tracks[BALL][0]
+            hips[receiver] = _norm(origin[0] - pos[receiver][0],
+                                   origin[1] - pos[receiver][1])
+
+        dist = max((_dist(tuple(tr[0]), tuple(tr[1])) for tr in tracks.values()), default=0)
         cue = _cue_for(style, coaching, used_cues)
         src_el = by_label.get(src, {})
         role = f" ({src_el.get('role')})" if src_el.get("role") else ""
         base = _situational(style, src, dst, by_label) or \
             f"{src}{role} {p.get('verb') or _PLAIN.get(style, 'moves to')} {dst}"
-        steps_lit = [merged_step] + ([sync.get("step")] if sync is not None else [])
+        steps_lit = [merged_step] + [sync.get("step") for sync in syncs]
         phases.append({
             "d": _dur(style, dist),
             "tracks": tracks, "hips": hips,
@@ -394,13 +437,13 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
     first_ball = next((ph["tracks"][BALL][0] for ph in phases
                        if BALL in ph.get("tracks", {})), None)
     starts = _start_state()
-    mismatch = any(_dist(tuple(pos.get(l, starts[l])), tuple(starts[l])) > 0.6
+    mismatch = any(_dist(tuple(pos.get(l, starts[l])), tuple(starts[l])) > _EPS
                    for l in starts)
     if first_ball is not None and ball_pos is not None:
-        mismatch = mismatch or _dist(tuple(ball_pos), tuple(first_ball)) > 0.6
+        mismatch = mismatch or _dist(tuple(ball_pos), tuple(first_ball)) > _EPS
     if phases and mismatch and not outcomes:
         ball_stray = (first_ball is not None and ball_pos is not None
-                      and _dist(tuple(ball_pos), tuple(first_ball)) > 0.6)
+                      and _dist(tuple(ball_pos), tuple(first_ball)) > _EPS)
         carrier = None
         if ball_stray:
             carrier = min(home, key=lambda l: _dist(
@@ -409,7 +452,7 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
         def _leg(tracks, label):
             g = max((_dist(tuple(tr[0]), tuple(tr[1]))
                      for tr in tracks.values()), default=0)
-            if g > 0.5:
+            if g > _EPS:
                 phases.append({"d": int(max(420, min(2600, g * 85))),
                                "tracks": tracks, "hips": {},
                                "label": label, "ease": "lin",
@@ -443,6 +486,10 @@ def compile_timeline(drill: dict[str, Any]) -> dict[str, Any]:
     def _max_move(ph):
         return max((_dist(tuple(tr[0]), tuple(tr[1]))
                     for tr in ph["tracks"].values()), default=0.0)
+    # A stationary scan is a visible coaching beat, not a dead action.  The
+    # receiver's eyes change before the feed; the renderer uses this time to
+    # show anticipation instead of launching the ball immediately.
     phases = [ph for ph in phases
-              if ph["kind"] != "action" or _max_move(ph) > 0.35]
+              if ph["kind"] != "action" or _max_move(ph) > _EPS
+              or ph.get("eye")]
     return {"phases": phases}

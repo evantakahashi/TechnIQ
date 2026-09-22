@@ -24,6 +24,13 @@ def test_valid_drill_passes():
     validate_drill(make_valid_drill())  # no exception
 
 
+def test_player_cannot_start_on_a_cone():
+    drill = make_valid_drill()
+    drill['diagram']['elements'][0]['x'] = -2
+    with pytest.raises(ValidationError, match='stands on cone'):
+        validate_drill(drill)
+
+
 def test_missing_element_target_raises():
     drill = make_valid_drill()
     drill["diagram"]["paths"][0]["to"] = "GHOST"
