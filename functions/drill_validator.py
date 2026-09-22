@@ -87,6 +87,48 @@ def validate_drill(drill: dict[str, Any]) -> None:
     _check_players_clear_of_cones(elements)
     _check_action_participants(elements, paths)
     _check_simultaneous_actions(paths)
+    _check_no_self_chase(elements, paths)
+
+
+def _check_no_self_chase(
+    elements: list[dict[str, Any]], paths: list[dict[str, Any]]
+) -> None:
+    """A pass needs a receiver. Passing between a gate (or at anything that
+    is not a player or wall) and then running to retrieve your own ball is
+    'not good practice and not realistic' (Evan, 2026-09-22). Keeping the
+    ball through a gate is a dribble; finishing at a target is a shot with
+    a reset collect. Another player running onto the pass is fine."""
+    by_label = {e.get("label"): e for e in elements}
+    seq = sorted((p for p in paths if not p.get("alt")),
+                 key=lambda p: p.get("step") or 0)
+    for i, p in enumerate(seq):
+        if p.get("reset") or p.get("style") not in ("pass", "toss", "throw"):
+            continue
+        if p.get("to") == p.get("from"):
+            continue  # self-toss serve
+        tgt = by_label.get(p.get("to"), {}).get("type")
+        if tgt in ("player", "wall"):
+            continue  # a real receiver, or the wall plays it back
+        # who touches the ball next in live play?
+        for q in seq[i + 1:]:
+            if q.get("reset"):
+                continue
+            st = q.get("style")
+            if st == "receive":
+                toucher = q.get("from")
+            elif st in ("pass", "toss", "throw", "shoot", "shot",
+                        "header", "dribble"):
+                toucher = q.get("from")
+            else:
+                continue  # a run is not a touch
+            if toucher == p.get("from"):
+                raise ValidationError(
+                    f"step {p.get('step')}: {p.get('from')} passes to "
+                    f"{p.get('to')} and then retrieves their own ball — a "
+                    "pass needs a receiver (player or wall). Keep it "
+                    "through the gate as a dribble, or make it a shot at "
+                    "a target with a reset collect.")
+            break
 
 
 def _check_geometry_values(elements, paths, field) -> None:
@@ -947,10 +989,10 @@ def _check_solo_pass_targets(
     """Solo drills: a pass needs a target that makes sense alone.
 
     User review: solo drills passing at cones ("no one is there") are
-    unusable. With one player a pass goes against a wall (plays it back)
-    or through a gate (a window you play through, then collect — the
-    user's own 4-gate first-touch spec). Cones/mannequins are not
-    receivers; shots/headers at targets are still fine.
+    unusable, and passing through a gate then running to retrieve it is
+    "not good practice and not realistic" (2026-09-22). With one player a
+    pass goes against a wall (it plays the ball back). Keeping the ball
+    through a gate is a dribble; finishing at a target is a shot.
     """
     players = [e for e in elements if e.get("type") == "player"]
     if len(players) != 1:
@@ -962,11 +1004,12 @@ def _check_solo_pass_targets(
         if p.get("to") == p.get("from"):
             continue  # self-toss is a legitimate solo serve
         tgt = by_label.get(p.get("to"), {}).get("type")
-        if tgt not in ("wall", "gate"):
+        if tgt != "wall":
             raise ValidationError(
                 f"step {p.get('step')}: solo drill passes to a {tgt} — "
-                "nobody is there to receive it; solo passes go against a "
-                "wall or through a gate (or redesign as dribble/shot reps)"
+                "nobody is there to receive it and chasing your own pass "
+                "is not realistic practice; solo passes go against a wall "
+                "(keep it through a gate = dribble; finish = shot)"
             )
 
 

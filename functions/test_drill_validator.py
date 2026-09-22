@@ -422,13 +422,15 @@ def test_solo_pass_to_wall_passes():
     validate_drill(drill)
 
 
-def test_solo_pass_through_gate_passes():
-    # The user's own 4-gate first-touch spec: gates ARE solo pass targets.
+def test_solo_pass_through_gate_rejected():
+    # Superseded 2026-09-22: passing through a gate then retrieving your own
+    # ball is "not good practice and not realistic" — solo passes need a wall.
     drill = _solo_pass_drill({"type": "gate", "x": 12, "y": 7, "label": "G1", "width": 2})
     drill["equipment"].append("cones")
     drill["diagram"]["paths"].append(
         {"from": "P1", "to": "G1", "style": "run", "step": 2})
-    validate_drill(drill)
+    with pytest.raises(ValidationError):
+        validate_drill(drill)
 
 
 def _finish_drill(prev_step):

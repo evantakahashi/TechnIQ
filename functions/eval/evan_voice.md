@@ -226,6 +226,11 @@ is still a bad drill. Judge the drill, not the effort.
     the target together; a toss from behind the shot line is an instant fail
     ("how can they hit a volley like that... they would have to turn and shoot
     simultaneously", authored sweep #12, 2026-09-19). Server goal-side, always.
+18. **Nobody chases their own pass** — "passing a ball in between a gate or to
+    something and then they run to retrieve it… is not good practice and not
+    realistic" (2026-09-22). A pass needs a receiver (player or wall); through
+    a gate with possession = dribble; at a target = shot with reset collect.
+    This SUPERSEDES the old 4-gate allowance for solo gate passes.
 17. **Every action must LOOK like itself** — a header can't render as a running
    line; a turn needs its visible touch; the spot player stands in FRONT of the
    marker cone.
