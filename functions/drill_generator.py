@@ -77,7 +77,7 @@ Geometry (draw it like a real pitch — a coach will see this diagram):
 BALL TRACKING (steps are a story a kid follows literally — the ball must be traceable):
 - A player can only pass/dribble/shoot a ball AT THEIR FEET. Start the worker on a ball, or make their first step "runs to <ball>".
 - A pass moves the ball to the receiver; a shot leaves the ball at the target. After a shot, the next ball action requires collecting a ball first (run to the next ball, or to where it went).
-- A pass ALWAYS has a receiver: a player or a wall. Never pass into space, through a gate, or at a marker and have the passer chase their own ball — that is not realistic practice. Keeping the ball through a gate is a dribble; finishing at a target is a shot with a reset collect.
+- A pass ALWAYS has a receiver: a player or a wall. Never pass into space, through a gate, or at a marker and have the passer chase their own ball — that is not realistic practice. Relabeling it a shot changes nothing: a shot finishes at a GOAL (or a gate in its mouth) or rebounds off a wall; kicking at a free-standing floor gate and fetching it is still a pass with no receiver. Keeping the ball through a gate is a dribble.
 - Never write "runs to X" then "dribbles to X" for the same player and target — one movement per intent.
 - Never have a player pass to someone who already has the ball.
 - Duels (1v1 defending, pressing) are GAMES WITH RULES, not choreography: at most 2-3 steps. Step 1 is ALWAYS the attacker dribbling AT the opponent from 2-8m (the engage); then EVERY escape is an `or:` line (`or: P1 dribbles to G1`, `or: P1 dribbles to G2`) — never script a break as a numbered step; the kid sees dashed choices and the duel decides. The defender starts BETWEEN the attacker and the gates (that's what defending means). No cones in duels — two players, one ball, the gates. Coaching states HOW IT WORKS: objective, what counts as a win for each side, when to swap ('swap after 3 attacks'). A duel has many endings — decision rules live in coaching, never in steps.
@@ -168,6 +168,13 @@ def generate_drill(
     # "a player receives from another player" beats a faked-solo version.
     if number_of_players == 1 and any(
             k in blob_field for k in (rule_pack or {}).get("partner_required_if", [])):
+        number_of_players = 2
+    # A pass practiced alone needs a wall to play it back; without one the
+    # only realistic version has a receiver — escalate to a partner.
+    if number_of_players == 1 and not any(
+            "wall" in str(e).lower() for e in equipment) and any(
+            k in blob_field for k in
+            (rule_pack or {}).get("partner_required_unless_wall", [])):
         number_of_players = 2
 
     archetype = pick_archetype(weakness, level, number_of_players, skill_blob=blob_field)

@@ -99,16 +99,41 @@ def _check_no_self_chase(
     ball through a gate is a dribble; finishing at a target is a shot with
     a reset collect. Another player running onto the pass is fine."""
     by_label = {e.get("label"): e for e in elements}
+    goals = [e for e in elements if e.get("type") == "goal"]
+
+    def _finishing_gate(g):
+        """A gate is a finishing target only in a goal's mouth or apron —
+        a free-standing floor gate cannot receive or return a ball."""
+        for gl in goals:
+            half = float(gl.get("width", 7.32)) / 2.0
+            dx = abs(float(g.get("x", 0)) - float(gl.get("x", 0)))
+            dy = abs(float(g.get("y", 0)) - float(gl.get("y", 0)))
+            if min(dx, dy) <= 6.0 and max(dx, dy) <= half + 2.0:
+                return True
+        return False
+
     seq = sorted((p for p in paths if not p.get("alt")),
                  key=lambda p: p.get("step") or 0)
     for i, p in enumerate(seq):
-        if p.get("reset") or p.get("style") not in ("pass", "toss", "throw"):
+        if p.get("reset"):
             continue
-        if p.get("to") == p.get("from"):
-            continue  # self-toss serve
-        tgt = by_label.get(p.get("to"), {}).get("type")
-        if tgt in ("player", "wall"):
-            continue  # a real receiver, or the wall plays it back
+        style = p.get("style")
+        tgt_el = by_label.get(p.get("to"), {})
+        tgt = tgt_el.get("type")
+        if style in ("pass", "toss", "throw"):
+            if p.get("to") == p.get("from"):
+                continue  # self-toss serve
+            if tgt in ("player", "wall"):
+                continue  # a real receiver, or the wall plays it back
+        elif style in ("shoot", "shot"):
+            # a shot finishes at a goal, a goal-mouth gate, or a wall; a
+            # "shot" at a free-standing floor gate is a pass in disguise
+            if tgt in ("goal", "wall", "player"):
+                continue
+            if tgt == "gate" and _finishing_gate(tgt_el):
+                continue
+        else:
+            continue  # headers = clearances into a zone; dribbles carry
         # who touches the ball next in live play?
         for q in seq[i + 1:]:
             if q.get("reset"):
@@ -123,11 +148,13 @@ def _check_no_self_chase(
                 continue  # a run is not a touch
             if toucher == p.get("from"):
                 raise ValidationError(
-                    f"step {p.get('step')}: {p.get('from')} passes to "
-                    f"{p.get('to')} and then retrieves their own ball — a "
-                    "pass needs a receiver (player or wall). Keep it "
-                    "through the gate as a dribble, or make it a shot at "
-                    "a target with a reset collect.")
+                    f"step {p.get('step')}: {p.get('from')} sends the ball "
+                    f"to {p.get('to')} and then retrieves it themselves — "
+                    "kicking at something that can't receive or return the "
+                    "ball and fetching it is a pass with no receiver, "
+                    "whatever the verb. Use a wall or a partner, finish at "
+                    "a goal (or a gate in its mouth), or keep the ball "
+                    "through the gate as a dribble.")
             break
 
 

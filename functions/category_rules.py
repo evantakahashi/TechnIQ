@@ -13,6 +13,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
         "perception_action_cue": "worker scans for defender body shape; attacks front foot to force the turn",
     },
     "Passing": {
+        "partner_required_unless_wall": ["pass", "distribut"],
         "primary_action": "play a weighted, accurate pass between teammates under passive or active pressure, then reposition for the return",
         "verb_keywords": ["pass", "receive", "play", "open up", "support"],
         "must_include": ["≥2 players exchanging passes", "explicit one-touch/two-touch tag on every pass step", "the BASE pattern is prop-free: two players, one ball, explicit touch tags; cones appear only in movement VARIATIONS (side-to-side shuffles between cones, one-touch through a cone channel)", "if a lane gate is used, the passer STANDS IN or 1m BEHIND it and passes through it — the gate marks the passing window at the passer, not a hoop in the middle of the lane"],
@@ -60,6 +61,7 @@ RULE_PACKS: dict[str, dict[str, Any]] = {
         "perception_action_cue": "defender reads attacker's hips and touch; closes on the outside, forces them onto weaker foot",
     },
     "Goalkeeping": {
+        "partner_required_unless_wall": ["distribut", "throw", "roll"],
         "primary_action": "react and save off a SERVER's throws/strikes — self-thrown wall rebounds cannot test reactions (the keeper knows where their own throw goes, and angled walls bounce away)",
         "verb_keywords": ["throw", "save", "parry", "catch", "distribute", "set"],
         "must_include": ["a server/thrower for any REACTION work (2 players)", "solo GK + wall = HANDS work: throw at the wall and CATCH the rebound clean ('P1 throws to W1' then 'P1 receives from W1') — vary throw height and pace, low throws train collapse catches, quick shuffle footwork between catches; be honest in coaching that self-throw rebounds build handling volume and true reaction saves need a partner (offer as a variation)", "hand actions use 'throws to'", "LAYOUT (walls rebound like MIRRORS — angle in = angle out): serve the wall square-on from 8m+ with the keeper 4-6m off the wall, OFFSET 2-3m to the side of the serve line, catching the rebound on the mirror side; never draw a rebound that bends to a catcher the physics can't reach", "a simple base is fine but MUST carry rich variations — e.g. a partner throwing to the keeper IN THE NET while they work footwork, height/pace changes, catch-then-shuffle combos; never 12 identical steps"],
