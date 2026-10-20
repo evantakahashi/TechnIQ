@@ -10,10 +10,11 @@ added to the TechnIQ app target's Sources phase (DF1635F42E133001001E8CF9).
 Files already present are skipped. IDs are deterministic 24-hex hashes of the path.
 """
 import hashlib
+import os
 import re
 import sys
 
-PBX = "/Users/evantakahashi/TechnIQ/.claude/worktrees/touchline/TechnIQ.xcodeproj/project.pbxproj"
+PBX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "TechnIQ.xcodeproj", "project.pbxproj")
 APP_SOURCES_PHASE = "DF1635F42E133001001E8CF9"
 TESTS_SOURCES_PHASE = "DF1636042E133003001E8CF9"
 TESTS_GROUP = "DF16360B2E133003001E8CF9"

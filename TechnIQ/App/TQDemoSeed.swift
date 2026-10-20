@@ -327,7 +327,7 @@ enum TQDemoSeed {
 // without signing out of the simulator.
 
 enum TQDebugScreen: String {
-    case signIn, onboarding
+    case signIn, onboarding, jugglespike
 
     static var requested: TQDebugScreen? {
         let args = ProcessInfo.processInfo.arguments
@@ -346,6 +346,8 @@ struct TQDebugScreenHost: View {
             AuthenticationView()
         case .onboarding:
             UnifiedOnboardingView(isOnboardingComplete: $onboardingComplete)
+        case .jugglespike:
+            JuggleSpikeView()
         }
     }
 }

@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 887B2F31427EACF3802FD717 /* yolo11n.mlpackage */; };
+		D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */; };
+		3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */; };
+		670E7217B4B69E666FB25077 /* FrameAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */; };
+		F3C0D27C6A41CBD4C87E8C72 /* JuggleCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2EC820BA5FA4AAB75D1BE1 /* JuggleCounter.swift */; };
+		46FE4C150E8EFCA993BD2849 /* CameraDrillTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C352B239C5AA9CEF444E2F67 /* CameraDrillTypes.swift */; };
 		66F2C187FAD617B8D4CC8CE6 /* SessionResumeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */; };
 		35AAC69F91A3BF11FDC1A3B9 /* PlayerRecordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */; };
 		BF4020CE9201BEDDD6A1C3E9 /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE908BF5789ED39B34D5356 /* RecordsView.swift */; };
@@ -263,6 +269,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		887B2F31427EACF3802FD717 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
+		227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikeView.swift; sourceTree = "<group>"; };
+		A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikePipeline.swift; sourceTree = "<group>"; };
+		F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameAnalyzer.swift; sourceTree = "<group>"; };
+		CB2EC820BA5FA4AAB75D1BE1 /* JuggleCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleCounter.swift; sourceTree = "<group>"; };
+		C352B239C5AA9CEF444E2F67 /* CameraDrillTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrillTypes.swift; sourceTree = "<group>"; };
 		EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResumeTests.swift; sourceTree = "<group>"; };
 		04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRecordsTests.swift; sourceTree = "<group>"; };
 		BAE908BF5789ED39B34D5356 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
@@ -875,6 +887,7 @@
 				6A39B54228BF4B82B462BE23 /* Services */,
 				7D52B89ADA8D47BB8ABBC155 /* Utilities */,
 				9EC720A6BA7EA44B7524F411 /* Views */,
+				B15669457A755A373A623F05 /* CameraDrills */,
 			);
 			path = TechnIQ;
 			sourceTree = "<group>";
@@ -1003,6 +1016,51 @@
 				596560DE22A4069FB36A800D /* TQFormField.swift */,
 			);
 			path = Touchline;
+			sourceTree = "<group>";
+		};
+		B15669457A755A373A623F05 /* CameraDrills */ = {
+			isa = PBXGroup;
+			children = (
+				266DE303587C27AD2FDC792F /* Core */,
+				2E4E304F4770DDB49F076A58 /* Vision */,
+				CDBB36DAD260DC03CDA0F1A7 /* Spike */,
+				612C518BAE73F881DD4311F0 /* Models */,
+			);
+			path = CameraDrills;
+			sourceTree = "<group>";
+		};
+		266DE303587C27AD2FDC792F /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				C352B239C5AA9CEF444E2F67 /* CameraDrillTypes.swift */,
+				CB2EC820BA5FA4AAB75D1BE1 /* JuggleCounter.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		2E4E304F4770DDB49F076A58 /* Vision */ = {
+			isa = PBXGroup;
+			children = (
+				F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */,
+			);
+			path = Vision;
+			sourceTree = "<group>";
+		};
+		CDBB36DAD260DC03CDA0F1A7 /* Spike */ = {
+			isa = PBXGroup;
+			children = (
+				A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */,
+				227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */,
+			);
+			path = Spike;
+			sourceTree = "<group>";
+		};
+		612C518BAE73F881DD4311F0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				887B2F31427EACF3802FD717 /* yolo11n.mlpackage */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1346,6 +1404,12 @@
 				005873C98311C6D216D3DFE3 /* SessionPreviewSheet.swift in Sources */,
 				19C2529295603B4FABE087A2 /* PlayerRecords.swift in Sources */,
 				BF4020CE9201BEDDD6A1C3E9 /* RecordsView.swift in Sources */,
+				46FE4C150E8EFCA993BD2849 /* CameraDrillTypes.swift in Sources */,
+				F3C0D27C6A41CBD4C87E8C72 /* JuggleCounter.swift in Sources */,
+				670E7217B4B69E666FB25077 /* FrameAnalyzer.swift in Sources */,
+				3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */,
+				D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */,
+				B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
