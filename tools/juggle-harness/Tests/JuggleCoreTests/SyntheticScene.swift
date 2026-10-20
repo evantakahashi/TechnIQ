@@ -82,12 +82,12 @@ enum SyntheticScene {
     }
 
     /// Feeds frames through a fresh counter and returns every event.
-    static func run(_ frames: [DrillFrame], counter: JuggleCounter = JuggleCounter()) -> [JuggleEvent] {
+    static func run(_ frames: [DrillFrame], counter: JuggleCounter = JuggleCounter()) -> [DrillEvent] {
         frames.flatMap { counter.process($0) } + counter.finish(at: frames.last?.time ?? 0)
     }
 }
 
-extension Array where Element == JuggleEvent {
+extension Array where Element == DrillEvent {
     var touches: [(count: Int, part: TouchPart)] {
         compactMap { if case let .touch(count, part, _) = $0 { return (count, part) } else { return nil } }
     }

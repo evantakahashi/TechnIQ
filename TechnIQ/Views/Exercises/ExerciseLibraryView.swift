@@ -34,6 +34,7 @@ struct ExerciseLibraryView: View {
         case drill(NSManagedObjectID)
         case coachDrills
         case section(TrainLibraryLayout.Section.Kind)
+        case camera
     }
 
     // MARK: - Derived
@@ -69,11 +70,13 @@ struct ExerciseLibraryView: View {
                     .disabled(allExercises.isEmpty)
 
                 if allExercises.isEmpty {
+                    cameraRow
                     emptyLibrary
                 } else if isSearching {
                     searchList
                 } else {
                     coachStrip
+                    cameraRow
                     sections
                 }
             }
@@ -94,6 +97,8 @@ struct ExerciseLibraryView: View {
                 CoachDrillsView(player: player)
             case .section(let kind):
                 TrainSkillListView(player: player, kind: kind, exercises: allExercises, onChange: { loadExercises() })
+            case .camera:
+                CameraDrillsView(player: player)
             }
         }
         .sheet(isPresented: $showingNewDrillMenu) {
@@ -126,6 +131,10 @@ struct ExerciseLibraryView: View {
             if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "drill",
                let target = allExercises.first(where: { $0.diagramJSON != nil }) ?? allExercises.first {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { route = .drill(target.objectID) }
+            }
+            // `-TQRoute camera` pushes Camera drills for screenshots.
+            if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "camera" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { route = .camera }
             }
             // `-TQRoute skill` pushes the Passing "See all" list for screenshots.
             if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "skill" {
@@ -162,6 +171,20 @@ struct ExerciseLibraryView: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
             .accessibilityHint("Opens drills from \(CoachIdentity.name())")
+        }
+    }
+
+    // MARK: - Camera drills
+
+    private var cameraRow: some View {
+        TQRowList {
+            TQRow("Camera drills",
+                  subtitle: "Prop your phone up — it counts the touches",
+                  leading: .tile(TQTile(symbol: "camera.viewfinder")),
+                  verticalPadding: DesignSystem.Spacing.rowVertical) {
+                route = .camera
+            }
+            .accessibilityIdentifier("train.camera")
         }
     }
 

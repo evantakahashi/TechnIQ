@@ -7,7 +7,7 @@ import Foundation
 /// The contact is classified against the player's pose: legs/chest/head count, an arm ends the run as
 /// handball, and a contact at floor level ends it as ground. A run starts on its first legal touch.
 /// Unconfirmed contacts never count — the counter would rather miss a touch than invent one.
-final class JuggleCounter {
+final class JuggleCounter: DrillCounter {
     struct Config {
         /// Rise (m) above a low point that confirms it — must clear detector jitter.
         var reversal = 0.06
@@ -54,7 +54,7 @@ final class JuggleCounter {
         self.config = config
     }
 
-    func process(_ frame: DrillFrame) -> [JuggleEvent] {
+    func process(_ frame: DrillFrame) -> [DrillEvent] {
         trackFloor(frame)
         guard let ball = frame.ball else {
             if isRunning, let last = lastSightingTime, frame.time - last > config.lostBall {
@@ -65,7 +65,7 @@ final class JuggleCounter {
         lastSightingTime = frame.time
         radius = radius.map { $0 * 0.8 + ball.radius * 0.2 } ?? ball.radius
         let sample = Sample(time: frame.time, center: ball.center, radius: ball.radius, pose: frame.pose)
-        var events: [JuggleEvent] = []
+        var events: [DrillEvent] = []
 
         if isRunning, isOnFloor(sample) {
             events.append(endRun(.ground, at: frame.time))
@@ -93,13 +93,13 @@ final class JuggleCounter {
     }
 
     /// Ends an open run (footage over, or the player stopped the session).
-    func finish(at time: Double) -> [JuggleEvent] {
+    func finish(at time: Double) -> [DrillEvent] {
         isRunning ? [endRun(.stopped, at: time)] : []
     }
 
     // MARK: - Contacts
 
-    private func contact(at sample: Sample, drop: Double) -> [JuggleEvent] {
+    private func contact(at sample: Sample, drop: Double) -> [DrillEvent] {
         guard drop >= metres(config.minDrop) else { return [] }
         if isOnFloor(sample) {
             return isRunning ? [endRun(.ground, at: sample.time)] : []
@@ -116,7 +116,7 @@ final class JuggleCounter {
         return [.touch(count: count, part: part, time: sample.time)]
     }
 
-    private func endRun(_ reason: RunEndReason, at time: Double) -> JuggleEvent {
+    private func endRun(_ reason: RunEndReason, at time: Double) -> DrillEvent {
         isRunning = false
         return .runEnded(count: count, reason: reason, time: time)
     }

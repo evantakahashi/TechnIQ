@@ -101,6 +101,9 @@ extension CloudService {
             for matchData in cloudData.matches where docBelongs(matchData, to: restoredPlayerId) {
                 try restoreMatch(from: matchData, for: player, in: context)
             }
+            for runData in cloudData.cameraRuns where docBelongs(runData, to: restoredPlayerId) {
+                restoreCameraRun(from: runData, for: player, in: context)
+            }
 
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions where docBelongs(sessionData, to: restoredPlayerId) {
@@ -314,6 +317,23 @@ extension CloudService {
            let matchingSeason = seasons.first(where: { $0.id == seasonID }) {
             match.season = matchingSeason
         }
+    }
+
+    func restoreCameraRun(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) {
+        let run = CameraRun(context: context)
+        run.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
+        run.drill = data["drill"] as? String
+        run.count = Self.int32Value(from: data["count"])
+        run.duration = (data["duration"] as? NSNumber)?.doubleValue ?? 0
+        run.isPersonalBest = data["isPersonalBest"] as? Bool ?? false
+        let challengeId = data["challengeId"] as? String ?? ""
+        run.challengeId = challengeId.isEmpty ? nil : challengeId
+        run.xpEarned = Self.int32Value(from: data["xpEarned"])
+        run.coinsEarned = Self.int32Value(from: data["coinsEarned"])
+        run.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? Date()
+        run.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? (data["updatedAt"] as? Date) ?? run.createdAt
+        run.player = player
+        player.addToCameraRuns(run)
     }
 
     private static func int16Value(from value: Any?) -> Int16 {

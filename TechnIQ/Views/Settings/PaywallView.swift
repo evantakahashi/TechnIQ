@@ -9,6 +9,7 @@ enum PaywallFeature: String, Identifiable {
     case dailyCoaching
     case weeklyAdaptation
     case youtubeRecs
+    case cameraInsights
 
     var id: String { rawValue }
 
@@ -19,6 +20,7 @@ enum PaywallFeature: String, Identifiable {
         case .dailyCoaching: return .dailyCoaching
         case .weeklyAdaptation: return .weeklyReview
         case .youtubeRecs: return .aiDrills
+        case .cameraInsights: return .cameraInsights
         }
     }
 
@@ -29,6 +31,7 @@ enum PaywallFeature: String, Identifiable {
         case .dailyCoaching: return "The daily pick is Pro"
         case .weeklyAdaptation: return "The weekly review is Pro"
         case .youtubeRecs: return "Video picks are Pro"
+        case .cameraInsights: return "Your run history is Pro"
         }
     }
 }

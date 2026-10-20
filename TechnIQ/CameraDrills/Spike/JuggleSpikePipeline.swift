@@ -4,8 +4,8 @@ import CoreML
 import SwiftUI
 
 /// Phase-1 spike: back camera → FrameAnalyzer → JuggleCounter, all on device, plus optional clip
-/// recording for the harness. Frames are processed on `videoQueue`; UI state is published on main.
-final class JuggleSpikePipeline: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+/// recording for the harness. Frames are processed on the capture queue; UI state is published on main.
+final class JuggleSpikePipeline: ObservableObject {
     @Published private(set) var frame: DrillFrame?
     @Published private(set) var count = 0
     @Published private(set) var best = 0
@@ -20,42 +20,31 @@ final class JuggleSpikePipeline: NSObject, ObservableObject, AVCaptureVideoDataO
     }
     @Published var speakCount = true
 
-    let session = AVCaptureSession()
-    /// Portrait buffers from the back camera arrive landscape; Vision is told to rotate them.
-    private let orientation = CGImagePropertyOrientation.right
-    private let videoQueue = DispatchQueue(label: "juggle-spike.video", qos: .userInteractive)
-    private let output = AVCaptureVideoDataOutput()
+    private let capture = CameraCapture()
+    var session: AVCaptureSession { capture.session }
+    private var videoQueue: DispatchQueue { capture.queue }
     private var analyzer: FrameAnalyzer?
     private var counter = JuggleCounter()
     private var recorder: SpikeClipRecorder?
     private var frameTimes: [CFTimeInterval] = []
     private let speech = AVSpeechSynthesizer()
-    private static let yoloModel: MLModel? = {
-        guard let url = Bundle.main.url(forResource: "yolo11n", withExtension: "mlmodelc") else { return nil }
-        let config = MLModelConfiguration()
-        config.computeUnits = .all
-        return try? MLModel(contentsOf: url, configuration: config)
-    }()
 
     func start() {
-        AVCaptureDevice.requestAccess(for: .video) { granted in
-            guard granted else {
-                DispatchQueue.main.async { self.error = "Camera access denied — enable it in Settings." }
-                return
+        capture.start(onFrame: { [weak self] buffer in self?.process(buffer) }, completion: { [weak self] error in
+            guard let self else { return }
+            switch error {
+            case .denied?: DispatchQueue.main.async { self.error = "Camera access denied — enable it in Settings." }
+            case .noCamera?: DispatchQueue.main.async { self.error = "No back camera." }
+            case nil: self.makeAnalyzer()
             }
-            self.videoQueue.async {
-                guard self.configure() else { return }
-                self.makeAnalyzer()
-                self.session.startRunning()
-            }
-        }
+        })
     }
 
     func stop() {
         videoQueue.async {
             if self.recorder != nil { self.finishRecording() }
-            self.session.stopRunning()
         }
+        capture.stop()
     }
 
     func resetRun() {
@@ -80,38 +69,11 @@ final class JuggleSpikePipeline: NSObject, ObservableObject, AVCaptureVideoDataO
         }
     }
 
-    // MARK: - Setup (videoQueue)
-
-    /// False when there is no usable back camera (e.g. the simulator).
-    private func configure() -> Bool {
-        guard session.inputs.isEmpty else { return true }
-        session.beginConfiguration()
-        session.sessionPreset = .hd1280x720
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-              let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) else {
-            DispatchQueue.main.async { self.error = "No back camera." }
-            session.commitConfiguration()
-            return false
-        }
-        session.addInput(input)
-        output.alwaysDiscardsLateVideoFrames = true
-        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
-        output.setSampleBufferDelegate(self, queue: videoQueue)
-        if session.canAddOutput(output) { session.addOutput(output) }
-        session.commitConfiguration()
-
-        // Lock 30 fps so device numbers are comparable with the gate.
-        if (try? camera.lockForConfiguration()) != nil {
-            camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 30)
-            camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)
-            camera.unlockForConfiguration()
-        }
-        return true
-    }
+    // MARK: - Capture queue
 
     private func makeAnalyzer() {
         do {
-            analyzer = try FrameAnalyzer(detector: detector, yoloModel: Self.yoloModel)
+            analyzer = try FrameAnalyzer(detector: detector, yoloModel: DrillModels.yolo)
             counter = JuggleCounter()
             DispatchQueue.main.async { self.error = nil }
         } catch {
@@ -131,12 +93,10 @@ final class JuggleSpikePipeline: NSObject, ObservableObject, AVCaptureVideoDataO
         }
     }
 
-    // MARK: - Frames (videoQueue)
-
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    private func process(_ sampleBuffer: CMSampleBuffer) {
         recorder?.append(sampleBuffer)
         guard let analyzer else { return }
-        let analysed = analyzer.analyze(sampleBuffer, orientation: orientation)
+        let analysed = analyzer.analyze(sampleBuffer, orientation: CameraCapture.orientation)
         let events = counter.process(analysed)
 
         let now = CACurrentMediaTime()
@@ -151,7 +111,7 @@ final class JuggleSpikePipeline: NSObject, ObservableObject, AVCaptureVideoDataO
         }
     }
 
-    private func apply(_ event: JuggleEvent) {
+    private func apply(_ event: DrillEvent) {
         switch event {
         case let .touch(count, part, _):
             self.count = count

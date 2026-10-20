@@ -6,13 +6,14 @@ import Foundation
 //   free  — the onboarding plan (one AI plan), template and manual drills, 3 AI drills for life,
 //           community, progress, reminders
 //   Pro   — AI drills beyond the three, the coach's daily pick and cue, the weekly review with
-//           plan changes, further AI plans
+//           plan changes, further AI plans, camera-drill history and replays
+//   (camera drills themselves, their personal bests and sharing stay free)
 // Pure so the rules can be unit-tested; views ask these and never re-derive them.
 
 enum ProGates {
     /// Every gated feature, for labels and the paywall's context copy.
     enum Feature: CaseIterable {
-        case aiDrills, dailyCoaching, weeklyReview, aiPlans
+        case aiDrills, dailyCoaching, weeklyReview, aiPlans, cameraInsights
 
         var title: String {
             switch self {
@@ -20,6 +21,7 @@ enum ProGates {
             case .dailyCoaching: return "Daily pick and cue"
             case .weeklyReview: return "Weekly review"
             case .aiPlans: return "New AI plans"
+            case .cameraInsights: return "Camera drill history"
             }
         }
 
@@ -29,6 +31,7 @@ enum ProGates {
             case .dailyCoaching: return "Your coach picks today's drill from your library and gives you one cue."
             case .weeklyReview: return "A recap of the week and changes to next week you can accept one by one."
             case .aiPlans: return "Build a new plan whenever the season changes; your first is free."
+            case .cameraInsights: return "Every camera run you've done, how your counts are trending, and slow-motion replays."
             }
         }
     }

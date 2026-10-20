@@ -101,7 +101,7 @@ func analyze(clip url: URL, detector: FrameAnalyzer.Detector, model: MLModel?, d
     var lastTime = 0.0
     let start = Date()
 
-    func record(_ events: [JuggleEvent]) {
+    func record(_ events: [DrillEvent]) {
         for event in events {
             switch event {
             case let .touch(_, part, _): if part == .unknown { result.unknownTouches += 1 }

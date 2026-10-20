@@ -24,8 +24,8 @@ final class ProGatesTests: XCTestCase {
     }
 
     func test_everyPaywallContextMapsToAGate() {
-        let contexts: [PaywallFeature] = [.trainingPlan, .customDrill, .dailyCoaching, .weeklyAdaptation, .youtubeRecs]
-        XCTAssertEqual(Set(contexts.map(\.gate)).count, 4, "five contexts, four gates (video picks ride on the drill budget)")
+        let contexts: [PaywallFeature] = [.trainingPlan, .customDrill, .dailyCoaching, .weeklyAdaptation, .youtubeRecs, .cameraInsights]
+        XCTAssertEqual(Set(contexts.map(\.gate)).count, 5, "six contexts, five gates (video picks ride on the drill budget)")
         for context in contexts {
             XCTAssertFalse(context.title.isEmpty)
             XCTAssertFalse(context.gate.detail.isEmpty)

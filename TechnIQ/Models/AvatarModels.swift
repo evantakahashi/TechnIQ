@@ -551,6 +551,8 @@ enum CoinEarningEvent {
     case trainingPlanCompleted
     case achievementUnlocked(xpReward: Int)
     case levelUp(newLevel: Int)
+    /// A camera-counted run; amount from `CameraRewards` (base + PB + challenge).
+    case cameraRun(coins: Int)
 
     var coins: Int {
         switch self {
@@ -577,6 +579,8 @@ enum CoinEarningEvent {
             return min(max(coins, 25), 100)
         case .levelUp(let newLevel):
             return 50 + (newLevel * 5)
+        case .cameraRun(let coins):
+            return coins
         }
     }
 
@@ -600,6 +604,8 @@ enum CoinEarningEvent {
             return "Achievement Unlocked"
         case .levelUp(let level):
             return "Level \(level)!"
+        case .cameraRun:
+            return "Camera Drill"
         }
     }
 }

@@ -126,6 +126,9 @@ extension CloudService {
         if let matches = player.matches?.allObjects as? [Match], !matches.isEmpty {
             try await syncMatches(matches, for: player)
         }
+        if let runs = player.cameraRuns?.allObjects as? [CameraRun], !runs.isEmpty {
+            try await syncCameraRuns(runs, for: player)
+        }
     }
 
     // MARK: - Avatar Sync
@@ -204,6 +207,10 @@ extension CloudService {
         let matches = (player.matches?.allObjects as? [Match])?
             .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
         if !matches.isEmpty { try await syncMatches(matches, for: player) }
+
+        let cameraRuns = (player.cameraRuns?.allObjects as? [CameraRun])?
+            .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
+        if !cameraRuns.isEmpty { try await syncCameraRuns(cameraRuns, for: player) }
 
         let exercises = (player.exercises?.allObjects as? [Exercise])?
             .filter { ($0.updatedAt ?? .distantPast) > lastSync } ?? []

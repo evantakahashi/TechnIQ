@@ -62,6 +62,7 @@ Independent: CloudSyncStatus, MLRecommendation
 | AvatarService | Yes | Avatar configuration, item inventory |
 | MatchService | Yes | Match CRUD, season management |
 | ActiveSessionManager | Yes | Live training session state machine |
+| CameraRunService | Yes | Camera-drill runs: personal bests, capped XP/coin rewards, sync (`users/{uid}/cameraRuns`) |
 | InsightsEngine | Yes | Analytics calculations, trend analysis |
 
 Supporting: `ServiceError.swift` (shared error enum), `CoreDataFetchRequests.swift` (dynamic description helpers), `Protocols/` (per-service protocols for DI/testing). `AppLogger` lives in `Utilities/`.
@@ -128,6 +129,8 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 **Coach:** `AICoachService` sends the player's library (ids) and today's plan session to `get_daily_coaching`; the answer is snake_case and decoded through explicit `CodingKeys` in `Models/AICoachModels.swift` (never switch to a key strategy). Home never waits on the coach: the plan hero shows at once and the coach's cue lands as the body line ("Marta: …"); a different library pick appears as "swap in …". No plan → `coachHero` (library pick, or "Build a fresh one" through the generator, which counts). Weekly review: `refreshWeeklyReview(for:)` fires when a plan week's seven-day window has ended (`weeklyReview.reviewed.<planId>` in UserDefaults); `WeeklyReviewView` = `WeekRecap` (pure) + per-change accept. The coach's name is player-chosen (`CoachIdentity`, You → Your coach) and fronts every coach label. Prompts live in `functions/coach_prompts.py` (tested).
 
 **Pure logic for tests:** `Models/PlanSchedule.swift` + `NotificationManager.plan(...)` (`PlanScheduleTests`), `Models/TrainLibraryModel.swift` (Train sections: skill mapping, My drills first, two-drill minimum, pins, usage order, row meta), `Models/FreeDrillAllowance.swift` (3 free AI drills for life, per user), `TrainingPlanService.progressPercentage(of:)`, `Models/SharedDrillRanking.swift` (drill of the week, chips), `Models/OnboardingMapping.swift` (answers → plan inputs, age/kit validation), `Views/Dashboard/HomeWeekModel.swift`, `Models/DrillContent.swift`.
+
+**Camera drills:** `CameraDrills/` = on-device live rep counting (spec `tasks/camera_drills.md`). `Core/` is pure + platform-agnostic (CameraDrill, JuggleCounter, HandsFreeFlow, CameraRewards) and symlinked into `tools/juggle-harness` (Mac: `swift test` + clip replay scoring). `Vision/` = FrameAnalyzer (Vision pose + YOLO11n ball — AGPL placeholder, never ship) + CameraCapture. UI: Train → Camera drills (`Views/CameraDrills/`). DEBUG spike screen: You → Juggle spike / `-TQScreen jugglespike` (detector A/B, clip capture to Files). `-TQRoute camera` (Train).
 
 **Drill provenance:** `Exercise.source` (additive attribute, synced) holds a `TrainDrill.Source` raw value — set it at every `Exercise(context:)` site; `Exercise.drillSource` falls back to the old description markers for rows written before it existed. Never classify drills by sniffing `exerciseDescription` again.
 

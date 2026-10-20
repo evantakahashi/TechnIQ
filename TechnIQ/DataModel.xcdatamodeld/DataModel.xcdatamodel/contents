@@ -74,6 +74,7 @@
         <relationship name="trainingPlans" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TrainingPlan" inverseName="player" inverseEntity="TrainingPlan"/>
         <relationship name="matches" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Match" inverseName="player" inverseEntity="Match"/>
         <relationship name="seasons" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Season" inverseName="player" inverseEntity="Season"/>
+        <relationship name="cameraRuns" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CameraRun" inverseName="player" inverseEntity="CameraRun"/>
         <uniquenessConstraints>
             <uniquenessConstraint>
                 <constraint value="firebaseUID"/>
@@ -319,5 +320,19 @@
                 <constraint value="id"/>
             </uniquenessConstraint>
         </uniquenessConstraints>
+    </entity>
+    <entity name="CameraRun" representedClassName="CameraRun" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="drill" optional="YES" attributeType="String"/>
+        <attribute name="count" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="duration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="isPersonalBest" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="challengeId" optional="YES" attributeType="String"/>
+        <attribute name="clipPath" optional="YES" attributeType="String"/>
+        <attribute name="xpEarned" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="coinsEarned" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="cameraRuns" inverseEntity="Player"/>
     </entity>
 </model>

@@ -58,6 +58,7 @@ enum TQDemoSeed {
         seedSessions(for: player, context: context, calendar: calendar, now: now)
         seedDrillUsage(for: player, context: context, calendar: calendar, now: now)
         seedMatch(for: player, calendar: calendar, now: now)
+        seedCameraRuns(for: player, context: context, now: now)
 
         // Coach marks would cover the hero in screenshots.
         for id in ["dashboard", "train", "plans", "progress"] { CoachMarkManager.shared.markSeen(id) }
@@ -293,6 +294,22 @@ enum TQDemoSeed {
             notes: nil,
             rating: 4
         )
+    }
+
+    /// A few juggling runs so Camera drills shows a best (no rewards — written directly).
+    private static func seedCameraRuns(for player: Player, context: NSManagedObjectContext, now: Date) {
+        guard (player.cameraRuns?.count ?? 0) == 0 else { return }
+        for (daysAgo, count) in [(6, 14), (4, 22), (1, 37), (0, 19)] {
+            let run = CameraRun(context: context)
+            run.id = UUID()
+            run.drill = CameraDrill.juggling.rawValue
+            run.count = Int32(count)
+            run.duration = Double(count) * 0.6
+            run.isPersonalBest = count == 37 || count == 22 || count == 14
+            run.createdAt = now.addingTimeInterval(-Double(daysAgo) * 86_400 - 3_600)
+            run.updatedAt = run.createdAt
+            run.player = player
+        }
     }
 
     /// Two demo drills so today's plan session has something to start.

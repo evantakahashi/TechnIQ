@@ -7,6 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		958036909033DC1764FF4ACC /* CameraDrillSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96717FF03E439A9160D5FE80 /* CameraDrillSessionView.swift */; };
+		DAB2CF4BEB57FB730B9537A1 /* CameraDrillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C9D22FB491DEAA3455DC6 /* CameraDrillsView.swift */; };
+		9A56CDB22E12A7F9FA297629 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CAEF2B8E76C16834173B9B /* CameraCapture.swift */; };
+		2A94118859CE296AA7BEE1A6 /* CameraDrillSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC790A063531788FA01C72DB /* CameraDrillSession.swift */; };
+		CF1C350420F55372A7376522 /* CameraRunServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868BE04197BC529E40608B8E /* CameraRunServiceTests.swift */; };
+		F0BCA8E406BC635F23C337F1 /* CameraRunService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 577036B5FF9C26D5C4C63499 /* CameraRunService.swift */; };
+		61B8B86BAE0A8B998D57BF31 /* CameraRewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE94546A8F2E5C9CE80DD74 /* CameraRewards.swift */; };
+		30F98301FF1244FEF71B8A7C /* HandsFreeFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11293155C7D97DCF34EC5D82 /* HandsFreeFlow.swift */; };
+		2CED4C8A939617050ED5CDCD /* CameraDrill.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B6326F33BD305A80A592D7 /* CameraDrill.swift */; };
+		7E8ED88BC794908AB4F0383A /* CameraRun+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E70EE2686F565EB9E7F7652 /* CameraRun+CoreDataProperties.swift */; };
+		4D943A394A8F4D7B9890754B /* CameraRun+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81037163D42200B0055F8A57 /* CameraRun+CoreDataClass.swift */; };
 		B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 887B2F31427EACF3802FD717 /* yolo11n.mlpackage */; };
 		D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */; };
 		3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */; };
@@ -269,6 +280,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		96717FF03E439A9160D5FE80 /* CameraDrillSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrillSessionView.swift; sourceTree = "<group>"; };
+		0F8C9D22FB491DEAA3455DC6 /* CameraDrillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrillsView.swift; sourceTree = "<group>"; };
+		A9CAEF2B8E76C16834173B9B /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
+		CC790A063531788FA01C72DB /* CameraDrillSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrillSession.swift; sourceTree = "<group>"; };
+		868BE04197BC529E40608B8E /* CameraRunServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRunServiceTests.swift; sourceTree = "<group>"; };
+		577036B5FF9C26D5C4C63499 /* CameraRunService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRunService.swift; sourceTree = "<group>"; };
+		FFE94546A8F2E5C9CE80DD74 /* CameraRewards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRewards.swift; sourceTree = "<group>"; };
+		11293155C7D97DCF34EC5D82 /* HandsFreeFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandsFreeFlow.swift; sourceTree = "<group>"; };
+		B5B6326F33BD305A80A592D7 /* CameraDrill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrill.swift; sourceTree = "<group>"; };
+		7E70EE2686F565EB9E7F7652 /* CameraRun+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraRun+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		81037163D42200B0055F8A57 /* CameraRun+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraRun+CoreDataClass.swift"; sourceTree = "<group>"; };
 		887B2F31427EACF3802FD717 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 		227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikeView.swift; sourceTree = "<group>"; };
 		A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikePipeline.swift; sourceTree = "<group>"; };
@@ -665,6 +687,8 @@
 				0AA3DFD049AB901D5E7BC6B7 /* WeekRecap.swift */,
 				ED5867845374DA82A184F5D1 /* ProGates.swift */,
 				99F4E22C88ED6976458912A4 /* PlayerRecords.swift */,
+				81037163D42200B0055F8A57 /* CameraRun+CoreDataClass.swift */,
+				7E70EE2686F565EB9E7F7652 /* CameraRun+CoreDataProperties.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -714,6 +738,7 @@
 				AA3B619E508C8D3AA87F169A /* ServiceError.swift */,
 				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
 				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
+				577036B5FF9C26D5C4C63499 /* CameraRunService.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -787,6 +812,7 @@
 				6FF00E2AC2025CF6CDD3D8C4 /* Matches */,
 				DF555E3F5EFACD2D8B4532EE /* Settings */,
 				42A816E591DDB23C72348434 /* Training */,
+				0619DD7B06A6D11671DEBA77 /* CameraDrills */,
 			);
 			name = Views;
 			path = Views;
@@ -927,6 +953,7 @@
 				A18ED8C2416402DAEAC9AC64 /* ProGatesTests.swift */,
 				04D6E9C64259EAEAE9337A5E /* PlayerRecordsTests.swift */,
 				EF0928F961FA6E3A11706026 /* SessionResumeTests.swift */,
+				868BE04197BC529E40608B8E /* CameraRunServiceTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1025,6 +1052,7 @@
 				2E4E304F4770DDB49F076A58 /* Vision */,
 				CDBB36DAD260DC03CDA0F1A7 /* Spike */,
 				612C518BAE73F881DD4311F0 /* Models */,
+				CC790A063531788FA01C72DB /* CameraDrillSession.swift */,
 			);
 			path = CameraDrills;
 			sourceTree = "<group>";
@@ -1034,6 +1062,9 @@
 			children = (
 				C352B239C5AA9CEF444E2F67 /* CameraDrillTypes.swift */,
 				CB2EC820BA5FA4AAB75D1BE1 /* JuggleCounter.swift */,
+				B5B6326F33BD305A80A592D7 /* CameraDrill.swift */,
+				11293155C7D97DCF34EC5D82 /* HandsFreeFlow.swift */,
+				FFE94546A8F2E5C9CE80DD74 /* CameraRewards.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -1042,6 +1073,7 @@
 			isa = PBXGroup;
 			children = (
 				F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */,
+				A9CAEF2B8E76C16834173B9B /* CameraCapture.swift */,
 			);
 			path = Vision;
 			sourceTree = "<group>";
@@ -1061,6 +1093,15 @@
 				887B2F31427EACF3802FD717 /* yolo11n.mlpackage */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		0619DD7B06A6D11671DEBA77 /* CameraDrills */ = {
+			isa = PBXGroup;
+			children = (
+				0F8C9D22FB491DEAA3455DC6 /* CameraDrillsView.swift */,
+				96717FF03E439A9160D5FE80 /* CameraDrillSessionView.swift */,
+			);
+			path = CameraDrills;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1410,6 +1451,16 @@
 				3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */,
 				D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */,
 				B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */,
+				4D943A394A8F4D7B9890754B /* CameraRun+CoreDataClass.swift in Sources */,
+				7E8ED88BC794908AB4F0383A /* CameraRun+CoreDataProperties.swift in Sources */,
+				2CED4C8A939617050ED5CDCD /* CameraDrill.swift in Sources */,
+				30F98301FF1244FEF71B8A7C /* HandsFreeFlow.swift in Sources */,
+				61B8B86BAE0A8B998D57BF31 /* CameraRewards.swift in Sources */,
+				F0BCA8E406BC635F23C337F1 /* CameraRunService.swift in Sources */,
+				2A94118859CE296AA7BEE1A6 /* CameraDrillSession.swift in Sources */,
+				9A56CDB22E12A7F9FA297629 /* CameraCapture.swift in Sources */,
+				DAB2CF4BEB57FB730B9537A1 /* CameraDrillsView.swift in Sources */,
+				958036909033DC1764FF4ACC /* CameraDrillSessionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1441,6 +1492,7 @@
 				2EC1B0EBD3449890BF66A7A8 /* ProGatesTests.swift in Sources */,
 				35AAC69F91A3BF11FDC1A3B9 /* PlayerRecordsTests.swift in Sources */,
 				66F2C187FAD617B8D4CC8CE6 /* SessionResumeTests.swift in Sources */,
+				CF1C350420F55372A7376522 /* CameraRunServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

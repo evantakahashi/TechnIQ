@@ -118,6 +118,22 @@ extension CloudService {
         }
     }
 
+    func syncCameraRuns(_ runs: [CameraRun], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        try await commitInChunks(runs) { batch, run in
+            guard let runDocID = run.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping camera run sync — run has nil id")
+                return
+            }
+            let docRef = self.db.collection("users").document(userUID)
+                .collection("cameraRuns").document(runDocID)
+            batch.setData(self.createCameraRunDocument(run: run), forDocument: docRef, merge: true)
+        }
+    }
+
     // MARK: - Training Session Sync
 
     func syncTrainingSession(_ session: TrainingSession) async throws {
@@ -269,12 +285,13 @@ extension CloudService {
         async let statsSnapshot = userRef.collection("playerStats").getDocuments()
         async let seasonsSnapshot = userRef.collection("seasons").getDocuments()
         async let matchesSnapshot = userRef.collection("matches").getDocuments()
+        async let cameraRunsSnapshot = userRef.collection("cameraRuns").getDocuments()
         async let deletedItemsSnapshot = userRef.collection("deletedItems").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, deletedItems) = try await (
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, cameraRuns, deletedItems) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
             avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
-            statsSnapshot, seasonsSnapshot, matchesSnapshot, deletedItemsSnapshot
+            statsSnapshot, seasonsSnapshot, matchesSnapshot, cameraRunsSnapshot, deletedItemsSnapshot
         )
 
         // Locally-deleted items are tombstoned by document id; drop them so restore never resurrects them.
@@ -294,7 +311,8 @@ extension CloudService {
             trainingPlans: live(plans.documents),
             playerStats: live(stats.documents),
             seasons: live(seasons.documents),
-            matches: live(matches.documents)
+            matches: live(matches.documents),
+            cameraRuns: live(cameraRuns.documents)
         )
     }
 
@@ -571,6 +589,22 @@ extension CloudService {
             "isActive": season.isActive,
             "createdAt": season.createdAt ?? Date(),
             "updatedAt": season.updatedAt ?? Date()
+        ]
+    }
+
+    func createCameraRunDocument(run: CameraRun) -> [String: Any] {
+        return [
+            "id": run.id?.uuidString ?? "",
+            "playerId": run.player?.id?.uuidString ?? "",
+            "drill": run.drill ?? "",
+            "count": run.count,
+            "duration": run.duration,
+            "isPersonalBest": run.isPersonalBest,
+            "challengeId": run.challengeId ?? "",
+            "xpEarned": run.xpEarned,
+            "coinsEarned": run.coinsEarned,
+            "createdAt": run.createdAt ?? Date(),
+            "updatedAt": run.updatedAt ?? Date()
         ]
     }
 

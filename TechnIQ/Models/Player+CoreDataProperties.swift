@@ -43,6 +43,7 @@ extension Player {
     @NSManaged public var trainingPlans: NSSet?
     @NSManaged public var matches: NSSet?
     @NSManaged public var seasons: NSSet?
+    @NSManaged public var cameraRuns: NSSet?
 
     // AI training enhancement
     @NSManaged public var weaknessProfileJSON: String?
@@ -199,6 +200,23 @@ extension Player {
 
     @objc(removeSeasons:)
     @NSManaged public func removeFromSeasons(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for cameraRuns
+extension Player {
+
+    @objc(addCameraRunsObject:)
+    @NSManaged public func addToCameraRuns(_ value: CameraRun)
+
+    @objc(removeCameraRunsObject:)
+    @NSManaged public func removeFromCameraRuns(_ value: CameraRun)
+
+    @objc(addCameraRuns:)
+    @NSManaged public func addToCameraRuns(_ values: NSSet)
+
+    @objc(removeCameraRuns:)
+    @NSManaged public func removeFromCameraRuns(_ values: NSSet)
 
 }
 

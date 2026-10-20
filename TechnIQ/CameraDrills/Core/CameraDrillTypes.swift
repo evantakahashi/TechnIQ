@@ -69,7 +69,14 @@ enum RunEndReason: String {
     case stopped
 }
 
-enum JuggleEvent: Equatable {
+enum DrillEvent: Equatable {
     case touch(count: Int, part: TouchPart, time: Double)
     case runEnded(count: Int, reason: RunEndReason, time: Double)
+}
+
+/// A camera-drill counter: feed it analysed frames in time order, get touches and run ends back.
+protocol DrillCounter: AnyObject {
+    func process(_ frame: DrillFrame) -> [DrillEvent]
+    /// Ends an open run (footage over, time up, or the player stopped the session).
+    func finish(at time: Double) -> [DrillEvent]
 }
