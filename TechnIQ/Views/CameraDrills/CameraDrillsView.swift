@@ -16,6 +16,7 @@ struct CameraDrillsView: View {
     @State private var activeDrill: CameraDrill?
     @State private var showingHistory = false
     @State private var paywall: PaywallFeature?
+    @State private var autoStarted = false
 
     init(player: Player) {
         self.player = player
@@ -87,6 +88,14 @@ struct CameraDrillsView: View {
         .sheet(item: $paywall) { feature in
             PaywallView(feature: feature)
         }
+        #if DEBUG
+        // `-TQCameraFile clip.mov` plays a clip in place of the camera; go straight into Juggling.
+        .onAppear {
+            guard !autoStarted, VideoFileSource.fromLaunchArguments != nil else { return }
+            autoStarted = true
+            activeDrill = .juggling
+        }
+        #endif
     }
 
     @ViewBuilder

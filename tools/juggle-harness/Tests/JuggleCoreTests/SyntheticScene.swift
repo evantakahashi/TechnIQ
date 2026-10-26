@@ -1,4 +1,9 @@
+// Shared with TechnIQTests (symlinked) for the session tests.
+#if canImport(JuggleCore)
 @testable import JuggleCore
+#else
+@testable import TechnIQ
+#endif
 
 /// Builds synthetic juggling footage as DrillFrames: a standing player and a ball on ballistic arcs.
 /// Units follow CameraDrillTypes: y up, image-height units. Ball radius 0.03 ⇒ 0.27 units per metre.

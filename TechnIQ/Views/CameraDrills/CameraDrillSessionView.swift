@@ -19,7 +19,15 @@ struct CameraDrillSessionView: View {
             Color.black.ignoresSafeArea()
             GeometryReader { geo in
                 ZStack {
-                    CameraPreview(session: session.session)
+                    if let previewSession = session.previewSession {
+                        CameraPreview(session: previewSession)
+                    } else if let image = session.previewImage {
+                        Image(decorative: image, scale: 1)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                    }
                     overlay(in: geo.size)
                 }
             }
@@ -96,8 +104,11 @@ struct CameraDrillSessionView: View {
                 Text(session.phase == .result ? "Stay in the outline to go again · both arms up to finish"
                                               : "Both arms up to finish")
                     .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, DesignSystem.Spacing.xs)
+                    .background(Color.black.opacity(0.55))
             }
             if !session.runs.isEmpty {
                 TQButton("Done", style: .inverse) { session.endSession() }
@@ -160,7 +171,7 @@ struct CameraDrillSessionView: View {
     // MARK: Overlay (frame units → aspect-fill screen points)
 
     private func overlay(in size: CGSize) -> some View {
-        let a = CameraCapture.aspect
+        let a = session.aspect
         let scale = max(size.width / a, size.height)
         let origin = CGPoint(x: (size.width - a * scale) / 2, y: (size.height - scale) / 2)
         func point(_ x: Double, _ y: Double) -> CGPoint {

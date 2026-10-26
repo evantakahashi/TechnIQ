@@ -7,7 +7,7 @@ import Foundation
 // frame's aspect ratio), so distances are isotropic. The ball radius doubles as the ruler:
 // a size-5 ball is 0.11 m, so `radius / 0.11` converts metres to frame units.
 
-struct DrillPoint: Equatable {
+struct DrillPoint: Equatable, Codable {
     var x: Double
     var y: Double
 
@@ -25,7 +25,7 @@ struct DrillPoint: Equatable {
     }
 }
 
-enum BodyJoint: String, CaseIterable {
+enum BodyJoint: String, CaseIterable, Codable {
     case nose
     case leftShoulder, rightShoulder
     case leftElbow, rightElbow
@@ -35,20 +35,20 @@ enum BodyJoint: String, CaseIterable {
     case leftAnkle, rightAnkle
 }
 
-struct BodyPose: Equatable {
+struct BodyPose: Equatable, Codable {
     var joints: [BodyJoint: DrillPoint]
 
     subscript(_ joint: BodyJoint) -> DrillPoint? { joints[joint] }
 }
 
-struct BallSighting: Equatable {
+struct BallSighting: Equatable, Codable {
     var center: DrillPoint
     var radius: Double
     var confidence: Double = 1
 }
 
 /// One analysed camera frame: where the ball and the player were at `time` (seconds).
-struct DrillFrame: Equatable {
+struct DrillFrame: Equatable, Codable {
     var time: Double
     var ball: BallSighting?
     var pose: BodyPose?

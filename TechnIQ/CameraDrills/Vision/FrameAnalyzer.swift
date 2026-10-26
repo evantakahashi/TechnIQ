@@ -17,7 +17,7 @@ final class FrameAnalyzer {
     private let sequenceHandler = VNSequenceRequestHandler()
     private var trajectoryRequest: VNDetectTrajectoriesRequest?
     private var yoloRequest: VNCoreMLRequest?
-    private var lastBall: DrillPoint?
+    private let ballTracker = BallTracker()
 
     /// - Parameter yoloModel: compiled YOLO model; required for `.yolo`.
     init(detector: Detector, yoloModel: MLModel? = nil) throws {
@@ -30,13 +30,30 @@ final class FrameAnalyzer {
             trajectoryRequest = request
         case .yolo:
             guard let yoloModel else { throw AnalyzerError.missingModel }
-            let request = VNCoreMLRequest(model: try VNCoreMLModel(for: yoloModel))
+            let visionModel = try VNCoreMLModel(for: yoloModel)
+            // The NMS stage defaults to 0.25; go lower and let BallTracker throw out scenery.
+            visionModel.featureProvider = try? MLDictionaryFeatureProvider(dictionary: [
+                "confidenceThreshold": Self.ballConfidence, "iouThreshold": 0.45
+            ])
+            let request = VNCoreMLRequest(model: visionModel)
             request.imageCropAndScaleOption = .scaleFit
             yoloRequest = request
         }
+        #if targetEnvironment(simulator)
+        // No Neural Engine / GPU path for these models in the simulator: run them on the CPU.
+        for request in [poseRequest, yoloRequest].compactMap({ $0 as VNRequest? }) { Self.useCPU(request) }
+        #endif
     }
 
     enum AnalyzerError: Error { case missingModel }
+
+    #if DEBUG
+    private var loggedFailure = false
+    #endif
+
+    /// Minimum "sports ball" confidence. Low on purpose: on real juggling clips 0.1 sees the ball in
+    /// ~65% of frames vs ~50% at the model's default 0.25, and BallTracker drops the extra scenery hits.
+    static var ballConfidence = 0.1
 
     func analyze(_ sampleBuffer: CMSampleBuffer, orientation: CGImagePropertyOrientation) -> DrillFrame {
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
@@ -51,7 +68,13 @@ final class FrameAnalyzer {
         var requests: [VNRequest] = [poseRequest]
         if let yoloRequest { requests.append(yoloRequest) }
         let imageHandler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: orientation)
-        try? imageHandler.perform(requests)
+        do {
+            try imageHandler.perform(requests)
+        } catch {
+            #if DEBUG
+            if !loggedFailure { print("FrameAnalyzer: Vision failed: \(error)"); loggedFailure = true }
+            #endif
+        }
         if let trajectoryRequest {
             try? sequenceHandler.perform([trajectoryRequest], on: sampleBuffer, orientation: orientation)
         }
@@ -60,11 +83,18 @@ final class FrameAnalyzer {
         let ball: BallSighting?
         switch detector {
         case .trajectory: ball = trajectoryBall(aspect: aspect, at: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
-        case .yolo: ball = yoloBall(aspect: aspect)
+        case .yolo: ball = ballTracker.pick(yoloBalls(aspect: aspect), at: time)
         }
-        lastBall = ball?.center
         return DrillFrame(time: time, ball: ball, pose: pose)
     }
+
+    #if targetEnvironment(simulator)
+    private static func useCPU(_ request: VNRequest) {
+        guard let devices = try? request.supportedComputeStageDevices[.main],
+              let cpu = devices.first(where: { if case .cpu = $0 { return true } else { return false } }) else { return }
+        request.setComputeDevice(cpu, for: .main)
+    }
+    #endif
 
     // MARK: - Pose
 
@@ -110,9 +140,9 @@ final class FrameAnalyzer {
         )
     }
 
-    private func yoloBall(aspect: Double) -> BallSighting? {
-        let balls = (yoloRequest?.results as? [VNRecognizedObjectObservation] ?? []).compactMap { obs -> BallSighting? in
-            guard let label = obs.labels.first(where: { $0.identifier == "sports ball" }), label.confidence > 0.25 else {
+    private func yoloBalls(aspect: Double) -> [BallSighting] {
+        (yoloRequest?.results as? [VNRecognizedObjectObservation] ?? []).compactMap { obs -> BallSighting? in
+            guard let label = obs.labels.first(where: { $0.identifier == "sports ball" }), label.confidence > Float(Self.ballConfidence) else {
                 return nil
             }
             let box = obs.boundingBox
@@ -122,12 +152,6 @@ final class FrameAnalyzer {
                 confidence: Double(label.confidence)
             )
         }
-        // Prefer the ball nearest last frame's; otherwise the most confident.
-        if let lastBall, let nearest = balls.min(by: { $0.center.distance(to: lastBall) < $1.center.distance(to: lastBall) }),
-           nearest.center.distance(to: lastBall) < 0.15 {
-            return nearest
-        }
-        return balls.max { $0.confidence < $1.confidence }
     }
 }
 

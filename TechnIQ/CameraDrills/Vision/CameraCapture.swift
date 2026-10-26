@@ -12,14 +12,32 @@ enum DrillModels {
     }()
 }
 
+/// Where a camera-drill session's frames come from: the back camera, or (DEBUG) a recorded clip.
+protocol DrillFrameSource: AnyObject {
+    /// Queue `onFrame` runs on.
+    var queue: DispatchQueue { get }
+    /// Orientation that makes the buffers upright.
+    var orientation: CGImagePropertyOrientation { get }
+    /// Width / height of the upright frame.
+    var aspect: Double { get }
+    /// Live camera preview, when there is one.
+    var previewSession: AVCaptureSession? { get }
+    func start(onFrame: @escaping (CMSampleBuffer) -> Void, completion: @escaping (CameraCapture.CaptureError?) -> Void)
+    func stop()
+}
+
 /// Back camera at 720p / 30 fps, delivering sample buffers on a private queue.
 /// Portrait app: buffers arrive landscape, so analysers use `CameraCapture.orientation`.
-final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputSampleBufferDelegate {
     enum CaptureError: Error { case denied, noCamera }
 
     static let orientation = CGImagePropertyOrientation.right
     /// Width / height of the upright frame (720 × 1280).
     static let aspect = 720.0 / 1280.0
+
+    var orientation: CGImagePropertyOrientation { Self.orientation }
+    var aspect: Double { Self.aspect }
+    var previewSession: AVCaptureSession? { session }
 
     let session = AVCaptureSession()
     let queue = DispatchQueue(label: "camera-drills.capture", qos: .userInteractive)

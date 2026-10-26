@@ -7,7 +7,10 @@ class TestCoreDataStack: CoreDataManagerProtocol {
     var context: NSManagedObjectContext { container.viewContext }
 
     init() {
-        container = NSPersistentContainer(name: "DataModel")
+        // Share the app's model instance: with a second copy loaded, `Player(context:)` and friends can
+        // bind to the wrong one and saves into the app's own store (PlanEditingTests) fail with 134020.
+        container = NSPersistentContainer(name: "DataModel",
+                                          managedObjectModel: CoreDataManager.shared.persistentContainer.managedObjectModel)
         let description = NSPersistentStoreDescription()
         description.type = NSInMemoryStoreType
         container.persistentStoreDescriptions = [description]

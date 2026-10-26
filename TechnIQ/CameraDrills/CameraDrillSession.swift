@@ -32,22 +32,40 @@ final class CameraDrillSession: ObservableObject {
     @Published private(set) var lastResult: RunResult?
     @Published private(set) var runs: [RunResult] = []
     @Published var voiceOn = true
+    /// Width / height of the upright frame, for mapping overlays.
+    @Published private(set) var aspect: Double
+    /// DEBUG clip playback: the current frame (there's no capture session to preview).
+    @Published private(set) var previewImage: CGImage?
 
-    var session: AVCaptureSession { capture.session }
+    var previewSession: AVCaptureSession? { source.previewSession }
 
-    private let capture = CameraCapture()
+    private let source: DrillFrameSource
     private let player: Player
+    private let runService: CameraRunService?
     private var analyzer: FrameAnalyzer?
-    // Capture-queue state.
+    // Source-queue state.
     private var flow: HandsFreeFlow
     private var counter: DrillCounter?
     private var liveStartedAt = 0.0
     private let speech = AVSpeechSynthesizer()
 
-    init(drill: CameraDrill, player: Player) {
+    /// - Parameters:
+    ///   - source: frames to analyse; the back camera unless DEBUG `-TQCameraFile` names a clip.
+    ///   - runService: where finished runs are recorded (`CameraRunService.shared` when nil).
+    init(drill: CameraDrill, player: Player, source: DrillFrameSource? = nil, runService: CameraRunService? = nil) {
         self.drill = drill
         self.player = player
-        flow = HandsFreeFlow(mode: drill.mode, aspect: CameraCapture.aspect)
+        self.runService = runService
+        self.source = source ?? Self.defaultSource()
+        aspect = self.source.aspect
+        flow = HandsFreeFlow(mode: drill.mode, aspect: self.source.aspect)
+    }
+
+    private static func defaultSource() -> DrillFrameSource {
+        #if DEBUG
+        if let file = VideoFileSource.fromLaunchArguments { return file }
+        #endif
+        return CameraCapture()
     }
 
     func start() {
@@ -61,13 +79,23 @@ final class CameraDrillSession: ObservableObject {
             return
         }
         self.analyzer = analyzer
-        capture.start(onFrame: { [weak self] buffer in self?.process(buffer) }, completion: { [weak self] error in
+        #if DEBUG
+        (source as? VideoFileSource)?.onPreview = { [weak self] image in
+            DispatchQueue.main.async { self?.previewImage = image }
+        }
+        #endif
+        source.start(onFrame: { [weak self] buffer in self?.process(buffer) }, completion: { [weak self] error in
+            // Sources call back on their queue; a clip's frame shape is only known now.
+            if let self, error == nil {
+                self.flow = HandsFreeFlow(mode: self.drill.mode, aspect: self.source.aspect)
+            }
             DispatchQueue.main.async {
                 guard let self else { return }
                 switch error {
                 case .denied?: self.phase = .failed("Camera access is off. Turn it on in Settings → TechnIQ.")
                 case .noCamera?: self.phase = .failed("No back camera available.")
                 case nil:
+                    self.aspect = self.source.aspect
                     self.phase = .positioning
                     self.say("Step into the outline")
                 }
@@ -77,13 +105,13 @@ final class CameraDrillSession: ObservableObject {
 
     func stop() {
         UIApplication.shared.isIdleTimerDisabled = false
-        capture.stop()
+        source.stop()
         speech.stopSpeaking(at: .immediate)
     }
 
     /// The on-screen Stop: ends a live run (it still counts) and the session.
     func endSession() {
-        capture.queue.async {
+        source.queue.async {
             // A run in progress still counts: close it at the last analysed frame.
             if self.flow.isLive, let counter = self.counter {
                 self.handle(counter.finish(at: self.lastFrameTime))
@@ -92,13 +120,23 @@ final class CameraDrillSession: ObservableObject {
         }
     }
 
-    // MARK: - Capture queue
+    // MARK: - Source queue
 
     private var lastFrameTime = 0.0
 
     private func process(_ buffer: CMSampleBuffer) {
+        #if DEBUG
+        if let frame = (source as? VideoFileSource)?.precomputedFrame(for: buffer) {
+            ingest(frame)
+            return
+        }
+        #endif
         guard let analyzer else { return }
-        let frame = analyzer.analyze(buffer, orientation: CameraCapture.orientation)
+        ingest(analyzer.analyze(buffer, orientation: source.orientation))
+    }
+
+    /// One analysed frame through the flow and counter (source queue; tests call it directly).
+    func ingest(_ frame: DrillFrame) {
         lastFrameTime = frame.time
         let wasLive = flow.isLive
         let cues = flow.update(pose: frame.pose, time: frame.time)
@@ -112,7 +150,7 @@ final class CameraDrillSession: ObservableObject {
             if cues.contains(.timeUp) { handle(counter.finish(at: frame.time)) }
         }
 
-        let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: CameraCapture.aspect) } ?? false
+        let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: flow.aspect) } ?? false
         let phase = Self.phase(for: flow.state, time: frame.time)
         let timeLeft = flow.timeLeft
         DispatchQueue.main.async {
@@ -155,7 +193,7 @@ final class CameraDrillSession: ObservableObject {
 
     @MainActor
     private func finishRun(count: Int, duration: Double) {
-        let outcome = CameraRunService.shared.record(drill: drill, count: count, duration: duration, player: player)
+        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player)
         let result = RunResult(count: count,
                                isPersonalBest: outcome?.isPersonalBest ?? false,
                                previousBest: outcome?.previousBest,

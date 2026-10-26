@@ -27,10 +27,19 @@ juggle-20261020-171501.mov,14
 ## 3. Run
 ```
 swift run -c release --package-path tools/juggle-harness juggle-harness <clips-dir> \
-    --model TechnIQ/CameraDrills/Models/yolo11n.mlpackage [--detector trajectory|yolo|both] [--dump]
+    --model TechnIQ/CameraDrills/Models/yolo11n.mlpackage [--detector trajectory|yolo|both] \
+    [--conf 0.1] [--dump] [--frames-out <dir>]
 ```
-Columns: true/pred/err, all runs found, % frames with a ball and with a pose, touches with no pose
-(`unk`), Mac fps (not the device number). `--dump` prints per-frame ball position + events for debugging.
+Columns: true/pred/err, all runs found, % frames with a ball, with a pose and in the outline (`inpos`,
+HandsFreeFlow's rule), touches with no pose (`unk`), Mac fps (not the device number).
+`--conf` = YOLO ball threshold (app default 0.1). `--dump` prints per-frame ball position, flow cues and
+events. `--frames-out` writes `<clip>.frames.json` for replaying the clip in the simulator app
+(`-TQCameraFile <clip>`; Vision pose doesn't run in the simulator).
+
+### Real-footage check (2026-10-21, YouTube clips, no own filming yet)
+Counter timing matched audio thumps 1:1 wherever the ball was tracked; the bottleneck is YOLO11n ball
+recall (31–74% of frames). Fixed: a plant pot read as the ball (BallTracker scenery filter).
+Runs also end, correctly, when the player walks out of frame or catches the ball.
 
 ## Unit tests
-`swift test --package-path tools/juggle-harness` — JuggleCounter on synthetic footage.
+`swift test --package-path tools/juggle-harness` — JuggleCounter, HandsFreeFlow, CameraRewards, BallTracker on synthetic footage.

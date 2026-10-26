@@ -1,0 +1,1 @@
+../tools/juggle-harness/Tests/JuggleCoreTests/SyntheticScene.swift
