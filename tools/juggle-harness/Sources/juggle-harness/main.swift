@@ -2,11 +2,13 @@
 //
 //   swift run -c release --package-path tools/juggle-harness juggle-harness <clips-dir> \
 //       [--detector trajectory|yolo|both] [--model path/to/yolo11n.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]
+//       [--labels-out dir [--every 5]]
 //
 // <clips-dir>/labels.csv:  file,count   (one attempt per clip; count = true touches)
 // Phase-1 gate: ≥ 90% of clips within ±1.
 
 import AVFoundation
+import CoreImage
 import CoreML
 import Foundation
 @testable import JuggleCore
@@ -19,12 +21,17 @@ struct Options {
     /// Writes each clip's analysed frames to `<clip>.frames.json` here (replayed by the app's DEBUG
     /// `-TQCameraFile`, since Vision pose doesn't run in the simulator).
     var framesOut: URL?
+    /// Writes every `labelEvery`-th frame as a JPEG plus the analyser's ball box to
+    /// `annotations.json` (Create ML object-detection format) — training data for tools/ball-labeler.
+    var labelsOut: URL?
+    var labelEvery = 5
 }
 
 func parseOptions() -> Options {
     var args = Array(CommandLine.arguments.dropFirst())
     guard let dir = args.first, !dir.hasPrefix("--") else {
-        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model yolo11n.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]")
+        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model yolo11n.mlpackage] [--conf 0.1]"
+              + " [--no-fill] [--dump] [--frames-out dir] [--labels-out dir [--every 5]]")
         exit(2)
     }
     args.removeFirst()
@@ -40,6 +47,8 @@ func parseOptions() -> Options {
         case "--no-fill": FrameAnalyzer.fillGaps = false
         case "--dump": options.dump = true
         case "--frames-out": options.framesOut = args.isEmpty ? nil : URL(fileURLWithPath: args.removeFirst())
+        case "--labels-out": options.labelsOut = args.isEmpty ? nil : URL(fileURLWithPath: args.removeFirst())
+        case "--every": options.labelEvery = max(1, args.isEmpty ? 5 : Int(args.removeFirst()) ?? 5)
         default: print("unknown flag \(flag)"); exit(2)
         }
     }
@@ -84,6 +93,55 @@ func orientation(of track: AVAssetTrack) async -> CGImagePropertyOrientation {
     }
 }
 
+// MARK: - Training labels (Create ML JSON: centre-based pixel boxes, top-left origin)
+
+struct LabelImage: Codable {
+    struct Annotation: Codable {
+        struct Box: Codable { var x, y, width, height: Double }
+        var label = "ball"
+        var coordinates: Box
+    }
+    var image: String
+    var annotations: [Annotation]
+}
+
+final class LabelWriter {
+    let dir: URL
+    let every: Int
+    private let context = CIContext()
+    private(set) var images: [LabelImage] = []
+
+    init(dir: URL, every: Int) {
+        self.dir = dir
+        self.every = every
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let existing = dir.appendingPathComponent("annotations.json")
+        images = (try? Data(contentsOf: existing)).flatMap { try? JSONDecoder().decode([LabelImage].self, from: $0) } ?? []
+    }
+
+    /// Saves frame `index` upright with the analyser's ball (if any) as the suggested box.
+    func add(_ buffer: CMSampleBuffer, index: Int, clip: String, orientation: CGImagePropertyOrientation, ball: BallSighting?) {
+        guard index % every == 0, let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
+        let image = CIImage(cvPixelBuffer: pixels).oriented(orientation)
+        let name = String(format: "%@_%05d.jpg", clip, index)
+        try? context.writeJPEGRepresentation(of: image, to: dir.appendingPathComponent(name),
+                                             colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!, options: [:])
+        let w = image.extent.width, h = image.extent.height
+        let annotations = ball.map { b in
+            [LabelImage.Annotation(coordinates: .init(x: b.center.x / (w / h) * w, y: (1 - b.center.y) * h,
+                                                      width: 2 * b.radius * h, height: 2 * b.radius * h))]
+        } ?? []
+        images.removeAll { $0.image == name }
+        images.append(LabelImage(image: name, annotations: annotations))
+    }
+
+    func save() throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(images).write(to: dir.appendingPathComponent("annotations.json"))
+    }
+}
+
 struct ClipResult {
     var predicted: Int
     var runs: [Int]
@@ -95,14 +153,15 @@ struct ClipResult {
     var inPositionFrames = 0
 }
 
-func analyze(clip url: URL, detector: FrameAnalyzer.Detector, model: MLModel?, dump: Bool, framesOut: URL? = nil) async throws -> ClipResult {
+func analyze(clip url: URL, detector: FrameAnalyzer.Detector, model: MLModel?, dump: Bool, framesOut: URL? = nil,
+             labels: LabelWriter? = nil) async throws -> ClipResult {
     let asset = AVURLAsset(url: url)
     guard let track = try await asset.loadTracks(withMediaType: .video).first else {
         throw NSError(domain: "harness", code: 1, userInfo: [NSLocalizedDescriptionKey: "no video track"])
     }
     let reader = try AVAssetReader(asset: asset)
     let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
-        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
     ])
     reader.add(output)
     reader.startReading()
@@ -131,6 +190,8 @@ func analyze(clip url: URL, detector: FrameAnalyzer.Detector, model: MLModel?, d
         let frame = analyzer.analyze(buffer, orientation: imageOrientation)
         result.frames += 1
         if framesOut != nil { analysed.append(frame) }
+        labels?.add(buffer, index: result.frames - 1, clip: url.deletingPathExtension().lastPathComponent,
+                    orientation: imageOrientation, ball: frame.ball)
         if frame.ball != nil { result.ballFrames += 1 }
         if frame.pose != nil { result.poseFrames += 1 }
         lastTime = frame.time
@@ -161,6 +222,8 @@ if options.detectors.contains(.yolo), model == nil {
     print("--detector yolo needs --model path/to/yolo11n.mlpackage"); exit(2)
 }
 
+let labelWriter = options.labelsOut.map { LabelWriter(dir: $0, every: options.labelEvery) }
+
 for detector in options.detectors {
     print("\n=== detector: \(detector.rawValue) ===")
     print("clip".padding(toLength: 28, withPad: " ", startingAt: 0) + " true  pred   err  runs        ball%  pose%  inpos%  unk  fps")
@@ -168,7 +231,8 @@ for detector in options.detectors {
     for (file, truth) in labels {
         let url = options.clipsDir.appendingPathComponent(file)
         do {
-            let r = try await analyze(clip: url, detector: detector, model: model, dump: options.dump, framesOut: options.framesOut)
+            let r = try await analyze(clip: url, detector: detector, model: model, dump: options.dump, framesOut: options.framesOut,
+                                     labels: labelWriter)
             let err = r.predicted - truth
             absErrors.append(abs(err))
             if abs(err) <= 1 { within1 += 1 }
@@ -186,4 +250,9 @@ for detector in options.detectors {
     let mae = Double(absErrors.reduce(0, +)) / Double(absErrors.count)
     print(String(format: "within ±1: %d/%d (%.0f%%)  mean |err|: %.2f  gate (≥90%%): %@",
                  within1, absErrors.count, rate, mae, rate >= 90 ? "PASS" : "FAIL"))
+}
+if let labelWriter {
+    try labelWriter.save()
+    let missed = labelWriter.images.filter(\.annotations.isEmpty).count
+    print("labels: \(labelWriter.images.count) frames (\(missed) with no suggested ball) → \(labelWriter.dir.path)")
 }

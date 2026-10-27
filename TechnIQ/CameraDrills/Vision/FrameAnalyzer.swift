@@ -8,7 +8,8 @@ final class FrameAnalyzer {
     enum Detector: String, CaseIterable {
         /// Vision's built-in parabolic-trajectory detector. No model; only sees the ball in flight.
         case trajectory
-        /// YOLO11n Core ML, COCO "sports ball" class (spike only: AGPL-3.0).
+        /// A Core ML object detector: our Create ML `BallDetector` ("ball"), or the YOLO11n placeholder
+        /// (COCO "sports ball"; AGPL-3.0, spike only).
         case yolo
     }
 
@@ -61,6 +62,9 @@ final class FrameAnalyzer {
 
     /// Fill short detector misses with Vision's object tracker (BallGapFiller decides when).
     static var fillGaps = true
+
+    /// Ball class names: ours ("ball") and COCO's ("sports ball").
+    private static let ballLabels: Set<String> = ["ball", "sports ball"]
 
     func analyze(_ sampleBuffer: CMSampleBuffer, orientation: CGImagePropertyOrientation) -> DrillFrame {
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
@@ -178,7 +182,8 @@ final class FrameAnalyzer {
 
     private func yoloBalls(aspect: Double) -> [BallSighting] {
         (yoloRequest?.results as? [VNRecognizedObjectObservation] ?? []).compactMap { obs -> BallSighting? in
-            guard let label = obs.labels.first(where: { $0.identifier == "sports ball" }), label.confidence > Float(Self.ballConfidence) else {
+            guard let label = obs.labels.first(where: { Self.ballLabels.contains($0.identifier) }),
+                  label.confidence > Float(Self.ballConfidence) else {
                 return nil
             }
             let box = obs.boundingBox

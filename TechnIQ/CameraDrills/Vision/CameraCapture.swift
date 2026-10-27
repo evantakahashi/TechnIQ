@@ -3,13 +3,16 @@ import CoreML
 
 /// Models bundled with the app.
 enum DrillModels {
-    /// YOLO11n (COCO) — ball detector placeholder until the fine-tuned model (phase 2). AGPL: not for release.
-    static let yolo: MLModel? = {
-        guard let url = Bundle.main.url(forResource: "yolo11n", withExtension: "mlmodelc") else { return nil }
+    /// The ball detector: our Create ML model (`BallDetector`, tools/juggle-harness `ball-train`) when it's
+    /// bundled, else YOLO11n (COCO) — the placeholder. YOLO11n is AGPL: never in a release.
+    static let yolo: MLModel? = load("BallDetector") ?? load("yolo11n")
+
+    private static func load(_ name: String) -> MLModel? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "mlmodelc") else { return nil }
         let config = MLModelConfiguration()
         config.computeUnits = .all
         return try? MLModel(contentsOf: url, configuration: config)
-    }()
+    }
 }
 
 /// Where a camera-drill session's frames come from: the back camera, or (DEBUG) a recorded clip.

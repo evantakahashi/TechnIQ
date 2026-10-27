@@ -46,5 +46,18 @@ Vision's object tracker, seeded on each detection, fills misses up to 0.3 s: bal
 61→86%; touches counted 491→538 at the same audio-thump precision (64% vs 63%; music/talk clips drag the proxy
 down, clean clips ~89%). Mac fps ~130→~100 — check on device.
 
+## Training our ball detector (Create ML — replaces YOLO11n)
+1. **Suggest labels** — `juggle-harness <clips-dir> --detector yolo --model …/yolo11n.mlpackage --labels-out <dir> --every 10`
+   writes every 10th frame (upright JPEG) + `annotations.json` with the analyser's ball box (YOLO + gap filler).
+   Keep a few clips out for scoring.
+2. **Check them** — open `tools/ball-labeler/index.html` in a browser → Open folder → `<dir>`. → / Space accepts,
+   drag redraws, X = no ball, M jumps to frames with no suggestion (the misses — the most valuable ones).
+   Export `checked.json` into `<dir>`.
+3. **Train** — `swift run -c release --package-path tools/juggle-harness ball-train <dir> BallDetector.mlmodel
+   --annotations checked.json [--iterations 3000] [--grid 13]` (Create ML YOLOv2-style detector, label `ball`).
+4. **Score** — `juggle-harness <held-out-clips> --detector yolo --model BallDetector.mlmodel` vs the YOLO11n run.
+5. **Ship** — add `BallDetector.mlmodel` to `TechnIQ/CameraDrills/Models/`; `DrillModels.yolo` prefers it over
+   yolo11n. Delete yolo11n before release.
+
 ## Unit tests
 `swift test --package-path tools/juggle-harness` — JuggleCounter, HandsFreeFlow, CameraRewards, BallTracker on synthetic footage.

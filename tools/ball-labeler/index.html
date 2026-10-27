@@ -1,0 +1,174 @@
+<!doctype html>
+<!--
+  Ball labeler — check / fix the ball boxes `juggle-harness --labels-out` suggested, then export
+  checked.json (Create ML format; only checked frames) into the folder for `ball-train --annotations`.
+  Open this file in a browser (no server needed).
+
+  Keys: → / Space  accept & next     ←  back     X  no ball in this frame
+        drag         draw the box     M  jump to next frame with no suggestion
+  Progress is kept in this browser per folder; Export writes every checked frame.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ball labeler</title>
+<style>
+  :root { --bg: #111; --fg: #eee; --dim: #888; --grass: #3ecf5a; --cone: #ff9f1c; --chalk: #fff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 -apple-system, system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #333; }
+  header .grow { flex: 1; }
+  button, label.btn { background: #222; color: var(--fg); border: 1px solid #444; border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  button:hover, label.btn:hover { border-color: var(--grass); }
+  #stage { display: flex; justify-content: center; padding: 12px 16px; }
+  canvas { max-width: 100%; max-height: calc(100vh - 140px); cursor: crosshair; background: #000; }
+  footer { padding: 0 16px 12px; color: var(--dim); }
+  .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .tag.sug { background: var(--cone); color: #000; }
+  .tag.ok { background: var(--grass); color: #000; }
+  .tag.none { background: #444; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <label class="btn">Open folder<input id="folder" type="file" webkitdirectory multiple></label>
+  <span id="name" class="grow">No folder — pick the --labels-out folder</span>
+  <span id="status"></span>
+  <span id="progress"></span>
+  <label><input id="missedOnly" type="checkbox"> only frames with no suggestion</label>
+  <button id="export">Export checked.json</button>
+</header>
+<div id="stage"><canvas id="canvas" width="640" height="360"></canvas></div>
+<footer>→ / Space accept &amp; next · ← back · drag to draw the box · X no ball · M next frame with no suggestion.
+  Orange = suggested, green = checked.</footer>
+<script>
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let files = {};        // name -> File
+  let items = [];        // [{image, suggested: box|null, box: box|null, checked: bool}]
+  let index = 0;
+  let folder = '';
+  let img = new Image();
+  let drag = null;
+
+  const storeKey = () => 'ball-labeler:' + folder;
+  const save = () => {
+    try {
+      const state = {};
+      for (const it of items) if (it.checked) state[it.image] = it.box;
+      localStorage.setItem(storeKey(), JSON.stringify(state));
+    } catch (e) { /* storage unavailable: progress lives only in this tab */ }
+  };
+  const restore = () => {
+    try {
+      const state = JSON.parse(localStorage.getItem(storeKey()) || '{}');
+      for (const it of items) if (it.image in state) { it.box = state[it.image]; it.checked = true; }
+    } catch (e) { /* ignore */ }
+  };
+
+  document.getElementById('folder').addEventListener('change', async (e) => {
+    files = {};
+    let annotations = [];
+    for (const f of e.target.files) {
+      if (/\.(jpe?g|png)$/i.test(f.name)) files[f.name] = f;
+      if (f.name === 'annotations.json') annotations = JSON.parse(await f.text());
+      folder = folder || (f.webkitRelativePath || '').split('/')[0];
+    }
+    const byName = Object.fromEntries(annotations.map(a => [a.image, a]));
+    items = Object.keys(files).sort().map(name => {
+      const c = byName[name]?.annotations?.[0]?.coordinates || null;
+      return { image: name, suggested: c, box: c, checked: false };
+    });
+    restore();
+    document.getElementById('name').textContent = `${folder} · ${items.length} frames`;
+    index = Math.max(0, items.findIndex(it => !it.checked));
+    show();
+  });
+
+  function show() {
+    if (!items.length) return;
+    const it = items[index];
+    const url = URL.createObjectURL(files[it.image]);
+    img = new Image();
+    img.onload = () => { canvas.width = img.width; canvas.height = img.height; draw(); URL.revokeObjectURL(url); };
+    img.src = url;
+    const checked = items.filter(i => i.checked).length;
+    document.getElementById('progress').textContent = `${index + 1}/${items.length} · checked ${checked}`;
+  }
+
+  function draw() {
+    const it = items[index];
+    ctx.drawImage(img, 0, 0);
+    const b = drag ? dragBox() : it.box;
+    if (b) {
+      ctx.lineWidth = Math.max(2, img.height / 300);
+      ctx.strokeStyle = it.checked || drag ? '#3ecf5a' : '#ff9f1c';
+      ctx.strokeRect(b.x - b.width / 2, b.y - b.height / 2, b.width, b.height);
+    }
+    const status = document.getElementById('status');
+    status.innerHTML = it.checked
+      ? (it.box ? '<span class="tag ok">checked</span>' : '<span class="tag none">checked · no ball</span>')
+      : (it.suggested ? '<span class="tag sug">suggested</span>' : '<span class="tag none">no suggestion</span>');
+  }
+
+  const toImage = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height };
+  };
+  const dragBox = () => {
+    const x0 = Math.min(drag.a.x, drag.b.x), x1 = Math.max(drag.a.x, drag.b.x);
+    const y0 = Math.min(drag.a.y, drag.b.y), y1 = Math.max(drag.a.y, drag.b.y);
+    return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, width: x1 - x0, height: y1 - y0 };
+  };
+  canvas.addEventListener('mousedown', e => { if (items.length) { drag = { a: toImage(e), b: toImage(e) }; } });
+  window.addEventListener('mousemove', e => { if (drag) { drag.b = toImage(e); draw(); } });
+  window.addEventListener('mouseup', () => {
+    if (!drag) return;
+    const b = dragBox();
+    drag = null;
+    if (b.width > 3 && b.height > 3) { const it = items[index]; it.box = b; it.checked = true; save(); }
+    draw();
+  });
+
+  function step(delta, predicate = () => true) {
+    const missedOnly = document.getElementById('missedOnly').checked;
+    let i = index;
+    for (let n = 0; n < items.length; n++) {
+      i += delta;
+      if (i < 0 || i >= items.length) return;
+      if (predicate(items[i]) && (!missedOnly || !items[i].suggested)) { index = i; show(); return; }
+    }
+  }
+
+  window.addEventListener('keydown', e => {
+    if (!items.length) return;
+    const it = items[index];
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      it.checked = true; save(); step(1);
+    } else if (e.key === 'ArrowLeft') {
+      step(-1);
+    } else if (e.key === 'x' || e.key === 'X' || e.key === 'Backspace') {
+      it.box = null; it.checked = true; save(); step(1);
+    } else if (e.key === 'm' || e.key === 'M') {
+      step(1, i => !i.suggested && !i.checked);
+    }
+  });
+
+  document.getElementById('export').addEventListener('click', () => {
+    const out = items.filter(it => it.checked).map(it => ({
+      image: it.image,
+      annotations: it.box ? [{ label: 'ball', coordinates: {
+        x: +it.box.x.toFixed(1), y: +it.box.y.toFixed(1), width: +it.box.width.toFixed(1), height: +it.box.height.toFixed(1) } }] : []
+    }));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+    a.download = 'checked.json';
+    a.click();
+  });
+})();
+</script>
+</body>
+</html>
