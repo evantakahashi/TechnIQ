@@ -46,7 +46,8 @@ Vision's object tracker, seeded on each detection, fills misses up to 0.3 s: bal
 61→86%; touches counted 491→538 at the same audio-thump precision (64% vs 63%; music/talk clips drag the proxy
 down, clean clips ~89%). Mac fps ~130→~100 — check on device.
 
-## Training our ball detector (Create ML — replaces YOLO11n)
+## Training our ball detector (replaces YOLO11n)
+Preferred: YOLOX-nano on a GPU PC — `tools/ball-yolox/README.md` (steps 1–2 below give its data). Create ML (step 3) is the all-Mac fallback; ~20 s per iteration on an M2 Air.
 1. **Suggest labels** — `juggle-harness <clips-dir> --detector yolo --model …/yolo11n.mlpackage --labels-out <dir> --every 10`
    writes every 10th frame (upright JPEG) + `annotations.json` with the analyser's ball box (YOLO + gap filler).
    Keep a few clips out for scoring.
