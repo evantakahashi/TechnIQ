@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Camera drill session (full screen)
 //
-// Hands-free: the player is 3–4 m away, so everything is big and spoken. Stand in the outline →
+// Hands-free: the player is 2–3 m away, so everything is big and spoken. Stand in the outline →
 // 3-2-1 → live count → result → stay in the outline to go again; both arms up (or Done) ends it.
 
 struct CameraDrillSessionView: View {
@@ -74,7 +74,11 @@ struct CameraDrillSessionView: View {
         case .starting:
             ProgressView().tint(.white)
         case .positioning:
-            prompt("Step into the outline", detail: "Whole body in frame, ball in your hands")
+            if session.tooFar {
+                prompt("Step closer", detail: "About 2–3 m from the phone, head to feet in frame")
+            } else {
+                prompt("Step into the outline", detail: "Whole body in frame, ball in your hands")
+            }
         case let .countdown(n):
             bigNumber("\(n)")
         case .live:

@@ -44,7 +44,7 @@ struct CameraDrillsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     TQEyebrow("Camera drills", size: 12)
                     TQDisplayTitle("Your phone\ncounts the touches", size: .small)
-                    TQBody("Prop it up 3–4 m away, back camera facing you, whole body in frame. Stand in the outline and go.",
+                    TQBody("Prop it up 2–3 m away, back camera facing you, head to feet in frame. Stand in the outline and go.",
                            tone: .base, size: 14)
                 }
 

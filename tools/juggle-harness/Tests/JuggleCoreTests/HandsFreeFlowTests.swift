@@ -7,8 +7,8 @@ final class HandsFreeFlowTests: XCTestCase {
 
     private var armsUp: BodyPose {
         var pose = SyntheticScene.pose
-        pose.joints[.leftWrist] = DrillPoint(x: 0.24, y: 0.62)
-        pose.joints[.rightWrist] = DrillPoint(x: 0.36, y: 0.62)
+        pose.joints[.leftWrist] = SyntheticScene.at(0.24, 0.62)
+        pose.joints[.rightWrist] = SyntheticScene.at(0.36, 0.62)
         return pose
     }
 
@@ -50,6 +50,29 @@ final class HandsFreeFlowTests: XCTestCase {
 
         XCTAssertTrue(HandsFreeFlow.isInPosition(standing, aspect: aspect))
         XCTAssertFalse(HandsFreeFlow.isInPosition(tiny, aspect: aspect))
+    }
+
+    func testFourMetresAwayIsTooFarForTheBall() {
+        // Whole body visible but only ~45% of the frame: the ball is too small to track well.
+        var far = BodyPose(joints: [:])
+        let nose = standing[.nose]?.y ?? 0, ankle = standing[.leftAnkle]?.y ?? 0
+        let k = 0.45 / (nose - ankle)
+        for (joint, p) in standing.joints {
+            far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * k, y: 0.10 + (p.y - ankle) * k)
+        }
+
+        XCTAssertFalse(HandsFreeFlow.isInPosition(far, aspect: aspect))
+        XCTAssertTrue(HandsFreeFlow.isTooFar(far))
+        XCTAssertFalse(HandsFreeFlow.isTooFar(standing))
+    }
+
+    func testHalfAPlayerIsNotTooFar() {
+        // Feet out of frame: that's "step back", not "step closer".
+        var noFeet = standing
+        noFeet.joints[.leftAnkle] = nil
+        noFeet.joints[.rightAnkle] = nil
+
+        XCTAssertFalse(HandsFreeFlow.isTooFar(noFeet))
     }
 
     func testSteppingOutDuringTheCountdownCancelsIt() {

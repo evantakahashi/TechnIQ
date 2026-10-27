@@ -6,31 +6,39 @@
 #endif
 
 /// Builds synthetic juggling footage as DrillFrames: a standing player and a ball on ballistic arcs.
-/// Units follow CameraDrillTypes: y up, image-height units. Ball radius 0.03 ⇒ 0.27 units per metre.
+/// Units follow CameraDrillTypes: y up, image-height units. Drawn for a player ~2.5 m away (nose to
+/// ankle ≈ 56% of the frame, HandsFreeFlow's in-position distance): points are authored at the old
+/// 4 m scale and enlarged by `scale` about the standing foot.
 enum SyntheticScene {
     static let fps = 30.0
-    static let ballRadius = 0.03
+    static let scale = 1.3
+    static let ballRadius = 0.03 * scale
+
+    /// An authored point placed at the scene's scale.
+    static func at(_ x: Double, _ y: Double) -> DrillPoint {
+        DrillPoint(x: 0.30 + (x - 0.30) * scale, y: 0.10 + (y - 0.10) * scale)
+    }
     static let unitsPerMetre = ballRadius / 0.11
     static let gravity = 9.81 * unitsPerMetre
 
     /// Player standing at x = 0.30, right foot raised for a touch.
     static let pose = BodyPose(joints: [
-        .nose: DrillPoint(x: 0.30, y: 0.53),
-        .leftShoulder: DrillPoint(x: 0.26, y: 0.47), .rightShoulder: DrillPoint(x: 0.34, y: 0.47),
-        .leftElbow: DrillPoint(x: 0.22, y: 0.40), .rightElbow: DrillPoint(x: 0.38, y: 0.40),
-        .leftWrist: DrillPoint(x: 0.21, y: 0.33), .rightWrist: DrillPoint(x: 0.39, y: 0.33),
-        .leftHip: DrillPoint(x: 0.28, y: 0.33), .rightHip: DrillPoint(x: 0.32, y: 0.33),
-        .leftKnee: DrillPoint(x: 0.28, y: 0.22), .rightKnee: DrillPoint(x: 0.34, y: 0.25),
-        .leftAnkle: DrillPoint(x: 0.28, y: 0.10), .rightAnkle: DrillPoint(x: 0.36, y: 0.15),
+        .nose: at(0.30, 0.53),
+        .leftShoulder: at(0.26, 0.47), .rightShoulder: at(0.34, 0.47),
+        .leftElbow: at(0.22, 0.40), .rightElbow: at(0.38, 0.40),
+        .leftWrist: at(0.21, 0.33), .rightWrist: at(0.39, 0.33),
+        .leftHip: at(0.28, 0.33), .rightHip: at(0.32, 0.33),
+        .leftKnee: at(0.28, 0.22), .rightKnee: at(0.34, 0.25),
+        .leftAnkle: at(0.28, 0.10), .rightAnkle: at(0.36, 0.15)
     ])
 
     /// Ball-centre heights for a touch on each part (x = 0.36 unless overridden).
-    static let footContact = DrillPoint(x: 0.37, y: 0.17)
-    static let thighContact = DrillPoint(x: 0.36, y: 0.30)
-    static let headContact = DrillPoint(x: 0.30, y: 0.57)
-    static let wristContact = DrillPoint(x: 0.40, y: 0.31)
+    static let footContact = at(0.37, 0.17)
+    static let thighContact = at(0.36, 0.30)
+    static let headContact = at(0.30, 0.57)
+    static let wristContact = at(0.40, 0.31)
     /// Ball resting on the floor: ground ≈ ankle baseline 0.10 − 0.08 m.
-    static let groundContact = DrillPoint(x: 0.42, y: 0.10 - 0.08 * unitsPerMetre + ballRadius)
+    static let groundContact = DrillPoint(x: at(0.42, 0).x, y: 0.10 - 0.08 * unitsPerMetre + ballRadius)
 
     struct Builder {
         private(set) var frames: [DrillFrame] = []

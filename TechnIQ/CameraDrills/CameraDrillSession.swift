@@ -27,6 +27,8 @@ final class CameraDrillSession: ObservableObject {
     @Published private(set) var phase: Phase = .starting
     @Published private(set) var count = 0
     @Published private(set) var inPosition = false
+    /// Whole body in frame but too small for the ball to be tracked.
+    @Published private(set) var tooFar = false
     @Published private(set) var timeLeft: Double?
     @Published private(set) var ball: BallSighting?
     @Published private(set) var lastResult: RunResult?
@@ -151,11 +153,13 @@ final class CameraDrillSession: ObservableObject {
         }
 
         let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: flow.aspect) } ?? false
+        let tooFar = frame.pose.map(HandsFreeFlow.isTooFar) ?? false
         let phase = Self.phase(for: flow.state, time: frame.time)
         let timeLeft = flow.timeLeft
         DispatchQueue.main.async {
             self.ball = frame.ball
             self.inPosition = inPosition
+            self.tooFar = tooFar
             self.timeLeft = timeLeft
             if case .failed = self.phase { return }
             if self.phase != .finished { self.phase = phase }

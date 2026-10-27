@@ -1,6 +1,6 @@
 import Foundation
 
-/// The hands-free session flow for a player 3–4 m from the phone, driven only by their pose:
+/// The hands-free session flow for a player 2–3 m from the phone, driven only by their pose:
 /// stand in the outline → spoken 3-2-1 → live → result → stay in the outline to go again.
 /// Holding both arms up (outside a live run) finishes the session.
 final class HandsFreeFlow {
@@ -122,14 +122,30 @@ final class HandsFreeFlow {
 
     // MARK: - Pose checks
 
-    /// Whole body visible, big enough to track (≥ 35% of frame height), roughly centred.
+    /// Whole body visible, close enough that the ball is big enough to track (nose to ankle ≥ 55% of the
+    /// frame height, ~2–3 m away), roughly centred.
     static func isInPosition(_ pose: BodyPose, aspect: Double) -> Bool {
-        guard let nose = pose[.nose] else { return false }
-        let ankles = [pose[.leftAnkle], pose[.rightAnkle]].compactMap { $0 }
-        guard let lowest = ankles.map(\.y).min() else { return false }
-        return nose.y - lowest >= 0.35
+        guard let height = noseToAnkle(pose), let nose = pose[.nose], let lowest = lowestAnkle(pose) else { return false }
+        return height >= minHeight
             && nose.y <= 0.97 && lowest >= 0.02
             && nose.x >= 0.2 * aspect && nose.x <= 0.8 * aspect
+    }
+
+    /// Head to feet in frame but too small: the player should step closer.
+    static func isTooFar(_ pose: BodyPose) -> Bool {
+        noseToAnkle(pose).map { $0 < minHeight } ?? false
+    }
+
+    /// Smallest nose-to-ankle height (frame-height units): ~2–3 m away, the ball is big enough to detect.
+    private static let minHeight = 0.55
+
+    private static func lowestAnkle(_ pose: BodyPose) -> Double? {
+        [pose[.leftAnkle], pose[.rightAnkle]].compactMap { $0?.y }.min()
+    }
+
+    private static func noseToAnkle(_ pose: BodyPose) -> Double? {
+        guard let nose = pose[.nose], let lowest = lowestAnkle(pose) else { return nil }
+        return nose.y - lowest
     }
 
     /// Both wrists above the nose.

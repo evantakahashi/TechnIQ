@@ -8,11 +8,11 @@ final class JuggleCounterTests: XCTestCase {
     private func footRun(touches: Int, noise: @escaping (Int) -> Double = { _ in 0 }) -> [DrillFrame] {
         var b = S.Builder()
         b.noise = noise
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 0.5)
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: S.footContact)
+        b.hold(S.at(0.37, 0.35), seconds: 0.5)
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
         for i in 0..<touches {
             let last = i == touches - 1
-            b.pop(from: S.footContact, height: 0.20, to: last ? S.groundContact : S.footContact)
+            b.pop(from: S.footContact, height: 0.20 * S.scale, to: last ? S.groundContact : S.footContact)
         }
         b.hold(S.groundContact, seconds: 0.5)
         return b.frames
@@ -29,9 +29,9 @@ final class JuggleCounterTests: XCTestCase {
 
     func testBallBouncingOnTheGroundBeforeARunCountsNothing() {
         var b = S.Builder()
-        b.hold(DrillPoint(x: 0.42, y: 0.30), seconds: 0.3)
-        b.fall(from: DrillPoint(x: 0.42, y: 0.30), to: S.groundContact)
-        b.pop(from: S.groundContact, height: 0.08, to: S.groundContact)
+        b.hold(S.at(0.42, 0.30), seconds: 0.3)
+        b.fall(from: S.at(0.42, 0.30), to: S.groundContact)
+        b.pop(from: S.groundContact, height: 0.08 * S.scale, to: S.groundContact)
         b.hold(S.groundContact, seconds: 0.5)
 
         let events = S.run(b.frames)
@@ -41,9 +41,9 @@ final class JuggleCounterTests: XCTestCase {
 
     func testThighAndHeadTouchesAreClassified() {
         var b = S.Builder()
-        b.fall(from: DrillPoint(x: 0.36, y: 0.50), to: S.thighContact)
-        b.pop(from: S.thighContact, height: 0.35, to: S.headContact)
-        b.pop(from: S.headContact, height: 0.10, to: S.groundContact)
+        b.fall(from: S.at(0.36, 0.50), to: S.thighContact)
+        b.pop(from: S.thighContact, height: 0.35 * S.scale, to: S.headContact)
+        b.pop(from: S.headContact, height: 0.10 * S.scale, to: S.groundContact)
         b.hold(S.groundContact, seconds: 0.3)
 
         let events = S.run(b.frames)
@@ -54,9 +54,9 @@ final class JuggleCounterTests: XCTestCase {
 
     func testArmTouchEndsTheRunAsHandballWithoutCounting() {
         var b = S.Builder()
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: S.footContact)
-        b.pop(from: S.footContact, height: 0.20, to: S.footContact)
-        b.pop(from: S.footContact, height: 0.25, to: S.wristContact)
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.25 * S.scale, to: S.wristContact)
         b.hold(S.wristContact, seconds: 0.5)
 
         let events = S.run(b.frames)
@@ -68,9 +68,9 @@ final class JuggleCounterTests: XCTestCase {
 
     func testLosingTheBallMidRunEndsItAfterTheTimeout() {
         var b = S.Builder()
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: S.footContact)
-        b.pop(from: S.footContact, height: 0.20, to: S.footContact)
-        b.pop(from: S.footContact, height: 0.20, to: S.footContact)
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
         b.gap(seconds: 1.5)
 
         let events = S.run(b.frames)
@@ -89,12 +89,12 @@ final class JuggleCounterTests: XCTestCase {
 
     func testShortDetectorGapAroundTheContactStillCounts() {
         var b = S.Builder()
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: S.footContact)
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
         var frames = b.frames
         var tail = S.Builder()
         tail.time = b.time
-        tail.pop(from: S.footContact, height: 0.20, to: S.footContact)
-        tail.pop(from: S.footContact, height: 0.20, to: S.groundContact)
+        tail.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        tail.pop(from: S.footContact, height: 0.20 * S.scale, to: S.groundContact)
         tail.hold(S.groundContact, seconds: 0.3)
         frames += tail.frames
         // Blank the 2 frames either side of every contact.
@@ -110,9 +110,9 @@ final class JuggleCounterTests: XCTestCase {
     func testTouchWithoutAPoseCountsAsUnknown() {
         var b = S.Builder()
         b.pose = nil
-        b.fall(from: DrillPoint(x: 0.37, y: 0.45), to: S.thighContact)
-        b.pop(from: S.thighContact, height: 0.20, to: S.thighContact)
-        b.pop(from: S.thighContact, height: 0.20, to: DrillPoint(x: 0.36, y: 0.40))
+        b.fall(from: S.at(0.37, 0.45), to: S.thighContact)
+        b.pop(from: S.thighContact, height: 0.20 * S.scale, to: S.thighContact)
+        b.pop(from: S.thighContact, height: 0.20 * S.scale, to: S.at(0.36, 0.40))
         b.gap(seconds: 1.5)
 
         let events = S.run(b.frames)
@@ -128,9 +128,9 @@ final class JuggleCounterTests: XCTestCase {
 
     func testFinishEndsAnOpenRunAsStopped() {
         var b = S.Builder()
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: S.footContact)
-        b.pop(from: S.footContact, height: 0.20, to: S.footContact)
-        b.pop(from: S.footContact, height: 0.10, to: DrillPoint(x: 0.37, y: 0.25))
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.10 * S.scale, to: S.at(0.37, 0.25))
 
         let events = S.run(b.frames)
 

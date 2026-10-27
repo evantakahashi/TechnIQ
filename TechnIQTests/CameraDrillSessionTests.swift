@@ -50,15 +50,15 @@ final class CameraDrillSessionTests: XCTestCase {
     /// Standing in the outline holding the ball, through the 1 s hold and 3-2-1 into the live run.
     private func stepInAndCountDown(_ b: inout Scene.Builder) {
         b.pose = Scene.pose
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 4.3)
+        b.hold(Scene.at(0.37, 0.35), seconds: 4.3)
     }
 
     /// Drop onto the foot, `touches` juggles, then the ball lands and rests.
     private func juggle(_ b: inout Scene.Builder, touches: Int, endOnGround: Bool = true) {
-        b.fall(from: DrillPoint(x: 0.37, y: 0.35), to: Scene.footContact)
+        b.fall(from: Scene.at(0.37, 0.35), to: Scene.footContact)
         for i in 0..<touches {
             let last = i == touches - 1 && endOnGround
-            b.pop(from: Scene.footContact, height: 0.20, to: last ? Scene.groundContact : Scene.footContact)
+            b.pop(from: Scene.footContact, height: 0.20 * Scene.scale, to: last ? Scene.groundContact : Scene.footContact)
         }
         if endOnGround { b.hold(Scene.groundContact, seconds: 0.5) }
     }
@@ -86,13 +86,13 @@ final class CameraDrillSessionTests: XCTestCase {
     func test_standingInTheOutline_countsDownThenGoesLive() {
         var b = Scene.Builder()
         b.pose = Scene.pose
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 1.5)
+        b.hold(Scene.at(0.37, 0.35), seconds: 1.5)
         feed(b.frames)
         XCTAssertEqual(sut.phase, .countdown(3))
 
         b = Scene.Builder()
         b.time = 1.5
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 3.0)
+        b.hold(Scene.at(0.37, 0.35), seconds: 3.0)
         feed(b.frames)
         XCTAssertEqual(sut.phase, .live)
     }
@@ -100,11 +100,26 @@ final class CameraDrillSessionTests: XCTestCase {
     func test_nobodyInFrame_staysPositioning() {
         var b = Scene.Builder()
         b.pose = nil
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 5)
+        b.hold(Scene.at(0.37, 0.35), seconds: 5)
         feed(b.frames)
 
         XCTAssertEqual(sut.phase, .positioning)
         XCTAssertFalse(sut.inPosition)
+    }
+
+    func test_standingTooFarAway_asksThePlayerToStepCloser() {
+        // The old 4 m setup: whole body in frame but small.
+        var far = BodyPose(joints: [:])
+        for (joint, p) in Scene.pose.joints {
+            far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) / Scene.scale, y: 0.10 + (p.y - 0.10) / Scene.scale)
+        }
+        var b = Scene.Builder()
+        b.pose = far
+        b.hold(Scene.at(0.37, 0.35), seconds: 5)
+        feed(b.frames)
+
+        XCTAssertEqual(sut.phase, .positioning)
+        XCTAssertTrue(sut.tooFar)
     }
 
     func test_aRunEndingOnTheGround_showsTheResult_andSavesTheRun() throws {
@@ -127,9 +142,9 @@ final class CameraDrillSessionTests: XCTestCase {
         // Juggling straight away, before "go": the counter only starts when the run goes live.
         var b = Scene.Builder()
         b.pose = Scene.pose
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 1.2)
+        b.hold(Scene.at(0.37, 0.35), seconds: 1.2)
         juggle(&b, touches: 3, endOnGround: false)
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 3.0)  // caught; countdown runs out
+        b.hold(Scene.at(0.37, 0.35), seconds: 3.0)  // caught; countdown runs out
         juggle(&b, touches: 4)
         feed(b.frames)
 
@@ -140,7 +155,7 @@ final class CameraDrillSessionTests: XCTestCase {
         var b = Scene.Builder()
         stepInAndCountDown(&b)
         juggle(&b, touches: 5)
-        b.hold(DrillPoint(x: 0.37, y: 0.35), seconds: 4.0 + 1.5 + 3.3)  // result, go-again hold, 3-2-1
+        b.hold(Scene.at(0.37, 0.35), seconds: 4.0 + 1.5 + 3.3)  // result, go-again hold, 3-2-1
         juggle(&b, touches: 8)
         feed(b.frames)
 
@@ -168,8 +183,8 @@ final class CameraDrillSessionTests: XCTestCase {
 
     func test_bothArmsUp_finishesTheSession() {
         var arms = Scene.pose
-        arms.joints[.leftWrist] = DrillPoint(x: 0.22, y: 0.62)
-        arms.joints[.rightWrist] = DrillPoint(x: 0.38, y: 0.62)
+        arms.joints[.leftWrist] = Scene.at(0.22, 0.62)
+        arms.joints[.rightWrist] = Scene.at(0.38, 0.62)
         var b = Scene.Builder()
         b.pose = arms
         b.gap(seconds: 1.0)
