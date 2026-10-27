@@ -1,7 +1,7 @@
 // Replays recorded juggling clips through the app's counting pipeline and scores it.
 //
 //   swift run -c release --package-path tools/juggle-harness juggle-harness <clips-dir> \
-//       [--detector trajectory|yolo|both] [--model path/to/yolo11n.mlpackage] [--conf 0.1] [--dump] [--frames-out dir]
+//       [--detector trajectory|yolo|both] [--model path/to/yolo11n.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]
 //
 // <clips-dir>/labels.csv:  file,count   (one attempt per clip; count = true touches)
 // Phase-1 gate: ≥ 90% of clips within ±1.
@@ -24,7 +24,7 @@ struct Options {
 func parseOptions() -> Options {
     var args = Array(CommandLine.arguments.dropFirst())
     guard let dir = args.first, !dir.hasPrefix("--") else {
-        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model yolo11n.mlpackage] [--conf 0.1] [--dump] [--frames-out dir]")
+        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model yolo11n.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]")
         exit(2)
     }
     args.removeFirst()
@@ -37,6 +37,7 @@ func parseOptions() -> Options {
             options.detectors = value == "both" ? [.trajectory, .yolo] : [FrameAnalyzer.Detector(rawValue: value)].compactMap { $0 }
         case "--model": options.modelPath = args.isEmpty ? nil : args.removeFirst()
         case "--conf": FrameAnalyzer.ballConfidence = args.isEmpty ? FrameAnalyzer.ballConfidence : Double(args.removeFirst()) ?? FrameAnalyzer.ballConfidence
+        case "--no-fill": FrameAnalyzer.fillGaps = false
         case "--dump": options.dump = true
         case "--frames-out": options.framesOut = args.isEmpty ? nil : URL(fileURLWithPath: args.removeFirst())
         default: print("unknown flag \(flag)"); exit(2)

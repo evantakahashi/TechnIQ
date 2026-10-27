@@ -28,11 +28,11 @@ juggle-20261020-171501.mov,14
 ```
 swift run -c release --package-path tools/juggle-harness juggle-harness <clips-dir> \
     --model TechnIQ/CameraDrills/Models/yolo11n.mlpackage [--detector trajectory|yolo|both] \
-    [--conf 0.1] [--dump] [--frames-out <dir>]
+    [--conf 0.1] [--no-fill] [--dump] [--frames-out <dir>]
 ```
 Columns: true/pred/err, all runs found, % frames with a ball, with a pose and in the outline (`inpos`,
 HandsFreeFlow's rule), touches with no pose (`unk`), Mac fps (not the device number).
-`--conf` = YOLO ball threshold (app default 0.1). `--dump` prints per-frame ball position, flow cues and
+`--conf` = YOLO ball threshold (app default 0.1). `--no-fill` turns off BallGapFiller (tracker fills short misses). `--dump` prints per-frame ball position, flow cues and
 events. `--frames-out` writes `<clip>.frames.json` for replaying the clip in the simulator app
 (`-TQCameraFile <clip>`; Vision pose doesn't run in the simulator).
 
@@ -40,6 +40,11 @@ events. `--frames-out` writes `<clip>.frames.json` for replaying the clip in the
 Counter timing matched audio thumps 1:1 wherever the ball was tracked; the bottleneck is YOLO11n ball
 recall (31–74% of frames). Fixed: a plant pot read as the ball (BallTracker scenery filter).
 Runs also end, correctly, when the player walks out of frame or catches the ball.
+
+### Gap filling (2026-10-27, 10 YouTube clips)
+Vision's object tracker, seeded on each detection, fills misses up to 0.3 s: ball frames e.g. 49→73%, 26→58%,
+61→86%; touches counted 491→538 at the same audio-thump precision (64% vs 63%; music/talk clips drag the proxy
+down, clean clips ~89%). Mac fps ~130→~100 — check on device.
 
 ## Unit tests
 `swift test --package-path tools/juggle-harness` — JuggleCounter, HandsFreeFlow, CameraRewards, BallTracker on synthetic footage.

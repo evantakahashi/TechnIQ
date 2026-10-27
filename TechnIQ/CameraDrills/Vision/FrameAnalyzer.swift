@@ -18,6 +18,10 @@ final class FrameAnalyzer {
     private var trajectoryRequest: VNDetectTrajectoriesRequest?
     private var yoloRequest: VNCoreMLRequest?
     private let ballTracker = BallTracker()
+    private let gapFiller = BallGapFiller()
+    /// Fresh per seed: dropping the handler releases the previous tracker.
+    private var trackHandler = VNSequenceRequestHandler()
+    private var trackRequest: VNTrackObjectRequest?
 
     /// - Parameter yoloModel: compiled YOLO model; required for `.yolo`.
     init(detector: Detector, yoloModel: MLModel? = nil) throws {
@@ -55,6 +59,9 @@ final class FrameAnalyzer {
     /// ~65% of frames vs ~50% at the model's default 0.25, and BallTracker drops the extra scenery hits.
     static var ballConfidence = 0.1
 
+    /// Fill short detector misses with Vision's object tracker (BallGapFiller decides when).
+    static var fillGaps = true
+
     func analyze(_ sampleBuffer: CMSampleBuffer, orientation: CGImagePropertyOrientation) -> DrillFrame {
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
@@ -83,7 +90,13 @@ final class FrameAnalyzer {
         let ball: BallSighting?
         switch detector {
         case .trajectory: ball = trajectoryBall(aspect: aspect, at: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
-        case .yolo: ball = ballTracker.pick(yoloBalls(aspect: aspect), at: time)
+        case .yolo:
+            let detected = ballTracker.pick(yoloBalls(aspect: aspect), at: time)
+            ball = Self.fillGaps
+                ? gapFiller.ball(detected: detected, at: time,
+                                 seed: { seedTracker($0, on: sampleBuffer, orientation: orientation, aspect: aspect) },
+                                 track: { trackedBall(on: sampleBuffer, orientation: orientation, aspect: aspect) })
+                : detected
         }
         return DrillFrame(time: time, ball: ball, pose: pose)
     }
@@ -138,6 +151,29 @@ final class FrameAnalyzer {
             radius: Double(best.movingAverageRadius),
             confidence: Double(best.confidence)
         )
+    }
+
+    /// Starts a tracker on `ball` in this frame (the tracker learns the ball's look from it).
+    private func seedTracker(_ ball: BallSighting, on buffer: CMSampleBuffer, orientation: CGImagePropertyOrientation, aspect: Double) {
+        // A little margin: the ball alone is tiny and blurs; some context keeps the tracker on it.
+        let side = 2 * ball.radius * 1.5
+        let box = CGRect(x: ball.center.x / aspect - side / aspect / 2, y: ball.center.y - side / 2,
+                         width: side / aspect, height: side)
+            .intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
+        guard !box.isEmpty else { trackRequest = nil; return }
+        let request = VNTrackObjectRequest(detectedObjectObservation: VNDetectedObjectObservation(boundingBox: box))
+        request.trackingLevel = .accurate
+        trackHandler = VNSequenceRequestHandler()
+        trackRequest = (try? trackHandler.perform([request], on: buffer, orientation: orientation)) != nil ? request : nil
+    }
+
+    private func trackedBall(on buffer: CMSampleBuffer, orientation: CGImagePropertyOrientation, aspect: Double) -> BallSighting? {
+        guard let trackRequest, (try? trackHandler.perform([trackRequest], on: buffer, orientation: orientation)) != nil,
+              let observation = trackRequest.results?.first as? VNDetectedObjectObservation else { return nil }
+        trackRequest.inputObservation = observation
+        let box = observation.boundingBox
+        return BallSighting(center: DrillPoint(x: Double(box.midX) * aspect, y: Double(box.midY)),
+                            radius: Double(box.height) / 2, confidence: Double(observation.confidence))
     }
 
     private func yoloBalls(aspect: Double) -> [BallSighting] {
