@@ -8,8 +8,8 @@ final class FrameAnalyzer {
     enum Detector: String, CaseIterable {
         /// Vision's built-in parabolic-trajectory detector. No model; only sees the ball in flight.
         case trajectory
-        /// A Core ML object detector: our Create ML `BallDetector` ("ball"), or the YOLO11n placeholder
-        /// (COCO "sports ball"; AGPL-3.0, spike only).
+        /// A Core ML object detector labelling "ball" or "sports ball" (the bundled `BallDetector`, or any
+        /// model the harness is given).
         case yolo
     }
 

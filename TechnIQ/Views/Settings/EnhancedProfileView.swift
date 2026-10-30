@@ -23,6 +23,7 @@ struct EnhancedProfileView: View {
     @State private var showingReminders = false
     @State private var showingCoachName = false
     @State private var showingJuggleSpike = false
+    @State private var showingLicences = false
     @State private var showingTrainingProfile = false
     @State private var showingPaywall = false
     @State private var showingSignOutAlert = false
@@ -156,6 +157,7 @@ struct EnhancedProfileView: View {
             CoachNameView()
                 .presentationDetents([.height(300)])
         }
+        .sheet(isPresented: $showingLicences) { LicencesView() }
         #if DEBUG
         .fullScreenCover(isPresented: $showingJuggleSpike) { JuggleSpikeView() }
         #endif
@@ -330,6 +332,7 @@ struct EnhancedProfileView: View {
             TQRowList {
                 TQRow("Privacy policy") { open("https://techniq-b9a27.web.app/privacy-policy.html") }
                 TQRow("Terms of service") { open("https://techniq-b9a27.web.app/terms-of-service.html") }
+                TQRow("Licences") { showingLicences = true }
                 TQRow("Version", meta: .init(versionLine), accessory: .none)
                 #if DEBUG
                 TQRow("Juggle spike", subtitle: "Camera Drills phase 1 (debug)") { showingJuggleSpike = true }

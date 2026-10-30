@@ -3,9 +3,9 @@ import CoreML
 
 /// Models bundled with the app.
 enum DrillModels {
-    /// The ball detector: our Create ML model (`BallDetector`, tools/juggle-harness `ball-train`) when it's
-    /// bundled, else YOLO11n (COCO) — the placeholder. YOLO11n is AGPL: never in a release.
-    static let yolo: MLModel? = load("BallDetector") ?? load("yolo11n")
+    /// The ball detector (`BallDetector`, label "ball"): YOLOX-nano (Apache-2.0, see LicencesView), today the
+    /// COCO-pretrained "sports ball" class; replaced by our fine-tuned export from tools/ball-yolox.
+    static let yolo: MLModel? = load("BallDetector")
 
     private static func load(_ name: String) -> MLModel? {
         guard let url = Bundle.main.url(forResource: name, withExtension: "mlmodelc") else { return nil }

@@ -53,10 +53,10 @@ Copy `BallDetector.mlpackage` back to the Mac.
 
 ## 5. Score and ship (Mac)
 ```
-juggle-harness <held-out-clips> --detector yolo --model BallDetector.mlpackage     # vs the yolo11n run
+juggle-harness <held-out-clips> --detector yolo --model BallDetector.mlpackage     # vs the bundled one
 ```
-Better → put it in `TechnIQ/CameraDrills/Models/` and add it to the target; `DrillModels` prefers `BallDetector`
-over yolo11n. Delete yolo11n before release, and list YOLOX (Apache-2.0, Megvii) in the app's licences.
+Better → replace `TechnIQ/CameraDrills/Models/BallDetector.mlpackage` (same name; already in the target).
+YOLOX's Apache licence is shown in You → Licences (`LicencesView`).
 
 ## Checked on the Mac (2026-10-27)
 Export verified with the COCO-pretrained nano (`--class-index 32` = sports ball, 640 px): a 2 MB model that Vision

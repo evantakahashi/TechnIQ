@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC4E3F73606760637D9C887 /* LicencesView.swift */; };
 		6DD0DF0527CF5E551037EADA /* BallGapFiller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */; };
 		9603D147F111AA287AA216A0 /* SyntheticScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */; };
 		773DA1379301F80B48909B8E /* CameraDrillSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5D27A676A91D340CCC8114 /* CameraDrillSessionTests.swift */; };
@@ -23,7 +24,7 @@
 		2CED4C8A939617050ED5CDCD /* CameraDrill.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B6326F33BD305A80A592D7 /* CameraDrill.swift */; };
 		7E8ED88BC794908AB4F0383A /* CameraRun+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E70EE2686F565EB9E7F7652 /* CameraRun+CoreDataProperties.swift */; };
 		4D943A394A8F4D7B9890754B /* CameraRun+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81037163D42200B0055F8A57 /* CameraRun+CoreDataClass.swift */; };
-		B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 887B2F31427EACF3802FD717 /* yolo11n.mlpackage */; };
+		B461DB4DCA9E70BF25D91B44 /* BallDetector.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 887B2F31427EACF3802FD717 /* BallDetector.mlpackage */; };
 		D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */; };
 		3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */; };
 		670E7217B4B69E666FB25077 /* FrameAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */; };
@@ -285,6 +286,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		ADC4E3F73606760637D9C887 /* LicencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicencesView.swift; sourceTree = "<group>"; };
 		38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallGapFiller.swift; sourceTree = "<group>"; };
 		51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticScene.swift; sourceTree = "<group>"; };
 		AE5D27A676A91D340CCC8114 /* CameraDrillSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrillSessionTests.swift; sourceTree = "<group>"; };
@@ -301,7 +303,7 @@
 		B5B6326F33BD305A80A592D7 /* CameraDrill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDrill.swift; sourceTree = "<group>"; };
 		7E70EE2686F565EB9E7F7652 /* CameraRun+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraRun+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		81037163D42200B0055F8A57 /* CameraRun+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraRun+CoreDataClass.swift"; sourceTree = "<group>"; };
-		887B2F31427EACF3802FD717 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
+		887B2F31427EACF3802FD717 /* BallDetector.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = BallDetector.mlpackage; sourceTree = "<group>"; };
 		227226F596BF08D1AF4C3DDC /* JuggleSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikeView.swift; sourceTree = "<group>"; };
 		A3C318585DB0FBCF682C9B99 /* JuggleSpikePipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuggleSpikePipeline.swift; sourceTree = "<group>"; };
 		F34A5832CC3A1D818CD0C4E9 /* FrameAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameAnalyzer.swift; sourceTree = "<group>"; };
@@ -992,6 +994,7 @@
 				76FE95308FA1AC29F5D8E077 /* NotificationSettingsView.swift */,
 				1CB06FBDED0554FC5BFF78B0 /* CoachNameView.swift */,
 				8F17553E013AD8B583F75FEA /* TrainingProfileView.swift */,
+				ADC4E3F73606760637D9C887 /* LicencesView.swift */,
 			);
 			name = Settings;
 			path = Settings;
@@ -1105,7 +1108,7 @@
 		612C518BAE73F881DD4311F0 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				887B2F31427EACF3802FD717 /* yolo11n.mlpackage */,
+				887B2F31427EACF3802FD717 /* BallDetector.mlpackage */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1465,7 +1468,7 @@
 				670E7217B4B69E666FB25077 /* FrameAnalyzer.swift in Sources */,
 				3D786F4C97EE41887A8CC36A /* JuggleSpikePipeline.swift in Sources */,
 				D9BCFFF046571457D3B04AAE /* JuggleSpikeView.swift in Sources */,
-				B461DB4DCA9E70BF25D91B44 /* yolo11n.mlpackage in Sources */,
+				B461DB4DCA9E70BF25D91B44 /* BallDetector.mlpackage in Sources */,
 				4D943A394A8F4D7B9890754B /* CameraRun+CoreDataClass.swift in Sources */,
 				7E8ED88BC794908AB4F0383A /* CameraRun+CoreDataProperties.swift in Sources */,
 				2CED4C8A939617050ED5CDCD /* CameraDrill.swift in Sources */,
@@ -1479,6 +1482,7 @@
 				58B7D9C1669EFBC3091F21C6 /* BallTracker.swift in Sources */,
 				6FD1F498D20C88CB8B0EDFA0 /* VideoFileSource.swift in Sources */,
 				6DD0DF0527CF5E551037EADA /* BallGapFiller.swift in Sources */,
+				ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

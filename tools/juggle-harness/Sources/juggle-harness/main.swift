@@ -1,7 +1,7 @@
 // Replays recorded juggling clips through the app's counting pipeline and scores it.
 //
 //   swift run -c release --package-path tools/juggle-harness juggle-harness <clips-dir> \
-//       [--detector trajectory|yolo|both] [--model path/to/yolo11n.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]
+//       [--detector trajectory|yolo|both] [--model path/to/BallDetector.mlpackage] [--conf 0.1] [--no-fill] [--dump] [--frames-out dir]
 //       [--labels-out dir [--every 5]]
 //
 // <clips-dir>/labels.csv:  file,count   (one attempt per clip; count = true touches)
@@ -30,7 +30,7 @@ struct Options {
 func parseOptions() -> Options {
     var args = Array(CommandLine.arguments.dropFirst())
     guard let dir = args.first, !dir.hasPrefix("--") else {
-        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model yolo11n.mlpackage] [--conf 0.1]"
+        print("usage: juggle-harness <clips-dir> [--detector trajectory|yolo|both] [--model BallDetector.mlpackage] [--conf 0.1]"
               + " [--no-fill] [--dump] [--frames-out dir] [--labels-out dir [--every 5]]")
         exit(2)
     }
@@ -219,7 +219,7 @@ let options = parseOptions()
 let labels = loadLabels(in: options.clipsDir)
 let model = options.detectors.contains(.yolo) ? loadYOLO(options.modelPath) : nil
 if options.detectors.contains(.yolo), model == nil {
-    print("--detector yolo needs --model path/to/yolo11n.mlpackage"); exit(2)
+    print("--detector yolo needs --model path/to/BallDetector.mlpackage"); exit(2)
 }
 
 let labelWriter = options.labelsOut.map { LabelWriter(dir: $0, every: options.labelEvery) }
