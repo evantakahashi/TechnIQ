@@ -10,6 +10,8 @@ let package = Package(
         // App code is internal; the harness reaches it via @testable, so build it testable in release too.
         .target(name: "JuggleCore", swiftSettings: [.unsafeFlags(["-enable-testing"])]),
         .executableTarget(name: "juggle-harness", dependencies: ["JuggleCore"]),
+        // Scores shot speed + placement on recorded slo-mo clips (tasks/shot_analysis.md).
+        .executableTarget(name: "shot-harness", dependencies: ["JuggleCore"]),
         // Trains the ball detector with Create ML (macOS only).
         .executableTarget(name: "ball-train"),
         .testTarget(name: "JuggleCoreTests", dependencies: ["JuggleCore"]),

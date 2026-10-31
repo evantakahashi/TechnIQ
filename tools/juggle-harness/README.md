@@ -61,3 +61,16 @@ Preferred: YOLOX-nano on a GPU PC — `tools/ball-yolox/README.md` (steps 1–2 
 
 ## Unit tests
 `swift test --package-path tools/juggle-harness` — JuggleCounter, HandsFreeFlow, CameraRewards, BallTracker on synthetic footage.
+
+## Shots (speed + placement, `tasks/shot_analysis.md`)
+`shot-harness` replays slo-mo shot clips through `ShotAnalyzer` (Core):
+```
+swift run -c release --package-path tools/juggle-harness shot-harness <clips-dir> \
+    --model TechnIQ/CameraDrills/Models/BallDetector.mlpackage [--vfov 69] [--fps 240] [--dump]
+```
+- `shots.csv`: `file,spot,kick,cross,zone` — spot `penalty` | `edgeOfBox`; kick / cross = hand-marked seconds;
+  zone `column,row` (0–2 from bottom-left, as seen from behind) | `wideLeft` | `wideRight` | `over`.
+- `<clip>.goal.json`: goal-mouth corners (`topLeft`, `topRight`, `bottomRight`, `bottomLeft`, each `{x, y}`) in
+  upright-frame pixels from the top-left.
+- No `--vfov` → focal length from the resting ball. `--fps` → frame times from the index (slowed-down exports).
+- Gate: speed within ±5% on ≥ 90% of shots and zone right on ≥ 90%. Synthetic tests: `ShotAnalyzerTests`.

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8E7F17D07509AF155A19BA9C /* ShotAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */; };
+		2C834D32498EB1C6C902E1D9 /* ShotGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */; };
 		ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC4E3F73606760637D9C887 /* LicencesView.swift */; };
 		6DD0DF0527CF5E551037EADA /* BallGapFiller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */; };
 		9603D147F111AA287AA216A0 /* SyntheticScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */; };
@@ -286,6 +288,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotAnalyzer.swift; sourceTree = "<group>"; };
+		11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotGeometry.swift; sourceTree = "<group>"; };
 		ADC4E3F73606760637D9C887 /* LicencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicencesView.swift; sourceTree = "<group>"; };
 		38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallGapFiller.swift; sourceTree = "<group>"; };
 		51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticScene.swift; sourceTree = "<group>"; };
@@ -1082,6 +1086,8 @@
 				FFE94546A8F2E5C9CE80DD74 /* CameraRewards.swift */,
 				6FF7C0E229D18673C3D82C5C /* BallTracker.swift */,
 				38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */,
+				11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */,
+				C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -1483,6 +1489,8 @@
 				6FD1F498D20C88CB8B0EDFA0 /* VideoFileSource.swift in Sources */,
 				6DD0DF0527CF5E551037EADA /* BallGapFiller.swift in Sources */,
 				ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */,
+				2C834D32498EB1C6C902E1D9 /* ShotGeometry.swift in Sources */,
+				8E7F17D07509AF155A19BA9C /* ShotAnalyzer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
