@@ -85,6 +85,17 @@ final class HandsFreeFlowTests: XCTestCase {
         XCTAssertEqual(flow.state, .positioning)
     }
 
+    func testABriefPoseDropoutDoesNotCancelTheCountdown() {
+        let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
+        feed(flow, standing, from: 0, seconds: 1.6)
+
+        var cues = feed(flow, nil, from: 1.6, seconds: 0.3)
+        cues += feed(flow, standing, from: 1.9, seconds: 2.5)
+
+        XCTAssertFalse(cues.contains(.stepIn))
+        XCTAssertTrue(flow.isLive)
+    }
+
     func testStreakRunEndShowsTheResultThenStayingInPositionGoesAgain() {
         let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
         feed(flow, standing, from: 0, seconds: 4.2)

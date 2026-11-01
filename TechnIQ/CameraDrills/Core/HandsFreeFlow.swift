@@ -26,6 +26,8 @@ final class HandsFreeFlow {
         /// Seconds in position before the countdown starts.
         var hold = 1.0
         var countdownSeconds = 3
+        /// Out of position this long cancels the countdown (pose tracking drops the odd frame).
+        var stepOutGrace = 0.5
         /// Result stays up at least this long before "go again" can start.
         var resultMinimum = 4.0
         /// In position this long after the result to go again.
@@ -39,6 +41,7 @@ final class HandsFreeFlow {
     private(set) var state: State = .positioning
 
     private var inPositionSince: Double?
+    private var lastInPosition: Double?
     private var armsUpSince: Double?
     private var lastCountdownCue: Int?
     private var lastTime = 0.0
@@ -64,6 +67,7 @@ final class HandsFreeFlow {
         lastTime = time
         let inPosition = pose.map { Self.isInPosition($0, aspect: aspect) } ?? false
         inPositionSince = inPosition ? (inPositionSince ?? time) : nil
+        if inPosition { lastInPosition = time }
         let armsUp = pose.map(Self.armsUp) ?? false
         armsUpSince = armsUp ? (armsUpSince ?? time) : nil
 
@@ -78,7 +82,8 @@ final class HandsFreeFlow {
                 return startCountdown(at: time)
             }
         case let .countdown(startedAt):
-            guard inPosition else {
+            if !inPosition {
+                guard time - (lastInPosition ?? startedAt) >= config.stepOutGrace else { return [] }
                 state = .positioning
                 return [.stepIn]
             }
