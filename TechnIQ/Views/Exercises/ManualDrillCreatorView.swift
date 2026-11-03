@@ -643,6 +643,10 @@ struct ManualDrillCreatorView: View {
             // Use formatted instructions for structured mode
             exercise.exerciseDescription = "Manual Drill"
             exercise.instructions = formattedInstructions
+            exercise.equipment = Exercise.equipmentText(selectedEquipment.filter { $0 != .none }.map { $0.displayName }.sorted())
+            exercise.cue = coachingPoints
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .first { !$0.isEmpty }
         } else {
             // Simple mode - use description directly
             exercise.exerciseDescription = drillDescription

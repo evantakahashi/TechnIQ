@@ -241,6 +241,7 @@ struct DashboardView: View {
             }
         }
         .onAppear {
+            if let player = currentPlayer { CoreDataManager.shared.ensurePrebuiltDrills(for: player) }
             updateDataFilters()
             checkWelcomeBack()
             loadPlan()
@@ -537,7 +538,7 @@ struct DashboardView: View {
             trailingMeta: weekDayMeta,
             title: pick?.name ?? drill.name,
             figures: figures,
-            body: coachNote(coaching),
+            body: coachNote(coaching, drill: pick),
             actionTitle: pick == nil ? "Build a fresh one" : "Start session",
             markings: .hero,
             action: {
@@ -550,10 +551,14 @@ struct DashboardView: View {
         )
     }
 
-    /// "Marta: Open your hips before the second touch."
-    private func coachNote(_ coaching: DailyCoaching) -> String {
-        let line = (coaching.cue ?? coaching.reasoning).trimmingCharacters(in: .whitespacesAndNewlines)
-        return line.isEmpty ? coaching.reasoning : "\(coachName): \(line)"
+    /// "Marta: Open your hips before the second touch." The line is the drill's own cue
+    /// (`Exercise.coachCue`, the same one the session's COACH banner shows); the coach's reasoning
+    /// only stands in when the drill has no cue at all.
+    private func coachNote(_ coaching: DailyCoaching?, drill: Exercise?) -> String? {
+        if let cue = drill?.coachCue { return "\(coachName): \(cue)" }
+        guard let coaching else { return nil }
+        let reasoning = coaching.reasoning.trimmingCharacters(in: .whitespacesAndNewlines)
+        return reasoning.isEmpty ? nil : "\(coachName): \(reasoning)"
     }
 
     private func planHero(session: PlanSession, player: Player) -> some View {
@@ -571,16 +576,18 @@ struct DashboardView: View {
         let pick = coaching.flatMap { coachPick($0) }
         let pickIsTodays = pick.map { candidate in todaysExercises.contains { $0.objectID == candidate.objectID } } ?? false
         var linkTitle: String? = nil
-        if isOffline {
-            bodyText = "\(coachName)'s note comes back with the connection."
-            bodyTone = .italicMuted
-        } else if let coaching, pick == nil || pickIsTodays || coachSwapExercise != nil {
-            bodyText = coachNote(coaching)
-            bodyTone = .onPitch
-        } else if let coaching, let pick {
-            bodyText = coachNote(coaching)
+        let heroDrill = coachSwapExercise ?? exercise
+        let note = coachNote(coaching, drill: heroDrill)
+        if let coaching, let pick, !pickIsTodays, coachSwapExercise == nil {
+            bodyText = note ?? coaching.reasoning
             bodyTone = .onPitch
             linkTitle = "swap in \(pick.name ?? "the coach's pick")"
+        } else if let note {
+            bodyText = note
+            bodyTone = .onPitch
+        } else if isOffline {
+            bodyText = "\(coachName)'s note comes back with the connection."
+            bodyTone = .italicMuted
         } else if let focus = currentWeekFocus {
             bodyText = "This week: \(focus)."
             bodyTone = .onPitch

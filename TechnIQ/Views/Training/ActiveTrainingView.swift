@@ -117,37 +117,50 @@ struct ActiveTrainingView: View {
             DesignSystem.Colors.pitch.ignoresSafeArea()
             TQPitchMarkings(preset: .fullscreen).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                progressSegments
-                    .padding(.top, 16)
+            GeometryReader { proxy in
+                // iPhone SE-height screens: compact clock and tighter title so the film fits.
+                let isShort = proxy.size.height < 720
+                VStack(spacing: 0) {
+                    topBar
+                    progressSegments
+                        .padding(.top, isShort ? 12 : 16)
 
-                if let exercise = manager.currentExercise {
-                    VStack(alignment: .leading, spacing: 8) {
-                        TQEyebrow(drillEyebrow(exercise))
-                        TQDisplayTitle(exercise.name ?? "Drill", size: .medium)
+                    if let exercise = manager.currentExercise {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TQEyebrow(drillEyebrow(exercise))
+                            TQDisplayTitle(exercise.name ?? "Drill", size: .medium)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, isShort ? 16 : 28)
+
+                        if TQSessionDiagram.hasContent(diagramJSON: exercise.diagramJSON, animationJSON: exercise.animationJSON) {
+                            TQSessionDiagram(diagramJSON: exercise.diagramJSON, animationJSON: exercise.animationJSON)
+                                .id(exercise.objectID)
+                                .frame(minHeight: 110, maxHeight: isShort ? 200 : 250)
+                                .padding(.top, 14)
+                                .layoutPriority(1)
+                        }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 34)
+
+                    Spacer(minLength: 8)
+
+                    TQClock(seconds: manager.clockSeconds, subtitle: clockSubtitle, isRunning: manager.isRunning, compact: isShort)
+                        .frame(maxWidth: .infinity)
+
+                    Spacer(minLength: 8)
+
+                    figures
+                        .padding(.bottom, isShort ? 12 : 18)
+
+                    coachStrip
+
+                    controls
+                        .padding(.top, isShort ? 10 : 14)
+                        .padding(.bottom, 8)
                 }
-
-                Spacer(minLength: 12)
-
-                TQClock(seconds: manager.clockSeconds, subtitle: clockSubtitle, isRunning: manager.isRunning)
-                    .frame(maxWidth: .infinity)
-
-                Spacer(minLength: 12)
-
-                figures
-                    .padding(.bottom, 18)
-
-                coachStrip
-
-                controls
-                    .padding(.top, 14)
-                    .padding(.bottom, 8)
+                .padding(.horizontal, 22)
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
-            .padding(.horizontal, 22)
         }
         .preferredColorScheme(.dark)
     }
@@ -232,7 +245,8 @@ struct ActiveTrainingView: View {
 
     @ViewBuilder
     private var coachStrip: some View {
-        if let cue = DrillContent.parse(manager.currentExercise?.instructions).coachCue(forStep: manager.currentExerciseIndex)
+        // Same accessor as Home's coach line (`Exercise.coachCue`): one cue per drill.
+        if let cue = manager.currentExercise?.coachCue
             ?? manager.currentExercise?.exerciseDescription?.components(separatedBy: "\n").last(where: { !$0.isEmpty }) {
             HStack(alignment: .top, spacing: 10) {
                 Text("COACH")
@@ -402,6 +416,8 @@ struct TQDrillSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
                         TQDisplayTitle(exercise.name ?? "Drill", size: .medium)
+
+                        DrillKitSection(equipment: exercise.equipmentList, space: exercise.space)
 
                         if let diagram {
                             AnimatedDrillDiagramView(diagram: diagram, instructions: content.steps, currentStep: $currentStep, isAutoPlaying: $isAutoPlaying)

@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		66A6C8AEF22EE137F98E5886 /* PlanDrillPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */; };
+		A4C2309EFAAC3E8934B87F91 /* UnlockProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */; };
+		E538A8FE6F0E94F13E13952A /* PrebuiltDrillCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC2024CDD530E43CA5A54B47 /* PrebuiltDrillCatalogTests.swift */; };
+		2D18EF1E48F93A2DDF9FF041 /* PrebuiltDrillSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66F2E0581E8990ED954F8F1 /* PrebuiltDrillSeeder.swift */; };
+		75CA30E8A1257E2C7BD8EFE5 /* PlanDrillPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCE44E134201948966446CF /* PlanDrillPicker.swift */; };
+		995B7A17E5A9DB2A42B1241E /* UnlockProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B618FB9089EB3F0A0B8A45D /* UnlockProgress.swift */; };
+		96075C7F87B3C56A4B81AA9D /* Exercise+Content.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */; };
+		EB24085D6C0B7DF9AE77CABC /* PrebuiltDrillCatalog+Generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21DE86D880D12F925E56AA54 /* PrebuiltDrillCatalog+Generated.swift */; };
+		6B75E094F0F71AEC27CBDD23 /* PrebuiltDrillCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96EAA3B1383F61C0F4FE2B6 /* PrebuiltDrillCatalog.swift */; };
 		CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */; };
 		90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */; };
 		9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */; };
@@ -108,7 +117,6 @@
 		1005190B943FA7155FAE2216 /* SkillTrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2006382FB7D8D60119D869 /* SkillTrendChartView.swift */; };
 		109F89D7BEF29A6F59A7BAB1 /* UnifiedOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E873D526D2C6E0E5247405 /* UnifiedOnboardingView.swift */; };
 		160D02F401EFE2B03102B61B /* XPServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 579AFDA04D75D7275409C2DA /* XPServiceTests.swift */; };
-		1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */; };
 		1D260639F7D8DD64C384A52E /* AuthenticationManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC37478C9ACC5B48220D01B9 /* AuthenticationManagerProtocol.swift */; };
 		1D479674CFDCB17CEEBBEB68 /* AvatarConfiguration+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85457B8B3C0C17681E48D02 /* AvatarConfiguration+CoreDataClass.swift */; };
 		1E51099D06ED50F6DC5D351E /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FE3E9147AD4F0CFD63A186 /* SubscriptionManager.swift */; };
@@ -295,6 +303,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDrillPickerTests.swift; sourceTree = "<group>"; };
+		1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockProgressTests.swift; sourceTree = "<group>"; };
+		EC2024CDD530E43CA5A54B47 /* PrebuiltDrillCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebuiltDrillCatalogTests.swift; sourceTree = "<group>"; };
+		D66F2E0581E8990ED954F8F1 /* PrebuiltDrillSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebuiltDrillSeeder.swift; sourceTree = "<group>"; };
+		7CCE44E134201948966446CF /* PlanDrillPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDrillPicker.swift; sourceTree = "<group>"; };
+		5B618FB9089EB3F0A0B8A45D /* UnlockProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockProgress.swift; sourceTree = "<group>"; };
+		CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exercise+Content.swift"; sourceTree = "<group>"; };
+		21DE86D880D12F925E56AA54 /* PrebuiltDrillCatalog+Generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrebuiltDrillCatalog+Generated.swift"; sourceTree = "<group>"; };
+		A96EAA3B1383F61C0F4FE2B6 /* PrebuiltDrillCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebuiltDrillCatalog.swift; sourceTree = "<group>"; };
 		434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMigrationTests.swift; sourceTree = "<group>"; };
 		FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -444,7 +461,6 @@
 		840F67CB8B6C97962DADCE93 /* YouTubeService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeService.swift; sourceTree = "<group>"; };
 		8676FB258A5AF6EC1244EC96 /* AvatarService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvatarService.swift; sourceTree = "<group>"; };
 		8B3A08D4395AA5F75B656BF4 /* CustomDrillServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomDrillServiceProtocol.swift; sourceTree = "<group>"; };
-		92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateExerciseLibrary.swift; sourceTree = "<group>"; };
 		A46BFAE362D84EE56A2328A8 /* MockCoreDataManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockCoreDataManager.swift; sourceTree = "<group>"; };
 		A76B32A3EA92D181C65ECC30 /* WeaknessModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeaknessModels.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE05FF07 /* ProgressComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressComponents.swift; sourceTree = "<group>"; };
@@ -726,6 +742,11 @@
 				2E812721F1D6847B97526B3A /* UnlockCriteria.swift */,
 				190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */,
 				FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */,
+				A96EAA3B1383F61C0F4FE2B6 /* PrebuiltDrillCatalog.swift */,
+				21DE86D880D12F925E56AA54 /* PrebuiltDrillCatalog+Generated.swift */,
+				CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */,
+				5B618FB9089EB3F0A0B8A45D /* UnlockProgress.swift */,
+				7CCE44E134201948966446CF /* PlanDrillPicker.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -776,6 +797,7 @@
 				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
 				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
 				577036B5FF9C26D5C4C63499 /* CameraRunService.swift */,
+				D66F2E0581E8990ED954F8F1 /* PrebuiltDrillSeeder.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -902,7 +924,6 @@
 				DF517F48A578644280B45163 /* DrillInstructionsView.swift */,
 				DF5CB3122E41C58D0085F3ED /* ExerciseDetailView.swift */,
 				DFE9F2F12EAD9020007BBFFA /* ManualDrillCreatorView.swift */,
-				92B87709128E8CC96045B9DB /* TemplateExerciseLibrary.swift */,
 				6A8D9D45B0096AFEF7945DC0 /* ExerciseEditorView.swift */,
 				EE0D3F766C8A64AD003B36A2 /* DrillDiagramView.swift */,
 				B8B61DC43FD01F84A683D620 /* SharedDrillDetailView.swift */,
@@ -994,6 +1015,9 @@
 				AE5D27A676A91D340CCC8114 /* CameraDrillSessionTests.swift */,
 				51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */,
 				434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */,
+				EC2024CDD530E43CA5A54B47 /* PrebuiltDrillCatalogTests.swift */,
+				1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */,
+				3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1371,7 +1395,6 @@
 				D977F3838E527A2E555759EB /* InsightsEngine.swift in Sources */,
 				DF48B9DB2ED5249200F7AC05 /* TrainingPlansListView.swift in Sources */,
 				DF48B9ED2ED5798600F7AC05 /* SharePlanView.swift in Sources */,
-				1BF13C103206E1A45A2E5884 /* TemplateExerciseLibrary.swift in Sources */,
 				F01255D838E27126EB144E61 /* AITrainingPlanGeneratorView.swift in Sources */,
 				5FCF92ADAC7BC98998D587B2 /* AITrainingPlanPreviewView.swift in Sources */,
 				D8D0B7833262DFAA1AB1A1DD /* PlanEditorView.swift in Sources */,
@@ -1519,6 +1542,12 @@
 				E8BF71EDE8DC969C6FCAADEE /* UnlockCriteria.swift in Sources */,
 				9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */,
 				90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */,
+				6B75E094F0F71AEC27CBDD23 /* PrebuiltDrillCatalog.swift in Sources */,
+				EB24085D6C0B7DF9AE77CABC /* PrebuiltDrillCatalog+Generated.swift in Sources */,
+				96075C7F87B3C56A4B81AA9D /* Exercise+Content.swift in Sources */,
+				995B7A17E5A9DB2A42B1241E /* UnlockProgress.swift in Sources */,
+				75CA30E8A1257E2C7BD8EFE5 /* PlanDrillPicker.swift in Sources */,
+				2D18EF1E48F93A2DDF9FF041 /* PrebuiltDrillSeeder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1554,6 +1583,9 @@
 				773DA1379301F80B48909B8E /* CameraDrillSessionTests.swift in Sources */,
 				9603D147F111AA287AA216A0 /* SyntheticScene.swift in Sources */,
 				CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */,
+				E538A8FE6F0E94F13E13952A /* PrebuiltDrillCatalogTests.swift in Sources */,
+				A4C2309EFAAC3E8934B87F91 /* UnlockProgressTests.swift in Sources */,
+				66A6C8AEF22EE137F98E5886 /* PlanDrillPickerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

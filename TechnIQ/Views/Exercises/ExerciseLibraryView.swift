@@ -265,10 +265,10 @@ struct ExerciseLibraryView: View {
                 action: { openAIGenerator() }
             )
             TQRowList {
-                TQRow("Browse the template library",
-                      subtitle: "\(TemplateExerciseLibrary.shared.allExercises.count) drills · all positions",
-                      leading: .tile(TQTile("\(TemplateExerciseLibrary.shared.allExercises.count)")),
-                      action: { importTemplates() })
+                TQRow("Add the starter drills",
+                      subtitle: "\(PrebuiltDrillCatalog.all.count) drills with diagrams",
+                      leading: .tile(TQTile("\(PrebuiltDrillCatalog.all.count)")),
+                      action: { addStarterDrills() })
                 if FeatureFlags.youtubeDrills {
                     TQRow("Pull in video drills", subtitle: "YouTube · Pro", leading: .tile(TQTile("VID")), action: { loadYouTubeContent() })
                 }
@@ -292,37 +292,17 @@ struct ExerciseLibraryView: View {
         loadExercises()
     }
 
-    /// Copies the template library into the player's drills so there is something to train with.
-    private func importTemplates() {
-        let existing = Set(allExercises.compactMap { $0.name })
-        for template in TemplateExerciseLibrary.shared.allExercises where !existing.contains(template.name) {
-            let exercise = Exercise(context: viewContext)
-            exercise.id = UUID()
-            exercise.source = TrainDrill.Source.template.rawValue
-            exercise.name = template.name
-            exercise.category = template.category
-            exercise.exerciseDescription = template.description
-            exercise.difficulty = Int16(Self.difficultyValue(for: template.difficulty))
-            exercise.estimatedDurationSeconds = 15 * 60
-            exercise.updatedAt = Date()
-            exercise.player = player
-        }
-        CoreDataManager.shared.save()
+    /// Adds the pre-built drills (any the player is missing) so there is something to train with.
+    private func addStarterDrills() {
+        CoreDataManager.shared.createDefaultExercises(for: player)
         HapticManager.shared.success()
         loadExercises()
-    }
-
-    private static func difficultyValue(for label: String) -> Int {
-        switch label.lowercased() {
-        case "beginner": return 1
-        case "advanced": return 3
-        default: return 2
-        }
     }
 
     // MARK: - Data
 
     private func loadExercises() {
+        CoreDataManager.shared.ensurePrebuiltDrills(for: player)
         allExercises = CoreDataManager.shared.fetchExercises(for: player)
         rebuildLayout()
         #if DEBUG

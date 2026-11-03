@@ -955,11 +955,24 @@ import WebKit
 struct DrillWebAnimationView: UIViewRepresentable {
     /// Composed JSON: {"diagram": ..., "animation": ...}
     let drillJSON: String
+    /// Film only: no play bar or captions, the pitch scaled to fit the frame, no touch handling.
+    /// The active-session screen uses it as a looping picture of the drill.
+    var compact: Bool = false
+
+    private static let compactCSS = "html,body{height:100%}#stage,#stage>div{height:100%}"
+        + ".animbar,.animcap{display:none!important}"
+        + "svg.pitchsvg{width:100vw!important;height:100vh!important;border-radius:0}"
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
+        if compact {
+            let css = "var s=document.createElement('style');s.textContent='\(Self.compactCSS)';document.head.appendChild(s);"
+            config.userContentController.addUserScript(
+                WKUserScript(source: css, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        }
         let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isUserInteractionEnabled = !compact
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false

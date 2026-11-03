@@ -330,7 +330,9 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Start session"].waitForExistence(timeout: 40), "offline hero still offers Start")
         dismissCoachMarkIfPresent()
         XCTAssertTrue(text(containing: "You're offline").exists, "offline banner")
-        XCTAssertTrue(text(containing: "comes back with the connection").exists, "offline coach note")
+        // The coach line is the drill's own cue (local), so it shows offline too: today's demo
+        // drill is Passing Accuracy.
+        XCTAssertTrue(text(containing: "Ankle locked").exists, "drill cue as the coach line, offline")
         XCTAssertTrue(text(containing: "needs connection").exists, "coach row disabled note")
         shot("home-offline")
 
