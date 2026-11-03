@@ -142,6 +142,9 @@ final class OnboardingMappingTests: XCTestCase {
 
 @MainActor
 final class TrainingPlanTemplateTests: XCTestCase {
+    /// Monday 7 Sep 2026, noon local time.
+    private static let monday = Calendar.current.date(from: DateComponents(year: 2026, month: 9, day: 7, hour: 12))!
+
     func test_templateWeeks_buildsSevenDayWeeksWithSessionsOnTrainingDays() {
         let training: [DayOfWeek] = [.monday, .wednesday, .friday]
         let weeks = TrainingPlanService.templateWeeks(count: 4, trainingDays: training, sessionType: .technical, difficulty: .beginner, focus: ["A", "B"])
@@ -185,7 +188,8 @@ final class TrainingPlanTemplateTests: XCTestCase {
         let plan = TrainingPlanModel(
             id: UUID(), name: "Peek", description: "", durationWeeks: 2, difficulty: .beginner, category: .technical,
             targetRole: nil, isPrebuilt: false, isActive: true, currentWeek: 1, progressPercentage: 0,
-            startedAt: nil, completedAt: nil, createdAt: Date(), updatedAt: Date(), weeks: weeks
+            // Anchor on a Monday: a mid-week anchor rotates the calendar walk order (PlanSchedule).
+            startedAt: nil, completedAt: nil, createdAt: Self.monday, updatedAt: Self.monday, weeks: weeks
         )
         let current = TrainingPlanService.peekCurrentDay(in: plan)
         XCTAssertEqual(current?.week, 2)

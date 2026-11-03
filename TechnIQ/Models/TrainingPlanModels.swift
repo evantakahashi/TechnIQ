@@ -172,6 +172,8 @@ enum SessionType: String, CaseIterable {
     case match = "Match"
     case warmup = "Warmup"
     case cooldown = "Cooldown"
+    /// The 10-minute benchmark test: first session and every plan's closing retest.
+    case assessment = "Assessment"
 
     var displayName: String { rawValue }
 
@@ -184,6 +186,7 @@ enum SessionType: String, CaseIterable {
         case .match: return "sportscourt"
         case .warmup: return "flame.fill"
         case .cooldown: return "snowflake"
+        case .assessment: return "stopwatch"
         }
     }
 }

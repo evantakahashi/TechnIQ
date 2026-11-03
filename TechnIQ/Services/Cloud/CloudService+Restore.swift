@@ -104,6 +104,9 @@ extension CloudService {
             for runData in cloudData.cameraRuns where docBelongs(runData, to: restoredPlayerId) {
                 restoreCameraRun(from: runData, for: player, in: context)
             }
+            for benchmarkData in cloudData.benchmarks where docBelongs(benchmarkData, to: restoredPlayerId) {
+                restoreBenchmark(from: benchmarkData, for: player, in: context)
+            }
 
             restoreProgress = 0.8
             for sessionData in cloudData.trainingSessions where docBelongs(sessionData, to: restoredPlayerId) {
@@ -182,6 +185,7 @@ extension CloudService {
         profile.trainingBackground = data["trainingBackground"] as? String
         profile.trainingGoal = (data["trainingGoal"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         profile.trainingDays = (data["trainingDays"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        profile.nextMatchDate = (data["nextMatchDate"] as? Timestamp)?.dateValue() ?? (data["nextMatchDate"] as? Date)
         profile.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         profile.updatedAt = Date()
         profile.player = player
@@ -336,6 +340,19 @@ extension CloudService {
         player.addToCameraRuns(run)
     }
 
+    func restoreBenchmark(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) {
+        let benchmark = Benchmark(context: context)
+        benchmark.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
+        benchmark.type = data["type"] as? String
+        benchmark.value = Self.int32Value(from: data["value"])
+        benchmark.date = (data["date"] as? Timestamp)?.dateValue() ?? (data["date"] as? Date) ?? Date()
+        benchmark.cameraVerified = data["cameraVerified"] as? Bool ?? false
+        benchmark.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? benchmark.date
+        benchmark.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? (data["updatedAt"] as? Date) ?? benchmark.createdAt
+        benchmark.player = player
+        player.addToBenchmarks(benchmark)
+    }
+
     private static func int16Value(from value: Any?) -> Int16 {
         return int16Value(from: value, default: 0)
     }
@@ -382,6 +399,12 @@ extension CloudService {
         exercise.diagramJSON = data["diagramJSON"] as? String
         exercise.animationJSON = (data["animationJSON"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         exercise.source = (data["source"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.prebuiltKey = (data["prebuiltKey"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.equipment = (data["equipment"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.space = (data["space"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.cue = (data["cue"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.dsl = (data["dsl"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        exercise.unlockCriteriaJSON = (data["unlockCriteriaJSON"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         exercise.metabolicLoad = Self.int16Value(from: data["metabolicLoad"])
         exercise.technicalComplexity = Self.int16Value(from: data["technicalComplexity"])
         exercise.estimatedDurationSeconds = Self.int16Value(from: data["estimatedDurationSeconds"])
@@ -403,12 +426,15 @@ extension CloudService {
         let session = TrainingSession(context: context)
         session.id = UUID(uuidString: data["sessionId"] as? String ?? "") ?? UUID()
         session.date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
-        session.duration = Double(data["duration"] as? Int ?? 0)
+        session.duration = (data["duration"] as? NSNumber)?.doubleValue ?? 0
         session.sessionType = data["sessionType"] as? String
         session.intensity = Self.int16Value(from: data["intensity"], default: 5)
         session.location = data["location"] as? String
         session.overallRating = Self.int16Value(from: data["overallRating"])
         session.xpEarned = Self.int32Value(from: data["xpEarned"])
+        session.feel = (data["feel"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        session.activeSeconds = (data["activeSeconds"] as? NSNumber)?.doubleValue ?? 0
+        session.verifiedTouches = Self.int32Value(from: data["verifiedTouches"])
         session.notes = data["notes"] as? String
         session.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
         session.player = player
@@ -474,6 +500,7 @@ extension CloudService {
         week.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
         week.weekNumber = Self.int16Value(from: data["weekNumber"], default: 1)
         week.focusArea = data["focusArea"] as? String
+        week.isRetest = data["isRetest"] as? Bool ?? false
         week.notes = data["notes"] as? String
         week.isCompleted = data["isCompleted"] as? Bool ?? false
 

@@ -134,6 +134,22 @@ extension CloudService {
         }
     }
 
+    func syncBenchmarks(_ benchmarks: [Benchmark], for player: Player) async throws {
+        guard let userUID = auth.currentUser?.uid else {
+            throw CloudDataError.notAuthenticated
+        }
+
+        try await commitInChunks(benchmarks) { batch, benchmark in
+            guard let docID = benchmark.id?.uuidString else {
+                AppLogger.shared.warning("[CloudService] Skipping benchmark sync — benchmark has nil id")
+                return
+            }
+            let docRef = self.db.collection("users").document(userUID)
+                .collection("benchmarks").document(docID)
+            batch.setData(self.createBenchmarkDocument(benchmark: benchmark), forDocument: docRef, merge: true)
+        }
+    }
+
     // MARK: - Training Session Sync
 
     func syncTrainingSession(_ session: TrainingSession) async throws {
@@ -286,12 +302,13 @@ extension CloudService {
         async let seasonsSnapshot = userRef.collection("seasons").getDocuments()
         async let matchesSnapshot = userRef.collection("matches").getDocuments()
         async let cameraRunsSnapshot = userRef.collection("cameraRuns").getDocuments()
+        async let benchmarksSnapshot = userRef.collection("benchmarks").getDocuments()
         async let deletedItemsSnapshot = userRef.collection("deletedItems").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, cameraRuns, deletedItems) = try await (
+        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, cameraRuns, benchmarks, deletedItems) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
             avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
-            statsSnapshot, seasonsSnapshot, matchesSnapshot, cameraRunsSnapshot, deletedItemsSnapshot
+            statsSnapshot, seasonsSnapshot, matchesSnapshot, cameraRunsSnapshot, benchmarksSnapshot, deletedItemsSnapshot
         )
 
         // Locally-deleted items are tombstoned by document id; drop them so restore never resurrects them.
@@ -312,7 +329,8 @@ extension CloudService {
             playerStats: live(stats.documents),
             seasons: live(seasons.documents),
             matches: live(matches.documents),
-            cameraRuns: live(cameraRuns.documents)
+            cameraRuns: live(cameraRuns.documents),
+            benchmarks: live(benchmarks.documents)
         )
     }
 
@@ -449,6 +467,7 @@ extension CloudService {
             "trainingBackground": profile.trainingBackground ?? "",
             "trainingGoal": profile.trainingGoal ?? "",
             "trainingDays": profile.trainingDays ?? "",
+            "nextMatchDate": profile.nextMatchDate ?? NSNull(),
             "totalXP": player.totalXP,
             "currentLevel": player.currentLevel,
             "currentStreak": player.currentStreak,
@@ -504,6 +523,9 @@ extension CloudService {
             "intensity": session.intensity,
             "location": session.location ?? "",
             "overallRating": session.overallRating,
+            "feel": session.feel ?? "",
+            "activeSeconds": session.activeSeconds,
+            "verifiedTouches": session.verifiedTouches,
             "xpEarned": session.xpEarned,
             "notes": session.notes ?? "",
             "updatedAt": session.updatedAt ?? Date(),
@@ -608,6 +630,19 @@ extension CloudService {
         ]
     }
 
+    func createBenchmarkDocument(benchmark: Benchmark) -> [String: Any] {
+        return [
+            "id": benchmark.id?.uuidString ?? "",
+            "playerId": benchmark.player?.id?.uuidString ?? "",
+            "type": benchmark.type ?? "",
+            "value": benchmark.value,
+            "date": benchmark.date ?? Date(),
+            "cameraVerified": benchmark.cameraVerified,
+            "createdAt": benchmark.createdAt ?? Date(),
+            "updatedAt": benchmark.updatedAt ?? Date()
+        ]
+    }
+
     func createMatchDocument(match: Match) -> [String: Any] {
         return [
             "id": match.id?.uuidString ?? "",
@@ -653,6 +688,12 @@ extension CloudService {
             "diagramJSON": exercise.diagramJSON ?? "",
             "animationJSON": exercise.animationJSON ?? "",
             "source": exercise.source ?? "",
+            "prebuiltKey": exercise.prebuiltKey ?? "",
+            "equipment": exercise.equipment ?? "",
+            "space": exercise.space ?? "",
+            "cue": exercise.cue ?? "",
+            "dsl": exercise.dsl ?? "",
+            "unlockCriteriaJSON": exercise.unlockCriteriaJSON ?? "",
             "metabolicLoad": exercise.metabolicLoad,
             "technicalComplexity": exercise.technicalComplexity,
             "estimatedDurationSeconds": exercise.estimatedDurationSeconds,
@@ -707,6 +748,7 @@ extension CloudService {
                     "id": week.id?.uuidString ?? "",
                     "weekNumber": week.weekNumber,
                     "focusArea": week.focusArea ?? "",
+                    "isRetest": week.isRetest,
                     "notes": week.notes ?? "",
                     "isCompleted": week.isCompleted,
                     "completedAt": week.completedAt as Any,

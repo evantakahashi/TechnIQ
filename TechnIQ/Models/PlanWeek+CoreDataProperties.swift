@@ -10,6 +10,8 @@ extension PlanWeek {
     @NSManaged public var id: UUID?
     @NSManaged public var weekNumber: Int16
     @NSManaged public var focusArea: String?
+    /// The closing retest week every plan ends with.
+    @NSManaged public var isRetest: Bool
     @NSManaged public var notes: String?
     @NSManaged public var isCompleted: Bool
     @NSManaged public var completedAt: Date?

@@ -17,6 +17,12 @@ extension TrainingSession {
     @NSManaged public var sessionType: String?
     @NSManaged public var focusWeakness: String?
     @NSManaged public var xpEarned: Int32
+    /// `SessionFeel` raw value, nil until the player picks one.
+    @NSManaged public var feel: String?
+    /// Seconds the clock actually ran (pauses excluded).
+    @NSManaged public var activeSeconds: Double
+    /// Touches counted by the camera during this session.
+    @NSManaged public var verifiedTouches: Int32
     @NSManaged public var updatedAt: Date?
     @NSManaged public var exercises: NSSet?
     @NSManaged public var player: Player?

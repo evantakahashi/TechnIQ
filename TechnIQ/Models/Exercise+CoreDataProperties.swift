@@ -49,6 +49,18 @@ extension Exercise {
     // Provenance: TrainDrill.Source raw value (template / ai / manual / community / video).
     // Nil on rows written before 1.0; `drillSource` falls back to description heuristics.
     @NSManaged public var source: String?
+    /// Stable key into `PrebuiltDrillCatalog` for the shipped drills (nil for everything else).
+    @NSManaged public var prebuiltKey: String?
+    /// Comma-separated kit list ("Ball, 4 cones").
+    @NSManaged public var equipment: String?
+    /// Space needed ("10 x 5 m, flat ground").
+    @NSManaged public var space: String?
+    /// One-line coaching cue: Home's coach line and the in-session COACH banner both read it.
+    @NSManaged public var cue: String?
+    /// Drill DSL source the diagram + film were compiled from.
+    @NSManaged public var dsl: String?
+    /// JSON-encoded `UnlockCriteria`.
+    @NSManaged public var unlockCriteriaJSON: String?
 
     // Sync change tracking
     @NSManaged public var updatedAt: Date?

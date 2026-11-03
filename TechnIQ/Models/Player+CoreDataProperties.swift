@@ -44,6 +44,7 @@ extension Player {
     @NSManaged public var matches: NSSet?
     @NSManaged public var seasons: NSSet?
     @NSManaged public var cameraRuns: NSSet?
+    @NSManaged public var benchmarks: NSSet?
 
     // AI training enhancement
     @NSManaged public var weaknessProfileJSON: String?
@@ -200,6 +201,17 @@ extension Player {
 
     @objc(removeSeasons:)
     @NSManaged public func removeFromSeasons(_ values: NSSet)
+
+}
+
+// MARK: Generated accessors for benchmarks
+extension Player {
+
+    @objc(addBenchmarksObject:)
+    @NSManaged public func addToBenchmarks(_ value: Benchmark)
+
+    @objc(removeBenchmarksObject:)
+    @NSManaged public func removeFromBenchmarks(_ value: Benchmark)
 
 }
 

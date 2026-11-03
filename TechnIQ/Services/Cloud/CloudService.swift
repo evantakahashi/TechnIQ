@@ -150,6 +150,7 @@ struct CloudUserData {
     let seasons: [[String: Any]]
     let matches: [[String: Any]]
     var cameraRuns: [[String: Any]] = []
+    var benchmarks: [[String: Any]] = []
 }
 
 struct CloudPlayerProfile {

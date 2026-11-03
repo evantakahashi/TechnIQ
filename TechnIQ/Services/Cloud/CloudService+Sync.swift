@@ -129,6 +129,9 @@ extension CloudService {
         if let runs = player.cameraRuns?.allObjects as? [CameraRun], !runs.isEmpty {
             try await syncCameraRuns(runs, for: player)
         }
+        if let benchmarks = player.benchmarks?.allObjects as? [Benchmark], !benchmarks.isEmpty {
+            try await syncBenchmarks(benchmarks, for: player)
+        }
     }
 
     // MARK: - Avatar Sync
@@ -211,6 +214,10 @@ extension CloudService {
         let cameraRuns = (player.cameraRuns?.allObjects as? [CameraRun])?
             .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
         if !cameraRuns.isEmpty { try await syncCameraRuns(cameraRuns, for: player) }
+
+        let benchmarks = (player.benchmarks?.allObjects as? [Benchmark])?
+            .filter { ($0.updatedAt ?? $0.createdAt ?? .distantPast) > lastSync } ?? []
+        if !benchmarks.isEmpty { try await syncBenchmarks(benchmarks, for: player) }
 
         let exercises = (player.exercises?.allObjects as? [Exercise])?
             .filter { ($0.updatedAt ?? .distantPast) > lastSync } ?? []

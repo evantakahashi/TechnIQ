@@ -19,6 +19,7 @@ extension PlayerProfile {
     // comma-separated DayOfWeek raw values.
     @NSManaged public var trainingGoal: String?
     @NSManaged public var trainingDays: String?
+    @NSManaged public var nextMatchDate: Date?
     @NSManaged public var yearsPlaying: Int16
     @NSManaged public var createdAt: Date?
     @NSManaged public var updatedAt: Date?

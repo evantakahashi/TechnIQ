@@ -76,7 +76,7 @@ class CoreDataManager: ObservableObject, CoreDataManagerProtocol {
     static let syncedEntityNames: Set<String> = [
         "Player", "PlayerProfile", "PlayerGoal", "TrainingSession", "Exercise",
         "PlayerStats", "Match", "Season", "TrainingPlan", "AvatarConfiguration",
-        "RecommendationFeedback"
+        "RecommendationFeedback", "CameraRun", "Benchmark"
     ]
 
     /// Before a save, stamp `updatedAt` (so incremental sync can detect the change) and assign a
