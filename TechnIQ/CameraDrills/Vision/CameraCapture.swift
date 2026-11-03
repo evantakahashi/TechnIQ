@@ -57,6 +57,8 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
     let queue = DispatchQueue(label: "camera-drills.capture", qos: .userInteractive)
     private let output = AVCaptureVideoDataOutput()
     private var onFrame: ((CMSampleBuffer) -> Void)?
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var rotationObservation: NSKeyValueObservation?
 
     /// Asks for camera access, configures and starts the session; `onFrame` runs on `queue`.
     func start(onFrame: @escaping (CMSampleBuffer) -> Void, completion: @escaping (CaptureError?) -> Void) {
@@ -92,12 +94,18 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
         guard session.canAddOutput(output) else { return false }
         session.addOutput(output)
         // Upright portrait buffers, never mirrored (the preview layer mirrors the front camera itself).
-        if let connection = output.connection(with: .video) {
-            if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
-            if connection.isVideoMirroringSupported {
-                connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = false
-            }
+        // The rotation that makes this camera's buffers upright comes from the system (front and back
+        // sensors differ), kept up to date while the phone is propped portrait.
+        if let connection = output.connection(with: .video), connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = false
+        }
+        let coordinator = AVCaptureDevice.RotationCoordinator(device: camera, previewLayer: nil)
+        rotationCoordinator = coordinator
+        applyRotation(coordinator.videoRotationAngleForHorizonLevelCapture)
+        rotationObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.new]) { [weak self] coordinator, _ in
+            let angle = coordinator.videoRotationAngleForHorizonLevelCapture
+            self?.queue.async { self?.applyRotation(angle) }
         }
 
         // Lock 30 fps so the counter's timing and the gate's numbers are comparable.
@@ -107,6 +115,16 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
             camera.unlockForConfiguration()
         }
         return true
+    }
+
+    /// Portrait angles only (90 / 270): the frame is always 720 × 1280. A phone lying flat reports
+    /// other angles; keep the last portrait one.
+    private func applyRotation(_ angle: CGFloat) {
+        let portrait = angle == 90 || angle == 270 ? angle : 90
+        guard let connection = output.connection(with: .video), connection.isVideoRotationAngleSupported(portrait),
+              connection.videoRotationAngle != portrait,
+              angle == 90 || angle == 270 || connection.videoRotationAngle == 0 else { return }
+        connection.videoRotationAngle = portrait
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {

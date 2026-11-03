@@ -75,6 +75,55 @@ final class HandsFreeFlowTests: XCTestCase {
         XCTAssertFalse(HandsFreeFlow.isTooFar(noFeet))
     }
 
+    // MARK: - Position hints (what to tell a player who isn't in position)
+
+    func testNoHintWhenInPosition() {
+        XCTAssertNil(HandsFreeFlow.positionHint(standing, aspect: aspect))
+    }
+
+    func testFeetOutOfFrameAsksToShowTheFeet() {
+        var noFeet = standing
+        noFeet.joints[.leftAnkle] = nil
+        noFeet.joints[.rightAnkle] = nil
+
+        XCTAssertEqual(HandsFreeFlow.positionHint(noFeet, aspect: aspect), .showFeet)
+    }
+
+    func testHeadAtTheTopEdgeAsksToShowTheHead() {
+        var headCut = standing
+        headCut.joints[.nose] = DrillPoint(x: standing[.nose]!.x, y: 0.99)
+
+        XCTAssertEqual(HandsFreeFlow.positionHint(headCut, aspect: aspect), .showHead)
+    }
+
+    func testNoHeadButFeetAsksToShowTheHead() {
+        var noHead = standing
+        noHead.joints[.nose] = nil
+
+        XCTAssertEqual(HandsFreeFlow.positionHint(noHead, aspect: aspect), .showHead)
+    }
+
+    func testSmallPlayerAsksToStepCloser() {
+        var far = BodyPose(joints: [:])
+        let ankle = standing[.leftAnkle]!.y, k = 0.45 / (standing[.nose]!.y - ankle)
+        for (joint, p) in standing.joints {
+            far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * k, y: 0.10 + (p.y - ankle) * k)
+        }
+
+        XCTAssertEqual(HandsFreeFlow.positionHint(far, aspect: aspect), .stepCloser)
+    }
+
+    func testPlayerAtTheSideAsksToMoveToTheMiddle() {
+        var aside = BodyPose(joints: [:])
+        for (joint, p) in standing.joints { aside.joints[joint] = DrillPoint(x: p.x - 0.25, y: p.y) }
+
+        XCTAssertEqual(HandsFreeFlow.positionHint(aside, aspect: aspect), .moveToMiddle)
+    }
+
+    func testNobodyInFrameHasNoHint() {
+        XCTAssertNil(HandsFreeFlow.positionHint(BodyPose(joints: [:]), aspect: aspect))
+    }
+
     func testSteppingOutDuringTheCountdownCancelsIt() {
         let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
         feed(flow, standing, from: 0, seconds: 1.6)

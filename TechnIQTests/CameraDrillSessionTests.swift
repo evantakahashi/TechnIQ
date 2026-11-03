@@ -120,7 +120,7 @@ final class CameraDrillSessionTests: XCTestCase {
         feed(b.frames)
 
         XCTAssertEqual(sut.phase, .positioning)
-        XCTAssertTrue(sut.tooFar)
+        XCTAssertEqual(sut.positionHint, .stepCloser)
     }
 
     func test_aRunEndingOnTheGround_showsTheResult_andSavesTheRun() throws {

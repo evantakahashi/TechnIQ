@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreImage
 import SwiftUI
 
 /// One camera-drill session: capture → analyser → counter, paced by HandsFreeFlow, voiced, and each
@@ -27,8 +28,13 @@ final class CameraDrillSession: ObservableObject {
     @Published private(set) var phase: Phase = .starting
     @Published private(set) var count = 0
     @Published private(set) var inPosition = false
-    /// Whole body in frame but too small for the ball to be tracked.
-    @Published private(set) var tooFar = false
+    /// Why a visible player isn't in position (too small, head or feet cut off, off to the side).
+    @Published private(set) var positionHint: HandsFreeFlow.PositionHint?
+    #if DEBUG
+    /// Positioning numbers for on-device debugging: buffer size, body height, nose / ankle.
+    @Published private(set) var debugLine = ""
+    private var bufferSize = ""
+    #endif
     @Published private(set) var timeLeft: Double?
     @Published private(set) var ball: BallSighting?
     @Published private(set) var lastResult: RunResult?
@@ -126,6 +132,9 @@ final class CameraDrillSession: ObservableObject {
     // MARK: - Source queue
 
     private var lastFrameTime = 0.0
+    #if DEBUG
+    private let debugDump = CameraDebugDump()
+    #endif
 
     private func process(_ buffer: CMSampleBuffer) {
         #if DEBUG
@@ -135,7 +144,16 @@ final class CameraDrillSession: ObservableObject {
         }
         #endif
         guard let analyzer else { return }
-        ingest(analyzer.analyze(buffer, orientation: source.orientation))
+        #if DEBUG
+        if let pixels = CMSampleBufferGetImageBuffer(buffer) {
+            bufferSize = "\(CVPixelBufferGetWidth(pixels))×\(CVPixelBufferGetHeight(pixels))"
+        }
+        #endif
+        let frame = analyzer.analyze(buffer, orientation: source.orientation)
+        #if DEBUG
+        debugDump.record(buffer, orientation: source.orientation, frame: frame)
+        #endif
+        ingest(frame)
     }
 
     /// One analysed frame through the flow and counter (source queue; tests call it directly).
@@ -154,13 +172,23 @@ final class CameraDrillSession: ObservableObject {
         }
 
         let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: flow.aspect) } ?? false
-        let tooFar = frame.pose.map(HandsFreeFlow.isTooFar) ?? false
+        let hint = frame.pose.flatMap { HandsFreeFlow.positionHint($0, aspect: flow.aspect) }
+        #if DEBUG
+        let nose = frame.pose?[.nose]?.y, ankle = [frame.pose?[.leftAnkle], frame.pose?[.rightAnkle]].compactMap { $0?.y }.min()
+        let fmt = { (v: Double?) in v.map { String(format: "%.2f", $0) } ?? "–" }
+        let debug = "\(bufferSize) · joints \(frame.pose?.joints.count ?? 0) · nose \(fmt(nose)) · ankle \(fmt(ankle))"
+            + " · body \(nose.flatMap { n in ankle.map { a in String(format: "%.0f%%", 100 * (n - a)) } } ?? "–")"
+            + " · ball \(frame.ball == nil ? "no" : "yes")"
+        #endif
         let phase = Self.phase(for: flow.state, time: frame.time)
         let timeLeft = flow.timeLeft
         DispatchQueue.main.async {
             self.ball = frame.ball
             self.inPosition = inPosition
-            self.tooFar = tooFar
+            self.positionHint = hint
+            #if DEBUG
+            self.debugLine = debug
+            #endif
             self.timeLeft = timeLeft
             if case .failed = self.phase { return }
             if self.phase != .finished { self.phase = phase }
@@ -233,3 +261,36 @@ final class CameraDrillSession: ObservableObject {
         speech.speak(utterance)
     }
 }
+
+#if DEBUG
+/// Saves what the analyser saw, about once a second, to Documents/CameraDebug (frame_NN.jpg + .json with
+/// the pose and ball, last 40 kept) so a device session can be pulled off and inspected on the Mac:
+/// `xcrun devicectl device copy from --device <id> --domain-type appDataContainer --domain-identifier
+/// evan.TechnIQ --source Documents/CameraDebug --destination <dir>`. Source queue only.
+final class CameraDebugDump {
+    private let directory: URL
+    private let context = CIContext()
+    private var frames = 0
+    private var saved = 0
+
+    init() {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        directory = docs.appendingPathComponent("CameraDebug", isDirectory: true)
+        try? FileManager.default.removeItem(at: directory)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
+    func record(_ buffer: CMSampleBuffer, orientation: CGImagePropertyOrientation, frame: DrillFrame) {
+        frames += 1
+        guard frames % 30 == 1, let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
+        let name = String(format: "frame_%02d", saved % 40)
+        saved += 1
+        let image = CIImage(cvPixelBuffer: pixels).oriented(orientation)
+        if let space = CGColorSpace(name: CGColorSpace.sRGB) {
+            try? context.writeJPEGRepresentation(of: image, to: directory.appendingPathComponent(name + ".jpg"),
+                                                 colorSpace: space, options: [:])
+        }
+        try? JSONEncoder().encode(frame).write(to: directory.appendingPathComponent(name + ".json"))
+    }
+}
+#endif

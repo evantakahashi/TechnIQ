@@ -39,6 +39,13 @@ struct CameraDrillSessionView: View {
                 centrePanel
                 Spacer()
                 bottomPanel
+                #if DEBUG
+                Text(session.debugLine)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.white)
+                    .padding(4)
+                    .background(Color.black.opacity(0.6))
+                #endif
             }
             .padding(DesignSystem.Spacing.md)
         }
@@ -74,9 +81,16 @@ struct CameraDrillSessionView: View {
         case .starting:
             ProgressView().tint(.white)
         case .positioning:
-            if session.tooFar {
+            switch session.positionHint {
+            case .stepCloser?:
                 prompt("Step closer", detail: "About 2–3 m from the phone, head to feet in frame")
-            } else {
+            case .showHead?:
+                prompt("Head out of frame", detail: "Tilt the phone back a little or prop it higher")
+            case .showFeet?:
+                prompt("Feet out of frame", detail: "Tilt the phone forward a little or step back")
+            case .moveToMiddle?:
+                prompt("Move to the middle", detail: "Stand in the centre of the outline")
+            case nil:
                 prompt("Step into the outline", detail: "Whole body in frame, ball in your hands")
             }
         case let .countdown(n):

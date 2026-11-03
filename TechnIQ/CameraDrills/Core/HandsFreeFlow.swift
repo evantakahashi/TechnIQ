@@ -136,6 +136,26 @@ final class HandsFreeFlow {
             && nose.x >= 0.2 * aspect && nose.x <= 0.8 * aspect
     }
 
+    /// What's stopping a visible player from being in position, most fixable first; nil when in position or
+    /// when nobody is in frame.
+    enum PositionHint: Equatable {
+        /// Ankles missing or at the bottom edge: tilt the phone down or step back.
+        case showFeet
+        /// Nose missing or at the top edge: tilt the phone up or prop it higher.
+        case showHead
+        case stepCloser
+        case moveToMiddle
+    }
+
+    static func positionHint(_ pose: BodyPose, aspect: Double) -> PositionHint? {
+        guard !pose.joints.isEmpty else { return nil }
+        guard let lowest = lowestAnkle(pose), lowest >= 0.02 else { return .showFeet }
+        guard let nose = pose[.nose], nose.y <= 0.97 else { return .showHead }
+        if nose.y - lowest < minHeight { return .stepCloser }
+        if nose.x < 0.2 * aspect || nose.x > 0.8 * aspect { return .moveToMiddle }
+        return nil
+    }
+
     /// Head to feet in frame but too small: the player should step closer.
     static func isTooFar(_ pose: BodyPose) -> Bool {
         noseToAnkle(pose).map { $0 < minHeight } ?? false
