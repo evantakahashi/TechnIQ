@@ -66,6 +66,8 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
     private var onFrame: ((CMSampleBuffer) -> Void)?
     private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var rotationObservation: NSKeyValueObservation?
+    /// Frames delivered since start (capture queue).
+    private var frames = 0
 
     /// Asks for camera access, configures and starts the session; `onFrame` runs on `queue`.
     func start(onFrame: @escaping (CMSampleBuffer) -> Void, completion: @escaping (CaptureError?) -> Void) {
@@ -74,7 +76,17 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
             self.queue.async {
                 self.onFrame = onFrame
                 guard self.configure() else { completion(.noCamera); return }
+                #if DEBUG
+                NotificationCenter.default.addObserver(forName: AVCaptureSession.runtimeErrorNotification,
+                                                       object: self.session, queue: nil) { note in
+                    print("CameraCapture: runtime error \(String(describing: note.userInfo?[AVCaptureSessionErrorKey]))")
+                }
+                #endif
                 self.session.startRunning()
+                #if DEBUG
+                print("CameraCapture: running \(self.session.isRunning)")
+                #endif
+                self.fallBackIfSilent()
                 completion(nil)
             }
         }
@@ -128,8 +140,31 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
             camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: rate)
             camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: rate)
             camera.unlockForConfiguration()
+            #if DEBUG
+            print("CameraCapture: \(rate) fps, format \(camera.activeFormat)")
+            #endif
         }
         return true
+    }
+
+    /// 60 fps is new on device: if no frame arrives within 2 s of starting, drop to the session preset's
+    /// 30 fps rather than leave the player with a dead camera.
+    private func fallBackIfSilent() {
+        queue.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self, self.frames == 0, self.onFrame != nil,
+                  let camera = (self.session.inputs.first as? AVCaptureDeviceInput)?.device else { return }
+            #if DEBUG
+            print("CameraCapture: no frames at 60 fps, falling back to 30")
+            #endif
+            self.session.beginConfiguration()
+            self.session.sessionPreset = .hd1280x720
+            if (try? camera.lockForConfiguration()) != nil {
+                camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 30)
+                camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)
+                camera.unlockForConfiguration()
+            }
+            self.session.commitConfiguration()
+        }
     }
 
     /// A 1280 × 720 full-range 4:2:0 format that runs at `fps`.
@@ -153,9 +188,24 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        frames += 1
         if let pixels = CMSampleBufferGetImageBuffer(sampleBuffer) {
             orientation = Self.uprightOrientation(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels))
+            #if DEBUG
+            if delivered == 0 { print("CameraCapture: first frame \(CVPixelBufferGetWidth(pixels))×\(CVPixelBufferGetHeight(pixels))") }
+            delivered += 1
+            #endif
         }
         onFrame?(sampleBuffer)
     }
+
+    #if DEBUG
+    private var delivered = 0
+    private var dropped = 0
+
+    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        dropped += 1
+        if dropped % 60 == 1 { print("CameraCapture: dropped \(dropped) late frames (\(delivered) delivered)") }
+    }
+    #endif
 }
