@@ -189,6 +189,40 @@ final class HandsFreeFlowTests: XCTestCase {
         XCTAssertEqual(flow.state, .finished)
     }
 
+    func testAStreakRunWithNoTouchGivesUpWithNoTouches() {
+        let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
+        feed(flow, standing, from: 0, seconds: 4.2)  // live from ~4.0 s
+
+        XCTAssertEqual(feed(flow, standing, from: 4.2, seconds: 7.5), [])
+        XCTAssertTrue(flow.isLive)
+        let cues = feed(flow, standing, from: 11.7, seconds: 1)
+
+        XCTAssertEqual(cues, [.noTouches])
+        if case .result = flow.state {} else { XCTFail("expected result, got \(flow.state)") }
+    }
+
+    func testAStreakRunWithATouchNeverTimesOut() {
+        let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
+        feed(flow, standing, from: 0, seconds: 4.2)
+        flow.touched()
+
+        feed(flow, standing, from: 4.2, seconds: 20)
+
+        XCTAssertTrue(flow.isLive)
+    }
+
+    func testTheNoTouchTimerRestartsWithEachRun() {
+        let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
+        feed(flow, standing, from: 0, seconds: 4.2)
+        flow.touched()
+        flow.runEnded(at: 6)
+        // Result (4 s) → go-again hold → 3-2-1 → live again, untouched.
+        let cues = feed(flow, standing, from: 6, seconds: 16)
+
+        XCTAssertTrue(cues.contains(.go))
+        XCTAssertEqual(cues.last, .noTouches)
+    }
+
     func testArmsUpMidRunDoesNotEndIt() {
         let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
         feed(flow, standing, from: 0, seconds: 4.2)

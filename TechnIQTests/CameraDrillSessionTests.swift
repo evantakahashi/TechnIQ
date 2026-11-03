@@ -134,6 +134,38 @@ final class CameraDrillSessionTests: XCTestCase {
         XCTAssertEqual(player.totalXP, 0)
     }
 
+    func test_aLiveRunThatNeverCountsATouch_endsWithNoTouches_insteadOfStayingOnZero() throws {
+        // Evan, front camera: "3 2 1 and then stayed on 0". Whatever stops the counter (no ball seen,
+        // every contact rejected), the run can't sit live at 0 forever.
+        var b = Scene.Builder()
+        stepInAndCountDown(&b)
+        b.gap(seconds: 6)
+        feed(b.frames)
+        XCTAssertEqual(sut.phase, .live)
+        XCTAssertEqual(sut.count, 0)
+
+        b = Scene.Builder()
+        b.time = 4.3 + 6
+        b.gap(seconds: 3)
+        feed(b.frames)
+
+        XCTAssertEqual(sut.phase, .result)
+        XCTAssertNil(sut.lastResult, "the result panel shows \"No touches counted\"")
+        XCTAssertEqual(try savedRuns().count, 0)
+    }
+
+    func test_afterNoTouches_stayingInTheOutline_goesAgain_andCounts() throws {
+        var b = Scene.Builder()
+        stepInAndCountDown(&b)
+        b.gap(seconds: 8.5)
+        b.hold(Scene.at(0.37, 0.35), seconds: 4.0 + 1.5 + 3.3)  // result, go-again hold, 3-2-1
+        juggle(&b, touches: 3)
+        feed(b.frames)
+
+        XCTAssertEqual(sut.runs.map(\.count), [3])
+        XCTAssertEqual(sut.phase, .result)
+    }
+
     func test_touchesDuringTheCountdown_dontCount() throws {
         // Juggling straight away, before "go": the counter only starts when the run goes live.
         var b = Scene.Builder()

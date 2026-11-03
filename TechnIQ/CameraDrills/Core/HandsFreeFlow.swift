@@ -19,6 +19,8 @@ final class HandsFreeFlow {
         case countdown(Int)
         case go
         case timeUp
+        /// A streak run went this long without a counted touch (ball never seen, or every contact rejected).
+        case noTouches
         case finished
     }
 
@@ -33,6 +35,9 @@ final class HandsFreeFlow {
         /// In position this long after the result to go again.
         var goAgainHold = 1.5
         var armsUpHold = 0.8
+        /// A live streak run with no counted touch after this long gives up and shows "no touches", so the
+        /// player isn't left juggling at 0 with no feedback.
+        var noTouchTimeout = 8.0
     }
 
     let mode: CameraDrill.Mode
@@ -45,6 +50,7 @@ final class HandsFreeFlow {
     private var armsUpSince: Double?
     private var lastCountdownCue: Int?
     private var lastTime = 0.0
+    private var touchedThisRun = false
 
     init(mode: CameraDrill.Mode, aspect: Double, config: Config = Config()) {
         self.mode = mode
@@ -102,6 +108,10 @@ final class HandsFreeFlow {
                 state = .result(since: time)
                 return [.timeUp]
             }
+            if mode == .streak, !touchedThisRun, time - startedAt >= config.noTouchTimeout {
+                state = .result(since: time)
+                return [.noTouches]
+            }
         case let .result(since):
             if time - since >= config.resultMinimum, let held = inPositionSince,
                time - held >= config.goAgainHold, !armsUp {
@@ -113,6 +123,11 @@ final class HandsFreeFlow {
         return []
     }
 
+    /// The counter counted a touch in the live run.
+    func touched() {
+        if isLive { touchedThisRun = true }
+    }
+
     /// A streak run ended (ball down, handball, lost) — show the result.
     func runEnded(at time: Double) {
         guard isLive else { return }
@@ -121,6 +136,7 @@ final class HandsFreeFlow {
 
     private func startCountdown(at time: Double) -> [Cue] {
         state = .countdown(startedAt: time)
+        touchedThisRun = false
         lastCountdownCue = config.countdownSeconds
         return [.ready, .countdown(config.countdownSeconds)]
     }
