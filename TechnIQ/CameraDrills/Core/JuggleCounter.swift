@@ -21,8 +21,11 @@ final class JuggleCounter: DrillCounter {
         var groundTolerance = 0.05
         /// Contact reach (m) beyond a body part's own thickness.
         var reach = 0.10
-        /// No ball for this long (s) mid-run ends the run.
+        /// No ball and no player for this long (s) mid-run ends the run.
         var lostBall = 1.0
+        /// No ball for this long (s) while the player is still in frame ends the run: the detector loses a
+        /// ball against similar-coloured clothing for a second or two (seen on device), the player hasn't.
+        var hiddenBall = 2.5
         /// Window (s) over which the lowest ankle defines the floor.
         var floorWindow = 2.0
         /// Ball radius used as the ruler (size 5 ≈ 0.11 m).
@@ -69,7 +72,8 @@ final class JuggleCounter: DrillCounter {
     func process(_ frame: DrillFrame) -> [DrillEvent] {
         trackFloor(frame)
         guard let ball = frame.ball else {
-            if isRunning, let last = lastSightingTime, frame.time - last > config.lostBall {
+            let timeout = frame.pose == nil ? config.lostBall : config.hiddenBall
+            if isRunning, let last = lastSightingTime, frame.time - last > timeout {
                 return [endRun(.lostBall, at: frame.time)]
             }
             return []

@@ -198,6 +198,9 @@ final class CameraDrillSession: ObservableObject {
 
     private func handle(_ events: [DrillEvent]) {
         for event in events {
+            #if DEBUG
+            debugDump.event("\(event)")
+            #endif
             switch event {
             case let .touch(count, _, _, _):
                 DispatchQueue.main.async {
@@ -266,22 +269,39 @@ final class CameraDrillSession: ObservableObject {
 /// Saves what the analyser saw, about once a second, to Documents/CameraDebug (frame_NN.jpg + .json with
 /// the pose and ball, last 40 kept) so a device session can be pulled off and inspected on the Mac:
 /// `xcrun devicectl device copy from --device <id> --domain-type appDataContainer --domain-identifier
-/// evan.TechnIQ --source Documents/CameraDebug --destination <dir>`. Source queue only.
+/// evan.TechnIQ --source Documents/CameraDebug --destination <dir>`. Also logs every analysed frame to
+/// frames.jsonl (replayable through the counters on the Mac) and every counter event to events.txt.
+/// Source queue only.
 final class CameraDebugDump {
     private let directory: URL
     private let context = CIContext()
     private var frames = 0
     private var saved = 0
+    private var frameLog: FileHandle?
+    private var eventLog: FileHandle?
+    private let encoder = JSONEncoder()
 
     init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         directory = docs.appendingPathComponent("CameraDebug", isDirectory: true)
         try? FileManager.default.removeItem(at: directory)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        frameLog = Self.open(directory.appendingPathComponent("frames.jsonl"))
+        eventLog = Self.open(directory.appendingPathComponent("events.txt"))
+    }
+
+    private static func open(_ url: URL) -> FileHandle? {
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        return try? FileHandle(forWritingTo: url)
+    }
+
+    func event(_ text: String) {
+        eventLog?.write(Data((text + "\n").utf8))
     }
 
     func record(_ buffer: CMSampleBuffer, orientation: CGImagePropertyOrientation, frame: DrillFrame) {
         frames += 1
+        if let line = try? encoder.encode(frame) { frameLog?.write(line + Data("\n".utf8)) }
         guard frames % 30 == 1, let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
         let name = String(format: "frame_%02d", saved % 40)
         saved += 1

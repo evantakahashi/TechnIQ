@@ -66,11 +66,12 @@ final class JuggleCounterTests: XCTestCase {
         XCTAssertEqual(events.runEnds.map(\.reason), [.handball])
     }
 
-    func testLosingTheBallMidRunEndsItAfterTheTimeout() {
+    func testLosingTheBallAndThePlayerEndsTheRunAfterTheTimeout() {
         var b = S.Builder()
         b.fall(from: S.at(0.37, 0.35), to: S.footContact)
         b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
         b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pose = nil
         b.gap(seconds: 1.5)
 
         let events = S.run(b.frames)
@@ -78,6 +79,36 @@ final class JuggleCounterTests: XCTestCase {
         // The last contact never rebounds or stalls on camera, so it can't be confirmed.
         XCTAssertEqual(events.runEnds.map(\.count), [2])
         XCTAssertEqual(events.runEnds.map(\.reason), [.lostBall])
+    }
+
+    func testTheBallHiddenWhileThePlayerIsStillThereDoesNotEndTheRun() {
+        // Seen on device: white ball against white trousers, the detector loses it for 1–2 s mid-run.
+        var b = S.Builder()
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.gap(seconds: 1.5)
+        b.hold(S.at(0.37, 0.40), seconds: 0.1)
+        b.fall(from: S.at(0.37, 0.40), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.groundContact)
+        b.hold(S.groundContact, seconds: 0.5)
+
+        let events = S.run(b.frames)
+
+        XCTAssertEqual(events.runEnds.count, 1, "\(events.runEnds)")
+        XCTAssertEqual(events.runEnds.first?.reason, .ground)
+        XCTAssertGreaterThanOrEqual(events.runEnds.first?.count ?? 0, 4)
+    }
+
+    func testTheBallGoneForLongEvenWithThePlayerThereEndsTheRun() {
+        var b = S.Builder()
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
+        b.gap(seconds: 3)
+
+        XCTAssertEqual(S.run(b.frames).runEnds.map(\.reason), [.lostBall])
     }
 
     func testDetectorJitterDoesNotAddTouches() {
