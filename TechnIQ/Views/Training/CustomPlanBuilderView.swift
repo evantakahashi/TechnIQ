@@ -2,9 +2,11 @@ import SwiftUI
 
 // MARK: - Build it yourself
 //
-// A custom plan in one screen: name, weeks, training days, session type, length, intensity, level.
-// It creates the whole week × day × session skeleton, so the plan can be started and edited
-// straight away; drills are attached per day from the schedule.
+// A custom plan in one screen: name, weeks, training days, session type, length, intensity, level,
+// position, weak spots and next match. Level, position, weak spots, days and next match start from
+// the Training profile (PlanBuilderPrefill); weak spots become the weeks' focus. It creates the
+// whole week × day × session skeleton, so the plan can be started and edited straight away; drills
+// are attached per day from the schedule. The next match is written back to the profile.
 
 struct CustomPlanBuilderView: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,12 +16,26 @@ struct CustomPlanBuilderView: View {
     @State private var name = ""
     @State private var description = ""
     @State private var weeks = 4
-    @State private var trainingDays: Set<DayOfWeek> = [.monday, .wednesday, .friday]
+    @State private var trainingDays: Set<DayOfWeek>
     @State private var sessionTypeIndex = 0
     @State private var minutes = 30
     @State private var intensity = 3
-    @State private var difficultyIndex = 1
+    @State private var difficultyIndex: Int
+    @State private var position: String
+    @State private var weakSpots: [WeaknessCategory]
+    @State private var nextMatch: Date?
     @State private var created: TrainingPlanModel?
+
+    init(player: Player, onCreated: @escaping (TrainingPlanModel) -> Void = { _ in }) {
+        self.player = player
+        self.onCreated = onCreated
+        let prefill = PlanBuilderPrefill.from(player: player)
+        _trainingDays = State(initialValue: Set(prefill.trainingDays))
+        _difficultyIndex = State(initialValue: PlanDifficulty.allCases.firstIndex(of: prefill.difficulty) ?? 1)
+        _position = State(initialValue: prefill.position ?? "")
+        _weakSpots = State(initialValue: prefill.weakSpots)
+        _nextMatch = State(initialValue: prefill.nextMatchDate)
+    }
 
     private let sessionTypes: [SessionType] = [.technical, .physical, .tactical]
     private let difficulties = PlanDifficulty.allCases
@@ -104,6 +120,35 @@ struct CustomPlanBuilderView: View {
                 TQSegment(options: difficulties.map(\.displayName), selectedIndex: $difficultyIndex)
             }
 
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Position")
+                TQChipRow {
+                    ForEach(OnboardingMapping.positions, id: \.self) { item in
+                        TQChip(item, isSelected: position == item) { position = item }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Weak spots · week focus")
+                TQChipRow {
+                    ForEach(WeaknessCategory.allCases, id: \.self) { skill in
+                        TQChip(skill.displayName, isSelected: weakSpots.contains(skill)) { toggleWeakSpot(skill) }
+                    }
+                }
+                if !weakSpots.isEmpty {
+                    TQBody("Weeks rotate through \(weakSpots.map(\.displayName).joined(separator: ", ")).", tone: .muted, size: 13)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                TQGroupHeader("Next match")
+                TQRule()
+                TQDateRow("Next match", subtitle: "Light the day before, recovery the day after",
+                          date: $nextMatch, range: NextMatchDefaults.range()) { NextMatchDefaults.suggested() }
+                    .accessibilityIdentifier("customPlan.nextMatch")
+            }
+
             TQBody(summary, tone: .muted, size: 13)
 
             TQButton("Create plan") { create() }
@@ -126,8 +171,19 @@ struct CustomPlanBuilderView: View {
         }
     }
 
+    private func toggleWeakSpot(_ skill: WeaknessCategory) {
+        if let index = weakSpots.firstIndex(of: skill) {
+            weakSpots.remove(at: index)
+        } else if weakSpots.count < OnboardingMapping.maxWeakSpots {
+            weakSpots.append(skill)
+        }
+        HapticManager.shared.selectionChanged()
+    }
+
     private func create() {
-        let spec = TrainingPlanService.CustomPlanSpec(
+        // The next match is the profile's; write it first so the new plan is shaped around it.
+        TrainingPlanService.shared.setNextMatch(nextMatch, for: player)
+        var spec = TrainingPlanService.CustomPlanSpec(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             description: description.trimmingCharacters(in: .whitespacesAndNewlines),
             weeks: weeks,
@@ -139,6 +195,8 @@ struct CustomPlanBuilderView: View {
             category: sessionTypes[min(max(sessionTypeIndex, 0), sessionTypes.count - 1)] == .physical ? .physical
                 : (sessionTypes[min(max(sessionTypeIndex, 0), sessionTypes.count - 1)] == .tactical ? .tactical : .technical)
         )
+        spec.weakSpots = weakSpots
+        spec.position = position.isEmpty ? nil : position
         guard let plan = TrainingPlanService.shared.createCustomPlan(spec, for: player) else { return }
         HapticManager.shared.success()
         let model = plan.toModel()

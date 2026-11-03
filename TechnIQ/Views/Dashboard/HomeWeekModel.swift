@@ -6,6 +6,7 @@ import Foundation
 // Home week-strip cells (Monday first). Plan days carry calendar dates (see PlanSchedule), so a
 // planned day earlier in the week with no session is shown as missed, today is today, and later
 // planned days are planned. Skipped days are handed in as not planned, so they read as rest.
+// Match days (MatchScheduleLink.weekMatchIndexes) carry a match marker whatever their state.
 
 enum HomeWeekModel {
     struct PlannedDay {
@@ -28,7 +29,7 @@ enum HomeWeekModel {
         }
     }
 
-    static func build(today: Date, calendar: Calendar, sessionDates: [Date], plannedDays: [PlannedDay]?) -> Week {
+    static func build(today: Date, calendar: Calendar, sessionDates: [Date], plannedDays: [PlannedDay]?, matchIndexes: Set<Int> = []) -> Week {
         let todayIndex = mondayIndex(of: today, calendar: calendar)
         let startOfToday = calendar.startOfDay(for: today)
         guard let monday = calendar.date(byAdding: .day, value: -todayIndex, to: startOfToday) else {
@@ -79,7 +80,7 @@ enum HomeWeekModel {
             } else {
                 state = .rest
             }
-            cells.append(TQDayCell(state: state, sessions: state == .rest ? 0 : sessions))
+            cells.append(TQDayCell(state: state, sessions: state == .rest ? 0 : sessions, isMatch: matchIndexes.contains(index)))
         }
 
         return Week(cells: cells, todayIndex: todayIndex, done: done, target: target)

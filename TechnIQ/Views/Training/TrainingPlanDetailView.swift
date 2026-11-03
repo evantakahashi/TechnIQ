@@ -36,6 +36,7 @@ struct TrainingPlanDetailView: View {
     @State private var currentWeekDay: (week: Int, day: Int)?
     @State private var todayState: PlanSchedule.Today?
     @State private var overdueDayIDs: Set<UUID> = []
+    @State private var matchMarks: [MatchScheduleLink.DayMark] = []
     @State private var todaysExercises: [Exercise] = []
     @State private var todaysSession: PlanSession?
     @State private var showingConfirmStart = false
@@ -77,6 +78,8 @@ struct TrainingPlanDetailView: View {
                     TQStatRail(items: statItems)
 
                     TQScheduleGrid(rows: gridRows, onTap: selectCell)
+
+                    if !matchMarks.isEmpty { matchList }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                 .padding(.bottom, DesignSystem.Spacing.lg)
@@ -170,6 +173,38 @@ struct TrainingPlanDetailView: View {
         }
     }
 
+    /// Match days inside the plan: logged ones by opponent, the upcoming one as "Match day".
+    private var matchList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Matches")
+            TQRowList {
+                ForEach(matchMarks, id: \.dayID) { mark in
+                    TQRow(mark.mark.label,
+                          meta: .init("WK \(mark.week) · \(Self.matchDateFormatter.string(from: mark.date))"),
+                          accessory: .none,
+                          verticalPadding: DesignSystem.Spacing.rowVertical,
+                          action: { openDay(mark.dayID) })
+                }
+            }
+        }
+        .accessibilityIdentifier("plan.matches")
+    }
+
+    private static let matchDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE d MMM"
+        return formatter
+    }()
+
+    private func openDay(_ dayID: UUID) {
+        for week in plan.weeks {
+            if let day = week.days.first(where: { $0.id == dayID }) {
+                selectedDay = SelectedDay(week: week, day: day)
+                return
+            }
+        }
+    }
+
     private func selectCell(rowIndex: Int, dayIndex: Int) {
         guard rowIndex < plan.weeks.count else { return }
         let week = plan.weeks.sorted { $0.weekNumber < $1.weekNumber }[rowIndex]
@@ -246,12 +281,16 @@ struct TrainingPlanDetailView: View {
 
     private var gridRows: [TQScheduleGrid.Row] {
         let weeks = plan.weeks.sorted { $0.weekNumber < $1.weekNumber }
+        let matchDayIDs = Set(matchMarks.map(\.dayID))
         return weeks.map { week in
             var cells = Array(repeating: TQDayCell.rest, count: 7)
             for day in week.days {
                 let index = day.dayOfWeek.map { $0.sortOrder } ?? (day.dayNumber - 1)
                 guard (0..<7).contains(index) else { continue }
-                if day.isRestDay { continue }
+                if day.isRestDay {
+                    if matchDayIDs.contains(day.id) { cells[index] = TQDayCell(state: .rest, isMatch: true) }
+                    continue
+                }
                 let state: TQDayCellState
                 if day.isCompleted || (!day.sessions.isEmpty && day.sessions.allSatisfy { $0.isCompleted }) {
                     state = .done
@@ -262,7 +301,7 @@ struct TrainingPlanDetailView: View {
                 } else {
                     state = .planned
                 }
-                cells[index] = TQDayCell(state: state, sessions: day.sessions.count)
+                cells[index] = TQDayCell(state: state, sessions: day.sessions.count, isMatch: matchDayIDs.contains(day.id))
             }
             return TQScheduleGrid.Row(label: week.isRetest ? "RETEST" : "WK \(week.weekNumber)", cells: cells,
                                       isCurrent: currentWeekDay?.week == week.weekNumber)
@@ -452,6 +491,12 @@ struct TrainingPlanDetailView: View {
         overdueDayIDs = Set(PlanSchedule.trainingDays(in: plan, startDate: startDate, calendar: calendar)
             .filter { !$0.day.isDone && $0.date < today }
             .map { $0.day.id })
+        // Templates have no real dates; stored plans link logged matches and the next one.
+        matchMarks = isStored
+            ? MatchScheduleLink.dayMarks(in: plan, startDate: startDate,
+                                         matches: ((player.matches as? Set<Match>) ?? []).compactMap(\.scheduleLink),
+                                         nextMatchDate: player.playerProfile?.nextMatchDate, calendar: calendar)
+            : []
         guard plan.isActive else {
             currentWeekDay = nil
             todayState = nil

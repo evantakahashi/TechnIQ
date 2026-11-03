@@ -4,8 +4,9 @@ import CoreData
 // MARK: - New plan · AI (Touchline)
 //
 // Form → generating (pitch surface with spinner and phase rows, Cancel keeps nothing) → preview
-// sheet (Save / Regenerate / Modify) → saved. The form asks only what the coach cannot infer:
-// weeks, level, focus, and the days you can train; name and position are prefilled and optional.
+// sheet (Save / Regenerate / Modify) → saved. Level, position, weak spots, training days and the
+// next match start from the Training profile (PlanBuilderPrefill) and stay editable; the next
+// match is one shared fact, so saving a plan writes it back to the profile.
 
 struct AITrainingPlanGeneratorView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -24,6 +25,10 @@ struct AITrainingPlanGeneratorView: View {
     @State private var newFocusArea: String = ""
     @State private var preferredDays: Set<DayOfWeek> = []
     @State private var restDays: Set<DayOfWeek> = []
+    @State private var position: String = ""
+    @State private var weakSpots: [WeaknessCategory] = []
+    @State private var nextMatch: Date?
+    @State private var didPrefill = false
 
     // Generation state
     @State private var isGenerating = false
@@ -100,7 +105,7 @@ struct AITrainingPlanGeneratorView: View {
             VStack(alignment: .leading, spacing: 8) {
                 TQEyebrow("Built around you", size: 11)
                 TQDisplayTitle("What should\nthe plan do?", size: .medium)
-                TQBody("The coach uses your position, level and weak spots. Add what matters this block and the days you can train.")
+                TQBody("Filled in from your training profile. Change anything for this plan.")
             }
 
             VStack(alignment: .leading, spacing: 0) {
@@ -114,6 +119,24 @@ struct AITrainingPlanGeneratorView: View {
             VStack(alignment: .leading, spacing: 10) {
                 TQGroupHeader("Level")
                 TQSegment(options: difficulties.map(\.displayName), selectedIndex: $difficultyIndex)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Position")
+                TQChipRow {
+                    ForEach(OnboardingMapping.positions, id: \.self) { item in
+                        TQChip(item, isSelected: position == item) { position = item }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Weak spots · up to \(OnboardingMapping.maxWeakSpots)")
+                TQChipRow {
+                    ForEach(WeaknessCategory.allCases, id: \.self) { skill in
+                        TQChip(skill.displayName, isSelected: weakSpots.contains(skill)) { toggleWeakSpot(skill) }
+                    }
+                }
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -160,6 +183,14 @@ struct AITrainingPlanGeneratorView: View {
                     }
                 }
                 TQBody("Leave both empty and the coach lays out the week.", tone: .muted, size: 13)
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                TQGroupHeader("Next match")
+                TQRule()
+                TQDateRow("Next match", subtitle: "Light the day before, recovery the day after",
+                          date: $nextMatch, range: NextMatchDefaults.range()) { NextMatchDefaults.suggested() }
+                    .accessibilityIdentifier("planGenerator.nextMatch")
             }
 
             TQFormField("Plan name (optional)", text: $planName, placeholder: "The coach names it otherwise")
@@ -281,18 +312,27 @@ struct AITrainingPlanGeneratorView: View {
         duration >= 2 && duration <= 12
     }
 
+    /// Once per presentation: the preview sheet re-triggers onAppear and must not undo edits.
     private func prefillFromPlayerProfile() {
-        if let position = player.position {
-            targetRole = position.capitalized
+        guard !didPrefill else { return }
+        didPrefill = true
+        let prefill = PlanBuilderPrefill.from(player: player)
+        difficultyIndex = difficulties.firstIndex(of: prefill.difficulty) ?? 1
+        position = prefill.position ?? ""
+        targetRole = prefill.position ?? ""
+        weakSpots = prefill.weakSpots
+        preferredDays = Set(prefill.trainingDays)
+        restDays = []
+        nextMatch = prefill.nextMatchDate
+    }
+
+    private func toggleWeakSpot(_ skill: WeaknessCategory) {
+        if let index = weakSpots.firstIndex(of: skill) {
+            weakSpots.remove(at: index)
+        } else if weakSpots.count < OnboardingMapping.maxWeakSpots {
+            weakSpots.append(skill)
         }
-        if let goals = player.playerGoals?.allObjects as? [PlayerGoal] {
-            focusAreas = goals.compactMap { $0.skillName }
-        }
-        switch player.experienceLevel?.lowercased() {
-        case "beginner": difficultyIndex = difficulties.firstIndex(of: .beginner) ?? 0
-        case "advanced", "expert", "professional": difficultyIndex = difficulties.firstIndex(of: .advanced) ?? 2
-        default: difficultyIndex = difficulties.firstIndex(of: .intermediate) ?? 1
-        }
+        HapticManager.shared.selectionChanged()
     }
 
     private func addFocusArea() {
@@ -324,7 +364,13 @@ struct AITrainingPlanGeneratorView: View {
                     targetRole: category == .position ? targetRole : nil,
                     focusAreas: focusAreas,
                     preferredDays: preferredDayStrings,
-                    restDays: restDayStrings
+                    restDays: restDayStrings,
+                    extras: PlanRequestExtras(
+                        weakSpots: weakSpots.map(\.displayName),
+                        position: position.isEmpty ? nil : position,
+                        nextMatchDate: nextMatch,
+                        planStartDate: Date()
+                    )
                 )
                 try Task.checkCancellation()
                 await MainActor.run {
@@ -350,6 +396,8 @@ struct AITrainingPlanGeneratorView: View {
     }
 
     private func savePlanFromStructure(_ structure: GeneratedPlanStructure) {
+        // The next match is the profile's; write it first so the new plan is shaped around it.
+        TrainingPlanService.shared.setNextMatch(nextMatch, for: player)
         if let plan = TrainingPlanService.shared.createPlanFromAIGeneration(structure, for: player) {
             if !planName.trimmingCharacters(in: .whitespaces).isEmpty {
                 plan.name = planName

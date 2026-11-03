@@ -65,6 +65,7 @@ struct DashboardView: View {
     @State private var quickDrillWeakness: SelectedWeakness? = nil
     @State private var showingQuickDrillPaywall = false
     @State private var showingMatchLog = false
+    @State private var showingNextMatch = false
     @State private var showingPlanGenerator = false
     @State private var showingLogPlanSession = false
     @State private var showingProfileCreation = false
@@ -188,6 +189,9 @@ struct DashboardView: View {
             if let player = currentPlayer {
                 MatchLogView(player: player, preselectedSeason: nil) {}
             }
+        }
+        .sheet(isPresented: $showingNextMatch, onDismiss: { loadPlan() }) {
+            if let player = currentPlayer { NextMatchSheet(player: player) }
         }
         .sheet(isPresented: $showingPlanGenerator, onDismiss: { loadPlan() }) {
             if let player = currentPlayer {
@@ -695,7 +699,10 @@ struct DashboardView: View {
                 .filter { !$0.day.isSkipped }
                 .map { HomeWeekModel.PlannedDay(date: $0.date, sessionCount: $0.day.sessions.count, isDone: $0.day.isDone) }
         }
-        return HomeWeekModel.build(today: Date(), calendar: calendar, sessionDates: sessionDates, plannedDays: plannedDays)
+        let matchIndexes = MatchScheduleLink.weekMatchIndexes(
+            today: Date(), matches: recentMatches.compactMap(\.scheduleLink),
+            nextMatchDate: currentPlayer?.playerProfile?.nextMatchDate, calendar: calendar)
+        return HomeWeekModel.build(today: Date(), calendar: calendar, sessionDates: sessionDates, plannedDays: plannedDays, matchIndexes: matchIndexes)
     }
 
     private var weekSection: some View {
@@ -783,8 +790,21 @@ struct DashboardView: View {
             } else {
                 TQRow("Log a match", action: { showingMatchLog = true })
             }
+            nextMatchRow(player: player)
 
             coachRow
+        }
+    }
+
+    /// The next match, or an invite to set one (after the last one was played and logged).
+    @ViewBuilder
+    private func nextMatchRow(player: Player) -> some View {
+        if let next = MatchScheduleLink.upcoming(player.playerProfile?.nextMatchDate, now: Date(), calendar: .current) {
+            TQRow("Next match", meta: .init(PlanSchedule.label(for: next, now: Date(), calendar: .current)), action: { showingNextMatch = true })
+                .accessibilityIdentifier("home.nextMatch")
+        } else {
+            TQRow("Set your next match", subtitle: "Your plan eases off around it", action: { showingNextMatch = true })
+                .accessibilityIdentifier("home.nextMatch")
         }
     }
 

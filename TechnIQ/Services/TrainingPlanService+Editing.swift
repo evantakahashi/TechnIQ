@@ -206,7 +206,9 @@ extension TrainingPlanService {
             changed = true
         }
         guard changed else { return false }
-        return saveEdit(plan)
+        let saved = saveEdit(plan)
+        if saved, let player = plan.player { applyMatchDayRules(to: planId, for: player) }
+        return saved
     }
 
     // MARK: Custom plan skeleton
@@ -221,6 +223,10 @@ extension TrainingPlanService {
         var intensity: Int
         var difficulty: PlanDifficulty
         var category: PlanCategory
+        /// Week n focuses on weak spot (n − 1) mod count; empty leaves weeks without a focus.
+        var weakSpots: [WeaknessCategory] = []
+        /// Stored as the plan's target role; nil falls back to the player's position.
+        var position: String? = nil
     }
 
     /// A custom plan with a full week × day × session skeleton, so it can be followed and edited at once.
@@ -231,22 +237,25 @@ extension TrainingPlanService {
             durationWeeks: max(spec.weeks, 1),
             difficulty: spec.difficulty,
             category: spec.category,
-            targetRole: player.position,
+            targetRole: spec.position ?? player.position,
             for: player
         ) else { return nil }
         let weekdays = DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }
         for weekNumber in 1...max(spec.weeks, 1) {
-            guard let week = addWeekToPlan(plan, weekNumber: weekNumber, focusArea: nil, notes: nil) else { continue }
+            let focus = PlanBuilderPrefill.focusArea(week: weekNumber, weakSpots: spec.weakSpots)
+            guard let week = addWeekToPlan(plan, weekNumber: weekNumber, focusArea: focus, notes: nil) else { continue }
             for (index, weekday) in weekdays.enumerated() {
                 let trains = spec.trainingDays.contains(weekday)
                 guard let day = addDayToWeek(week, dayNumber: index + 1, dayOfWeek: weekday, isRestDay: !trains, notes: nil) else { continue }
                 if trains {
-                    _ = addSessionToDay(day, sessionType: spec.sessionType, duration: spec.minutes, intensity: spec.intensity, notes: nil, exercises: [])
+                    _ = addSessionToDay(day, sessionType: spec.sessionType, duration: spec.minutes, intensity: spec.intensity,
+                                        notes: focus.map { "Focus: \($0)" }, exercises: [])
                 }
             }
         }
         appendRetestWeek(to: plan)
         _ = saveEdit(plan)
+        if let planId = plan.id { applyMatchDayRules(to: planId, for: player) }
         return plan
     }
 }

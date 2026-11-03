@@ -41,7 +41,7 @@ struct PlanDayEditorView: View {
 
                 if let day {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        TQEyebrow(day.isCompleted ? "Done · locked" : (isRestDay ? "Rest day" : "Training day"), size: 11)
+                        TQEyebrow(day.isCompleted ? "Done · locked" : (isRestDay ? (day.isMatchDay ? "Match day · rest" : "Rest day") : "Training day"), size: 11)
                         TQFormField("Week focus", text: $focus, placeholder: "e.g. Weak-foot finishing")
                             .onSubmit { saveFocus() }
                     }

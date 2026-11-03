@@ -18,6 +18,7 @@ from firebase_functions import https_fn
 from ml.youtube_recommendations import create_youtube_ml_engine
 from lightweight_recommendations import create_lightweight_recommendations
 from coach_prompts import build_daily_coaching_prompt, build_weekly_review_prompt, coach_system
+from plan_schedule_prompts import clean_weak_spots, match_day_guidance, parse_day, weak_spot_guidance
 
 # Register Firestore moderation triggers (auto-hide reported community content).
 # Imported for the decorator side effects so `firebase deploy` picks them up.
@@ -1239,6 +1240,11 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
         preferred_days = _clip_list(request_data.get('preferred_days', []))
         rest_days = _clip_list(request_data.get('rest_days', []))
 
+        # Optional: weak spots and the next match ('yyyy-MM-dd'; invalid values are ignored)
+        weak_spots = clean_weak_spots(request_data.get('weak_spots'))
+        next_match_date = parse_day(request_data.get('next_match_date'))
+        plan_start_date = parse_day(request_data.get('plan_start_date'))
+
         if not user_id or not player_profile:
             return https_fn.Response("Missing user_id or player_profile", status=400)
 
@@ -1262,6 +1268,8 @@ def generate_training_plan(req: https_fn.Request) -> https_fn.Response:
             schedule_prefs_text += f"- Preferred Training Days: {', '.join(preferred_days)}\n"
         if rest_days:
             schedule_prefs_text += f"- Required Rest Days: {', '.join(rest_days)}\n"
+        schedule_prefs_text += weak_spot_guidance(weak_spots)
+        schedule_prefs_text += match_day_guidance(next_match_date, plan_start_date, duration_weeks)
 
         prompt = f"""You are a professional soccer coach. Create a {duration_weeks}-week {difficulty} training plan for a {position} focused on {category} skills.
 
