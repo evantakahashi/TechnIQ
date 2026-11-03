@@ -165,6 +165,22 @@ final class JuggleCounterTests: XCTestCase {
         XCTAssertEqual(events.touches.map(\.count).last, 6, "\(events.touches)")
     }
 
+    func testATouchHiddenBelowTheKneesIsStillCreditedToTheFoot() {
+        // Seen on device: the ball vanishes below the knees, so the lowest sighting is at thigh height and
+        // foot touches were judged thigh / chest. The contact is where the fall and the rise meet.
+        let kneeHeight = S.at(0, 0.24).y
+        var frames = footRun(touches: 6)
+        let firstFall = frames.firstIndex { ($0.ball?.center.y ?? 1) < S.footContact.y + 0.01 } ?? 0
+        for i in frames.indices where i > firstFall && (frames[i].ball?.center.y ?? 1) < kneeHeight {
+            frames[i].ball = nil
+        }
+
+        let events = S.run(frames)
+
+        XCTAssertGreaterThanOrEqual(events.touches.count, 5, "\(events.touches)")
+        XCTAssertEqual(Set(events.touches.dropFirst().map(\.part)), [.foot], "\(events.touches)")
+    }
+
     func testABallThatJustFallsBehindAGapIsNotATouch() {
         var b = S.Builder()
         b.hold(S.at(0.37, 0.50), seconds: 0.3)

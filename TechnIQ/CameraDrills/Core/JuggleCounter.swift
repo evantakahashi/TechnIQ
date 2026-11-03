@@ -39,6 +39,8 @@ final class JuggleCounter: DrillCounter {
         var hiddenTouchRise = 0.25
         /// Gravity (m/s²), for the free-fall check.
         var gravity = 9.81
+        /// A hidden contact is placed once this long (s) of rise has been seen, or three sightings.
+        var settleTime = 0.15
         /// A ball at floor level within this (m) of an ankle may be a low touch, not the ground (a phone on
         /// the floor sees a ball just in front of the feet as low as the floor): it's the ground only once
         /// it has stayed down `groundHold` seconds.
@@ -81,6 +83,16 @@ final class JuggleCounter: DrillCounter {
     /// When the ball last came down to floor level (nil while it's above it).
     private var floorSince: Double?
 
+    /// A touch that happened out of the detector's sight, waiting for a few rising sightings so the contact
+    /// point can be placed where the fall and the rise meet.
+    private struct PendingContact {
+        var high: Double
+        var pre: [Sample]
+        var post: [Sample]
+        var hidden: Bool
+    }
+    private var pending: PendingContact?
+
     init(config: Config = Config()) {
         self.config = config
     }
@@ -88,6 +100,11 @@ final class JuggleCounter: DrillCounter {
     func process(_ frame: DrillFrame) -> [DrillEvent] {
         trackFloor(frame)
         guard let ball = frame.ball else {
+            if let pending, let last = pending.post.last, frame.time - last.time > config.settleTime {
+                let events = settle(pending)
+                self.pending = nil
+                return events
+            }
             let timeout = frame.pose == nil ? config.lostBall : config.hiddenBall
             if isRunning, let last = lastSightingTime, frame.time - last > timeout {
                 return [endRun(.lostBall, at: frame.time)]
@@ -98,6 +115,8 @@ final class JuggleCounter: DrillCounter {
         radius = radius.map { $0 * 0.8 + ball.radius * 0.2 } ?? ball.radius
         let sample = Sample(time: frame.time, center: ball.center, radius: ball.radius, pose: frame.pose)
         var events: [DrillEvent] = []
+
+        events += advancePending(with: sample)
 
         floorSince = isOnFloor(sample) ? (floorSince ?? sample.time) : nil
         if isRunning, isGround(sample) {
@@ -110,8 +129,10 @@ final class JuggleCounter: DrillCounter {
         }
         if wasTouchedWhileHidden(sample) {
             phase = .seekingHigh(high: sample.center.y)
+            if let earlier = pending { events += settle(earlier) }
+            pending = PendingContact(high: .infinity, pre: recent, post: [sample], hidden: true)
             recent.removeAll()
-            return events + contact(at: sample, drop: .infinity, hidden: true)
+            return events
         }
 
         switch phase {
@@ -122,7 +143,14 @@ final class JuggleCounter: DrillCounter {
                 phase = .seekingLow(low: sample, high: high)
             } else if sample.center.y - low.center.y >= metres(config.reversal) {
                 phase = .seekingHigh(high: sample.center.y)
-                events += contact(at: low, drop: high - low.center.y)
+                if sample.time - low.time >= config.hiddenTouchGap {
+                    // The ball was out of sight around the contact: place it once the rise is clear.
+                    if let earlier = pending { events += settle(earlier) }
+                    pending = PendingContact(high: high, pre: recent.filter { $0.time <= low.time },
+                                             post: [sample], hidden: false)
+                } else {
+                    events += contact(at: low, drop: high - low.center.y)
+                }
             } else if sample.time - low.time >= config.stall {
                 phase = .seekingHigh(high: sample.center.y)
                 // Came to rest at floor level: the ground, even beside a foot (no rebound, no touch).
@@ -144,7 +172,62 @@ final class JuggleCounter: DrillCounter {
 
     /// Ends an open run (footage over, or the player stopped the session).
     func finish(at time: Double) -> [DrillEvent] {
-        isRunning ? [endRun(.stopped, at: time)] : []
+        var events: [DrillEvent] = []
+        if let waiting = pending {
+            pending = nil
+            events += settle(waiting)
+        }
+        return events + (isRunning ? [endRun(.stopped, at: time)] : [])
+    }
+
+    /// Adds a rising sighting to a pending contact; settles it once the rise is clear.
+    private func advancePending(with sample: Sample) -> [DrillEvent] {
+        guard var waiting = pending else { return [] }
+        waiting.post.append(sample)
+        guard waiting.post.count >= 3 || sample.time - waiting.post[0].time >= config.settleTime else {
+            pending = waiting
+            return []
+        }
+        pending = nil
+        return settle(waiting)
+    }
+
+    /// Counts a pending contact at its estimated point.
+    private func settle(_ waiting: PendingContact) -> [DrillEvent] {
+        let point = estimatedContact(pre: waiting.pre, post: waiting.post)
+            ?? (waiting.hidden ? waiting.post[0] : waiting.pre.last ?? waiting.post[0])
+        let drop = waiting.high == .infinity ? .infinity : waiting.high - point.center.y
+        return contact(at: point, drop: drop, hidden: waiting.hidden)
+    }
+
+    /// Where the ball's fall (last sightings before the gap) and rise (first sightings after it) meet, both
+    /// under gravity: the contact point the detector didn't see. Nil without two sightings on each side.
+    private func estimatedContact(pre: [Sample], post: [Sample]) -> Sample? {
+        let down = Array(pre.suffix(4)), up = Array(post.prefix(4))
+        guard down.count >= 2, up.count >= 2, let p = down.last, let q = up.first, q.time > p.time,
+              let vp = velocity(at: p.time, down), let vq = velocity(at: q.time, up) else { return nil }
+        let g = metres(config.gravity)
+        // y_down(t) = y_p + v_p (t − t_p) − g/2 (t − t_p)², y_up likewise from q; the g t² terms cancel.
+        let tq = q.time - p.time
+        let a = vp - vq - g * tq
+        let b = p.center.y - q.center.y + vq * tq + 0.5 * g * tq * tq
+        guard abs(a) > 1e-9 else { return nil }
+        let t = min(max(-b / a, 0), tq)
+        let y = p.center.y + vp * t - 0.5 * g * t * t
+        let x = p.center.x + (q.center.x - p.center.x) * t / tq
+        return Sample(time: p.time + t, center: DrillPoint(x: x, y: y), radius: p.radius,
+                      pose: t < tq / 2 ? (p.pose ?? q.pose) : (q.pose ?? p.pose))
+    }
+
+    /// Vertical velocity at `time` from a least-squares fit over `samples` (gravity-corrected to that time).
+    private func velocity(at time: Double, _ samples: [Sample]) -> Double? {
+        guard samples.count >= 2 else { return nil }
+        let n = Double(samples.count)
+        let mt = samples.map(\.time).reduce(0, +) / n, my = samples.map(\.center.y).reduce(0, +) / n
+        let sxx = samples.reduce(0) { $0 + ($1.time - mt) * ($1.time - mt) }
+        guard sxx > 0 else { return nil }
+        let slope = samples.reduce(0) { $0 + ($1.time - mt) * ($1.center.y - my) } / sxx
+        return slope - metres(config.gravity) * (time - mt)
     }
 
     // MARK: - Contacts

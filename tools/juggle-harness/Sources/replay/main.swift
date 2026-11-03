@@ -32,6 +32,26 @@ func show(_ events: [DrillEvent]) {
         }
     }
 }
-for frame in frames { show(counter.process(frame)) }
-show(counter.finish(at: frames.last?.time ?? start))
+let recorder = RunRecorder()
+var allStats: [RunStats] = []
+func showStats(_ stats: [RunStats]) {
+    for s in stats where s.count >= 3 {
+        let metres = { (v: Double?) in v.map { String(format: "%.2f m", $0) } ?? "-" }
+        print("    run of \(s.count): L \(s.leftFoot) / R \(s.rightFoot), hidden \(s.ambiguous), "
+              + "height L \(metres(s.apexLeft)) R \(metres(s.apexRight)), "
+              + "\(s.touchesPerMinute.map { String(format: "%.0f/min", $0) } ?? "-"), drift \(metres(s.drift)) | \(s.endLine)")
+        for line in s.insights { print("      - \(line)") }
+    }
+    allStats += stats
+}
+for frame in frames {
+    let events = counter.process(frame)
+    show(events)
+    showStats(recorder.record(frame, events: events))
+}
+let last = frames.last ?? frames[0]
+let closing = counter.finish(at: last.time)
+show(closing)
+showStats(recorder.record(last, events: closing))
 print("\(frames.count) frames, runs: \(runs)")
+if let line = RunStats.sessionLine(allStats) { print(line) }

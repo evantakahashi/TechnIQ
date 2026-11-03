@@ -55,18 +55,18 @@ struct DrillFrame: Equatable, Codable {
 }
 
 /// The body part a touch landed on. Arms are never legal; the counter uses `.arm` to end a run.
-enum TouchPart: String {
+enum TouchPart: String, Codable {
     case foot, thigh, chest, head, arm
     /// Ball reversed above the ground but no pose was available to say what touched it.
     case unknown
 }
 
 /// The player's own left / right (frames are never mirrored).
-enum BodySide: String {
+enum BodySide: String, Codable {
     case left, right
 }
 
-enum RunEndReason: String {
+enum RunEndReason: String, Codable {
     case ground
     case handball
     /// Weak-foot / alternating juggling: a touch with the wrong foot.
