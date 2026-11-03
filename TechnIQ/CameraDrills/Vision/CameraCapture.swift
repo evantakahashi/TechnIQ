@@ -15,7 +15,7 @@ enum DrillModels {
     }
 }
 
-/// Where a camera-drill session's frames come from: the back camera, or (DEBUG) a recorded clip.
+/// Where a camera-drill session's frames come from: the front camera, or (DEBUG) a recorded clip.
 protocol DrillFrameSource: AnyObject {
     /// Queue `onFrame` runs on.
     var queue: DispatchQueue { get }
@@ -25,22 +25,33 @@ protocol DrillFrameSource: AnyObject {
     var aspect: Double { get }
     /// Live camera preview, when there is one.
     var previewSession: AVCaptureSession? { get }
+    /// The preview is a mirror image (front camera): overlays flip x to match it. Frames stay unmirrored.
+    var isMirrored: Bool { get }
     func start(onFrame: @escaping (CMSampleBuffer) -> Void, completion: @escaping (CameraCapture.CaptureError?) -> Void)
     func stop()
 }
 
-/// Back camera at 720p / 30 fps, delivering sample buffers on a private queue.
-/// Portrait app: buffers arrive landscape, so analysers use `CameraCapture.orientation`.
+/// Front camera (the player watches the screen) at 720p / 30 fps, delivering sample buffers on a private
+/// queue. The connection rotates buffers upright (portrait) and leaves them unmirrored, so body sides
+/// are real; only the preview is a mirror image.
 final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputSampleBufferDelegate {
     enum CaptureError: Error { case denied, noCamera }
 
-    static let orientation = CGImagePropertyOrientation.right
+    /// Buffers arrive upright.
+    static let orientation = CGImagePropertyOrientation.up
     /// Width / height of the upright frame (720 × 1280).
     static let aspect = 720.0 / 1280.0
 
     var orientation: CGImagePropertyOrientation { Self.orientation }
     var aspect: Double { Self.aspect }
     var previewSession: AVCaptureSession? { session }
+    var isMirrored: Bool { position == .front }
+
+    let position: AVCaptureDevice.Position
+
+    init(position: AVCaptureDevice.Position = .front) {
+        self.position = position
+    }
 
     let session = AVCaptureSession()
     let queue = DispatchQueue(label: "camera-drills.capture", qos: .userInteractive)
@@ -72,7 +83,7 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
         session.beginConfiguration()
         defer { session.commitConfiguration() }
         session.sessionPreset = .hd1280x720
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input) else { return false }
         session.addInput(input)
         output.alwaysDiscardsLateVideoFrames = true
@@ -80,6 +91,14 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
         output.setSampleBufferDelegate(self, queue: queue)
         guard session.canAddOutput(output) else { return false }
         session.addOutput(output)
+        // Upright portrait buffers, never mirrored (the preview layer mirrors the front camera itself).
+        if let connection = output.connection(with: .video) {
+            if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
+            if connection.isVideoMirroringSupported {
+                connection.automaticallyAdjustsVideoMirroring = false
+                connection.isVideoMirrored = false
+            }
+        }
 
         // Lock 30 fps so the counter's timing and the gate's numbers are comparable.
         if (try? camera.lockForConfiguration()) != nil {

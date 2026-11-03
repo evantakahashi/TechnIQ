@@ -3,7 +3,7 @@ import AVFoundation
 import CoreML
 import SwiftUI
 
-/// Phase-1 spike: back camera → FrameAnalyzer → JuggleCounter, all on device, plus optional clip
+/// Phase-1 spike: front camera → FrameAnalyzer → JuggleCounter, all on device, plus optional clip
 /// recording for the harness. Frames are processed on the capture queue; UI state is published on main.
 final class JuggleSpikePipeline: ObservableObject {
     @Published private(set) var frame: DrillFrame?
@@ -34,7 +34,7 @@ final class JuggleSpikePipeline: ObservableObject {
             guard let self else { return }
             switch error {
             case .denied?: DispatchQueue.main.async { self.error = "Camera access denied — enable it in Settings." }
-            case .noCamera?: DispatchQueue.main.async { self.error = "No back camera." }
+            case .noCamera?: DispatchQueue.main.async { self.error = "No front camera." }
             case nil: self.makeAnalyzer()
             }
         })
@@ -133,7 +133,7 @@ final class JuggleSpikePipeline: ObservableObject {
     }
 }
 
-/// Writes raw camera buffers to Documents/JuggleSpike/*.mov (portrait via track transform), so
+/// Writes the (upright, unmirrored) camera buffers to Documents/JuggleSpike/*.mov, so
 /// clips can be pulled off the phone (Files app / Finder) and fed to tools/juggle-harness.
 final class SpikeClipRecorder {
     private let writer: AVAssetWriter
@@ -153,11 +153,10 @@ final class SpikeClipRecorder {
         writer = try AVAssetWriter(outputURL: url, fileType: .mov)
         input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: 1280,
-            AVVideoHeightKey: 720
+            AVVideoWidthKey: 720,
+            AVVideoHeightKey: 1280
         ])
         input.expectsMediaDataInRealTime = true
-        input.transform = CGAffineTransform(rotationAngle: .pi / 2)
         writer.add(input)
     }
 

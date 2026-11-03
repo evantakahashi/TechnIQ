@@ -104,7 +104,8 @@ struct JuggleSpikeView: View {
         Canvas { context, _ in
             guard let frame = pipeline.frame else { return }
             func point(_ p: DrillPoint) -> CGPoint {
-                CGPoint(x: p.x / Self.aspect * size.width, y: (1 - p.y) * size.height)
+                // Front-camera preview is mirrored; frames aren't.
+                CGPoint(x: (1 - p.x / Self.aspect) * size.width, y: (1 - p.y) * size.height)
             }
             if let pose = frame.pose {
                 for joint in pose.joints.values {

@@ -40,6 +40,7 @@ final class CameraDrillSession: ObservableObject {
     @Published private(set) var previewImage: CGImage?
 
     var previewSession: AVCaptureSession? { source.previewSession }
+    var isMirrored: Bool { source.isMirrored }
 
     private let source: DrillFrameSource
     private let player: Player
@@ -52,7 +53,7 @@ final class CameraDrillSession: ObservableObject {
     private let speech = AVSpeechSynthesizer()
 
     /// - Parameters:
-    ///   - source: frames to analyse; the back camera unless DEBUG `-TQCameraFile` names a clip.
+    ///   - source: frames to analyse; the front camera unless DEBUG `-TQCameraFile` names a clip.
     ///   - runService: where finished runs are recorded (`CameraRunService.shared` when nil).
     init(drill: CameraDrill, player: Player, source: DrillFrameSource? = nil, runService: CameraRunService? = nil) {
         self.drill = drill
@@ -95,7 +96,7 @@ final class CameraDrillSession: ObservableObject {
                 guard let self else { return }
                 switch error {
                 case .denied?: self.phase = .failed("Camera access is off. Turn it on in Settings → TechnIQ.")
-                case .noCamera?: self.phase = .failed("No back camera available.")
+                case .noCamera?: self.phase = .failed("No front camera available.")
                 case nil:
                     self.aspect = self.source.aspect
                     self.phase = .positioning

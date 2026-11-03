@@ -13,6 +13,7 @@ final class VideoFileSource: DrillFrameSource {
     private(set) var orientation = CGImagePropertyOrientation.up
     private(set) var aspect = CameraCapture.aspect
     var previewSession: AVCaptureSession? { nil }
+    var isMirrored: Bool { false }
     /// Each frame upright, for the on-screen preview (called on `queue`).
     var onPreview: ((CGImage) -> Void)?
 

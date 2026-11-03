@@ -178,8 +178,9 @@ struct CameraDrillSessionView: View {
         let a = session.aspect
         let scale = max(size.width / a, size.height)
         let origin = CGPoint(x: (size.width - a * scale) / 2, y: (size.height - scale) / 2)
+        let mirrored = session.isMirrored
         func point(_ x: Double, _ y: Double) -> CGPoint {
-            CGPoint(x: origin.x + x * scale, y: origin.y + (1 - y) * scale)
+            CGPoint(x: origin.x + (mirrored ? a - x : x) * scale, y: origin.y + (1 - y) * scale)
         }
         let showOutline = session.phase == .positioning || session.phase == .result
             || { if case .countdown = session.phase { return true } else { return false } }()

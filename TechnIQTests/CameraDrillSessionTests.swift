@@ -16,6 +16,7 @@ final class CameraDrillSessionTests: XCTestCase {
         let orientation = CGImagePropertyOrientation.up
         let aspect = CameraCapture.aspect
         var previewSession: AVCaptureSession? { nil }
+        var isMirrored: Bool { false }
         func start(onFrame: @escaping (CMSampleBuffer) -> Void, completion: @escaping (CameraCapture.CaptureError?) -> Void) {}
         func stop() {}
     }
