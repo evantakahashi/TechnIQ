@@ -5,8 +5,9 @@ import SwiftUI
 // One cell enum for both: done (grass + tick), planned (raised, 1 px highlight border), today
 // (pitch fill, 1.5 pt grass border), rest (empty), missed (raised, 1 px error border — past
 // planned days only), locked (highlight at 50 % — future weeks before the plan starts).
-// A cell may carry a session count ("2"). WeekStrip = one row of cells with day letters under
-// them (34 pt, r6); ScheduleGrid = rows × 7 with a "WK n" label column (30 pt, r5).
+// A cell may carry a session count ("2") and a match marker (cone border + ball glyph on an
+// otherwise empty cell). WeekStrip = one row of cells with day letters under them (34 pt, r6);
+// ScheduleGrid = rows × 7 with a "WK n" label column (30 pt, r5).
 
 enum TQDayCellState: Equatable {
     case done
@@ -20,6 +21,8 @@ enum TQDayCellState: Equatable {
 struct TQDayCell: Equatable {
     var state: TQDayCellState
     var sessions: Int = 0
+    /// A match is on this day (logged, or the profile's next match).
+    var isMatch: Bool = false
 
     static let rest = TQDayCell(state: .rest)
 }
@@ -48,17 +51,23 @@ struct TQDayCellView: View {
                         .foregroundColor(DesignSystem.Colors.textOnAccent)
                 }
             case .planned, .missed:
-                if cell.sessions > 1 { countLabel(color: DesignSystem.Colors.dimIvory) }
+                if cell.sessions > 1 { countLabel(color: DesignSystem.Colors.dimIvory) } else if cell.isMatch { matchGlyph }
             case .today:
-                if cell.sessions > 1 { countLabel(color: DesignSystem.Colors.grass) }
+                if cell.sessions > 1 { countLabel(color: DesignSystem.Colors.grass) } else if cell.isMatch { matchGlyph }
             case .rest, .locked:
-                EmptyView()
+                if cell.isMatch { matchGlyph }
             }
         }
         .frame(height: height)
         .opacity(cell.state == .locked ? 0.5 : 1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+    }
+
+    private var matchGlyph: some View {
+        Image(systemName: "soccerball")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(DesignSystem.Colors.cone)
     }
 
     private func countLabel(color: Color) -> some View {
@@ -78,6 +87,7 @@ struct TQDayCellView: View {
     }
 
     private var border: (color: Color, width: CGFloat) {
+        if cell.isMatch { return (DesignSystem.Colors.cone, cell.state == .today ? 1.5 : 1) }
         switch cell.state {
         case .planned: return (DesignSystem.Colors.surfaceHighlight, 1)
         case .today: return (DesignSystem.Colors.grass, 1.5)
@@ -88,13 +98,14 @@ struct TQDayCellView: View {
 
     private var accessibilityText: String {
         let count = cell.sessions > 1 ? ", \(cell.sessions) sessions" : ""
+        let match = cell.isMatch ? ", match" : ""
         switch cell.state {
-        case .done: return "done" + count
-        case .planned: return "planned" + count
-        case .today: return "today" + count
-        case .rest: return "rest day"
-        case .missed: return "missed" + count
-        case .locked: return "locked"
+        case .done: return "done" + count + match
+        case .planned: return "planned" + count + match
+        case .today: return "today" + count + match
+        case .rest: return cell.isMatch ? "match" : "rest day"
+        case .missed: return "missed" + count + match
+        case .locked: return "locked" + match
         }
     }
 }
@@ -173,7 +184,7 @@ struct TQScheduleGrid: View {
                     ForEach(0..<7, id: \.self) { dayIndex in
                         let cell = dayIndex < row.cells.count ? row.cells[dayIndex] : TQDayCell.rest
                         Group {
-                            if let onTap, cell.state != .rest {
+                            if let onTap, cell.state != .rest || cell.isMatch {
                                 Button {
                                     HapticManager.shared.selectionChanged()
                                     onTap(rowIndex, dayIndex)
@@ -202,6 +213,9 @@ struct TQScheduleGrid: View {
             legendItem(fill: DesignSystem.Colors.grass, border: .clear, borderWidth: 0, label: "Done")
             legendItem(fill: DesignSystem.Colors.surfaceRaised, border: DesignSystem.Colors.surfaceHighlight, borderWidth: 1, label: "Session")
             legendItem(fill: DesignSystem.Colors.pitch, border: DesignSystem.Colors.grass, borderWidth: 1.5, label: "Today")
+            if rows.contains(where: { $0.cells.contains(where: \.isMatch) }) {
+                legendItem(fill: .clear, border: DesignSystem.Colors.cone, borderWidth: 1, label: "Match")
+            }
             Spacer()
         }
         .accessibilityHidden(true)

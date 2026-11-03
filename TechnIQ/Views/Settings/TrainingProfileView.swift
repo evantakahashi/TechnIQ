@@ -4,8 +4,9 @@ import CoreData
 // MARK: - Training profile (You → Training profile)
 //
 // The onboarding answers, editable: goal, training days, position, stronger foot, level and up to
-// three weak spots. Weak spots feed Train's ordering, the generator and the coach at once. Changing
-// the training days re-binds the active plan's future weeks to the new weekdays.
+// three weak spots, and the next match. Weak spots feed Train's ordering, the generator and the
+// coach at once. Changing the training days re-binds the active plan's future weeks to the new
+// weekdays; the next match re-shapes the days around it (MatchDayRules).
 
 struct TrainingProfileView: View {
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +21,7 @@ struct TrainingProfileView: View {
     @State private var footIndex: Int
     @State private var levelIndex: Int
     @State private var weakSpots: [WeaknessCategory]
+    @State private var nextMatch: Date?
     @State private var showingRebindNote = false
 
     private let goals = OnboardingMapping.goals
@@ -28,6 +30,7 @@ struct TrainingProfileView: View {
     private let levels = OnboardingMapping.experienceLevels
     private let weekdays = DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }
     private let originalDays: Set<DayOfWeek>
+    private let originalNextMatch: Date?
 
     init(player: Player, onSaved: @escaping () -> Void = {}) {
         self.player = player
@@ -41,6 +44,9 @@ struct TrainingProfileView: View {
         _footIndex = State(initialValue: OnboardingMapping.feet.firstIndex(of: player.dominantFoot ?? "") ?? 1)
         _levelIndex = State(initialValue: OnboardingMapping.experienceLevels.firstIndex(of: player.experienceLevel ?? "") ?? 0)
         _weakSpots = State(initialValue: (profile?.selfIdentifiedWeaknesses ?? []).compactMap { name in WeaknessCategory.allCases.first { $0.displayName == name } })
+        let upcoming = MatchScheduleLink.upcoming(profile?.nextMatchDate, now: Date(), calendar: .current)
+        _nextMatch = State(initialValue: upcoming)
+        originalNextMatch = upcoming
     }
 
     var body: some View {
@@ -58,6 +64,14 @@ struct TrainingProfileView: View {
                     TQEyebrow("What the coach works from", size: 11)
                     TQDisplayTitle("Your\ntraining", size: .medium)
                     TQBody("Change any of it. Weak spots reorder Train and steer the coach; training days move your plan's coming weeks.")
+                }
+
+                VStack(alignment: .leading, spacing: 0) {
+                    TQGroupHeader("Next match")
+                    TQRule()
+                    TQDateRow("Next match", subtitle: "Light the day before, recovery the day after",
+                              date: $nextMatch, range: NextMatchDefaults.range()) { NextMatchDefaults.suggested() }
+                        .accessibilityIdentifier("trainingProfile.nextMatch")
                 }
 
                 group("Goal") {
@@ -157,6 +171,9 @@ struct TrainingProfileView: View {
         if days != originalDays, let plan = TrainingPlanService.shared.fetchActivePlan(for: player) {
             rebound = TrainingPlanService.shared.rebindTrainingDays(planId: plan.id, to: Array(days))
             NotificationManager.shared.refresh(for: player)
+        }
+        if nextMatch != originalNextMatch {
+            TrainingPlanService.shared.setNextMatch(nextMatch, for: player)
         }
         HapticManager.shared.success()
         onSaved()

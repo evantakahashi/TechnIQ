@@ -16,6 +16,7 @@ protocol AIRecommendationServiceProtocol: AnyObject {
         targetRole: String?,
         focusAreas: [String],
         preferredDays: [String],
-        restDays: [String]
+        restDays: [String],
+        extras: PlanRequestExtras
     ) async throws -> GeneratedPlanStructure
 }

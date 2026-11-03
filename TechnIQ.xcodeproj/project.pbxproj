@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C135789A56F9C18EA26594B5 /* MatchDayServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9638CCD04C8D79DEBA66291 /* MatchDayServiceTests.swift */; };
+		02EB4F36A423756A1828A1E0 /* MatchScheduleLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554D98A9CCBA2B3C1D229EF8 /* MatchScheduleLinkTests.swift */; };
+		C63CFB7AAD079C2F7FF8DA99 /* MatchDayRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F94DEC70412F4363E83BA2A4 /* MatchDayRulesTests.swift */; };
+		468A35AFF201C07B807FC9B7 /* NextMatchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE7AD6EC82F48375A452BA3 /* NextMatchSheet.swift */; };
+		07AF486FF2369499F861284D /* TQDateRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D89CB4A75EDA90D25D88D67 /* TQDateRow.swift */; };
+		DC794817F3CF36AFE28A63EF /* TrainingPlanService+MatchDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5B966A8DE8F6FDAAAD89BF /* TrainingPlanService+MatchDay.swift */; };
+		3FDD4F3A81D41BA0B8D4143A /* PlanRequestExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37CF2FA9DCAB66EDA7AE6D2C /* PlanRequestExtras.swift */; };
+		DBB92F9B74AABFFCA5ED6DDE /* PlanBuilderPrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70E5F81E23B9E852F6767AA /* PlanBuilderPrefill.swift */; };
+		4CB2024999263B7435C97F8F /* MatchScheduleLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A186D920F5F7BB68AE9AA9 /* MatchScheduleLink.swift */; };
+		FAED3D42142058269138408C /* MatchDayRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1301B1D4BE1539B64237AA /* MatchDayRules.swift */; };
 		CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */; };
 		90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */; };
 		9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */; };
@@ -295,6 +305,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D9638CCD04C8D79DEBA66291 /* MatchDayServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDayServiceTests.swift; sourceTree = "<group>"; };
+		554D98A9CCBA2B3C1D229EF8 /* MatchScheduleLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchScheduleLinkTests.swift; sourceTree = "<group>"; };
+		F94DEC70412F4363E83BA2A4 /* MatchDayRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDayRulesTests.swift; sourceTree = "<group>"; };
+		6FE7AD6EC82F48375A452BA3 /* NextMatchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMatchSheet.swift; sourceTree = "<group>"; };
+		2D89CB4A75EDA90D25D88D67 /* TQDateRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TQDateRow.swift; sourceTree = "<group>"; };
+		1C5B966A8DE8F6FDAAAD89BF /* TrainingPlanService+MatchDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingPlanService+MatchDay.swift"; sourceTree = "<group>"; };
+		37CF2FA9DCAB66EDA7AE6D2C /* PlanRequestExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanRequestExtras.swift; sourceTree = "<group>"; };
+		E70E5F81E23B9E852F6767AA /* PlanBuilderPrefill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanBuilderPrefill.swift; sourceTree = "<group>"; };
+		69A186D920F5F7BB68AE9AA9 /* MatchScheduleLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchScheduleLink.swift; sourceTree = "<group>"; };
+		9F1301B1D4BE1539B64237AA /* MatchDayRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDayRules.swift; sourceTree = "<group>"; };
 		434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMigrationTests.swift; sourceTree = "<group>"; };
 		FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -726,6 +746,10 @@
 				2E812721F1D6847B97526B3A /* UnlockCriteria.swift */,
 				190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */,
 				FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */,
+				9F1301B1D4BE1539B64237AA /* MatchDayRules.swift */,
+				69A186D920F5F7BB68AE9AA9 /* MatchScheduleLink.swift */,
+				E70E5F81E23B9E852F6767AA /* PlanBuilderPrefill.swift */,
+				37CF2FA9DCAB66EDA7AE6D2C /* PlanRequestExtras.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -776,6 +800,7 @@
 				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
 				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
 				577036B5FF9C26D5C4C63499 /* CameraRunService.swift */,
+				1C5B966A8DE8F6FDAAAD89BF /* TrainingPlanService+MatchDay.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -788,6 +813,7 @@
 				AB1234567890ABCD12340017 /* CreateSeasonView.swift */,
 				AB1234567890ABCD12340018 /* MatchHistoryView.swift */,
 				AB1234567890ABCD12340019 /* SeasonManagementView.swift */,
+				6FE7AD6EC82F48375A452BA3 /* NextMatchSheet.swift */,
 			);
 			name = Matches;
 			path = Matches;
@@ -994,6 +1020,9 @@
 				AE5D27A676A91D340CCC8114 /* CameraDrillSessionTests.swift */,
 				51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */,
 				434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */,
+				F94DEC70412F4363E83BA2A4 /* MatchDayRulesTests.swift */,
+				554D98A9CCBA2B3C1D229EF8 /* MatchScheduleLinkTests.swift */,
+				D9638CCD04C8D79DEBA66291 /* MatchDayServiceTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1082,6 +1111,7 @@
 				A37922B5E711DC4CF929592F /* TQGallery.swift */,
 				46B4D2F42E87B546D59E5252 /* TQDiagram.swift */,
 				596560DE22A4069FB36A800D /* TQFormField.swift */,
+				2D89CB4A75EDA90D25D88D67 /* TQDateRow.swift */,
 			);
 			path = Touchline;
 			sourceTree = "<group>";
@@ -1519,6 +1549,13 @@
 				E8BF71EDE8DC969C6FCAADEE /* UnlockCriteria.swift in Sources */,
 				9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */,
 				90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */,
+				FAED3D42142058269138408C /* MatchDayRules.swift in Sources */,
+				4CB2024999263B7435C97F8F /* MatchScheduleLink.swift in Sources */,
+				DBB92F9B74AABFFCA5ED6DDE /* PlanBuilderPrefill.swift in Sources */,
+				3FDD4F3A81D41BA0B8D4143A /* PlanRequestExtras.swift in Sources */,
+				DC794817F3CF36AFE28A63EF /* TrainingPlanService+MatchDay.swift in Sources */,
+				07AF486FF2369499F861284D /* TQDateRow.swift in Sources */,
+				468A35AFF201C07B807FC9B7 /* NextMatchSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1554,6 +1591,9 @@
 				773DA1379301F80B48909B8E /* CameraDrillSessionTests.swift in Sources */,
 				9603D147F111AA287AA216A0 /* SyntheticScene.swift in Sources */,
 				CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */,
+				C63CFB7AAD079C2F7FF8DA99 /* MatchDayRulesTests.swift in Sources */,
+				02EB4F36A423756A1828A1E0 /* MatchScheduleLinkTests.swift in Sources */,
+				C135789A56F9C18EA26594B5 /* MatchDayServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

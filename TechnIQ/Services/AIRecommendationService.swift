@@ -378,7 +378,8 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         targetRole: String?,
         focusAreas: [String],
         preferredDays: [String] = [],
-        restDays: [String] = []
+        restDays: [String] = [],
+        extras: PlanRequestExtras = PlanRequestExtras()
     ) async throws -> GeneratedPlanStructure {
         try checkRateLimit(for: "generate_training_plan")
         #if DEBUG
@@ -392,8 +393,10 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             throw MLError.notAuthenticated
         }
 
-        // Build comprehensive player profile
-        let playerProfile = buildPlayerProfile(for: player)
+        // Build comprehensive player profile (the builder's position wins)
+        var playerProfile = buildPlayerProfile(for: player)
+        if let position = extras.position, !position.isEmpty { playerProfile["position"] = position }
+        let extraFields = extras.requestFields(profileWeakSpots: player.playerProfile?.selfIdentifiedWeaknesses, calendar: .current)
 
         // Call Firebase Function for AI plan generation
         return try await callFirebaseAIPlanGeneration(
@@ -405,7 +408,8 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
             targetRole: targetRole,
             focusAreas: focusAreas,
             preferredDays: preferredDays,
-            restDays: restDays
+            restDays: restDays,
+            extraFields: extraFields
         )
     }
 
@@ -418,7 +422,8 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         targetRole: String?,
         focusAreas: [String],
         preferredDays: [String],
-        restDays: [String]
+        restDays: [String],
+        extraFields: [String: Any]
     ) async throws -> GeneratedPlanStructure {
 
         // Construct Firebase Functions URL for AI plan generation
@@ -449,6 +454,8 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         if !restDays.isEmpty {
             requestBody["rest_days"] = restDays
         }
+        // Weak spots, plan start (today) and next match (match-day guidance).
+        requestBody.merge(extraFields) { current, _ in current }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

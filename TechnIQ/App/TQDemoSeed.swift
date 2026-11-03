@@ -58,6 +58,7 @@ enum TQDemoSeed {
         seedSessions(for: player, context: context, calendar: calendar, now: now)
         seedDrillUsage(for: player, context: context, calendar: calendar, now: now)
         seedMatch(for: player, calendar: calendar, now: now)
+        seedNextMatch(for: player, context: context, calendar: calendar, now: now)
         seedCameraRuns(for: player, context: context, now: now)
 
         // Coach marks would cover the hero in screenshots.
@@ -294,6 +295,28 @@ enum TQDemoSeed {
             notes: nil,
             rating: 4
         )
+    }
+
+    /// A training profile with two weak spots and a next match two days out, so the builders prefill
+    /// and Home / the plan show a match day (the active plan is shaped around it).
+    @MainActor
+    private static func seedNextMatch(for player: Player, context: NSManagedObjectContext, calendar: Calendar, now: Date) {
+        let profile = player.playerProfile ?? {
+            let created = PlayerProfile(context: context)
+            created.id = UUID()
+            created.createdAt = now
+            created.player = player
+            player.playerProfile = created
+            return created
+        }()
+        if profile.selfIdentifiedWeaknesses?.isEmpty ?? true {
+            profile.selfIdentifiedWeaknesses = [WeaknessCategory.weakFoot.displayName, WeaknessCategory.shooting.displayName]
+        }
+        if MatchScheduleLink.upcoming(profile.nextMatchDate, now: now, calendar: calendar) == nil {
+            profile.nextMatchDate = calendar.date(byAdding: .day, value: 2, to: calendar.startOfDay(for: now))
+        }
+        try? context.save()
+        TrainingPlanService.shared.refreshMatchDayRules(for: player)
     }
 
     /// A few juggling runs so Camera drills shows a best (no rewards — written directly).

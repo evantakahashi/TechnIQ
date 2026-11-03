@@ -179,6 +179,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             #if DEBUG
             print("TrainingPlanService: Successfully created AI-generated plan with \(generated.weeks.count) weeks")
             #endif
+            if let planId = plan.id { applyMatchDayRules(to: planId, for: player) }
             // Push the fully-built plan now; the incremental sync also covers it but can be throttled.
             Task { @MainActor in try? await CloudService.shared.syncTrainingPlan(plan) }
             return plan
@@ -354,6 +355,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                 plan.startedAt = Date()
                 plan.updatedAt = Date()
                 try context.save()
+                applyMatchDayRules(to: planModel.id, for: player)
                 activePlan = plan.toModel()
             }
         } catch {
@@ -511,6 +513,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         plan.updatedAt = Date()
         do {
             try context.save()
+            if let player = plan.player { applyMatchDayRules(to: planModel.id, for: player) }
         } catch {
             #if DEBUG
             print("TrainingPlanService: Failed to apply adaptation: \(error)")
@@ -1046,6 +1049,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
 
         do {
             try context.save()
+            if let planId = plan.id { applyMatchDayRules(to: planId, for: player) }
             return plan
         } catch {
             #if DEBUG

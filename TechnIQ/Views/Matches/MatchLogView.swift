@@ -18,6 +18,7 @@ struct MatchLogView: View {
 
     // Match details
     @State private var matchDate = Date()
+    @State private var didDefaultDate = false
     @State private var opponent = ""
     @State private var competition = ""
     @State private var selectedSeason: Season?
@@ -114,6 +115,11 @@ struct MatchLogView: View {
             }
             .onAppear {
                 loadSeasons()
+                // Logging the match just played: open on the next match's day (today or ≤ 2 days back).
+                if !didDefaultDate {
+                    didDefaultDate = true
+                    matchDate = MatchScheduleLink.defaultLogDate(nextMatchDate: player.playerProfile?.nextMatchDate, now: Date(), calendar: .current)
+                }
             }
         }
     }
@@ -622,6 +628,8 @@ struct MatchLogView: View {
             strengths: strengthsString,
             weaknesses: weaknessesString
         )
+        // Played on/after the next match's day → that match is done; the plan is re-checked.
+        TrainingPlanService.shared.matchLogged(on: matchDate, for: player)
 
         earnedXP = match.xpEarned
 
