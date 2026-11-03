@@ -9,39 +9,6 @@ enum TrainingPhase: Equatable {
     case sessionComplete // done
 }
 
-// MARK: - Session effort ("How did it feel?")
-
-/// Session-level answer on Session Complete. Maps onto the 1–5 performance scale that feeds skill
-/// scores and the XP rating bonus: an easy session means the skill is mastered, a hard one that it
-/// still needs work.
-enum SessionEffort: String, CaseIterable, Identifiable {
-    case easy, ok, good, hard
-
-    var id: String { rawValue }
-
-    var rating: Int {
-        switch self {
-        case .easy: return 5
-        case .good: return 4
-        case .ok: return 3
-        case .hard: return 2
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .easy: return "Easy"
-        case .ok: return "OK"
-        case .good: return "Good"
-        case .hard: return "Hard"
-        }
-    }
-
-    static func from(rating: Int) -> SessionEffort {
-        allCases.first { $0.rating == rating } ?? .good
-    }
-}
-
 // MARK: - Active Session Manager
 
 @MainActor
@@ -91,7 +58,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         self.exerciseDurations = Array(repeating: 0, count: exercises.count)
     }
 
-    // MARK: - Touchline session mechanics (clock, reps, effort)
+    // MARK: - Touchline session mechanics (clock, reps)
 
     /// Seconds spent on the current drill (counts while running).
     @Published private(set) var elapsedSeconds: Int = 0
@@ -123,23 +90,6 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
     var currentReps: Int {
         guard currentExerciseIndex < reps.count else { return 0 }
         return reps[currentExerciseIndex]
-    }
-
-    /// Effort zone for the current drill: metabolic load 1–5 when known, else from difficulty.
-    var currentEffortZone: Int {
-        Self.effortZone(for: currentExercise)
-    }
-
-    static func effortZone(for exercise: Exercise?) -> Int {
-        guard let exercise else { return 2 }
-        if exercise.metabolicLoad > 0 { return Int(min(max(exercise.metabolicLoad, 1), 5)) }
-        switch exercise.difficulty {
-        case ..<1: return 2
-        case 1: return 1
-        case 2: return 2
-        case 3: return 3
-        default: return 4
-        }
     }
 
     /// Counters restored from a snapshot (see +Resume). The clock stays paused.
@@ -191,8 +141,8 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
     }
 
     /// Touchline "next": completes the current drill with a provisional rating (the session-level
-    /// effort refines it on Session Complete) and moves on, or finishes the session on the last drill.
-    func advance(provisionalRating: Int = SessionEffort.good.rating) {
+    /// feel refines it on Session Complete) and moves on, or finishes the session on the last drill.
+    func advance(provisionalRating: Int = SessionFeel.right.rating) {
         guard phase == .exercise else { return }
         pauseClock()
         if currentExerciseIndex < exerciseDurations.count {
@@ -205,16 +155,19 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         if phase == .exercise { startClock() } else { clearSnapshot() }
     }
 
-    /// Applies the session-level "How did it feel?" answer to every completed drill and to the saved
-    /// session, then re-derives the player's skill ratings from the pre-session snapshot.
-    func applyEffort(_ effort: SessionEffort, to session: TrainingSession?, player: Player, context: NSManagedObjectContext) {
+    /// Applies the session-level "How did it feel?" answer: stores it on the saved session
+    /// (`TrainingSession.feel`), writes its rating to every completed drill and the session, then
+    /// re-derives the player's skill ratings from the pre-session snapshot.
+    func applyFeel(_ feel: SessionFeel, to session: TrainingSession?, player: Player, context: NSManagedObjectContext) {
         for index in exerciseRatings.indices where exerciseRatings[index] > 0 {
-            exerciseRatings[index] = effort.rating
+            exerciseRatings[index] = feel.rating
         }
         guard let session else { return }
-        session.overallRating = Int16(effort.rating)
+        session.feel = feel.rawValue
+        session.overallRating = Int16(feel.rating)
+        session.updatedAt = Date()
         for case let se as SessionExercise in session.exercises ?? [] {
-            se.performanceRating = Int16(effort.rating)
+            se.performanceRating = Int16(feel.rating)
         }
         if let snapshot = skillRatingsSnapshot {
             let stats = Self.latestOrNewStats(for: player, context: context)
@@ -226,7 +179,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
     /// The saved session (set by finishSession) so Session Complete can refine it.
     private(set) var completedSession: TrainingSession?
-    /// Player skill ratings before this session merged its samples, so effort changes don't drift.
+    /// Player skill ratings before this session merged its samples, so feel changes don't drift.
     private var skillRatingsSnapshot: [String: Double]?
 
     // MARK: - Session lifecycle
@@ -273,9 +226,14 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         HapticManager.shared.sessionComplete()
     }
 
+    /// Active (unpaused) seconds across drills, from the clock. Feeds XP and the streak rule.
+    var activeSeconds: Int {
+        exerciseDurations.reduce(0, +) + (phase == .exercise ? elapsedSeconds : 0)
+    }
+
     /// Total minutes across drills (from the clock), at least 1 when anything was done.
     var totalMinutes: Int {
-        let seconds = exerciseDurations.reduce(0, +) + (phase == .exercise ? elapsedSeconds : 0)
+        let seconds = activeSeconds
         return seconds > 0 ? max(1, Int((Double(seconds) / 60).rounded())) : 0
     }
 
@@ -289,7 +247,6 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
 
         let completedCount = exerciseRatings.filter { $0 > 0 }.count
         let isFullCompletion = completedCount == exercises.count
-        let startingLevel = Int(player.currentLevel)
 
         // Ending before any drill is completed keeps nothing: no session row, no XP, no streak.
         guard completedCount > 0 else {
@@ -304,6 +261,9 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
         session.date = Date()
         session.sessionType = "Training"
         session.duration = Double(totalMinutes)
+        session.activeSeconds = Double(activeSeconds)
+        // Reps tapped on the pitch are self-reported; only camera-counted touches are verified.
+        session.verifiedTouches = 0
         session.intensity = Int16(averageRating())
         session.focusWeakness = dominantFocusWeakness()
 
@@ -325,7 +285,7 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
             se.notes = exerciseNotes[i].isEmpty ? nil : exerciseNotes[i]
         }
 
-        // Snapshot skill ratings so a later effort change can re-derive them, then merge this session
+        // Snapshot skill ratings so a later feel change can re-derive them, then merge this session
         skillRatingsSnapshot = Self.latestOrNewStats(for: player, context: context).skillRatings ?? [:]
         recordSkillRatings(for: player, context: context)
         completedSession = session
@@ -347,22 +307,19 @@ class ActiveSessionManager: ObservableObject, ActiveSessionManagerProtocol {
             )
         }
 
-        // Process XP
-        let (breakdown, _) = XPService.shared.processSessionCompletion(
+        // XP (XPFormula over active seconds + verified touches) and streak (StreakRule)
+        let (breakdown, newLevel) = XPService.shared.processSessionCompletion(
             session: session,
             player: player,
             context: context,
             allExercisesCompleted: isFullCompletion
         )
 
-        // Check achievements (may award additional XP)
+        // Achievements unlock as badges; they pay no XP
         let achievements = AchievementService.shared.checkAndUnlockAchievements(
             for: player,
             in: context
         )
-
-        // Recompute level after all XP (session + achievements) so achievement-triggered level-ups aren't silent
-        let newLevel = XPService.shared.syncLevel(for: player, previousLevel: startingLevel)
 
         // They trained today: the streak nudge goes, the next training day's reminder stays
         NotificationManager.shared.refresh(for: player)

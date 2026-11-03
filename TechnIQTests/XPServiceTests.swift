@@ -18,21 +18,81 @@ final class XPServiceTests: XCTestCase {
         super.tearDown()
     }
 
-    // MARK: - Level System
+    // MARK: - XP formula
+
+    func test_formula_underAMinute_earnsNothing() {
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 500, activeSeconds: 59), .zero)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 0).total, 0)
+    }
+
+    func test_formula_onePerFullMinute_cappedAt20() {
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 60).timeXP, 1)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 179).timeXP, 2)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 20 * 60).timeXP, 20)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 90 * 60).timeXP, 20)
+    }
+
+    func test_formula_onePerTenVerifiedTouches_cappedAt10() {
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 9, activeSeconds: 60).touchXP, 0)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 35, activeSeconds: 60).touchXP, 3)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 5_000, activeSeconds: 60).touchXP, 10)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: -40, activeSeconds: 60).touchXP, 0)
+    }
+
+    func test_formula_neverPasses30() {
+        for seconds in stride(from: 0.0, through: 7_200, by: 37) {
+            for touches in stride(from: 0, through: 3_000, by: 41) {
+                let xp = XPFormula.session(verifiedTouches: touches, activeSeconds: seconds)
+                XCTAssertLessThanOrEqual(xp.total, Int32(XPFormula.maxPerSession))
+                XCTAssertGreaterThanOrEqual(xp.total, 0)
+            }
+        }
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 1_000, activeSeconds: 3_600).total, 30)
+    }
+
+    func test_formula_badDurations_earnNothing() {
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 100, activeSeconds: .nan), .zero)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 100, activeSeconds: .infinity), .zero)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 100, activeSeconds: -300), .zero)
+    }
+
+    // MARK: - Level curve
 
     func test_xpRequiredForLevel_level1_returnsZero() {
         XCTAssertEqual(sut.xpRequiredForLevel(1), 0)
+        XCTAssertEqual(sut.xpRequiredForLevel(0), 0)
     }
 
-    func test_xpRequiredForLevel_level2_returns100() {
-        XCTAssertEqual(sut.xpRequiredForLevel(2), 100)
+    func test_levelCurve_knownPoints() {
+        XCTAssertEqual(sut.xpRequiredForLevel(2), 50)
+        XCTAssertEqual(sut.xpRequiredForLevel(3), 108)
+        XCTAssertEqual(sut.xpRequiredForLevel(10), 738)
+        XCTAssertEqual(sut.xpRequiredForLevel(50), 11_858)
+        XCTAssertEqual(sut.xpRequiredForLevel(60), 11_858, "capped at level 50")
     }
 
-    func test_xpRequiredForLevel_increases_exponentially() {
-        let xp2 = sut.xpRequiredForLevel(2)
-        let xp3 = sut.xpRequiredForLevel(3)
-        let xp4 = sut.xpRequiredForLevel(4)
-        XCTAssertTrue(xp3 - xp2 < xp4 - xp3, "XP gap should increase per level")
+    func test_levelCurve_costPerLevelGrows() {
+        var previousCost: Int64 = 0
+        for level in 1..<50 {
+            let cost = sut.xpRequiredForLevel(level + 1) - sut.xpRequiredForLevel(level)
+            XCTAssertGreaterThan(cost, previousCost, "level \(level) → \(level + 1)")
+            previousCost = cost
+        }
+    }
+
+    /// The pacing the curve is tuned for, at 20–30 XP a session.
+    func test_levelCurve_pacing() {
+        let sessionsToLevel2 = (20...30).map { Double(sut.xpRequiredForLevel(2)) / Double($0) }
+        XCTAssertTrue(sessionsToLevel2.allSatisfy { (1.6...2.6).contains($0) }, "level 2 in 2–3 sessions")
+
+        // Level 10 at 3–4 sessions a week of ~22 XP: about two months.
+        let weeksToLevel10 = Double(sut.xpRequiredForLevel(10)) / (3.5 * 22)
+        XCTAssertTrue((7...11).contains(weeksToLevel10), "level 10 in ~2 months, got \(weeksToLevel10) weeks")
+
+        // Level 50: multi-year even at 4 sessions a week of 25 XP.
+        let yearsToLevel50 = Double(sut.xpRequiredForLevel(50)) / (4 * 25 * 52)
+        XCTAssertGreaterThan(yearsToLevel50, 2)
+        XCTAssertEqual(XPService.levelTiers.count, 10)
     }
 
     func test_levelForXP_zeroXP_returnsLevel1() {
@@ -65,66 +125,12 @@ final class XPServiceTests: XCTestCase {
         XCTAssertEqual(sut.progressToNextLevel(totalXP: 999_999, currentLevel: 50), 1.0)
     }
 
-    func test_tierForLevel_level1_returnsGrassroots() {
-        let tier = sut.tierForLevel(1)
-        XCTAssertEqual(tier?.title, "Grassroots")
-    }
+    // MARK: - Tier System
 
-    func test_tierForLevel_level50_returnsLivingLegend() {
-        let tier = sut.tierForLevel(50)
-        XCTAssertEqual(tier?.title, "Living Legend")
-    }
-
-    // MARK: - Session XP Calculation
-
-    func test_calculateSessionXP_baseOnly_returns50() {
-        let xp = sut.calculateSessionXP(
-            intensity: 0, exerciseCount: 0,
-            allExercisesCompleted: false, hasRating: false,
-            hasNotes: false, isFirstSessionOfDay: false, currentStreak: 0
-        )
-        XCTAssertEqual(xp.total, 50)
-    }
-
-    func test_calculateSessionXP_allBonuses_addsCorrectly() {
-        let xp = sut.calculateSessionXP(
-            intensity: 3, exerciseCount: 5,
-            allExercisesCompleted: true, hasRating: true,
-            hasNotes: true, isFirstSessionOfDay: true, currentStreak: 7
-        )
-        XCTAssertEqual(xp.baseXP, 50)
-        XCTAssertEqual(xp.intensityBonus, 30)
-        XCTAssertEqual(xp.firstSessionBonus, 25)
-        XCTAssertEqual(xp.completionBonus, 20)
-        XCTAssertEqual(xp.ratingBonus, 5)
-        XCTAssertEqual(xp.notesBonus, 5)
-        XCTAssertEqual(xp.streakBonus, 150)
-        XCTAssertEqual(xp.total, 285)
-    }
-
-    func test_calculateSessionXP_streakMilestones() {
-        let streak30 = sut.calculateSessionXP(
-            intensity: 0, exerciseCount: 0,
-            allExercisesCompleted: false, hasRating: false,
-            hasNotes: false, isFirstSessionOfDay: false, currentStreak: 30
-        )
-        XCTAssertEqual(streak30.streakBonus, 500)
-
-        let streak100 = sut.calculateSessionXP(
-            intensity: 0, exerciseCount: 0,
-            allExercisesCompleted: false, hasRating: false,
-            hasNotes: false, isFirstSessionOfDay: false, currentStreak: 100
-        )
-        XCTAssertEqual(streak100.streakBonus, 1000)
-    }
-
-    func test_calculateSessionXP_nonMilestoneStreak_noBonus() {
-        let xp = sut.calculateSessionXP(
-            intensity: 0, exerciseCount: 0,
-            allExercisesCompleted: false, hasRating: false,
-            hasNotes: false, isFirstSessionOfDay: false, currentStreak: 8
-        )
-        XCTAssertEqual(xp.streakBonus, 0)
+    func test_tierForLevel_returnsCorrectTier() {
+        XCTAssertEqual(sut.tierForLevel(1)?.title, "Grassroots")
+        XCTAssertEqual(sut.tierForLevel(10)?.title, "Rising Star")
+        XCTAssertEqual(sut.tierForLevel(50)?.title, "Living Legend")
     }
 
     // MARK: - Award XP & Level Up
@@ -137,10 +143,98 @@ final class XPServiceTests: XCTestCase {
     }
 
     func test_awardXP_triggersLevelUp_returnsNewLevel() {
-        let player = stack.makePlayer(level: 1, xp: 90)
+        let player = stack.makePlayer(level: 1, xp: 40)
         let levelUp = sut.awardXP(to: player, amount: 20)
         XCTAssertEqual(levelUp, 2)
         XCTAssertEqual(player.currentLevel, 2)
+    }
+
+    // MARK: - Session completion
+
+    func test_processSessionCompletion_paysTheFormulaFromActiveSecondsAndTouches() {
+        let player = stack.makePlayer(xp: 0)
+        let session = stack.makeSession(player: player, duration: 25, activeSeconds: 25 * 60)
+        session.verifiedTouches = 47
+
+        let result = sut.processSessionCompletion(session: session, player: player, context: stack.context)
+
+        XCTAssertEqual(result.xp, SessionXPBreakdown(timeXP: 20, touchXP: 4))
+        XCTAssertEqual(session.xpEarned, 24)
+        XCTAssertEqual(player.totalXP, 24)
+    }
+
+    func test_processSessionCompletion_ignoresRatingNotesAndStreakMilestones() {
+        let player = stack.makePlayer(xp: 0, streak: 6)
+        player.lastTrainingDate = Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        let session = stack.makeSession(player: player, duration: 10, rating: 5, notes: "great", activeSeconds: 600)
+
+        let result = sut.processSessionCompletion(session: session, player: player, context: stack.context)
+
+        XCTAssertEqual(player.currentStreak, 7, "7-day milestone reached")
+        XCTAssertEqual(result.xp.total, 10, "no rating, notes or streak bonus")
+        XCTAssertEqual(player.totalXP, 10)
+    }
+
+    func test_processSessionCompletion_shortSession_earnsXPButNotStreak() {
+        let player = stack.makePlayer(xp: 0, streak: 3)
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        player.lastTrainingDate = yesterday
+        let session = stack.makeSession(player: player, duration: 4, activeSeconds: 299)
+
+        let result = sut.processSessionCompletion(session: session, player: player, context: stack.context)
+
+        XCTAssertEqual(result.xp.total, 4)
+        XCTAssertEqual(player.currentStreak, 3)
+        XCTAssertEqual(player.lastTrainingDate, yesterday)
+    }
+
+    func test_processSessionCompletion_fiveMinutes_extendsStreak() {
+        let player = stack.makePlayer(streak: 3)
+        player.lastTrainingDate = Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        let session = stack.makeSession(player: player, duration: 5, activeSeconds: 300)
+
+        _ = sut.processSessionCompletion(session: session, player: player, context: stack.context)
+
+        XCTAssertEqual(player.currentStreak, 4)
+    }
+
+    func test_processSessionCompletion_underAMinute_paysNothing_andKeepsLevel() {
+        let player = stack.makePlayer(level: 1, xp: 45)
+        let session = stack.makeSession(player: player, duration: 1, activeSeconds: 40)
+
+        let result = sut.processSessionCompletion(session: session, player: player, context: stack.context)
+
+        XCTAssertEqual(result.xp, .zero)
+        XCTAssertNil(result.levelUp)
+        XCTAssertEqual(player.totalXP, 45)
+    }
+
+    // MARK: - Streak rule
+
+    func test_streakRule_fiveActiveMinutes() {
+        XCTAssertFalse(StreakRule.counts(activeSeconds: 299, durationMinutes: 30))
+        XCTAssertTrue(StreakRule.counts(activeSeconds: 300, durationMinutes: 0))
+    }
+
+    func test_streakRule_legacyRowsFallBackToDuration() {
+        XCTAssertTrue(StreakRule.counts(activeSeconds: 0, durationMinutes: 5))
+        XCTAssertFalse(StreakRule.counts(activeSeconds: 0, durationMinutes: 4))
+        let player = stack.makePlayer()
+        XCTAssertTrue(stack.makeSession(player: player, duration: 30).countsTowardStreak)
+        XCTAssertFalse(stack.makeSession(player: player, duration: 2).countsTowardStreak)
+    }
+
+    func test_calculateStreakFromHistory_skipsShortSessions() {
+        let player = stack.makePlayer()
+        let calendar = Calendar.current
+        let today = Date()
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
+        stack.makeSession(player: player, date: today, duration: 20, activeSeconds: 1_200)
+        stack.makeSession(player: player, date: yesterday, duration: 3, activeSeconds: 180)   // too short
+        stack.makeSession(player: player, date: twoDaysAgo, duration: 20, activeSeconds: 1_200)
+
+        XCTAssertEqual(sut.calculateStreakFromHistory(for: player, in: stack.context), 1)
     }
 
     // MARK: - Streak
@@ -190,23 +284,5 @@ final class XPServiceTests: XCTestCase {
         player.lastTrainingDate = yesterday
         sut.updateStreak(for: player)
         XCTAssertEqual(player.longestStreak, 10)
-    }
-
-    // MARK: - Streak Freeze Purchase
-
-    func test_purchaseStreakFreeze_sufficientXP_succeeds() {
-        let player = stack.makePlayer(xp: 1000)
-        let result = sut.purchaseStreakFreeze(for: player, context: stack.context)
-        XCTAssertTrue(result)
-        XCTAssertEqual(player.totalXP, 500)
-        XCTAssertEqual(player.streakFreezes, 1)
-    }
-
-    func test_purchaseStreakFreeze_insufficientXP_fails() {
-        let player = stack.makePlayer(xp: 100)
-        let result = sut.purchaseStreakFreeze(for: player, context: stack.context)
-        XCTAssertFalse(result)
-        XCTAssertEqual(player.totalXP, 100)
-        XCTAssertEqual(player.streakFreezes, 0)
     }
 }

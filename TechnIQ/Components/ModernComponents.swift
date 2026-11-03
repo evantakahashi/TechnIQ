@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Legacy component layer (Touchline)
 //
 // Screens in the Touchline revamp compose only `Components/Touchline/TQ*.swift`. The types below
-// remain so out-of-scope screens (Shop, Settings, Match log, Analytics detail, Paywall, Avatar)
+// remain so out-of-scope screens (Settings, Match log, Analytics detail, Paywall, Avatar)
 // keep compiling: `ModernButton` and `ModernSegmentControl` are thin wrappers over TQButton /
 // TQSegment; `ModernCard`, `ModernTextField`, `StatCard`, `GlowBadge`, `SoccerBallSpinner`,
 // `FloatingActionButton`, `CompactActionButton` are flattened to the new tokens and marked

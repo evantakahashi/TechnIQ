@@ -1,40 +1,37 @@
 import Foundation
 
-struct CameraReward: Equatable {
-    var xp: Int
-    var coins: Int
-    /// Whether this run used one of the day's capped base rewards.
-    var countsTowardCap: Bool
+/// XP for one camera sitting (one CameraDrillSession): `XPFormula` over the sitting's total
+/// camera-counted touches and total live seconds, so a sitting earns 30 XP at most. Each run is paid
+/// the increase it makes, so the runs add up to the sitting's total. No personal-best or daily bonuses.
+final class CameraSitting {
+    private(set) var touches = 0
+    private(set) var liveSeconds: Double = 0
+    private(set) var xpAwarded = 0
 
-    static let none = CameraReward(xp: 0, coins: 0, countsTowardCap: false)
+    init() {}
+
+    /// XP a run of `touches` over `seconds` would earn on top of what the sitting has paid. Pure.
+    func xp(forRunWith touches: Int, seconds: Double) -> Int {
+        let total = XPFormula.session(verifiedTouches: self.touches + max(0, touches),
+                                      activeSeconds: liveSeconds + Self.clean(seconds)).total
+        return max(0, Int(total) - xpAwarded)
+    }
+
+    /// Adds a saved run and the XP it was paid.
+    func add(touches: Int, seconds: Double, xp: Int) {
+        self.touches += max(0, touches)
+        liveSeconds += Self.clean(seconds)
+        xpAwarded += max(0, xp)
+    }
+
+    private static func clean(_ seconds: Double) -> Double {
+        seconds.isFinite ? max(0, seconds) : 0
+    }
 }
 
-/// XP and coins for camera-verified runs. Only the per-run base is capped: a personal best can't be
-/// farmed (it has to beat the last one) and a challenge pays once, so those always pay.
 enum CameraRewards {
-    static let dailyCap = 10
-    /// Runs shorter than this earn nothing (and can't be a personal best).
+    /// Runs shorter than this can't be a personal best.
     static let minimumCount = 3
-    static let base = (xp: 5, coins: 2)
-    static let personalBest = (xp: 25, coins: 10)
-    static let challenge = (xp: 100, coins: 50)
-
-    static func reward(count: Int, isPersonalBest: Bool, beatChallenge: Bool, rewardedRunsToday: Int) -> CameraReward {
-        guard count >= minimumCount else { return .none }
-        var reward = CameraReward.none
-        if rewardedRunsToday < dailyCap {
-            reward = CameraReward(xp: base.xp, coins: base.coins, countsTowardCap: true)
-        }
-        if isPersonalBest {
-            reward.xp += personalBest.xp
-            reward.coins += personalBest.coins
-        }
-        if beatChallenge {
-            reward.xp += challenge.xp
-            reward.coins += challenge.coins
-        }
-        return reward
-    }
 
     static func isPersonalBest(count: Int, previousBest: Int?) -> Bool {
         count >= minimumCount && count > (previousBest ?? 0)

@@ -8,7 +8,7 @@ import SwiftUI
 
 struct TQGalleryView: View {
     @State private var segment = 1
-    @State private var effort = 2
+    @State private var feel: Int?
     @State private var chip = 0
     @State private var search = ""
 
@@ -177,7 +177,7 @@ struct TQGalleryView: View {
 
                 section("TQSegment · TQChip · TQBadge", index: 4) {
                     TQSegment(options: ["Feed", "Drills", "Leaderboard"], selectedIndex: $segment)
-                    TQSegment(options: ["Easy", "OK", "Good", "Hard"], selectedIndex: $effort, style: .detached)
+                    TQSegment(options: SessionFeel.allCases.map(\.label), selection: $feel, style: .detached)
                     TQChipRow {
                         ForEach(Array(["All", "Saved", "Technical", "Physical", "Tactical", "Video"].enumerated()), id: \.offset) { index, title in
                             TQChip(title, isSelected: chip == index) { chip = index }

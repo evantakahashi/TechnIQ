@@ -82,4 +82,47 @@ final class ModelMigrationTests: XCTestCase {
         XCTAssertNil(sessions.first?.value(forKey: "feel"))
         XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "Benchmark")), 0)
     }
+
+    func test_v1StoreWithCoinsAndShopItems_migratesToCurrentModel() throws {
+        // v1.0 had coins and an OwnedAvatarItem entity; the current model drops both.
+        let v1 = try model(named: "DataModel")
+        XCTAssertNotNil(v1.entitiesByName["OwnedAvatarItem"])
+        let v1Coordinator = NSPersistentStoreCoordinator(managedObjectModel: v1)
+        _ = try v1Coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: nil)
+        let v1Context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        v1Context.persistentStoreCoordinator = v1Coordinator
+
+        let player = NSEntityDescription.insertNewObject(forEntityName: "Player", into: v1Context)
+        player.setValue(UUID(), forKey: "id")
+        player.setValue("uid-coins", forKey: "firebaseUID")
+        player.setValue(Int64(640), forKey: "coins")
+        player.setValue(Int64(1_200), forKey: "totalXP")
+        let item = NSEntityDescription.insertNewObject(forEntityName: "OwnedAvatarItem", into: v1Context)
+        item.setValue(UUID(), forKey: "id")
+        item.setValue("jersey_royal_blue", forKey: "itemId")
+        item.setValue(Date(), forKey: "purchasedAt")
+        item.setValue(player, forKey: "player")
+        try v1Context.save()
+        for store in v1Coordinator.persistentStores { try v1Coordinator.remove(store) }
+
+        let current = CoreDataManager.shared.persistentContainer.managedObjectModel
+        XCTAssertNil(current.entitiesByName["OwnedAvatarItem"])
+        XCTAssertNil(current.entitiesByName["Player"]?.attributesByName["coins"])
+        XCTAssertNil(current.entitiesByName["Player"]?.attributesByName["totalCoinsEarned"])
+        XCTAssertNil(current.entitiesByName["Player"]?.relationshipsByName["ownedAvatarItems"])
+        XCTAssertNil(current.entitiesByName["CameraRun"]?.attributesByName["coinsEarned"])
+
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: current)
+        let options: [String: Any] = [NSMigratePersistentStoresAutomaticallyOption: true,
+                                      NSInferMappingModelAutomaticallyOption: true]
+        XCTAssertNoThrow(try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil,
+                                                            at: storeURL, options: options))
+        let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+
+        let players = try context.fetch(NSFetchRequest<NSManagedObject>(entityName: "Player"))
+        XCTAssertEqual(players.count, 1)
+        XCTAssertEqual(players.first?.value(forKey: "firebaseUID") as? String, "uid-coins")
+        XCTAssertEqual(players.first?.value(forKey: "totalXP") as? Int64, 1_200)
+    }
 }

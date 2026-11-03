@@ -27,7 +27,6 @@ class TestCoreDataStack: CoreDataManagerProtocol {
         name: String = "Test Player",
         level: Int16 = 1,
         xp: Int64 = 0,
-        coins: Int64 = 100,
         streak: Int16 = 0,
         longestStreak: Int16 = 0,
         streakFreezes: Int16 = 0
@@ -37,7 +36,6 @@ class TestCoreDataStack: CoreDataManagerProtocol {
         player.name = name
         player.currentLevel = level
         player.totalXP = xp
-        player.coins = coins
         player.currentStreak = streak
         player.longestStreak = longestStreak
         player.streakFreezes = streakFreezes
@@ -54,7 +52,8 @@ class TestCoreDataStack: CoreDataManagerProtocol {
         intensity: Int16 = 3,
         exerciseCount: Int = 3,
         rating: Int16 = 0,
-        notes: String? = nil
+        notes: String? = nil,
+        activeSeconds: Double = 0
     ) -> TrainingSession {
         let session = TrainingSession(context: context)
         session.id = UUID()
@@ -64,6 +63,7 @@ class TestCoreDataStack: CoreDataManagerProtocol {
         session.intensity = intensity
         session.overallRating = rating
         session.notes = notes
+        session.activeSeconds = activeSeconds
 
         for i in 0..<exerciseCount {
             let exercise = makeExercise(player: player, name: "Exercise \(i)")

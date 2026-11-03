@@ -9,7 +9,6 @@ struct Achievement: Identifiable {
     let icon: String
     let category: AchievementCategory
     let requirement: AchievementRequirement
-    let xpReward: Int32
 
     enum AchievementCategory: String, CaseIterable {
         case consistency = "Consistency"
@@ -60,8 +59,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete your first training session",
             icon: "figure.run",
             category: .consistency,
-            requirement: .sessionCount(1),
-            xpReward: 50
+            requirement: .sessionCount(1)
         ),
         Achievement(
             id: "week_warrior",
@@ -69,8 +67,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Maintain a 7-day training streak",
             icon: "flame.fill",
             category: .consistency,
-            requirement: .streakDays(7),
-            xpReward: 150
+            requirement: .streakDays(7)
         ),
         Achievement(
             id: "monthly_master",
@@ -78,8 +75,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Maintain a 30-day training streak",
             icon: "calendar.badge.checkmark",
             category: .consistency,
-            requirement: .streakDays(30),
-            xpReward: 500
+            requirement: .streakDays(30)
         ),
         Achievement(
             id: "century_club",
@@ -87,8 +83,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Maintain a 100-day training streak",
             icon: "100.circle.fill",
             category: .consistency,
-            requirement: .streakDays(100),
-            xpReward: 1000
+            requirement: .streakDays(100)
         ),
         Achievement(
             id: "year_excellence",
@@ -96,8 +91,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Maintain a 365-day training streak",
             icon: "star.circle.fill",
             category: .consistency,
-            requirement: .streakDays(365),
-            xpReward: 5000
+            requirement: .streakDays(365)
         ),
         Achievement(
             id: "early_bird",
@@ -105,8 +99,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Train before 8am (5 times)",
             icon: "sunrise.fill",
             category: .consistency,
-            requirement: .earlyBirdSessions(5),
-            xpReward: 100
+            requirement: .earlyBirdSessions(5)
         ),
         Achievement(
             id: "night_owl",
@@ -114,8 +107,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Train after 8pm (5 times)",
             icon: "moon.stars.fill",
             category: .consistency,
-            requirement: .nightOwlSessions(5),
-            xpReward: 100
+            requirement: .nightOwlSessions(5)
         ),
         Achievement(
             id: "weekend_warrior",
@@ -123,8 +115,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Train on 10 different weekends",
             icon: "sun.max.fill",
             category: .consistency,
-            requirement: .weekendSessions(10),
-            xpReward: 150
+            requirement: .weekendSessions(10)
         ),
         Achievement(
             id: "all_weather",
@@ -132,8 +123,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Train in every month of the year",
             icon: "cloud.sun.fill",
             category: .consistency,
-            requirement: .monthsActive(12),
-            xpReward: 300
+            requirement: .monthsActive(12)
         ),
         Achievement(
             id: "comeback_king",
@@ -141,8 +131,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Return after a 7+ day break",
             icon: "arrow.counterclockwise.circle.fill",
             category: .consistency,
-            requirement: .comebackAfterBreak(7),
-            xpReward: 75
+            requirement: .comebackAfterBreak(7)
         ),
 
         // VOLUME (10)
@@ -152,8 +141,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 10 training sessions",
             icon: "10.circle.fill",
             category: .volume,
-            requirement: .sessionCount(10),
-            xpReward: 100
+            requirement: .sessionCount(10)
         ),
         Achievement(
             id: "dedicated_player",
@@ -161,8 +149,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 50 training sessions",
             icon: "person.fill.checkmark",
             category: .volume,
-            requirement: .sessionCount(50),
-            xpReward: 250
+            requirement: .sessionCount(50)
         ),
         Achievement(
             id: "training_addict",
@@ -170,8 +157,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 100 training sessions",
             icon: "bolt.heart.fill",
             category: .volume,
-            requirement: .sessionCount(100),
-            xpReward: 500
+            requirement: .sessionCount(100)
         ),
         Achievement(
             id: "elite_athlete",
@@ -179,8 +165,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 500 training sessions",
             icon: "trophy.fill",
             category: .volume,
-            requirement: .sessionCount(500),
-            xpReward: 2500
+            requirement: .sessionCount(500)
         ),
         Achievement(
             id: "1000_hours",
@@ -188,8 +173,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Accumulate 60,000 minutes of training",
             icon: "clock.fill",
             category: .volume,
-            requirement: .totalMinutes(60000),
-            xpReward: 1000
+            requirement: .totalMinutes(60000)
         ),
         Achievement(
             id: "marathon_month",
@@ -197,8 +181,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 20+ sessions in one month",
             icon: "calendar.badge.plus",
             category: .volume,
-            requirement: .monthlySessionRecord(20),
-            xpReward: 300
+            requirement: .monthlySessionRecord(20)
         ),
         Achievement(
             id: "exercise_explorer",
@@ -206,8 +189,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Try 25 different exercises",
             icon: "magnifyingglass",
             category: .volume,
-            requirement: .uniqueExercises(25),
-            xpReward: 150
+            requirement: .uniqueExercises(25)
         ),
         Achievement(
             id: "category_master",
@@ -215,8 +197,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete all exercises in Technical category",
             icon: "checkmark.seal.fill",
             category: .volume,
-            requirement: .categoryCompletion("Technical"),
-            xpReward: 200
+            requirement: .categoryCompletion("Technical")
         ),
         Achievement(
             id: "full_curriculum",
@@ -224,8 +205,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete all template exercises",
             icon: "book.closed.fill",
             category: .volume,
-            requirement: .allTemplatesCompleted,
-            xpReward: 500
+            requirement: .allTemplatesCompleted
         ),
         Achievement(
             id: "custom_creator",
@@ -233,8 +213,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Create 10 custom drills",
             icon: "plus.square.fill",
             category: .volume,
-            requirement: .customDrillsCreated(10),
-            xpReward: 200
+            requirement: .customDrillsCreated(10)
         ),
 
         // SKILLS (10)
@@ -244,8 +223,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 80% proficiency in Technical skills",
             icon: "soccerball",
             category: .skills,
-            requirement: .skillLevel("Technical", 80),
-            xpReward: 300
+            requirement: .skillLevel("Technical", 80)
         ),
         Achievement(
             id: "physical_peak",
@@ -253,8 +231,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 80% proficiency in Physical skills",
             icon: "figure.strengthtraining.traditional",
             category: .skills,
-            requirement: .skillLevel("Physical", 80),
-            xpReward: 300
+            requirement: .skillLevel("Physical", 80)
         ),
         Achievement(
             id: "tactical_genius",
@@ -262,8 +239,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 80% proficiency in Tactical skills",
             icon: "brain.head.profile",
             category: .skills,
-            requirement: .skillLevel("Tactical", 80),
-            xpReward: 300
+            requirement: .skillLevel("Tactical", 80)
         ),
         Achievement(
             id: "well_rounded",
@@ -271,8 +247,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 60% proficiency in all skill categories",
             icon: "circle.hexagonpath.fill",
             category: .skills,
-            requirement: .allSkillsAbove(60),
-            xpReward: 400
+            requirement: .allSkillsAbove(60)
         ),
         Achievement(
             id: "mastery",
@@ -280,8 +255,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 100% in any single skill",
             icon: "crown.fill",
             category: .skills,
-            requirement: .skillLevel("any", 100),
-            xpReward: 500
+            requirement: .skillLevel("any", 100)
         ),
         Achievement(
             id: "improvement_arc",
@@ -289,8 +263,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Improve any skill by 20 points",
             icon: "chart.line.uptrend.xyaxis",
             category: .skills,
-            requirement: .skillImprovement("any", 20),
-            xpReward: 200
+            requirement: .skillImprovement("any", 20)
         ),
         Achievement(
             id: "rapid_progress",
@@ -298,8 +271,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Improve 3 skills in one week",
             icon: "hare.fill",
             category: .skills,
-            requirement: .skillsImprovedInWeek(3),
-            xpReward: 250
+            requirement: .skillsImprovedInWeek(3)
         ),
         Achievement(
             id: "specialist",
@@ -307,8 +279,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Complete 50 exercises of the same type",
             icon: "target",
             category: .skills,
-            requirement: .exerciseTypeCount("any", 50),
-            xpReward: 200
+            requirement: .exerciseTypeCount("any", 50)
         ),
         Achievement(
             id: "skill_stacker",
@@ -316,8 +287,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Max out 3 different skills",
             icon: "square.stack.3d.up.fill",
             category: .skills,
-            requirement: .maxedSkills(3),
-            xpReward: 750
+            requirement: .maxedSkills(3)
         ),
         Achievement(
             id: "complete_player",
@@ -325,8 +295,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
             description: "Reach 90%+ proficiency in all skill categories",
             icon: "medal.fill",
             category: .skills,
-            requirement: .allSkillsAbove(90),
-            xpReward: 1000
+            requirement: .allSkillsAbove(90)
         )
     ]
 
@@ -367,10 +336,8 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
                 currentUnlocked.append(achievement.id)
                 newlyUnlocked.append(achievement)
 
-                // Award XP for achievement
-                XPService.shared.awardXP(to: player, amount: achievement.xpReward)
-
-                AppLogger.shared.info("Achievement unlocked: \(achievement.name) (+\(achievement.xpReward) XP)")
+                // Achievements are badges only: XP comes from training (XPFormula)
+                AppLogger.shared.info("Achievement unlocked: \(achievement.name)")
             }
         }
 

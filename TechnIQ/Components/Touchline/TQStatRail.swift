@@ -103,7 +103,7 @@ struct TQStatRail: View {
     VStack(spacing: 24) {
         TQStatRail(items: [.init("31", unit: "%", label: "complete"), .init("3", unit: "/8", label: "week"), .init("24", unit: "h", label: "total"), .init("11", label: "done", accent: true)])
         TQStatRail(items: [.init("24", label: "sessions"), .init("18", unit: "h", label: "trained"), .init("5", label: "streak", accent: true), .init("4G 3A", label: "season")], style: .compact)
-        TQStatRail(items: [.init("+180", label: "xp", accent: true), .init("6", label: "day streak"), .init("+25", label: "coins")], style: .hero)
+        TQStatRail(items: [.init("+24", label: "xp", accent: true), .init("6", label: "day streak")], style: .hero)
             .padding(16)
             .background(DesignSystem.Colors.pitch)
     }

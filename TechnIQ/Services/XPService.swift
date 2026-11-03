@@ -1,7 +1,8 @@
 import Foundation
 import CoreData
 
-/// Service responsible for XP calculations, level progression, and streak management
+/// Service responsible for XP, level progression, and streak management.
+/// XP comes from training only (`XPFormula`); the streak counts sessions that pass `StreakRule`.
 @MainActor
 final class XPService: ObservableObject, XPServiceProtocol {
     static let shared = XPService()
@@ -26,35 +27,19 @@ final class XPService: ObservableObject, XPServiceProtocol {
         LevelTier(minLevel: 46, maxLevel: 50, title: "Living Legend", description: "Mastery achieved", icon: "laurel.leading")
     ]
 
-    /// Calculate XP required for a specific level using exponential curve
+    /// Total XP needed to reach `level` (`XPFormula.xpRequired(forLevel:)`).
     func xpRequiredForLevel(_ level: Int) -> Int64 {
-        guard level > 1 else { return 0 }
-
-        // Exponential curve: baseXP * (multiplier ^ (level - 1))
-        // Level 2: 100, Level 3: 250, Level 4: 500, etc.
-        let baseXP: Double = 100
-        let multiplier: Double = 1.5
-
-        var totalXP: Double = 0
-        for l in 2...level {
-            totalXP += baseXP * pow(multiplier, Double(l - 2))
-        }
-
-        return Int64(totalXP)
+        XPFormula.xpRequired(forLevel: level)
     }
 
     /// Get the level for a given total XP
     func levelForXP(_ xp: Int64) -> Int {
-        var level = 1
-        while level < 50 && xp >= xpRequiredForLevel(level + 1) {
-            level += 1
-        }
-        return level
+        XPFormula.level(forXP: xp)
     }
 
     /// Get progress percentage toward next level
     func progressToNextLevel(totalXP: Int64, currentLevel: Int) -> Double {
-        guard currentLevel < 50 else { return 1.0 }
+        guard currentLevel < XPFormula.maxLevel else { return 1.0 }
 
         let currentLevelXP = xpRequiredForLevel(currentLevel)
         let nextLevelXP = xpRequiredForLevel(currentLevel + 1)
@@ -71,58 +56,9 @@ final class XPService: ObservableObject, XPServiceProtocol {
         return Self.levelTiers.first { level >= $0.minLevel && level <= $0.maxLevel }
     }
 
-    // MARK: - XP Calculation for Sessions
-
-    /// Calculate XP earned from a training session
-    func calculateSessionXP(
-        intensity: Int16,
-        exerciseCount: Int,
-        allExercisesCompleted: Bool,
-        hasRating: Bool,
-        hasNotes: Bool,
-        isFirstSessionOfDay: Bool,
-        currentStreak: Int16
-    ) -> SessionXPBreakdown {
-
-        var intensityBonus: Int32 = 0
-        if intensity > 0 {
-            intensityBonus = XPRewards.intensityBonus * Int32(intensity)
-        }
-
-        let firstSessionBonus = isFirstSessionOfDay ? XPRewards.firstSessionOfDay : 0
-        let completionBonus = allExercisesCompleted && exerciseCount > 0 ? XPRewards.allExercisesCompleted : 0
-        let ratingBonus = hasRating ? XPRewards.sessionRated : 0
-        let notesBonus = hasNotes ? XPRewards.sessionNotes : 0
-
-        // Streak bonuses
-        var streakBonus: Int32 = 0
-        if currentStreak == 7 { streakBonus = XPRewards.streak7Day }
-        else if currentStreak == 14 { streakBonus = XPRewards.streak14Day }
-        else if currentStreak == 30 { streakBonus = XPRewards.streak30Day }
-        else if currentStreak == 60 { streakBonus = XPRewards.streak60Day }
-        else if currentStreak == 100 { streakBonus = XPRewards.streak100Day }
-        else if currentStreak == 365 { streakBonus = XPRewards.streak365Day }
-
-        return SessionXPBreakdown(
-            baseXP: XPRewards.sessionBase,
-            intensityBonus: intensityBonus,
-            firstSessionBonus: firstSessionBonus,
-            completionBonus: completionBonus,
-            ratingBonus: ratingBonus,
-            notesBonus: notesBonus,
-            streakBonus: streakBonus
-        )
-    }
-
     // MARK: - Streak Management
 
-    /// Check if it's the first session of the day for a player
-    func isFirstSessionOfDay(for player: Player) -> Bool {
-        guard let lastDate = player.lastTrainingDate else { return true }
-        return !Calendar.current.isDateInToday(lastDate)
-    }
-
-    /// Update streak based on session completion
+    /// Update streak for a session that counts toward it (`TrainingSession.countsTowardStreak`).
     func updateStreak(for player: Player, sessionDate: Date = Date()) {
         let calendar = Calendar.current
         let previousStreak = player.currentStreak
@@ -135,9 +71,6 @@ final class XPService: ObservableObject, XPServiceProtocol {
             } else if daysSinceLastSession == 1 {
                 // Consecutive day - increment streak
                 player.currentStreak += 1
-                if player.currentStreak > player.longestStreak {
-                    player.longestStreak = player.currentStreak
-                }
             } else {
                 // Streak broken - check for streak freeze
                 if player.streakFreezes > 0 && daysSinceLastSession == 2 {
@@ -169,6 +102,7 @@ final class XPService: ObservableObject, XPServiceProtocol {
     }
 
     /// Grant a streak freeze (cap 3) and fire celebratory haptics when a weekly milestone is first reached.
+    /// Milestones pay no XP.
     private func handleStreakMilestone(for player: Player) {
         let milestones: Set<Int16> = [7, 14, 30]
         guard milestones.contains(player.currentStreak) else { return }
@@ -179,34 +113,28 @@ final class XPService: ObservableObject, XPServiceProtocol {
         HapticManager.shared.streakMilestone()
     }
 
-    /// Calculate actual streak from session history (for fixing bugs)
+    /// Calculate actual streak from session history (for fixing bugs). Only sessions that pass
+    /// `StreakRule` count.
     func calculateStreakFromHistory(for player: Player, in context: NSManagedObjectContext) -> Int16 {
         let request: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
         request.predicate = NSPredicate(format: "player == %@", player)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)]
 
         do {
-            let sessions = try context.fetch(request)
+            let sessions = try context.fetch(request).filter(\.countsTowardStreak)
             guard !sessions.isEmpty else { return 0 }
 
             let calendar = Calendar.current
             var streak: Int16 = 0
             var previousDate: Date?
-            var uniqueDates: Set<String> = []
-
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
+            var countedDays: Set<Date> = []
 
             for session in sessions {
                 guard let sessionDate = session.date else { continue }
-
-                let dateString = dateFormatter.string(from: sessionDate)
+                let sessionDay = calendar.startOfDay(for: sessionDate)
 
                 // Skip if we already counted this day
-                if uniqueDates.contains(dateString) { continue }
-                uniqueDates.insert(dateString)
-
-                let sessionDay = calendar.startOfDay(for: sessionDate)
+                guard countedDays.insert(sessionDay).inserted else { continue }
 
                 if let prevDate = previousDate {
                     let daysDiff = calendar.dateComponents([.day], from: sessionDay, to: prevDate).day ?? 0
@@ -259,23 +187,9 @@ final class XPService: ObservableObject, XPServiceProtocol {
         return nil
     }
 
-    /// Recompute the player's level from total XP after external XP awards (e.g. achievements).
-    /// Returns the new level if it increased beyond `previousLevel`.
-    @discardableResult
-    func syncLevel(for player: Player, previousLevel: Int) -> Int? {
-        let newLevel = levelForXP(player.totalXP)
-        player.currentLevel = Int16(newLevel)
-        return newLevel > previousLevel ? newLevel : nil
-    }
-
-    /// Award XP from a match to player
-    /// Returns the new level if a level up occurred
-    @discardableResult
-    func awardMatchXP(to player: Player, xp: Int) -> Int? {
-        return awardXP(to: player, amount: Int32(xp))
-    }
-
-    /// Process session completion - calculates XP, updates streak, and awards XP
+    /// Process session completion: XP from `XPFormula` over the session's `verifiedTouches` and
+    /// `activeSeconds` (set both before calling), streak update when the session passes `StreakRule`.
+    /// `allExercisesCompleted` no longer changes XP; it is kept for callers.
     func processSessionCompletion(
         session: TrainingSession,
         player: Player,
@@ -283,31 +197,15 @@ final class XPService: ObservableObject, XPServiceProtocol {
         allExercisesCompleted: Bool = true
     ) -> (xp: SessionXPBreakdown, levelUp: Int?) {
 
-        // Check if first session of day
-        let isFirstSession = isFirstSessionOfDay(for: player)
+        if session.countsTowardStreak {
+            updateStreak(for: player, sessionDate: session.date ?? Date())
+        }
 
-        // Update streak
-        updateStreak(for: player, sessionDate: session.date ?? Date())
-
-        // Calculate XP
-        let exerciseCount = session.exercises?.count ?? 0
-        let breakdown = calculateSessionXP(
-            intensity: session.intensity,
-            exerciseCount: exerciseCount,
-            allExercisesCompleted: allExercisesCompleted,
-            hasRating: session.overallRating > 0,
-            hasNotes: !(session.notes?.isEmpty ?? true),
-            isFirstSessionOfDay: isFirstSession,
-            currentStreak: player.currentStreak
-        )
-
-        // Store XP on session
+        let breakdown = XPFormula.session(verifiedTouches: Int(session.verifiedTouches),
+                                          activeSeconds: session.activeSeconds)
         session.xpEarned = breakdown.total
+        let levelUp = breakdown.total > 0 ? awardXP(to: player, amount: breakdown.total) : nil
 
-        // Award XP to player
-        let levelUp = awardXP(to: player, amount: breakdown.total)
-
-        // Save context
         do {
             try context.save()
         } catch {
@@ -316,26 +214,5 @@ final class XPService: ObservableObject, XPServiceProtocol {
         }
 
         return (breakdown, levelUp)
-    }
-
-    // MARK: - Streak Freezes
-
-    /// Purchase a streak freeze with XP
-    func purchaseStreakFreeze(for player: Player, context: NSManagedObjectContext) -> Bool {
-        let cost: Int64 = 500
-
-        guard player.totalXP >= cost else { return false }
-
-        player.totalXP -= cost
-        player.streakFreezes += 1
-
-        do {
-            try context.save()
-            return true
-        } catch {
-            AppLogger.shared.error("Error purchasing streak freeze: \(error)")
-            lastError = .coreData(error.localizedDescription)
-            return false
-        }
     }
 }

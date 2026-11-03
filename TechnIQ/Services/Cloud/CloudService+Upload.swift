@@ -25,7 +25,7 @@ extension CloudService {
         syncStatus = .syncing
 
         do {
-            // Read the existing cloud doc first and pull up any higher XP/coins/streak so a stale
+            // Read the existing cloud doc first and pull up any higher XP/streak so a stale
             // device can't regress values written by a newer one (blind last-writer-wins otherwise).
             let existing = try? await db.collection("users").document(userUID)
                 .collection("playerProfiles").document(playerDocID).getDocument()
@@ -211,23 +211,6 @@ extension CloudService {
             .setData(avatarData, merge: true)
     }
 
-    func syncOwnedAvatarItems(_ items: [OwnedAvatarItem], for player: Player) async throws {
-        guard let userUID = auth.currentUser?.uid else {
-            throw CloudDataError.notAuthenticated
-        }
-
-        try await commitInChunks(items) { batch, item in
-            guard let itemDocID = item.id?.uuidString else {
-                AppLogger.shared.warning("[CloudService] Skipping owned avatar item sync — item has nil id")
-                return
-            }
-            let itemData = self.createOwnedAvatarItemDocument(item: item)
-            let docRef = self.db.collection("users").document(userUID)
-                .collection("ownedAvatarItems").document(itemDocID)
-            batch.setData(itemData, forDocument: docRef, merge: true)
-        }
-    }
-
     // MARK: - Custom Exercises Sync
 
     func syncCustomExercises(_ exercises: [Exercise], for player: Player) async throws {
@@ -295,7 +278,6 @@ extension CloudService {
         async let sessionsSnapshot = userRef.collection("trainingSessions").getDocuments()
         async let feedbackSnapshot = userRef.collection("recommendationFeedback").getDocuments()
         async let avatarSnapshot = userRef.collection("avatarConfiguration").getDocuments()
-        async let ownedItemsSnapshot = userRef.collection("ownedAvatarItems").getDocuments()
         async let customExercisesSnapshot = userRef.collection("customExercises").getDocuments()
         async let trainingPlansSnapshot = userRef.collection("trainingPlans").getDocuments()
         async let statsSnapshot = userRef.collection("playerStats").getDocuments()
@@ -305,9 +287,9 @@ extension CloudService {
         async let benchmarksSnapshot = userRef.collection("benchmarks").getDocuments()
         async let deletedItemsSnapshot = userRef.collection("deletedItems").getDocuments()
 
-        let (profiles, goals, sessions, feedback, avatar, ownedItems, exercises, plans, stats, seasons, matches, cameraRuns, benchmarks, deletedItems) = try await (
+        let (profiles, goals, sessions, feedback, avatar, exercises, plans, stats, seasons, matches, cameraRuns, benchmarks, deletedItems) = try await (
             profilesSnapshot, goalsSnapshot, sessionsSnapshot, feedbackSnapshot,
-            avatarSnapshot, ownedItemsSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
+            avatarSnapshot, customExercisesSnapshot, trainingPlansSnapshot,
             statsSnapshot, seasonsSnapshot, matchesSnapshot, cameraRunsSnapshot, benchmarksSnapshot, deletedItemsSnapshot
         )
 
@@ -323,7 +305,6 @@ extension CloudService {
             trainingSessions: live(sessions.documents),
             recommendationFeedback: live(feedback.documents),
             avatarConfiguration: avatar.documents.first(where: { !deletedIds.contains($0.documentID) })?.data(),
-            ownedAvatarItems: live(ownedItems.documents),
             customExercises: live(exercises.documents),
             trainingPlans: live(plans.documents),
             playerStats: live(stats.documents),
@@ -472,8 +453,6 @@ extension CloudService {
             "currentLevel": player.currentLevel,
             "currentStreak": player.currentStreak,
             "longestStreak": player.longestStreak,
-            "coins": player.coins,
-            "totalCoinsEarned": player.totalCoinsEarned,
             "streakFreezes": player.streakFreezes,
             "unlockedAchievements": player.unlockedAchievements ?? [],
             "lastTrainingDate": player.lastTrainingDate as Any,
@@ -579,15 +558,6 @@ extension CloudService {
         ]
     }
 
-    private func createOwnedAvatarItemDocument(item: OwnedAvatarItem) -> [String: Any] {
-        return [
-            "id": item.id?.uuidString ?? "",
-            "itemId": item.itemId ?? "",
-            "purchasedAt": item.purchasedAt ?? Date(),
-            "equippedSlot": item.equippedSlot ?? ""
-        ]
-    }
-
     func createPlayerStatsDocument(stats: PlayerStats) -> [String: Any] {
         return [
             "id": stats.id?.uuidString ?? "",
@@ -624,7 +594,6 @@ extension CloudService {
             "isPersonalBest": run.isPersonalBest,
             "challengeId": run.challengeId ?? "",
             "xpEarned": run.xpEarned,
-            "coinsEarned": run.coinsEarned,
             "createdAt": run.createdAt ?? Date(),
             "updatedAt": run.updatedAt ?? Date()
         ]

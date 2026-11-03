@@ -33,7 +33,6 @@ Player (root)
 ├── sessions [TrainingSession] → exercises [SessionExercise]
 ├── trainingPlans [TrainingPlan] → weeks [PlanWeek] → days [PlanDay] → sessions [PlanSession]
 ├── avatarConfiguration [AvatarConfiguration]
-├── ownedAvatarItems [OwnedAvatarItem]
 ├── stats [PlayerStats], playerProfile [PlayerProfile], playerGoals [PlayerGoal]
 ├── matches [Match] → season [Season]
 ├── recommendationFeedback [RecommendationFeedback]
@@ -56,13 +55,12 @@ Independent: CloudSyncStatus, MLRecommendation
 | WeaknessAnalysisService | Yes | Skill-gap / weakness analysis feeding recommendations |
 | CommunityService | Yes | Community posts/UGC, comments, report & block |
 | SubscriptionManager | Yes | StoreKit subscriptions, paywall, purchase/restore |
-| XPService | Yes | XP calc, level system (1-50), 10-tier career path |
-| CoinService | Yes | Coin economy, earning events, transactions |
-| AchievementService | Yes | 30 achievements, unlock checking, XP rewards |
-| AvatarService | Yes | Avatar configuration, item inventory |
+| XPService | Yes | Session XP (`XPFormula`), level system (1-50), 10-tier career path, streak |
+| AchievementService | Yes | 30 achievements (badges only, no XP), unlock checking |
+| AvatarService | Yes | Avatar configuration (every item free) |
 | MatchService | Yes | Match CRUD, season management |
 | ActiveSessionManager | Yes | Live training session state machine |
-| CameraRunService | Yes | Camera-drill runs: personal bests, capped XP/coin rewards, sync (`users/{uid}/cameraRuns`) |
+| CameraRunService | Yes | Camera-drill runs: personal bests, sitting-capped XP (`CameraSitting`), sync (`users/{uid}/cameraRuns`) |
 | InsightsEngine | Yes | Analytics calculations, trend analysis |
 
 Supporting: `ServiceError.swift` (shared error enum), `CoreDataFetchRequests.swift` (dynamic description helpers), `Protocols/` (per-service protocols for DI/testing). `AppLogger` lives in `Utilities/`.
@@ -124,6 +122,8 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 **Fetch predicates:** derive `@FetchRequest` predicates from `AuthenticationManager.shared.playerPredicate` / `ownedByPlayerPredicate` in `init`, never only in `onAppear` (SwiftUI re-runs `init` on parent re-renders).
 **Dated plans:** progression is still completion-based, but `Models/PlanSchedule.swift` puts a date on every plan day (anchor = `startedAt ?? createdAt`; week n = seven days from anchor + 7(n−1); pinned weekdays land inside their week, so a mid-week anchor rotates the walk order — `getCurrentDay`/`peekCurrentDay` walk in calendar order). `PlanSchedule.today` drives Home and the plan tab: `.session(overdue:)` (catch-up), `.rest(next:)` ("Rest day · Next Thu"), `.complete`. Reminders: `NotificationManager.refresh(for:)` rebuilds every local notification from the plan's dates + `ReminderSettings` (You → Reminders; permission is asked after onboarding's plan generation).
 
+**Rewards:** XP comes from training only: `XPFormula.session(verifiedTouches:activeSeconds:)` in `Models/XPModels.swift` (1 per active minute ≤ 20 + 1 per 10 camera-verified touches ≤ 10, max 30, 0 under a minute; level n→n+1 costs 50 + 8(n−1)). `ActiveSessionManager` writes `activeSeconds` (paused time excluded); a camera sitting is capped through `CameraSitting`. No XP from achievements, matches or streak milestones; no coins or shop. Streak counts sessions that pass `StreakRule` (≥ 300 active s; legacy rows: duration ≥ 5 min) — `TrainingSession.countsTowardStreak`. Session Complete asks "How did it feel?" (`SessionFeel`, no default, Done disabled until picked) and stores `TrainingSession.feel`. No effort-zone figure on the live session.
+
 **Free tier:** `Models/ProGates.swift` is the contract (first AI plan free, 3 AI drills for life via `FreeDrillAllowance`, coaching + weekly review + further AI plans are Pro). Every gate is labelled before the tap (row badges from `SubscriptionManager.drillGateLabel` / `planGateLabel(for:)`), and `PaywallView(feature:mode:)` is the one paywall (onboarding mode adds Continue with Free). `Config/TechnIQ.storekit` is wired into the scheme's Run action for local purchases; `-TQFree` exercises the free tier in DEBUG.
 
 **Coach:** `AICoachService` sends the player's library (ids) and today's plan session to `get_daily_coaching`; the answer is snake_case and decoded through explicit `CodingKeys` in `Models/AICoachModels.swift` (never switch to a key strategy). Home never waits on the coach: the plan hero shows at once and the coach's cue lands as the body line ("Marta: …"); a different library pick appears as "swap in …". No plan → `coachHero` (library pick, or "Build a fresh one" through the generator, which counts). Weekly review: `refreshWeeklyReview(for:)` fires when a plan week's seven-day window has ended (`weeklyReview.reviewed.<planId>` in UserDefaults); `WeeklyReviewView` = `WeekRecap` (pure) + per-change accept. The coach's name is player-chosen (`CoachIdentity`, You → Your coach) and fronts every coach label. Prompts live in `functions/coach_prompts.py` (tested).
@@ -151,7 +151,7 @@ Every in-scope screen is built only from these; add a variant to a TQ component 
 | Sessions | ActiveTrainingView (full-screen pitch + TQDrillSheet; the only session engine), SessionDrillPickerView (plan day without drills), SessionCompleteView, WeeklyReviewView (end-of-week recap + coach changes), SessionHistoryView, SessionCalendarView |
 | Exercises | ExerciseLibraryView (Train tab: My drills + per-skill sections from `Models/TrainLibraryModel.swift`), TrainSkillListView (See all), ExerciseDetailView, CustomDrillGeneratorView (the one generator: quick by default, More options collapsed; `prefill` + `onCreated` for Home / coach / Make-it-harder entry points), DrillDiagramView (+TQDiagram), SharedDrillDetailView |
 | Matches | MatchLogView, MatchHistoryView, SeasonManagementView |
-| Avatar | AvatarCustomizationView, ProgrammaticAvatarView, ShopView |
+| Avatar | AvatarCustomizationView, ProgrammaticAvatarView |
 | Analytics | SkillTrendChartView, CalendarHeatMapView, InsightsEngine |
 | Community | CommunityView (Feed / Drills / Leaderboard), DrillMarketplaceView (drill of the week) |
 | Settings | EnhancedProfileView (You tab: also subscription, restore, legal, version, sign out, delete account — no Settings sheet), EditProfileView, NotificationSettingsView, CoachNameView, PaywallView, SharePlanView |

@@ -21,7 +21,6 @@ final class CameraDrillSession: ObservableObject {
         let isPersonalBest: Bool
         let previousBest: Int?
         let xp: Int
-        let coins: Int
     }
 
     let drill: CameraDrill
@@ -51,6 +50,8 @@ final class CameraDrillSession: ObservableObject {
     private let source: DrillFrameSource
     private let player: Player
     private let runService: CameraRunService?
+    /// This session's runs share one XP cap (`CameraSitting`).
+    private let sitting = CameraSitting()
     private var analyzer: FrameAnalyzer?
     // Source-queue state.
     private var flow: HandsFreeFlow
@@ -226,12 +227,11 @@ final class CameraDrillSession: ObservableObject {
 
     @MainActor
     private func finishRun(count: Int, duration: Double) {
-        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player)
+        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player, sitting: sitting)
         let result = RunResult(count: count,
                                isPersonalBest: outcome?.isPersonalBest ?? false,
                                previousBest: outcome?.previousBest,
-                               xp: outcome?.reward.xp ?? 0,
-                               coins: outcome?.reward.coins ?? 0)
+                               xp: outcome?.xp ?? 0)
         lastResult = result
         runs.append(result)
         self.count = count

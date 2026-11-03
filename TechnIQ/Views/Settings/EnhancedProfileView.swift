@@ -3,7 +3,7 @@ import CoreData
 
 // MARK: - You (Touchline 6c)
 //
-// Pitch card (avatar, tier · position eyebrow, condensed name, LVL · XP · coins, level bar, ghosted
+// Pitch card (avatar, tier · position eyebrow, condensed name, LVL · XP, level bar, ghosted
 // kit number), a stat rail (sessions / hours / streak / season G A), then row groups under
 // TRAINING / ACCOUNT / ABOUT eyebrows. This is the whole account surface: subscription (manage /
 // restore), legal, version, Sign out, and Delete account all live here; there is no Settings sheet.
@@ -19,7 +19,6 @@ struct EnhancedProfileView: View {
     @State private var route: ProfileRoute?
     @State private var showingEditProfile = false
     @State private var showingAvatarCustomization = false
-    @State private var showingShop = false
     @State private var showingReminders = false
     @State private var showingCoachName = false
     @State private var showingJuggleSpike = false
@@ -145,9 +144,6 @@ struct EnhancedProfileView: View {
         .sheet(isPresented: $showingAvatarCustomization) {
             AvatarCustomizationView(kitNumber: currentPlayer?.kitNumberValue)
         }
-        .sheet(isPresented: $showingShop) {
-            ShopView()
-        }
         .sheet(isPresented: $showingTrainingProfile) {
             if let player = currentPlayer {
                 TrainingProfileView(player: player)
@@ -232,7 +228,6 @@ struct EnhancedProfileView: View {
 
     private func identityCard(_ player: Player) -> some View {
         let kit = player.kitNumberValue
-        let coins = Int(player.coins)
         return TQPitchCard(.hero, markings: .profile) {
             HStack(alignment: .top, spacing: 16) {
                 ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium, kitNumber: kit)
@@ -249,8 +244,7 @@ struct EnhancedProfileView: View {
                         .minimumScaleFactor(0.6)
                     TQFigureRow(figures: [
                         .init(value: "\(max(Int(player.currentLevel), 1))", unit: "LVL", unitFirst: true),
-                        .init(value: player.totalXP.formatted(.number), unit: "XP"),
-                        .init(value: "\(coins)", unit: "C")
+                        .init(value: player.totalXP.formatted(.number), unit: "XP")
                     ], onPitch: true, valueSize: 18, unitSize: 16, spacing: 14)
                     TQLevelBar(previous: levelProgress(for: player), current: levelProgress(for: player), height: 6, animates: false, onPitch: true)
                         .padding(.top, 4)
@@ -306,7 +300,6 @@ struct EnhancedProfileView: View {
                 TQRow("Kit & avatar") { showingAvatarCustomization = true }
                 TQRow("Reminders", meta: .init(ReminderSettings.load().timeLabel())) { showingReminders = true }
                 TQRow("Your coach", meta: .init(CoachIdentity.name())) { showingCoachName = true }
-                TQRow("Shop", meta: .init("", accent: "\(currentPlayer.map { Int($0.coins) } ?? 0) C")) { showingShop = true }
                 if subscriptionManager.isPro {
                     TQRow("TechnIQ Pro", subtitle: "Manage subscription", badge: TQBadge(.status("Active"))) {
                         open("https://apps.apple.com/account/subscriptions")
@@ -449,7 +442,7 @@ struct AchievementsBrowseView: View {
         let unlocked = AchievementService.shared.isUnlocked(achievement.id, for: player)
         let progress = AchievementService.shared.getProgress(for: achievement, player: player, in: viewContext)
         let meta: TQRow.Meta = unlocked
-            ? .init("", accent: "+\(achievement.xpReward) XP")
+            ? .init("", accent: "Earned")
             : .init(progress > 0 ? "\(Int((progress * 100).rounded()))%" : "Locked")
         return TQRow(
             achievement.name,

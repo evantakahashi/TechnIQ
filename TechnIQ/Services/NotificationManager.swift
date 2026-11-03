@@ -68,12 +68,13 @@ final class NotificationManager {
         }
     }
 
-    /// Convenience: reads the active plan, streak and today's sessions off the player.
+    /// Convenience: reads the active plan, streak and today's sessions off the player. Only a session
+    /// that counts toward the streak (`StreakRule`) clears today's streak nudge.
     func refresh(for player: Player, now: Date = Date()) {
         let plan = TrainingPlanService.shared.fetchActivePlan(for: player)
         let calendar = Calendar.current
         let trainedToday = ((player.sessions as? Set<TrainingSession>) ?? []).contains {
-            guard let date = $0.date else { return false }
+            guard let date = $0.date, $0.countsTowardStreak else { return false }
             return calendar.isDate(date, inSameDayAs: now)
         }
         refresh(plan: plan, streak: Int(player.currentStreak), trainedToday: trainedToday, now: now, calendar: calendar)
@@ -118,7 +119,7 @@ final class NotificationManager {
                 planned.append(Planned(
                     identifier: Identifier.dailyReminder,
                     title: "Time to train",
-                    body: "A quick drill keeps the streak alive.",
+                    body: "Five minutes of training keeps the streak alive.",
                     fireDate: fireDate,
                     repeats: true
                 ))

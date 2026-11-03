@@ -44,134 +44,6 @@ enum AvatarSlot: String, CaseIterable, Identifiable {
         case .accessory: return "sparkles"
         }
     }
-
-    /// Whether this slot requires purchasing items (vs just selecting options)
-    var requiresPurchase: Bool {
-        switch self {
-        case .skinTone, .hairColor, .faceStyle:
-            return false // Free customization options
-        case .hairStyle, .jersey, .shorts, .socks, .cleats, .accessory:
-            return true // Items that can be purchased
-        }
-    }
-}
-
-// MARK: - Item Rarity
-
-/// Rarity tiers for avatar items with associated pricing and level requirements
-enum ItemRarity: String, CaseIterable, Identifiable, Comparable {
-    case starter
-    case common
-    case uncommon
-    case rare
-    case epic
-    case legendary
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        rawValue.capitalized
-    }
-
-    /// Price range for this rarity tier (min, max)
-    var priceRange: (min: Int, max: Int) {
-        switch self {
-        case .starter: return (0, 0)
-        case .common: return (50, 150)
-        case .uncommon: return (200, 400)
-        case .rare: return (500, 800)
-        case .epic: return (1000, 2000)
-        case .legendary: return (2500, 5000)
-        }
-    }
-
-    /// Minimum level required to purchase items of this rarity
-    var levelRequirement: Int {
-        switch self {
-        case .starter: return 0
-        case .common: return 0
-        case .uncommon: return 5
-        case .rare: return 15
-        case .epic: return 25
-        case .legendary: return 40
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .starter: return DesignSystem.Colors.textSecondary
-        case .common: return DesignSystem.Colors.rarityCommon
-        case .uncommon: return DesignSystem.Colors.rarityUncommon
-        case .rare: return DesignSystem.Colors.rarityRare
-        case .epic: return DesignSystem.Colors.rarityEpic
-        case .legendary: return DesignSystem.Colors.rarityLegendary
-        }
-    }
-
-    var gradient: LinearGradient {
-        switch self {
-        case .starter:
-            return LinearGradient(colors: [.gray, .gray.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .common:
-            return LinearGradient(colors: [.gray, .gray.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .uncommon:
-            return LinearGradient(colors: [Color(red: 0.3, green: 0.69, blue: 0.31), Color(red: 0.4, green: 0.8, blue: 0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .rare:
-            return LinearGradient(colors: [Color(red: 0.13, green: 0.59, blue: 0.95), Color(red: 0.3, green: 0.7, blue: 1.0)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .epic:
-            return LinearGradient(colors: [Color(red: 0.61, green: 0.15, blue: 0.69), Color(red: 0.8, green: 0.3, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .legendary:
-            return LinearGradient(colors: [Color(red: 1.0, green: 0.76, blue: 0.03), Color(red: 1.0, green: 0.9, blue: 0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        }
-    }
-
-    /// Sort order for Comparable conformance
-    private var sortOrder: Int {
-        switch self {
-        case .starter: return 0
-        case .common: return 1
-        case .uncommon: return 2
-        case .rare: return 3
-        case .epic: return 4
-        case .legendary: return 5
-        }
-    }
-
-    static func < (lhs: ItemRarity, rhs: ItemRarity) -> Bool {
-        lhs.sortOrder < rhs.sortOrder
-    }
-}
-
-// MARK: - Avatar Item
-
-/// Represents a purchasable/equippable avatar item
-struct AvatarItem: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let slot: AvatarSlot
-    let rarity: ItemRarity
-    let price: Int
-    let assetName: String // Maps to asset catalog: avatar_[slot]_[assetName]
-    let description: String
-    let levelRequirement: Int
-
-    /// Whether this item is available in the starter set (free)
-    var isStarter: Bool {
-        rarity == .starter
-    }
-
-    /// Full asset name for the asset catalog
-    var fullAssetName: String {
-        "avatar_\(slot.rawValue)_\(assetName)"
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-
-    static func == (lhs: AvatarItem, rhs: AvatarItem) -> Bool {
-        lhs.id == rhs.id
-    }
 }
 
 // MARK: - Avatar State
@@ -441,10 +313,6 @@ enum JerseyStyle: String, CaseIterable, Identifiable {
     var assetName: String {
         "jersey_\(rawValue)"
     }
-
-    var isStarter: Bool {
-        self == .starterGreen
-    }
 }
 
 // MARK: - Shorts Style Options
@@ -472,10 +340,6 @@ enum ShortsStyle: String, CaseIterable, Identifiable {
     var assetName: String {
         "shorts_\(rawValue)"
     }
-
-    var isStarter: Bool {
-        self == .starterWhite
-    }
 }
 
 // MARK: - Socks Style Options
@@ -500,10 +364,6 @@ enum SocksStyle: String, CaseIterable, Identifiable {
 
     var assetName: String {
         "socks_\(rawValue)"
-    }
-
-    var isStarter: Bool {
-        self == .greenStriped
     }
 }
 
@@ -531,81 +391,5 @@ enum CleatsStyle: String, CaseIterable, Identifiable {
 
     var assetName: String {
         "cleats_\(rawValue)"
-    }
-
-    var isStarter: Bool {
-        self == .starterGreen
-    }
-}
-
-// MARK: - Coin Earning Event
-
-/// Events that can earn coins
-enum CoinEarningEvent {
-    case sessionCompleted(duration: Int) // Duration in minutes
-    case dailyStreakBonus(streakDay: Int)
-    case weeklyStreakMilestone // 7 day streak
-    case firstSessionOfDay
-    case fiveStarRating
-    case trainingPlanWeekCompleted
-    case trainingPlanCompleted
-    case achievementUnlocked(xpReward: Int)
-    case levelUp(newLevel: Int)
-    /// A camera-counted run; amount from `CameraRewards` (base + PB + challenge).
-    case cameraRun(coins: Int)
-
-    var coins: Int {
-        switch self {
-        case .sessionCompleted(let duration):
-            // 10-25 coins based on duration
-            let baseCoinPerMinute = 0.5
-            let coins = Int(Double(duration) * baseCoinPerMinute)
-            return min(max(coins, 10), 25)
-        case .dailyStreakBonus(let streakDay):
-            return 5 * streakDay
-        case .weeklyStreakMilestone:
-            return 50
-        case .firstSessionOfDay:
-            return 10
-        case .fiveStarRating:
-            return 15
-        case .trainingPlanWeekCompleted:
-            return 75
-        case .trainingPlanCompleted:
-            return 200
-        case .achievementUnlocked(let xpReward):
-            // Scale with achievement XP reward: 25-100 coins
-            let coins = xpReward / 4
-            return min(max(coins, 25), 100)
-        case .levelUp(let newLevel):
-            return 50 + (newLevel * 5)
-        case .cameraRun(let coins):
-            return coins
-        }
-    }
-
-    var displayName: String {
-        switch self {
-        case .sessionCompleted:
-            return "Session Completed"
-        case .dailyStreakBonus(let day):
-            return "\(day) Day Streak"
-        case .weeklyStreakMilestone:
-            return "Weekly Streak!"
-        case .firstSessionOfDay:
-            return "First Session Today"
-        case .fiveStarRating:
-            return "Perfect Rating"
-        case .trainingPlanWeekCompleted:
-            return "Training Week Done"
-        case .trainingPlanCompleted:
-            return "Training Plan Complete!"
-        case .achievementUnlocked:
-            return "Achievement Unlocked"
-        case .levelUp(let level):
-            return "Level \(level)!"
-        case .cameraRun:
-            return "Camera Drill"
-        }
     }
 }

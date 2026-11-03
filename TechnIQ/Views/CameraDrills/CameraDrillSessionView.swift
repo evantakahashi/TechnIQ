@@ -156,7 +156,6 @@ struct CameraDrillSessionView: View {
         var parts: [String] = []
         if let previous = result.previousBest, !result.isPersonalBest { parts.append("Best \(previous)") }
         if result.xp > 0 { parts.append("+\(result.xp) XP") }
-        if result.coins > 0 { parts.append("+\(result.coins) coins") }
         return parts.isEmpty ? "Logged" : parts.joined(separator: " · ")
     }
 

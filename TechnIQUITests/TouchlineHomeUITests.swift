@@ -182,7 +182,7 @@ final class TouchlineHomeUITests: XCTestCase {
 
     // MARK: - Active session → Session complete (5c, 6a)
 
-    func test_activeSession_repsPauseFinishAndEffort() throws {
+    func test_activeSession_repsPauseFinishAndFeel() throws {
         launch([])
         let start = app.buttons["Start session"]
         XCTAssertTrue(start.waitForExistence(timeout: 40), "Home hero")
@@ -194,7 +194,7 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(plusReps.waitForExistence(timeout: 15), "active session opened with the reps button")
         XCTAssertTrue(text(containing: "Drill 1 of").exists, "drill counter")
         XCTAssertTrue(text(containing: "reps").exists, "reps label")
-        XCTAssertTrue(text(containing: "effort").exists, "effort label")
+        XCTAssertFalse(text(containing: "effort").exists, "no effort zone until a heart-rate source exists")
         shot("session-running")
 
         plusReps.tap()
@@ -220,14 +220,23 @@ final class TouchlineHomeUITests: XCTestCase {
 
         XCTAssertTrue(text(containing: "Full time").waitForExistence(timeout: 15), "session complete header")
         XCTAssertTrue(text(containing: "Session").exists, "headline")
-        XCTAssertTrue(text(containing: "How did it feel").exists, "effort question")
-        shot("session-complete")
-
-        let hard = app.buttons["Hard"]
-        XCTAssertTrue(hard.waitForExistence(timeout: 3), "effort option")
-        hard.tap()
+        XCTAssertTrue(text(containing: "How did it feel").exists, "feel question")
+        XCTAssertFalse(text(containing: "coins").exists, "no coins")
+        XCTAssertFalse(app.buttons["Close"].exists, "no close button that skips the feel question")
         let done = app.buttons["Done"]
         XCTAssertTrue(done.waitForExistence(timeout: 3), "Done button")
+        for option in ["Too easy", "Right", "Too hard"] {
+            XCTAssertTrue(app.buttons[option].exists, "feel option \(option)")
+            XCTAssertFalse(app.buttons[option].isSelected, "no default feel")
+        }
+        XCTAssertFalse(done.isEnabled, "Done waits for a feel")
+        shot("session-complete")
+
+        let tooHard = app.buttons["Too hard"]
+        tooHard.tap()
+        XCTAssertTrue(tooHard.isSelected, "picked feel is selected")
+        XCTAssertTrue(done.isEnabled, "Done enabled once a feel is picked")
+        shot("session-complete-feel")
         done.tap()
         // The day is done now: Home offers the next session, or a rest-day hero with "Train anyway".
         let backHome = start.waitForExistence(timeout: 15) || app.buttons["Train anyway"].waitForExistence(timeout: 5)

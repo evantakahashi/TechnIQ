@@ -38,7 +38,6 @@ struct MatchLogView: View {
     @State private var availableSeasons: [Season] = []
     @State private var showingCreateSeason = false
     @State private var showMatchComplete = false
-    @State private var earnedXP: Int32 = 0
 
     let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST", "CF"]
     let results = ["W", "D", "L"]
@@ -106,7 +105,7 @@ struct MatchLogView: View {
                 }
             }
             .sheet(isPresented: $showMatchComplete) {
-                MatchCompleteView(xpEarned: earnedXP, goals: goals, assists: assists) {
+                MatchCompleteView(goals: goals, assists: assists) {
                     showMatchComplete = false
                     onComplete?()
                     dismiss()
@@ -605,7 +604,7 @@ struct MatchLogView: View {
         let strengthsString = selectedStrengths.isEmpty ? nil : selectedStrengths.sorted().joined(separator: ",")
         let weaknessesString = selectedWeaknesses.isEmpty ? nil : selectedWeaknesses.sorted().joined(separator: ",")
 
-        let match = MatchService.shared.createMatch(
+        _ = MatchService.shared.createMatch(
             for: player,
             date: matchDate,
             opponent: opponent.isEmpty ? nil : opponent,
@@ -622,11 +621,6 @@ struct MatchLogView: View {
             strengths: strengthsString,
             weaknesses: weaknessesString
         )
-
-        earnedXP = match.xpEarned
-
-        // Award XP to player
-        XPService.shared.awardMatchXP(to: player, xp: Int(earnedXP))
 
         HapticManager.shared.success()
         showMatchComplete = true
@@ -663,7 +657,6 @@ struct MatchLogView: View {
 // MARK: - Match Complete View
 
 struct MatchCompleteView: View {
-    let xpEarned: Int32
     let goals: Int
     let assists: Int
     let onDismiss: () -> Void
@@ -711,20 +704,6 @@ struct MatchCompleteView: View {
                             .foregroundColor(.white.opacity(0.7))
                     }
                 }
-
-                // XP earned
-                HStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(DesignSystem.Colors.xpGold)
-                    Text("+\(xpEarned) XP")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.xpGold)
-                }
-                .padding(.horizontal, DesignSystem.Spacing.lg)
-                .padding(.vertical, DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.xpGold.opacity(0.2))
-                .cornerRadius(DesignSystem.CornerRadius.pill)
 
                 Spacer()
 

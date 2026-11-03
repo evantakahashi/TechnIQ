@@ -1,7 +1,7 @@
 import XCTest
 
 /// Screenshot tour of the screens and sheets the smoke suites don't visit: Plans segments and
-/// sheets, the plan-detail day sheet, the new-drill sheet, avatar / shop / settings / progress /
+/// sheets, the plan-detail day sheet, the new-drill sheet, avatar / settings / progress /
 /// session history from You, the in-session drill sheet, the Community feed and post composer.
 /// Assertions are deliberately loose — the value is the screenshots (tmp/touchlineshots/T*.png).
 final class TouchlineTourUITests: XCTestCase {
@@ -249,11 +249,6 @@ final class TouchlineTourUITests: XCTestCase {
         shot("coach-name")
         dismissSheet(["Cancel", "Close", "Done"])
 
-        tapWhenHittable(row("Shop"))
-        settle(1.5)
-        shot("shop")
-        dismissSheet(["Done", "Close", "Cancel"])
-
         scrollTo(app.buttons["profile.deleteAccount"])
         settle(1)
         shot("you-account-bottom")
@@ -279,6 +274,8 @@ final class TouchlineTourUITests: XCTestCase {
         if app.alerts.buttons["End Session"].waitForExistence(timeout: 3) { app.alerts.buttons["End Session"].tap() }
         settle(1.5)
         shot("session-complete-early")
+        // A completed drill shows "How did it feel?" (Done waits for an answer); none shows "Nothing saved".
+        if app.buttons["Right"].waitForExistence(timeout: 2) { app.buttons["Right"].tap() }
         if tapWhenHittable(app.buttons["Done"], timeout: 5) { settle(1.0) }
 
         tapWhenHittable(app.buttons["Community"])

@@ -1,8 +1,8 @@
 import XCTest
 @testable import TechnIQ
 
-/// Touchline session mechanics on ActiveSessionManager: clock, reps, effort zone, one-tap advance,
-/// and the session-level effort that back-fills drill ratings.
+/// Touchline session mechanics on ActiveSessionManager: clock, reps, one-tap advance, active time,
+/// and the session-level feel that back-fills drill ratings.
 @MainActor
 final class ActiveSessionTouchlineTests: XCTestCase {
     var stack: TestCoreDataStack!
@@ -75,7 +75,7 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertEqual(sut.elapsedSeconds, 2)
     }
 
-    // MARK: - Reps and effort
+    // MARK: - Reps
 
     func test_addReps_countsForCurrentDrillOnly() {
         let (sut, _) = makeSUT(durations: [60, 60])
@@ -88,14 +88,6 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertEqual(sut.reps, [20, 0])
     }
 
-    func test_effortZone_prefersMetabolicLoadThenDifficulty() {
-        let (sut, _) = makeSUT(durations: [60, 60], loads: [4, 0])
-        sut.start()
-        XCTAssertEqual(sut.currentEffortZone, 4)
-        sut.advance()
-        XCTAssertEqual(sut.currentEffortZone, 2, "difficulty 2 → Z2 when no metabolic load")
-    }
-
     // MARK: - Advance
 
     func test_advance_completesDrillWithProvisionalRatingAndRestartsClock() {
@@ -106,7 +98,7 @@ final class ActiveSessionTouchlineTests: XCTestCase {
 
         XCTAssertEqual(sut.phase, .exercise)
         XCTAssertEqual(sut.currentExerciseIndex, 1)
-        XCTAssertEqual(sut.exerciseRatings[0], SessionEffort.good.rating)
+        XCTAssertEqual(sut.exerciseRatings[0], SessionFeel.right.rating)
         XCTAssertEqual(sut.exerciseDurations[0], 2)
         XCTAssertEqual(sut.elapsedSeconds, 0)
         XCTAssertTrue(sut.isRunning, "clock restarts for the next drill")
@@ -123,7 +115,7 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         sut.tick()
         sut.endSessionEarly()
         XCTAssertEqual(sut.phase, .sessionComplete)
-        XCTAssertEqual(sut.exerciseRatings, [SessionEffort.good.rating, 0])
+        XCTAssertEqual(sut.exerciseRatings, [SessionFeel.right.rating, 0])
         XCTAssertEqual(sut.exerciseDurations, [0, 1])
         XCTAssertEqual(sut.totalMinutes, 1, "any time spent rounds up to a minute")
     }
@@ -146,9 +138,30 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertEqual((player.sessions as? Set<TrainingSession>)?.count ?? 0, sessionsBefore, "no session row is created")
     }
 
-    // MARK: - Session effort
+    // MARK: - Active time + XP
 
-    func test_applyEffort_rewritesCompletedRatingsSessionAndSkillScores() {
+    func test_finishSession_persistsActiveSecondsAndPaysTimeXP() {
+        let (sut, player) = makeSUT(durations: [600, 600])
+        sut.start()
+        for _ in 0..<130 { sut.tick() }
+        sut.pauseClock()                       // paused time is not active time
+        sut.advance()
+        for _ in 0..<70 { sut.tick() }
+        sut.advance()
+
+        let result = sut.finishSession(player: player, context: stack.context)
+
+        XCTAssertEqual(sut.completedSession?.activeSeconds, 200)
+        XCTAssertEqual(sut.completedSession?.verifiedTouches, 0, "tapped reps are not verified")
+        XCTAssertEqual(result.xpBreakdown, SessionXPBreakdown(timeXP: 3, touchXP: 0))
+        XCTAssertEqual(sut.completedSession?.xpEarned, 3)
+        XCTAssertNil(sut.completedSession?.feel, "no feel until the player picks one")
+        XCTAssertFalse(sut.completedSession?.countsTowardStreak ?? true, "under five minutes")
+    }
+
+    // MARK: - Session feel
+
+    func test_applyFeel_rewritesCompletedRatingsSessionAndSkillScores() {
         let (sut, player) = makeSUT(durations: [10, 10])
         sut.start()
         sut.addReps(30)
@@ -160,15 +173,16 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertNotNil(result.xpBreakdown)
         let session = sut.completedSession
         XCTAssertNotNil(session)
-        XCTAssertEqual(session?.overallRating, Int16(SessionEffort.good.rating))
+        XCTAssertEqual(session?.overallRating, Int16(SessionFeel.right.rating))
         let firstExercise = (session?.exercises as? Set<SessionExercise>)?.first { $0.exercise?.name == "Ex 0" }
         XCTAssertEqual(firstExercise?.reps, 30)
 
         let statsBefore = (player.stats as? Set<PlayerStats>)?.first?.skillRatings?["Passing"]
-        XCTAssertEqual(statsBefore, 80, "provisional Good = 4 → 80")
+        XCTAssertEqual(statsBefore, 80, "provisional Right = 4 → 80")
 
-        sut.applyEffort(.hard, to: session, player: player, context: stack.context)
+        sut.applyFeel(.tooHard, to: session, player: player, context: stack.context)
 
+        XCTAssertEqual(session?.feel, SessionFeel.tooHard.rawValue)
         XCTAssertEqual(sut.exerciseRatings, [2, 2])
         XCTAssertEqual(session?.overallRating, 2)
         for se in (session?.exercises as? Set<SessionExercise>) ?? [] {
@@ -178,12 +192,13 @@ final class ActiveSessionTouchlineTests: XCTestCase {
         XCTAssertEqual(statsAfter, 40, "re-derived from the pre-session snapshot, not averaged twice")
     }
 
-    func test_sessionEffort_mapping() {
-        XCTAssertEqual(SessionEffort.easy.rating, 5)
-        XCTAssertEqual(SessionEffort.good.rating, 4)
-        XCTAssertEqual(SessionEffort.ok.rating, 3)
-        XCTAssertEqual(SessionEffort.hard.rating, 2)
-        XCTAssertEqual(SessionEffort.from(rating: 3), .ok)
-        XCTAssertEqual(SessionEffort.from(rating: 9), .good)
+    func test_sessionFeel_mapping() {
+        XCTAssertEqual(SessionFeel.allCases.map(\.label), ["Too easy", "Right", "Too hard"])
+        XCTAssertEqual(SessionFeel.tooEasy.rating, 5)
+        XCTAssertEqual(SessionFeel.right.rating, 4)
+        XCTAssertEqual(SessionFeel.tooHard.rating, 2)
+        XCTAssertEqual(SessionFeel(raw: "tooHard"), .tooHard)
+        XCTAssertNil(SessionFeel(raw: nil))
+        XCTAssertNil(SessionFeel(raw: "good"))
     }
 }
