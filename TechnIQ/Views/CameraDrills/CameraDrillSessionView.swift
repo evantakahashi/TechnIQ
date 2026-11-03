@@ -40,11 +40,13 @@ struct CameraDrillSessionView: View {
                 Spacer()
                 bottomPanel
                 #if DEBUG
-                Text(session.debugLine)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.white)
-                    .padding(4)
-                    .background(Color.black.opacity(0.6))
+                if CameraDrillSession.debugEnabled {
+                    Text(session.debugLine)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(4)
+                        .background(Color.black.opacity(0.6))
+                }
                 #endif
             }
             .padding(DesignSystem.Spacing.md)

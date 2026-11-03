@@ -31,9 +31,14 @@ final class CameraDrillSession: ObservableObject {
     /// Why a visible player isn't in position (too small, head or feet cut off, off to the side).
     @Published private(set) var positionHint: HandsFreeFlow.PositionHint?
     #if DEBUG
-    /// Positioning numbers for on-device debugging: buffer size, body height, nose / ankle.
+    /// DEBUG `-TQCameraDebug`: the on-screen readout and the frame dump. Off otherwise (never in release).
+    static let debugEnabled = ProcessInfo.processInfo.arguments.contains("-TQCameraDebug")
+    /// On-device debugging numbers (`-TQCameraDebug`): buffer size, body height, nose / ankle, ball, and in a
+    /// live run the share of frames with a ball and the contacts the counter rejected.
     @Published private(set) var debugLine = ""
     private var bufferSize = ""
+    private var liveFrames = 0
+    private var liveBallFrames = 0
     #endif
     @Published private(set) var timeLeft: Double?
     @Published private(set) var ball: BallSighting?
@@ -133,7 +138,7 @@ final class CameraDrillSession: ObservableObject {
 
     private var lastFrameTime = 0.0
     #if DEBUG
-    private let debugDump = CameraDebugDump()
+    private lazy var debugDump = CameraDebugDump()
     #endif
 
     private func process(_ buffer: CMSampleBuffer) {
@@ -151,7 +156,7 @@ final class CameraDrillSession: ObservableObject {
         #endif
         let frame = analyzer.analyze(buffer, orientation: source.orientation)
         #if DEBUG
-        debugDump.record(buffer, orientation: source.orientation, frame: frame)
+        if Self.debugEnabled { debugDump.record(buffer, orientation: source.orientation, frame: frame) }
         #endif
         ingest(frame)
     }
@@ -165,6 +170,10 @@ final class CameraDrillSession: ObservableObject {
         if flow.isLive && !wasLive {
             counter = drill.makeCounter()
             liveStartedAt = frame.time
+            #if DEBUG
+            liveFrames = 0
+            liveBallFrames = 0
+            #endif
         }
         if wasLive, flow.isLive || cues.contains(.timeUp), let counter {
             handle(counter.process(frame))
@@ -174,11 +183,11 @@ final class CameraDrillSession: ObservableObject {
         let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: flow.aspect) } ?? false
         let hint = frame.pose.flatMap { HandsFreeFlow.positionHint($0, aspect: flow.aspect) }
         #if DEBUG
-        let nose = frame.pose?[.nose]?.y, ankle = [frame.pose?[.leftAnkle], frame.pose?[.rightAnkle]].compactMap { $0?.y }.min()
-        let fmt = { (v: Double?) in v.map { String(format: "%.2f", $0) } ?? "–" }
-        let debug = "\(bufferSize) · joints \(frame.pose?.joints.count ?? 0) · nose \(fmt(nose)) · ankle \(fmt(ankle))"
-            + " · body \(nose.flatMap { n in ankle.map { a in String(format: "%.0f%%", 100 * (n - a)) } } ?? "–")"
-            + " · ball \(frame.ball == nil ? "no" : "yes")"
+        if flow.isLive {
+            liveFrames += 1
+            if frame.ball != nil { liveBallFrames += 1 }
+        }
+        let debug = Self.debugEnabled ? debugReadout(frame) : ""
         #endif
         let phase = Self.phase(for: flow.state, time: frame.time)
         let timeLeft = flow.timeLeft
@@ -196,10 +205,28 @@ final class CameraDrillSession: ObservableObject {
         }
     }
 
+    #if DEBUG
+    private func debugReadout(_ frame: DrillFrame) -> String {
+        let nose = frame.pose?[.nose]?.y, ankle = [frame.pose?[.leftAnkle], frame.pose?[.rightAnkle]].compactMap { $0?.y }.min()
+        let fmt = { (v: Double?) in v.map { String(format: "%.2f", $0) } ?? "–" }
+        let debug = "\(bufferSize) · joints \(frame.pose?.joints.count ?? 0) · nose \(fmt(nose)) · ankle \(fmt(ankle))"
+            + " · body \(nose.flatMap { n in ankle.map { a in String(format: "%.0f%%", 100 * (n - a)) } } ?? "–")"
+            + " · ball \(frame.ball == nil ? "no" : "yes")"
+        guard liveFrames > 0 else { return debug }
+        var live = " · live ball \(100 * liveBallFrames / liveFrames)%"
+        if let juggle = counter as? JuggleCounter {
+            let r = juggle.rejections
+            live += " · rejected floor \(r.floor) arm \(r.arm) shallow \(r.shallow)"
+        }
+        return debug + live
+    }
+    #endif
+
     private func handle(_ events: [DrillEvent]) {
         for event in events {
             switch event {
             case let .touch(count, _, _):
+                flow.touched()
                 DispatchQueue.main.async {
                     self.count = count
                     self.say("\(count)")
@@ -249,6 +276,10 @@ final class CameraDrillSession: ObservableObject {
         case let .countdown(n): say("\(n)")
         case .go: say("Go")
         case .timeUp: say("Time")
+        case .noTouches:
+            lastResult = nil
+            count = 0
+            say("No touches counted")
         case .finished: say("Done")
         }
     }
@@ -263,8 +294,8 @@ final class CameraDrillSession: ObservableObject {
 }
 
 #if DEBUG
-/// Saves what the analyser saw, about once a second, to Documents/CameraDebug (frame_NN.jpg + .json with
-/// the pose and ball, last 40 kept) so a device session can be pulled off and inspected on the Mac:
+/// `-TQCameraDebug` only. Saves what the analyser saw, about once a second, to Documents/CameraDebug
+/// (frame_NNN.jpg + .json with the pose and ball, last 3 minutes kept) so a device session can be pulled off and inspected on the Mac:
 /// `xcrun devicectl device copy from --device <id> --domain-type appDataContainer --domain-identifier
 /// evan.TechnIQ --source Documents/CameraDebug --destination <dir>`. Source queue only.
 final class CameraDebugDump {
@@ -283,7 +314,7 @@ final class CameraDebugDump {
     func record(_ buffer: CMSampleBuffer, orientation: CGImagePropertyOrientation, frame: DrillFrame) {
         frames += 1
         guard frames % 30 == 1, let pixels = CMSampleBufferGetImageBuffer(buffer) else { return }
-        let name = String(format: "frame_%02d", saved % 40)
+        let name = String(format: "frame_%03d", saved % 180)
         saved += 1
         let image = CIImage(cvPixelBuffer: pixels).oriented(orientation)
         if let space = CGColorSpace(name: CGColorSpace.sRGB) {

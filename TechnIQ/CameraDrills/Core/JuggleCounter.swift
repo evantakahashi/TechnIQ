@@ -41,9 +41,20 @@ final class JuggleCounter: DrillCounter {
         case seekingHigh(high: Double)
     }
 
+    /// Contacts the counter saw but didn't count, for on-device debugging (why a run stays at 0).
+    struct Rejections: Equatable {
+        /// Low point at floor level (ground, or a low touch the floor estimate misread).
+        var floor = 0
+        /// Nearest body part an arm.
+        var arm = 0
+        /// Low point after too small a drop (wobble).
+        var shallow = 0
+    }
+
     let config: Config
     private(set) var count = 0
     private(set) var isRunning = false
+    private(set) var rejections = Rejections()
 
     private var phase: Phase?
     private var lastSightingTime: Double?
@@ -100,12 +111,17 @@ final class JuggleCounter: DrillCounter {
     // MARK: - Contacts
 
     private func contact(at sample: Sample, drop: Double) -> [DrillEvent] {
-        guard drop >= metres(config.minDrop) else { return [] }
+        guard drop >= metres(config.minDrop) else {
+            rejections.shallow += 1
+            return []
+        }
         if isOnFloor(sample) {
+            rejections.floor += 1
             return isRunning ? [endRun(.ground, at: sample.time)] : []
         }
         let part = classify(sample)
         if part == .arm {
+            rejections.arm += 1
             return isRunning ? [endRun(.handball, at: sample.time)] : []
         }
         if !isRunning {

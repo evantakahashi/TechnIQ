@@ -34,9 +34,12 @@ final class JuggleCounterTests: XCTestCase {
         b.pop(from: S.groundContact, height: 0.08 * S.scale, to: S.groundContact)
         b.hold(S.groundContact, seconds: 0.5)
 
-        let events = S.run(b.frames)
+        let counter = JuggleCounter()
+        let events = S.run(b.frames, counter: counter)
 
         XCTAssertTrue(events.isEmpty, "\(events)")
+        XCTAssertGreaterThan(counter.rejections.floor, 0, "the bounces are reported for the debug readout")
+        XCTAssertEqual(counter.rejections.arm, 0)
     }
 
     func testThighAndHeadTouchesAreClassified() {
