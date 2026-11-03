@@ -262,7 +262,7 @@ final class TouchlineTourUITests: XCTestCase {
     // MARK: - Session drill sheet + Community feed
 
     func test_tour_sessionSheetAndFeed() throws {
-        launch([])
+        launch(["-TQCommunity"])
         let start = app.buttons["Start session"]
         XCTAssertTrue(start.waitForExistence(timeout: 40), "home")
         dismissCoachMarkIfPresent()

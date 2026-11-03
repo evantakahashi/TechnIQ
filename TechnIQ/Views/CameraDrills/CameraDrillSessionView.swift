@@ -9,9 +9,12 @@ import SwiftUI
 struct CameraDrillSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var session: CameraDrillSession
+    /// Called once when the session closes, with each finished run's count (the assessment's hook).
+    private let onFinish: (([Int]) -> Void)?
 
-    init(drill: CameraDrill, player: Player) {
-        _session = StateObject(wrappedValue: CameraDrillSession(drill: drill, player: player))
+    init(drill: CameraDrill, player: Player, recordsBenchmark: Bool = true, onFinish: (([Int]) -> Void)? = nil) {
+        _session = StateObject(wrappedValue: CameraDrillSession(drill: drill, player: player, recordsBenchmark: recordsBenchmark))
+        self.onFinish = onFinish
     }
 
     var body: some View {
@@ -51,7 +54,10 @@ struct CameraDrillSessionView: View {
         }
         .statusBarHidden()
         .onAppear { session.start() }
-        .onDisappear { session.stop() }
+        .onDisappear {
+            session.stop()
+            onFinish?(session.runs.map(\.count))
+        }
         .onChange(of: session.phase) { _, phase in
             if phase == .finished { dismiss() }
         }

@@ -75,6 +75,8 @@ struct PlanWeekModel: Identifiable, Hashable {
     let completedAt: Date?
 
     var days: [PlanDayModel]
+    /// The plan's closing retest week (`RetestWeek`).
+    var isRetest: Bool = false
 
     var totalSessions: Int {
         days.reduce(0) { $0 + $1.sessions.count }
@@ -177,6 +179,9 @@ enum SessionType: String, CaseIterable {
 
     var displayName: String { rawValue }
 
+    /// Types a player can pick for a session; the assessment is placed by the plan (retest week).
+    static var pickable: [SessionType] { allCases.filter { $0 != .assessment } }
+
     var icon: String {
         switch self {
         case .technical: return "soccerball"
@@ -260,7 +265,8 @@ extension PlanWeek {
             notes: notes,
             isCompleted: isCompleted,
             completedAt: completedAt,
-            days: daysArray.map { $0.toModel() }
+            days: daysArray.map { $0.toModel() },
+            isRetest: isRetest
         )
     }
 }
@@ -285,6 +291,9 @@ extension PlanDay {
 }
 
 extension PlanSession {
+    /// The 10-minute assessment: every start path opens AssessmentView for it, never a drill session.
+    var isAssessment: Bool { sessionType == SessionType.assessment.rawValue }
+
     func toModel() -> PlanSessionModel {
         let exercisesArray = (exercises?.allObjects as? [Exercise]) ?? []
 

@@ -106,7 +106,8 @@ struct AITrainingPlanGeneratorView: View {
             VStack(alignment: .leading, spacing: 0) {
                 TQGroupHeader("Shape")
                 TQRule()
-                TQValueStepper(label: "Weeks", value: $duration, range: 2...12) { "\($0)" }
+                // Every plan closes with a retest week on top of these (RetestWeek).
+                TQValueStepper(label: "Weeks", value: $duration, range: 2...12) { "\($0) + retest" }
                 TQRule()
             }
 
@@ -238,7 +239,7 @@ struct AITrainingPlanGeneratorView: View {
     }
 
     private var requestSummary: String {
-        var parts = ["\(duration) weeks", difficulty.displayName.lowercased(), category == .position ? (targetRole.isEmpty ? "position" : targetRole) : category.displayName.lowercased()]
+        var parts = ["\(duration) weeks + retest week", difficulty.displayName.lowercased(), category == .position ? (targetRole.isEmpty ? "position" : targetRole) : category.displayName.lowercased()]
         if !focusAreas.isEmpty { parts.append(focusAreas.joined(separator: ", ")) }
         if !preferredDays.isEmpty { parts.append(preferredDays.sorted().map(\.shortName).joined(separator: " ")) }
         return parts.joined(separator: " · ")

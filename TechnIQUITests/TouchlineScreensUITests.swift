@@ -250,7 +250,7 @@ final class TouchlineScreensUITests: XCTestCase {
     // MARK: - Community drills (6b)
 
     func test_communityDrills_featuredCardChipsAndRows() throws {
-        launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "3"])
+        launch(["-TQSeedDemo", "-TQLocalUser", "-TQCommunity", "-TQTab", "3"])
         XCTAssertTrue(text(containing: "Drill of the week").waitForExistence(timeout: 40), "featured card")
         dismissCoachMarkIfPresent()
         shot("community-drills")

@@ -39,9 +39,12 @@ final class CameraRunService: ObservableObject {
         return (try? context.fetch(request))?.first.map { Int($0.count) }
     }
 
-    /// Records a finished run and pays its reward. Runs of 0 touches are not stored.
+    /// Records a finished run and pays its reward. Runs of 0 touches are not stored. A run of a
+    /// benchmark drill also records a camera-verified Benchmark unless `recordsBenchmark` is false
+    /// (the assessment records its own best-of-three).
     @discardableResult
-    func record(drill: CameraDrill, count: Int, duration: Double, player: Player, now: Date = Date()) -> Outcome? {
+    func record(drill: CameraDrill, count: Int, duration: Double, player: Player, now: Date = Date(),
+                recordsBenchmark: Bool = true) -> Outcome? {
         guard count > 0 else { return nil }
         let previousBest = personalBest(for: drill, player: player)
         let isBest = CameraRewards.isPersonalBest(count: count, previousBest: previousBest)
@@ -76,6 +79,9 @@ final class CameraRunService: ObservableObject {
         if let levelUp { coins.awardLevelUpCoins(newLevel: levelUp, context: context) }
 
         Task { @MainActor in try? await CloudService.shared.syncCameraRuns([run], for: player) }
+        if recordsBenchmark {
+            BenchmarkService(context: context).recordCameraRun(drill: drill, count: count, duration: duration, player: player, date: now)
+        }
         return Outcome(run: run, reward: reward, isPersonalBest: isBest, previousBest: previousBest, levelUp: levelUp)
     }
 

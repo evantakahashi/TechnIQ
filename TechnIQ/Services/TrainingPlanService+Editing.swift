@@ -45,16 +45,23 @@ extension TrainingPlanService {
 
     // MARK: Weeks
 
-    /// Appends a week that mirrors the last week's pattern (rest days, session types, lengths and
-    /// drills) with nothing completed, so a plan can be extended without rebuilding it.
+    /// Appends a week that mirrors the last training week's pattern (rest days, session types, lengths
+    /// and drills) with nothing completed, so a plan can be extended without rebuilding it. An
+    /// untouched retest week stays last: the new week goes in front of it.
     @discardableResult
     func appendWeek(planId: UUID) -> Bool {
         guard let plan = fetch(TrainingPlan.self, id: planId) else { return false }
         let weeks = ((plan.weeks?.allObjects as? [PlanWeek]) ?? []).sorted { $0.weekNumber < $1.weekNumber }
-        let template = weeks.last
+        let retest = weeks.last.flatMap { $0.isRetest && !Self.hasProgress($0) ? $0 : nil }
+        let template = weeks.last { !$0.isRetest } ?? weeks.last
         let week = PlanWeek(context: editingContext)
         week.id = UUID()
-        week.weekNumber = Int16(weeks.count + 1)
+        if let retest {
+            week.weekNumber = retest.weekNumber
+            retest.weekNumber += 1
+        } else {
+            week.weekNumber = Int16(weeks.count + 1)
+        }
         week.focusArea = template?.focusArea
         week.plan = plan
 
@@ -68,7 +75,8 @@ extension TrainingPlanService {
             day.dayOfWeek = source?.dayOfWeek ?? DayOfWeek.allCases.sorted { $0.sortOrder < $1.sortOrder }[index % 7].rawValue
             day.isRestDay = source?.isRestDay ?? true
             day.week = week
-            for (order, sourceSession) in ((source?.sessions?.allObjects as? [PlanSession]) ?? []).sorted(by: { $0.orderIndex < $1.orderIndex }).enumerated() {
+            for (order, sourceSession) in ((source?.sessions?.allObjects as? [PlanSession]) ?? []).sorted(by: { $0.orderIndex < $1.orderIndex }).enumerated()
+                where !sourceSession.isAssessment {
                 let session = PlanSession(context: editingContext)
                 session.id = UUID()
                 session.sessionType = sourceSession.sessionType
@@ -84,19 +92,26 @@ extension TrainingPlanService {
         return saveEdit(plan)
     }
 
-    /// Removes the last week unless it is the only one or it has completed sessions.
+    /// Removes the last training week unless it is the only one or it has completed sessions. The
+    /// retest week stays: it moves up to close the plan.
     @discardableResult
     func removeLastWeek(planId: UUID) -> Bool {
         guard let plan = fetch(TrainingPlan.self, id: planId) else { return false }
         let weeks = ((plan.weeks?.allObjects as? [PlanWeek]) ?? []).sorted { $0.weekNumber < $1.weekNumber }
-        guard weeks.count > 1, let last = weeks.last else { return false }
-        let hasProgress = ((last.days?.allObjects as? [PlanDay]) ?? []).contains { day in
-            ((day.sessions?.allObjects as? [PlanSession]) ?? []).contains { $0.isCompleted }
-        }
-        guard !hasProgress else { return false }
+        let retest = weeks.last.flatMap { $0.isRetest ? $0 : nil }
+        let training = weeks.filter { $0 != retest }
+        guard training.count > 1, let last = training.last, !Self.hasProgress(last) else { return false }
         editingContext.delete(last)
+        if let retest { retest.weekNumber = last.weekNumber }
         plan.durationWeeks = Int16(weeks.count - 1)
         return saveEdit(plan)
+    }
+
+    /// A week with any completed session.
+    static func hasProgress(_ week: PlanWeek) -> Bool {
+        ((week.days?.allObjects as? [PlanDay]) ?? []).contains { day in
+            ((day.sessions?.allObjects as? [PlanSession]) ?? []).contains { $0.isCompleted }
+        }
     }
 
     // MARK: Days and sessions
@@ -230,6 +245,7 @@ extension TrainingPlanService {
                 }
             }
         }
+        appendRetestWeek(to: plan)
         _ = saveEdit(plan)
         return plan
     }

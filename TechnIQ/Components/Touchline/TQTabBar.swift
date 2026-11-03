@@ -2,24 +2,25 @@ import SwiftUI
 
 // MARK: - TQTabBar
 //
-// Five icon-only items, 24 pt semibold. Selected = grass + .fill symbol, idle = textTertiary
+// Four or five icon-only items (Community is flagged), 24 pt semibold. Selected = grass + .fill symbol, idle = textTertiary
 // outline, so state reads without colour. 1 px top rule, base background, no labels — the
 // screen title already names the tab.
 
 struct TQTabBar: View {
-    @Binding var selectedTab: Int
+    @Binding var selectedTab: DesignSystem.Icons.Tab
+    var tabs: [DesignSystem.Icons.Tab] = DesignSystem.Icons.Tab.visible
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(DesignSystem.Icons.Tab.allCases, id: \.rawValue) { tab in
-                let isSelected = selectedTab == tab.rawValue
+            ForEach(tabs, id: \.self) { tab in
+                let isSelected = selectedTab == tab
                 Button {
                     HapticManager.shared.tabChanged()
                     if reduceMotion {
-                        selectedTab = tab.rawValue
+                        selectedTab = tab
                     } else {
-                        withAnimation(DesignSystem.Animation.tabMorph) { selectedTab = tab.rawValue }
+                        withAnimation(DesignSystem.Animation.tabMorph) { selectedTab = tab }
                     }
                 } label: {
                     Image(systemName: isSelected ? tab.selected : tab.idle)
@@ -49,7 +50,7 @@ struct TQTabBar: View {
 #Preview("Tab bar") {
     VStack {
         Spacer()
-        TQTabBar(selectedTab: .constant(0))
+        TQTabBar(selectedTab: .constant(.home))
     }
     .background(DesignSystem.Colors.surfaceBase)
 }

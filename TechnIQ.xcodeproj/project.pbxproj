@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		73A45E1D3009813AC2A56A2F /* RetestWeekTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */; };
+		F58FAD5B60D9FAC0BAE4F23A /* BenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */; };
+		76E046314C1807C6F103D6E3 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76BF21D1450BBA9185CE34A /* AssessmentView.swift */; };
+		B6AE2BC4B41B9F76344B5925 /* BenchmarkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587EB31D92869ABCE90A9636 /* BenchmarkService.swift */; };
+		B95E6785A347E09FC9146419 /* RetestWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */; };
+		88B67B9D5D234B4CE0063A02 /* AssessmentFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */; };
+		D4A3AAC4CBB54176895298DF /* BenchmarkSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */; };
 		CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */; };
 		90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */; };
 		9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */; };
@@ -295,6 +302,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetestWeekTests.swift; sourceTree = "<group>"; };
+		3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkTests.swift; sourceTree = "<group>"; };
+		F76BF21D1450BBA9185CE34A /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
+		587EB31D92869ABCE90A9636 /* BenchmarkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkService.swift; sourceTree = "<group>"; };
+		1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetestWeek.swift; sourceTree = "<group>"; };
+		20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentFlow.swift; sourceTree = "<group>"; };
+		DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkSummary.swift; sourceTree = "<group>"; };
 		434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMigrationTests.swift; sourceTree = "<group>"; };
 		FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -644,6 +658,7 @@
 				92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */,
 				2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */,
 				7C6BD28C8462C7CAC8081AC3 /* SessionPreviewSheet.swift */,
+				F76BF21D1450BBA9185CE34A /* AssessmentView.swift */,
 			);
 			name = Training;
 			path = Training;
@@ -726,6 +741,9 @@
 				2E812721F1D6847B97526B3A /* UnlockCriteria.swift */,
 				190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */,
 				FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */,
+				DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */,
+				20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */,
+				1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -776,6 +794,7 @@
 				D91522C144F19725FE2EF4BB /* TrainingPlanService+Editing.swift */,
 				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
 				577036B5FF9C26D5C4C63499 /* CameraRunService.swift */,
+				587EB31D92869ABCE90A9636 /* BenchmarkService.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -994,6 +1013,8 @@
 				AE5D27A676A91D340CCC8114 /* CameraDrillSessionTests.swift */,
 				51E16DE93FC82D0756CEE7C5 /* SyntheticScene.swift */,
 				434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */,
+				3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */,
+				F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1519,6 +1540,11 @@
 				E8BF71EDE8DC969C6FCAADEE /* UnlockCriteria.swift in Sources */,
 				9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */,
 				90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */,
+				D4A3AAC4CBB54176895298DF /* BenchmarkSummary.swift in Sources */,
+				88B67B9D5D234B4CE0063A02 /* AssessmentFlow.swift in Sources */,
+				B95E6785A347E09FC9146419 /* RetestWeek.swift in Sources */,
+				B6AE2BC4B41B9F76344B5925 /* BenchmarkService.swift in Sources */,
+				76E046314C1807C6F103D6E3 /* AssessmentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1554,6 +1580,8 @@
 				773DA1379301F80B48909B8E /* CameraDrillSessionTests.swift in Sources */,
 				9603D147F111AA287AA216A0 /* SyntheticScene.swift in Sources */,
 				CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */,
+				F58FAD5B60D9FAC0BAE4F23A /* BenchmarkTests.swift in Sources */,
+				73A45E1D3009813AC2A56A2F /* RetestWeekTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

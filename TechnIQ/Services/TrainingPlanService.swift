@@ -173,6 +173,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             }
         }
 
+        appendRetestWeek(to: plan)
         plan.updatedAt = Date()
         do {
             try context.save()
@@ -755,6 +756,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             clonedWeek.weekNumber = Int16(weekModel.weekNumber)
             clonedWeek.focusArea = weekModel.focusArea
             clonedWeek.notes = weekModel.notes
+            clonedWeek.isRetest = weekModel.isRetest
             clonedWeek.isCompleted = false
             clonedWeek.plan = clonedPlan
 
@@ -987,7 +989,19 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             createSpeedAndAgilityTemplate(),
             createTechnicalExcellenceTemplate(),
             createYouthDevelopmentTemplate()
-        ]
+        ].map(Self.withRetestWeek)
+    }
+
+    /// A template with the retest week appended and counted in `durationWeeks`.
+    nonisolated static func withRetestWeek(_ template: TrainingPlanModel) -> TrainingPlanModel {
+        let weeks = RetestWeek.appending(to: template.weeks)
+        return TrainingPlanModel(
+            id: template.id, name: template.name, description: template.description, durationWeeks: weeks.count,
+            difficulty: template.difficulty, category: template.category, targetRole: template.targetRole,
+            isPrebuilt: template.isPrebuilt, isActive: template.isActive, currentWeek: template.currentWeek,
+            progressPercentage: template.progressPercentage, startedAt: template.startedAt, completedAt: template.completedAt,
+            createdAt: template.createdAt, updatedAt: template.updatedAt, weeks: weeks
+        )
     }
 
     func instantiatePrebuiltPlan(_ template: TrainingPlanModel, for player: Player) -> TrainingPlan? {
@@ -1012,6 +1026,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             guard let week = addWeekToPlan(plan, weekNumber: weekTemplate.weekNumber, focusArea: weekTemplate.focusArea, notes: weekTemplate.notes) else {
                 continue
             }
+            week.isRetest = weekTemplate.isRetest
 
             // Create days based on template
             for dayTemplate in weekTemplate.days {
@@ -1038,11 +1053,12 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                         duration: sessionTemplate.duration,
                         intensity: sessionTemplate.intensity,
                         notes: sessionTemplate.notes,
-                        exercises: exercises
+                        exercises: sessionTemplate.sessionType == .assessment ? [] : exercises
                     )
                 }
             }
         }
+        appendRetestWeek(to: plan)
 
         do {
             try context.save()
@@ -1059,7 +1075,7 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
 
     /// Builds a weekly schedule for a prebuilt template: one session on each training day, rest days
     /// elsewhere, the week's focus area cycling through `focus`. Exercises are attached from the
-    /// template library when the plan is instantiated.
+    /// template library when the plan is instantiated. The retest week is added by `loadPrebuiltPlans`.
     static func templateWeeks(count: Int, trainingDays: [DayOfWeek], sessionType: SessionType, difficulty: PlanDifficulty, focus: [String]) -> [PlanWeekModel] {
         let intensity: Int
         switch difficulty {
@@ -1086,6 +1102,41 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
             let focusArea = focus.isEmpty ? nil : focus[(weekNumber - 1) % focus.count]
             return PlanWeekModel(id: UUID(), weekNumber: weekNumber, focusArea: focusArea, notes: nil, isCompleted: false, completedAt: nil, days: days)
         }
+    }
+
+    // MARK: - Retest week
+
+    /// Appends the retest week (`RetestWeek`) to a stored plan unless it already ends with one, and
+    /// counts it in `durationWeeks`. Every creation path calls this: AI, custom, pre-built.
+    func appendRetestWeek(to plan: TrainingPlan) {
+        let stored = (plan.weeks?.allObjects as? [PlanWeek]) ?? []
+        if stored.max(by: { $0.weekNumber < $1.weekNumber })?.isRetest == true {
+            plan.durationWeeks = Int16(stored.count)
+            return
+        }
+        let model = RetestWeek.week(after: plan.toModel().weeks)
+        var exercisesByID: [UUID: Exercise] = [:]
+        for week in stored {
+            for day in (week.days?.allObjects as? [PlanDay]) ?? [] {
+                for session in (day.sessions?.allObjects as? [PlanSession]) ?? [] {
+                    for exercise in (session.exercises?.allObjects as? [Exercise]) ?? [] {
+                        if let id = exercise.id { exercisesByID[id] = exercise }
+                    }
+                }
+            }
+        }
+        guard let week = addWeekToPlan(plan, weekNumber: model.weekNumber, focusArea: model.focusArea, notes: model.notes) else { return }
+        week.isRetest = true
+        for dayModel in model.days {
+            guard let day = addDayToWeek(week, dayNumber: dayModel.dayNumber, dayOfWeek: dayModel.dayOfWeek,
+                                         isRestDay: dayModel.isRestDay, notes: dayModel.notes) else { continue }
+            for session in dayModel.sessions {
+                _ = addSessionToDay(day, sessionType: session.sessionType, duration: session.duration,
+                                    intensity: session.intensity, notes: session.notes,
+                                    exercises: session.exerciseIDs.compactMap { exercisesByID[$0] })
+            }
+        }
+        plan.durationWeeks = Int16(stored.count + 1)
     }
 
     // MARK: - Template Generators

@@ -98,7 +98,8 @@ struct PaywallView: View {
                         TQGroupHeader("Always free")
                         TQRule()
                         benefitRow("Your first plan, templates and your own drills", detail: nil, symbol: "circle")
-                        benefitRow("Three AI drills, community, progress, reminders", detail: nil, symbol: "circle")
+                        benefitRow(FeatureFlags.community ? "Three AI drills, community, progress, reminders" : "Three AI drills, progress, reminders",
+                                   detail: nil, symbol: "circle")
                     }
 
                     VStack(alignment: .leading, spacing: 6) {

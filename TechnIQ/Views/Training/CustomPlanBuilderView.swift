@@ -32,7 +32,7 @@ struct CustomPlanBuilderView: View {
     private var summary: String {
         let sessions = weeks * trainingDays.count
         let hours = Double(sessions * minutes) / 60
-        return "\(weeks) week\(weeks == 1 ? "" : "s") · \(trainingDays.count)×/wk · \(sessions) sessions · \(String(format: "%.1f", hours)) h"
+        return "\(weeks) week\(weeks == 1 ? "" : "s") + retest week · \(trainingDays.count)×/wk · \(sessions) sessions · \(String(format: "%.1f", hours)) h"
     }
 
     var body: some View {
@@ -74,7 +74,8 @@ struct CustomPlanBuilderView: View {
             VStack(alignment: .leading, spacing: 0) {
                 TQGroupHeader("Shape")
                 TQRule()
-                TQValueStepper(label: "Weeks", value: $weeks, range: 1...12) { "\($0)" }
+                // Every plan closes with a retest week on top of these (RetestWeek).
+                TQValueStepper(label: "Weeks", value: $weeks, range: 1...12) { "\($0) + retest" }
                 TQRule()
                 TQValueStepper(label: "Session length", value: $minutes, range: 10...120, step: 5) { "\($0) min" }
                 TQRule()

@@ -130,7 +130,7 @@ struct TrainingPlansListView: View {
                     action: { route = plan }
                 )
                 .contextMenu {
-                    if shareable {
+                    if shareable && FeatureFlags.community {
                         Button {
                             planToShare = plan
                             showingShareSheet = true

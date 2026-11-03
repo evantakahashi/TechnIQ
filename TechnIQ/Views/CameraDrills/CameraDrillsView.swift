@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Camera drills (Train → Camera drills)
 //
 // The phone counts the touches. Drills with their personal bests; drills whose counter hasn't shipped
-// yet show as "soon". Run history is Pro (ProGates.Feature.cameraInsights); bests stay free.
+// yet are hidden, or show as "soon" behind `FeatureFlags.soonCameraDrills`. Run history is Pro (ProGates.Feature.cameraInsights); bests stay free.
 
 struct CameraDrillsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -56,7 +56,7 @@ struct CameraDrillsView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     TQGroupHeader("Drills")
                     TQRowList {
-                        ForEach(CameraDrill.allCases) { drill in
+                        ForEach(CameraDrill.listed(showingSoon: FeatureFlags.soonCameraDrills)) { drill in
                             drillRow(drill)
                         }
                     }
@@ -119,6 +119,13 @@ struct CameraDrillsView: View {
                   verticalPadding: DesignSystem.Spacing.rowVertical)
                 .disabled(true)
         }
+    }
+}
+
+extension CameraDrill {
+    /// Drills on the Camera drills list: those with a counter, plus the "soon" ones when flagged on.
+    static func listed(showingSoon: Bool) -> [CameraDrill] {
+        allCases.filter { $0.isAvailable || showingSoon }
     }
 }
 
