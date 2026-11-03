@@ -12,6 +12,8 @@ let package = Package(
         .executableTarget(name: "juggle-harness", dependencies: ["JuggleCore"]),
         // Scores shot speed + placement on recorded slo-mo clips (tasks/shot_analysis.md).
         .executableTarget(name: "shot-harness", dependencies: ["JuggleCore"]),
+        // Replays a device session log (DEBUG CameraDebugDump frames.jsonl) through a drill counter.
+        .executableTarget(name: "replay", dependencies: ["JuggleCore"]),
         // Trains the ball detector with Create ML (macOS only).
         .executableTarget(name: "ball-train"),
         .testTarget(name: "JuggleCoreTests", dependencies: ["JuggleCore"]),

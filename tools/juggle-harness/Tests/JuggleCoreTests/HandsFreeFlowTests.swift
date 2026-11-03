@@ -28,7 +28,8 @@ final class HandsFreeFlowTests: XCTestCase {
         let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
         XCTAssertEqual(flow.state, .positioning)
 
-        let cues = feed(flow, standing, from: 0, seconds: 4.2)
+        // Quick: half a second in position, then a brisk 3-2-1 (players found 1 s + 3 s too slow).
+        let cues = feed(flow, standing, from: 0, seconds: 2.5)
 
         XCTAssertEqual(cues, [.ready, .countdown(3), .countdown(2), .countdown(1), .go])
         XCTAssertTrue(flow.isLive)
@@ -52,11 +53,23 @@ final class HandsFreeFlowTests: XCTestCase {
         XCTAssertFalse(HandsFreeFlow.isInPosition(tiny, aspect: aspect))
     }
 
-    func testFourMetresAwayIsTooFarForTheBall() {
-        // Whole body visible but only ~45% of the frame: the ball is too small to track well.
+    func testFourMetresAwayIsStillInPosition() {
+        // Nose to ankle ~42% of the frame: players asked to stand further back than 2–3 m.
+        var four = BodyPose(joints: [:])
+        let nose = standing[.nose]?.y ?? 0, ankle = standing[.leftAnkle]?.y ?? 0
+        let k = 0.42 / (nose - ankle)
+        for (joint, p) in standing.joints {
+            four.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * k, y: 0.10 + (p.y - ankle) * k)
+        }
+
+        XCTAssertTrue(HandsFreeFlow.isInPosition(four, aspect: aspect))
+    }
+
+    func testFiveMetresAwayIsTooFarForTheBall() {
+        // Whole body visible but only ~33% of the frame: the ball is too small to track well.
         var far = BodyPose(joints: [:])
         let nose = standing[.nose]?.y ?? 0, ankle = standing[.leftAnkle]?.y ?? 0
-        let k = 0.45 / (nose - ankle)
+        let k = 0.33 / (nose - ankle)
         for (joint, p) in standing.joints {
             far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * k, y: 0.10 + (p.y - ankle) * k)
         }
@@ -105,7 +118,7 @@ final class HandsFreeFlowTests: XCTestCase {
 
     func testSmallPlayerAsksToStepCloser() {
         var far = BodyPose(joints: [:])
-        let ankle = standing[.leftAnkle]!.y, k = 0.45 / (standing[.nose]!.y - ankle)
+        let ankle = standing[.leftAnkle]!.y, k = 0.33 / (standing[.nose]!.y - ankle)
         for (joint, p) in standing.joints {
             far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * k, y: 0.10 + (p.y - ankle) * k)
         }
@@ -145,19 +158,16 @@ final class HandsFreeFlowTests: XCTestCase {
         XCTAssertTrue(flow.isLive)
     }
 
-    func testStreakRunEndShowsTheResultThenStayingInPositionGoesAgain() {
+    func testADroppedBallKeepsTheSessionLiveForTheNextRun() {
+        // Players pick the ball up and go again straight away: no result screen, no second countdown.
         let flow = HandsFreeFlow(mode: .streak, aspect: aspect)
-        feed(flow, standing, from: 0, seconds: 4.2)
+        feed(flow, standing, from: 0, seconds: 2.5)
 
         flow.runEnded(at: 10)
-        XCTAssertEqual(flow.state, .result(since: 10))
-        let early = feed(flow, standing, from: 10, seconds: 3)
-        XCTAssertTrue(early.isEmpty, "result stays up at least 4 s: \(early)")
+        let cues = feed(flow, standing, from: 10, seconds: 3)
 
-        let later = feed(flow, standing, from: 13, seconds: 5)
-
-        XCTAssertEqual(later.first, .ready)
         XCTAssertTrue(flow.isLive)
+        XCTAssertTrue(cues.isEmpty, "\(cues)")
     }
 
     func testTimedDrillEndsWhenTheClockRunsOut() {
@@ -173,11 +183,11 @@ final class HandsFreeFlowTests: XCTestCase {
 
     func testTimedDrillReportsTimeLeft() {
         let flow = HandsFreeFlow(mode: .timed(seconds: 30), aspect: aspect)
-        feed(flow, standing, from: 0, seconds: 4.2)  // live from ~4.0 s
+        feed(flow, standing, from: 0, seconds: 4.2)  // live from ~2.3 s
 
         feed(flow, standing, from: 4.2, seconds: 10)
 
-        XCTAssertEqual(flow.timeLeft ?? 0, 20, accuracy: 0.3)
+        XCTAssertEqual(flow.timeLeft ?? 0, 30 - (14.2 - 2.3), accuracy: 0.3)
     }
 
     func testHoldingBothArmsUpFinishesTheSession() {

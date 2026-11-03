@@ -180,7 +180,7 @@ final class CameraDrillSession: ObservableObject {
             + " · body \(nose.flatMap { n in ankle.map { a in String(format: "%.0f%%", 100 * (n - a)) } } ?? "–")"
             + " · ball \(frame.ball == nil ? "no" : "yes")"
         #endif
-        let phase = Self.phase(for: flow.state, time: frame.time)
+        let phase = phase(for: flow.state, time: frame.time)
         let timeLeft = flow.timeLeft
         DispatchQueue.main.async {
             self.ball = frame.ball
@@ -215,10 +215,10 @@ final class CameraDrillSession: ObservableObject {
         }
     }
 
-    private static func phase(for state: HandsFreeFlow.State, time: Double) -> Phase {
+    private func phase(for state: HandsFreeFlow.State, time: Double) -> Phase {
         switch state {
         case .positioning: return .positioning
-        case let .countdown(startedAt): return .countdown(max(1, 3 - Int(time - startedAt)))
+        case let .countdown(startedAt): return .countdown(flow.countdownNumber(startedAt: startedAt, time: time))
         case .live: return .live
         case .result: return .result
         case .finished: return .finished

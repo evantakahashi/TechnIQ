@@ -32,6 +32,13 @@ final class JuggleCounter: DrillCounter {
         var ballRadius = 0.11
         /// Juggling variants: which foot touches count.
         var footRule = FootRule.any
+        /// A detector gap at least this long (s) can hide a touch.
+        var hiddenTouchGap = 0.1
+        /// Ball back this much (m) above where free fall would have taken it across a gap = it was touched
+        /// while hidden (seen on device: the ball is lost below the knees, where every touch happens).
+        var hiddenTouchRise = 0.25
+        /// Gravity (m/s²), for the free-fall check.
+        var gravity = 9.81
     }
 
     enum FootRule: Equatable {
@@ -64,6 +71,8 @@ final class JuggleCounter: DrillCounter {
     private var radius: Double?
     private var ankleHistory: [(time: Double, y: Double)] = []
     private var lastFoot: BodySide?
+    /// Latest sightings (≤ 0.3 s), for the ball's velocity going into a detector gap.
+    private var recent: [Sample] = []
 
     init(config: Config = Config()) {
         self.config = config
@@ -85,6 +94,16 @@ final class JuggleCounter: DrillCounter {
 
         if isRunning, isOnFloor(sample) {
             events.append(endRun(.ground, at: frame.time))
+        }
+
+        defer {
+            recent.append(sample)
+            recent.removeAll { sample.time - $0.time > 0.3 }
+        }
+        if wasTouchedWhileHidden(sample) {
+            phase = .seekingHigh(high: sample.center.y)
+            recent.removeAll()
+            return events + contact(at: sample, drop: .infinity, hidden: true)
         }
 
         switch phase {
@@ -115,12 +134,35 @@ final class JuggleCounter: DrillCounter {
 
     // MARK: - Contacts
 
-    private func contact(at sample: Sample, drop: Double) -> [DrillEvent] {
+    /// The ball reappeared after a detector gap well above where free fall from its last sightings would
+    /// have put it: something pushed it up while it was hidden.
+    private func wasTouchedWhileHidden(_ sample: Sample) -> Bool {
+        guard let last = recent.last, sample.time - last.time >= config.hiddenTouchGap, !isOnFloor(last),
+              let vy = verticalVelocity() else { return false }
+        let dt = sample.time - last.time
+        let freeFall = last.center.y + vy * dt - 0.5 * metres(config.gravity) * dt * dt
+        return sample.center.y - freeFall >= metres(config.hiddenTouchRise)
+    }
+
+    /// Least-squares vertical velocity (units/s) over the recent sightings; nil with fewer than two.
+    private func verticalVelocity() -> Double? {
+        guard recent.count >= 2 else { return nil }
+        let n = Double(recent.count)
+        let mt = recent.map(\.time).reduce(0, +) / n, my = recent.map(\.center.y).reduce(0, +) / n
+        let sxx = recent.reduce(0) { $0 + ($1.time - mt) * ($1.time - mt) }
+        guard sxx > 0 else { return nil }
+        return recent.reduce(0) { $0 + ($1.time - mt) * ($1.center.y - my) } / sxx
+    }
+
+    /// - Parameter hidden: the touch happened out of the detector's sight (`wasTouchedWhileHidden`): no drop or
+    ///   floor check, and the ball's position now doesn't say what touched it (never a handball).
+    private func contact(at sample: Sample, drop: Double, hidden: Bool = false) -> [DrillEvent] {
         guard drop >= metres(config.minDrop) else { return [] }
-        if isOnFloor(sample) {
+        if !hidden, isOnFloor(sample) {
             return isRunning ? [endRun(.ground, at: sample.time)] : []
         }
-        let (part, side) = classify(sample)
+        var (part, side) = classify(sample)
+        if hidden, part == .arm { (part, side) = (.unknown, nil) }
         if part == .arm {
             return isRunning ? [endRun(.handball, at: sample.time)] : []
         }

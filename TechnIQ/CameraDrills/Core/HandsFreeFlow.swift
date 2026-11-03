@@ -1,6 +1,6 @@
 import Foundation
 
-/// The hands-free session flow for a player 2–3 m from the phone, driven only by their pose:
+/// The hands-free session flow for a player 2–4 m from the phone, driven only by their pose:
 /// stand in the outline → spoken 3-2-1 → live → result → stay in the outline to go again.
 /// Holding both arms up (outside a live run) finishes the session.
 final class HandsFreeFlow {
@@ -24,8 +24,10 @@ final class HandsFreeFlow {
 
     struct Config {
         /// Seconds in position before the countdown starts.
-        var hold = 1.0
+        var hold = 0.5
         var countdownSeconds = 3
+        /// Seconds per countdown number (players found a full second each too slow).
+        var countdownStep = 0.6
         /// Out of position this long cancels the countdown (pose tracking drops the odd frame).
         var stepOutGrace = 0.5
         /// Result stays up at least this long before "go again" can start.
@@ -88,11 +90,11 @@ final class HandsFreeFlow {
                 return [.stepIn]
             }
             let elapsed = time - startedAt
-            if elapsed >= Double(config.countdownSeconds) {
+            if elapsed >= Double(config.countdownSeconds) * config.countdownStep {
                 state = .live(startedAt: time)
                 return [.go]
             }
-            let remaining = config.countdownSeconds - Int(elapsed)
+            let remaining = countdownNumber(startedAt: startedAt, time: time)
             if remaining != lastCountdownCue {
                 lastCountdownCue = remaining
                 return [.countdown(remaining)]
@@ -113,11 +115,14 @@ final class HandsFreeFlow {
         return []
     }
 
-    /// A streak run ended (ball down, handball, lost) — show the result.
-    func runEnded(at time: Double) {
-        guard isLive else { return }
-        state = .result(since: time)
+    /// The number showing during a countdown that started at `startedAt` (3, 2, 1).
+    func countdownNumber(startedAt: Double, time: Double) -> Int {
+        max(1, config.countdownSeconds - Int((time - startedAt) / config.countdownStep))
     }
+
+    /// A streak run ended (ball down, handball, lost). The session stays live: the player picks the ball
+    /// up and the next touch starts the next run, with no result screen or second countdown in the way.
+    func runEnded(at time: Double) {}
 
     private func startCountdown(at time: Double) -> [Cue] {
         state = .countdown(startedAt: time)
@@ -127,8 +132,8 @@ final class HandsFreeFlow {
 
     // MARK: - Pose checks
 
-    /// Whole body visible, close enough that the ball is big enough to track (nose to ankle ≥ 55% of the
-    /// frame height, ~2–3 m away), roughly centred.
+    /// Whole body visible, close enough that the ball is big enough to track (nose to ankle ≥ 40% of the
+    /// frame height, up to ~4 m away), roughly centred.
     static func isInPosition(_ pose: BodyPose, aspect: Double) -> Bool {
         guard let height = noseToAnkle(pose), let nose = pose[.nose], let lowest = lowestAnkle(pose) else { return false }
         return height >= minHeight
@@ -161,8 +166,9 @@ final class HandsFreeFlow {
         noseToAnkle(pose).map { $0 < minHeight } ?? false
     }
 
-    /// Smallest nose-to-ankle height (frame-height units): ~2–3 m away, the ball is big enough to detect.
-    private static let minHeight = 0.55
+    /// Smallest nose-to-ankle height (frame-height units): up to ~4 m away, the ball is still big enough
+    /// to detect (YOLOX-S).
+    private static let minHeight = 0.40
 
     private static func lowestAnkle(_ pose: BodyPose) -> Double? {
         [pose[.leftAnkle], pose[.rightAnkle]].compactMap { $0?.y }.min()

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Camera drill session (full screen)
 //
-// Hands-free: the player is 2–3 m away, so everything is big and spoken. Stand in the outline →
+// Hands-free: the player is 2–4 m away, so everything is big and spoken. Stand in the outline →
 // 3-2-1 → live count → result → stay in the outline to go again; both arms up (or Done) ends it.
 
 struct CameraDrillSessionView: View {
@@ -83,7 +83,7 @@ struct CameraDrillSessionView: View {
         case .positioning:
             switch session.positionHint {
             case .stepCloser?:
-                prompt("Step closer", detail: "About 2–3 m from the phone, head to feet in frame")
+                prompt("Step closer", detail: "2–4 m from the phone, head to feet in frame")
             case .showHead?:
                 prompt("Head out of frame", detail: "Tilt the phone back a little or prop it higher")
             case .showFeet?:
@@ -98,6 +98,16 @@ struct CameraDrillSessionView: View {
         case .live:
             VStack(spacing: DesignSystem.Spacing.xs) {
                 bigNumber("\(session.count)")
+                if session.drill.mode == .streak, let last = session.lastResult {
+                    // Streaks run back to back: the last run and best stay up while the next one starts.
+                    Text(last.isPersonalBest ? "Last \(last.count) · New best!"
+                                             : "Last \(last.count) · Best \(max(last.count, last.previousBest ?? 0))")
+                        .font(DesignSystem.Typography.labelMedium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .background(Color.black.opacity(0.55))
+                }
                 if let left = session.timeLeft {
                     Text(String(format: "0:%02d", Int(left.rounded(.up))))
                         .font(DesignSystem.Typography.labelMedium)
@@ -118,9 +128,11 @@ struct CameraDrillSessionView: View {
 
     private var bottomPanel: some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
-            if session.phase == .result || session.phase == .positioning {
+            if session.phase == .result || session.phase == .positioning
+                || (session.phase == .live && !session.runs.isEmpty && session.drill.mode == .streak) {
                 Text(session.phase == .result ? "Stay in the outline to go again · both arms up to finish"
-                                              : "Both arms up to finish")
+                     : session.phase == .live ? "Pick it up and go again · both arms up to finish"
+                     : "Both arms up to finish")
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)

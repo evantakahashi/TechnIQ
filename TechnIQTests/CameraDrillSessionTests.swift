@@ -48,10 +48,10 @@ final class CameraDrillSessionTests: XCTestCase {
 
     // MARK: Helpers
 
-    /// Standing in the outline holding the ball, through the 1 s hold and 3-2-1 into the live run.
+    /// Standing in the outline holding the ball, through the short hold and quick 3-2-1 into the live run.
     private func stepInAndCountDown(_ b: inout Scene.Builder) {
         b.pose = Scene.pose
-        b.hold(Scene.at(0.37, 0.35), seconds: 4.3)
+        b.hold(Scene.at(0.37, 0.35), seconds: 2.6)
     }
 
     /// Drop onto the foot, `touches` juggles, then the ball lands and rests.
@@ -130,13 +130,13 @@ final class CameraDrillSessionTests: XCTestCase {
         XCTAssertEqual(sut.positionHint, .stepCloser)
     }
 
-    func test_aRunEndingOnTheGround_showsTheResult_andSavesTheRun() throws {
+    func test_aRunEndingOnTheGround_savesIt_andStaysLiveForTheNextRun() throws {
         var b = Scene.Builder()
         stepInAndCountDown(&b)
         juggle(&b, touches: 6)
         feed(b.frames)
 
-        XCTAssertEqual(sut.phase, .result)
+        XCTAssertEqual(sut.phase, .live)
         XCTAssertEqual(sut.lastResult?.count, 6)
         XCTAssertEqual(sut.lastResult?.isPersonalBest, true)
         XCTAssertEqual(sut.lastResult?.xp, 30)
@@ -150,20 +150,20 @@ final class CameraDrillSessionTests: XCTestCase {
         // Juggling straight away, before "go": the counter only starts when the run goes live.
         var b = Scene.Builder()
         b.pose = Scene.pose
-        b.hold(Scene.at(0.37, 0.35), seconds: 1.2)
-        juggle(&b, touches: 3, endOnGround: false)
-        b.hold(Scene.at(0.37, 0.35), seconds: 3.0)  // caught; countdown runs out
+        b.hold(Scene.at(0.37, 0.35), seconds: 0.3)
+        juggle(&b, touches: 1, endOnGround: false)
+        b.hold(Scene.at(0.37, 0.35), seconds: 1.5)  // caught; countdown runs out
         juggle(&b, touches: 4)
         feed(b.frames)
 
         XCTAssertEqual(sut.lastResult?.count, 4)
     }
 
-    func test_stayingInTheOutline_goesAgain_andSavesBothRuns() throws {
+    func test_afterADrop_theNextRunStartsStraightAway_andBothAreSaved() throws {
         var b = Scene.Builder()
         stepInAndCountDown(&b)
         juggle(&b, touches: 5)
-        b.hold(Scene.at(0.37, 0.35), seconds: 4.0 + 1.5 + 3.3)  // result, go-again hold, 3-2-1
+        b.hold(Scene.at(0.37, 0.35), seconds: 0.5)  // picked straight back up
         juggle(&b, touches: 8)
         feed(b.frames)
 

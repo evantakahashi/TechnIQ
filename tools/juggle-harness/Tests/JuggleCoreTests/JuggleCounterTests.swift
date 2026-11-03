@@ -111,6 +111,35 @@ final class JuggleCounterTests: XCTestCase {
         XCTAssertEqual(S.run(b.frames).runEnds.map(\.reason), [.lostBall])
     }
 
+    func testTouchesHiddenAtTheBottomStillCount() {
+        // Seen on device: the detector finds the ball high up but loses it below the knees, where every
+        // touch happens. A falling ball can't come back higher without being touched.
+        // Only the top few centimetres of each arc stay visible: never enough fall to confirm a low point.
+        var frames = footRun(touches: 6)
+        let apex = frames.compactMap { $0.ball?.center.y }.max() ?? 1
+        let visibleBelowApex = 0.04 * S.unitsPerMetre
+        let firstFall = frames.firstIndex { ($0.ball?.center.y ?? 1) < S.footContact.y + 0.01 } ?? 0
+        for i in frames.indices where i > firstFall && (frames[i].ball?.center.y ?? 1) < apex - visibleBelowApex {
+            frames[i].ball = nil
+        }
+
+        let events = S.run(frames)
+
+        XCTAssertEqual(events.touches.map(\.count).last, 6, "\(events.touches)")
+    }
+
+    func testABallThatJustFallsBehindAGapIsNotATouch() {
+        var b = S.Builder()
+        b.hold(S.at(0.37, 0.50), seconds: 0.3)
+        b.fall(from: S.at(0.37, 0.50), to: S.groundContact)
+        b.hold(S.groundContact, seconds: 0.5)
+        var frames = b.frames
+        let mid = frames.count / 2
+        for i in (mid - 4)...(mid + 2) { frames[i].ball = nil }
+
+        XCTAssertTrue(S.run(frames).touches.isEmpty)
+    }
+
     func testDetectorJitterDoesNotAddTouches() {
         // ±0.006 units (~2 cm) alternating every frame.
         let events = S.run(footRun(touches: 8, noise: { $0 % 2 == 0 ? 0.006 : -0.006 }))
