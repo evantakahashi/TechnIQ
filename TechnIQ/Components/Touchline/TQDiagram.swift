@@ -138,3 +138,57 @@ struct TQDiagram: View {
         }
     }
 }
+
+// MARK: - TQSessionDiagram
+//
+// The drill on the active-session screen, above the clock: the looping film when the drill has
+// one (pre-built and AI drills), else the static step diagram. Sits on the session pitch behind a
+// translucent panel (like the coach strip), never a second pitch card. Use `hasContent` to hide
+// the slot entirely for drills with neither (manual drills): never an empty box.
+
+struct TQSessionDiagram: View {
+    let diagramJSON: String?
+    let animationJSON: String?
+
+    static func hasContent(diagramJSON: String?, animationJSON: String?) -> Bool {
+        decode(diagramJSON) != nil
+    }
+
+    private var film: String? {
+        guard Self.decode(diagramJSON) != nil else { return nil }
+        return DrillWebAnimationView.composedJSON(diagramJSON: diagramJSON, animationJSON: animationJSON)
+    }
+
+    private static func decode(_ json: String?) -> DrillDiagram? {
+        guard let data = json?.data(using: .utf8),
+              let diagram = try? JSONDecoder().decode(DrillDiagram.self, from: data),
+              !diagram.elements.isEmpty else { return nil }
+        return diagram
+    }
+
+    var body: some View {
+        Group {
+            if let film {
+                DrillWebAnimationView(drillJSON: film, compact: true)
+                    .padding(6)
+                    .accessibilityLabel("Drill film")
+            } else if let diagram = Self.decode(diagramJSON) {
+                AnimatedDrillDiagramView(
+                    diagram: diagram,
+                    instructions: [],
+                    currentStep: .constant(nil),
+                    isAutoPlaying: .constant(false),
+                    chrome: false
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(DesignSystem.Colors.surfaceBase.opacity(0.35))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Drill diagram")
+    }
+}

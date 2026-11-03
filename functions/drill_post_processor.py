@@ -729,6 +729,8 @@ def repair_short_passes(drill: Dict) -> None:
     for q in drill.get("diagram", {}).get("paths", []):
         if q.get("alt") or q.get("style") not in ("pass", "toss"):
             continue
+        if q.get("to") == q.get("from"):
+            continue  # self-toss goes up (juggling, volley setup), not a layoff
         if by_label.get(q.get("to"), {}).get("type") not in (
                 "player", "server", "defender"):
             continue

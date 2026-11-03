@@ -193,61 +193,35 @@ extension CoreDataManager {
         return fetchExercises(for: player)
     }
 
+    /// Seeds the ten pre-built drills (`PrebuiltDrillCatalog`) for a player: upgrades old starter
+    /// rows in place and creates any that are missing. Safe to call again.
     func createDefaultExercises(for player: Player) {
-        // Check if exercises already exist for this player to prevent duplicates
-        let existingExercises = fetchExercises(for: player)
-        if !existingExercises.isEmpty {
-            #if DEBUG
-            print("Exercises already exist for player \(player.name ?? "Unknown"), skipping default creation")
-            #endif
-            return
-        }
-
-        let exercises = [
-            ("Ball Control", "Technical", 1, "Basic ball touches and control", ["Ball Control", "First Touch"]),
-            ("Juggling", "Technical", 2, "Keep the ball in the air using different body parts", ["Ball Control", "Coordination"]),
-            ("Dribbling Cones", "Technical", 2, "Dribble through a series of cones", ["Dribbling", "Agility"]),
-            ("Shooting Practice", "Technical", 3, "Practice shooting accuracy and power", ["Shooting", "Accuracy"]),
-            ("Passing Accuracy", "Technical", 2, "Short and long passing practice", ["Passing", "Vision"]),
-            ("Sprint Training", "Physical", 2, "Short distance sprint intervals", ["Speed", "Acceleration"]),
-            ("Agility Ladder", "Physical", 2, "Footwork and agility drills", ["Agility", "Coordination"]),
-            ("Endurance Run", "Physical", 1, "Continuous running for stamina", ["Endurance", "Fitness"]),
-            ("1v1 Practice", "Tactical", 3, "One-on-one attacking and defending", ["Defending", "Attacking"]),
-            ("Small-Sided Games", "Tactical", 3, "3v3 or 4v4 mini games", ["Teamwork", "Decision Making"])
-        ]
-
-        for (name, category, difficulty, description, skills) in exercises {
-            // Check if exercise with this name already exists for this player
-            if !exerciseExists(name: name, for: player) {
-                let exercise = Exercise(context: context)
-                exercise.id = UUID()
-                exercise.source = TrainDrill.Source.template.rawValue
-                exercise.name = name
-                exercise.category = category
-                exercise.difficulty = Int16(difficulty)
-                exercise.exerciseDescription = description
-                exercise.targetSkills = skills
-                exercise.instructions = "Follow standard \(name.lowercased()) protocol"
-                exercise.setValue(player, forKey: "player")
-            }
-        }
-
-        save()
+        let result = PrebuiltDrillSeeder.sync(player: player, context: context, createMissing: true)
+        if result.changed { save() }
+        markPrebuiltSeeded(player)
     }
 
-    private func exerciseExists(name: String, for player: Player) -> Bool {
-        let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
-        request.predicate = NSPredicate(format: "name == %@ AND player == %@", name, player)
+    private static var prebuiltSyncedThisLaunch: Set<NSManagedObjectID> = []
 
-        do {
-            let count = try context.count(for: request)
-            return count > 0
-        } catch {
-            #if DEBUG
-            print("Failed to check exercise existence: \(error)")
-            #endif
-            return false
-        }
+    /// Launch-time upkeep, once per player per launch (Home and Train call it once the cloud
+    /// restore is done): upgrades old starter rows and refreshes compiled diagrams. The first time
+    /// on a device it also adds catalog drills the player is missing; after that a drill the
+    /// player deleted stays deleted.
+    func ensurePrebuiltDrills(for player: Player) {
+        guard !Self.prebuiltSyncedThisLaunch.contains(player.objectID) else { return }
+        Self.prebuiltSyncedThisLaunch.insert(player.objectID)
+        let firstTime = !UserDefaults.standard.bool(forKey: prebuiltSeededKey(player))
+        let result = PrebuiltDrillSeeder.sync(player: player, context: context, createMissing: firstTime)
+        if result.changed { save() }
+        markPrebuiltSeeded(player)
+    }
+
+    private func prebuiltSeededKey(_ player: Player) -> String {
+        "prebuiltDrills.seeded.\(player.id?.uuidString ?? player.firebaseUID ?? "local")"
+    }
+
+    private func markPrebuiltSeeded(_ player: Player) {
+        UserDefaults.standard.set(true, forKey: prebuiltSeededKey(player))
     }
 
     func fetchExercises(for player: Player) -> [Exercise] {

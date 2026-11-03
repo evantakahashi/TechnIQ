@@ -305,6 +305,13 @@ class CustomDrillService: ObservableObject, CustomDrillServiceProtocol {
         }
 
         exercise.animationJSON = response.animationJSON
+
+        // Kit list and the one-line cue (Home's coach line + the session COACH banner read it).
+        // The server's equipment is the canonical kit ("ball", "cones", "wall").
+        exercise.equipment = Exercise.equipmentText(response.equipment.map { $0.capitalized })
+        exercise.cue = response.coachingPoints?
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty && !$0.lowercased().hasPrefix("warm up") }
         
         // Create detailed instructions
         var instructionsText = "**Setup:**\n\(response.setup)\n\n"

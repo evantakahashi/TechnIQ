@@ -132,6 +132,8 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         plan.isPrebuilt = false
 
         // Build out the complete structure
+        let candidates = planDrillCandidates(for: player)
+        var rotation: [SessionType: Int] = [:]
         for generatedWeek in generated.weeks {
             guard let week = addWeekToPlan(
                 plan,
@@ -155,11 +157,14 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
 
                 for generatedSession in generatedDay.sessions {
                     // Match AI-suggested exercises to actual Exercise entities
-                    let matchedExercises = matchExercisesFromLibrary(
+                    let type = generatedSession.parsedSessionType
+                    let matchedExercises = pickPlanDrills(
                         suggestedNames: generatedSession.suggestedExerciseNames,
-                        sessionType: generatedSession.parsedSessionType,
-                        for: player
+                        sessionType: type,
+                        candidates: candidates,
+                        rotation: rotation[type, default: 0]
                     )
+                    rotation[type, default: 0] += 1
 
                     _ = addSessionToDay(
                         day,
@@ -190,85 +195,37 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         }
     }
 
-    /// Matches AI-suggested exercise names to actual Exercise entities in Core Data
-    private func matchExercisesFromLibrary(suggestedNames: [String], sessionType: SessionType, for player: Player) -> [Exercise] {
-        var matchedExercises: [Exercise] = []
+    // MARK: - Plan drills
 
-        for suggestedName in suggestedNames {
-            // Try to find exact match in Core Data
-            let request: NSFetchRequest<Exercise> = Exercise.fetchRequest()
-            request.predicate = NSPredicate(format: "name CONTAINS[cd] %@ AND player == %@", suggestedName, player)
-            request.fetchLimit = 1
-
-            do {
-                if let existingExercise = try context.fetch(request).first {
-                    matchedExercises.append(existingExercise)
-                    continue
-                }
-            } catch {
-                #if DEBUG
-                print("Error searching for exercise '\(suggestedName)': \(error)")
-                #endif
-            }
-
-            // If no match found, try template library
-            if let templateExercise = TemplateExerciseLibrary.shared.findExercise(byName: suggestedName) {
-                // Create new exercise from template
-                if let newExercise = createExerciseFromTemplate(templateExercise, for: player) {
-                    matchedExercises.append(newExercise)
-                }
-            } else {
-                #if DEBUG
-                print("No match found for exercise: '\(suggestedName)', using fallback")
-                #endif
-
-                // Fallback: Get random exercises from template library matching session type
-                let fallbackExercises = TemplateExerciseLibrary.shared.randomExercises(
-                    for: sessionType.rawValue,
-                    count: 1
-                )
-
-                if let fallbackTemplate = fallbackExercises.first,
-                   let newExercise = createExerciseFromTemplate(fallbackTemplate, for: player) {
-                    matchedExercises.append(newExercise)
-                }
-            }
+    /// What plans may fill from: the pre-built catalog drills (seeded if missing) plus the
+    /// player's own AI and manual drills. Old template-library rows never feed plans.
+    func planDrillCandidates(for player: Player) -> [Exercise] {
+        var catalogRows = PrebuiltDrillSeeder.sync(player: player, context: context, createMissing: false).rows
+        if catalogRows.isEmpty {
+            catalogRows = PrebuiltDrillSeeder.sync(player: player, context: context, createMissing: true).rows
         }
-
-        return matchedExercises
+        let own = ((player.exercises as? Set<Exercise>) ?? []).filter { $0.prebuiltKey == nil && Self.isOwnPlanDrill($0) }
+        let catalogOrder = PrebuiltDrillCatalog.all.compactMap { catalogRows[$0.key] }
+        let ownOrder = own.sorted { ($0.name ?? "") < ($1.name ?? "") }
+        return catalogOrder + ownOrder
     }
 
-    /// Creates an Exercise entity from a template
-    private func createExerciseFromTemplate(_ template: TemplateExercise, for player: Player) -> Exercise? {
-        let exercise = Exercise(context: context)
-        exercise.id = UUID()
-        exercise.source = TrainDrill.Source.template.rawValue
-        exercise.name = template.name
-        exercise.category = template.category
-        exercise.exerciseDescription = template.description
-        exercise.difficulty = Int16(mapDifficultyToNumber(template.difficulty))
-        exercise.player = player
-        exercise.isYouTubeContent = false
-
-        do {
-            try context.save()
-            return exercise
-        } catch {
-            #if DEBUG
-            print("Failed to create exercise from template: \(error)")
-            #endif
-            return nil
-        }
+    /// The player's own drills that may fill plans: AI and manual ones (not old template-library
+    /// rows, video drills or community saves).
+    nonisolated static func isOwnPlanDrill(_ exercise: Exercise) -> Bool {
+        [TrainDrill.Source.ai, .manual].contains(exercise.drillSource)
     }
 
-    private func mapDifficultyToNumber(_ difficulty: String) -> Int {
-        switch difficulty.lowercased() {
-        case "beginner": return 1
-        case "intermediate": return 3
-        case "advanced": return 4
-        case "elite": return 5
-        default: return 2
+    /// Drills for one plan session (see `PlanDrillPicker`).
+    func pickPlanDrills(suggestedNames: [String], sessionType: SessionType, candidates: [Exercise], rotation: Int) -> [Exercise] {
+        let values = candidates.compactMap { exercise -> PlanDrillCandidate? in
+            guard let id = exercise.id else { return nil }
+            return PlanDrillCandidate(id: id, name: exercise.name ?? "", prebuiltKey: exercise.prebuiltKey,
+                                      targetSkills: exercise.targetSkills ?? [])
         }
+        let ids = PlanDrillPicker.pick(suggestedNames: suggestedNames, sessionType: sessionType,
+                                       candidates: values, rotation: rotation)
+        return ids.compactMap { id in candidates.first { $0.id == id } }
     }
 
     func addWeekToPlan(_ plan: TrainingPlan, weekNumber: Int, focusArea: String?, notes: String?) -> PlanWeek? {
@@ -480,10 +437,11 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                let drill = adaptation.drill,
                let player = plan.player {
                 let sessionType = SessionType(rawValue: drill.category.capitalized) ?? .technical
-                let exercises = matchExercisesFromLibrary(
+                let exercises = pickPlanDrills(
                     suggestedNames: [drill.name],
                     sessionType: sessionType,
-                    for: player
+                    candidates: planDrillCandidates(for: player),
+                    rotation: Int(adaptation.day)
                 )
                 _ = addSessionToDay(
                     day,
@@ -1005,7 +963,8 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         }
 
         plan.isPrebuilt = true
-        var existingExercises = (player.exercises as? Set<Exercise>).map(Array.init) ?? []
+        let candidates = planDrillCandidates(for: player)
+        var rotation: [SessionType: Int] = [:]
 
         // Create weeks based on template
         for weekTemplate in template.weeks {
@@ -1019,19 +978,12 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
                     continue
                 }
 
-                // Create sessions based on template, filling each with two drills from the template library
+                // Create sessions based on template, two pre-built drills each (rotating)
                 for sessionTemplate in dayTemplate.sessions {
-                    let picks = TemplateExerciseLibrary.shared.randomExercises(
-                        for: sessionTemplate.sessionType.rawValue,
-                        count: 2,
-                        difficulty: template.difficulty.displayName
-                    )
-                    let exercises = picks.compactMap { pick -> Exercise? in
-                        if let existing = existingExercises.first(where: { $0.name == pick.name }) { return existing }
-                        let created = createExerciseFromTemplate(pick, for: player)
-                        if let created { existingExercises.append(created) }
-                        return created
-                    }
+                    let type = sessionTemplate.sessionType
+                    let exercises = pickPlanDrills(suggestedNames: [], sessionType: type,
+                                                   candidates: candidates, rotation: rotation[type, default: 0])
+                    rotation[type, default: 0] += 1
                     _ = addSessionToDay(
                         day,
                         sessionType: sessionTemplate.sessionType,

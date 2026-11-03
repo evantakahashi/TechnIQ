@@ -3,18 +3,20 @@ import SwiftUI
 // MARK: - TQClock
 //
 // Active-session clock: 128 pt condensed bold with tabular digits, tight tracking, and a 15 pt
-// uppercase sub-line ("OF 15:00 · SET 2 OF 4"). Paused dims the digits slightly.
+// uppercase sub-line ("OF 15:00 · SET 2 OF 4"). Paused dims the digits slightly. `compact` (88 pt)
+// makes room for the drill film above it on short screens.
 
 struct TQClock: View {
     let seconds: Int
     var subtitle: String? = nil
     var isRunning: Bool = true
+    var compact: Bool = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: compact ? 4 : 6) {
             Text(TQClock.format(seconds))
-                .font(DesignSystem.Typography.numberHero)
-                .tracking(-5)
+                .font(compact ? DesignSystem.Typography.numberHeroCompact : DesignSystem.Typography.numberHero)
+                .tracking(compact ? -3 : -5)
                 .foregroundColor(DesignSystem.Colors.chalkWhite)
                 .opacity(isRunning ? 1 : 0.7)
                 .lineLimit(1)

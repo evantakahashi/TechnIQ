@@ -27,6 +27,22 @@ jobs:
       - name: Run SwiftLint
         run: swiftlint lint --reporter github-actions-logging
 
+  # The pre-built drills' DSL must compile through the drill pipeline and the generated Swift
+  # catalog must match (scripts/compile_prebuilt_drills.py). Pure Python: only pytest needed.
+  drill-catalog:
+    name: Drill catalog (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Compile and validate the pre-built drills
+        working-directory: functions
+        run: python -m pytest -q test_prebuilt_drills.py test_drill_post_processor.py
+
   unit-tests:
     name: Build & Unit Test
     runs-on: macos-15

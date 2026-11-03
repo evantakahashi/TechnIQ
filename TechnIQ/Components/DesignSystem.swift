@@ -138,6 +138,7 @@ struct DesignSystem {
 
         // Numbers — condensed with tabular digits
         static let numberHero = Font.system(size: 128, weight: .bold).width(.condensed).monospacedDigit().leading(.tight)   // active-session clock
+        static let numberHeroCompact = Font.system(size: 88, weight: .bold).width(.condensed).monospacedDigit().leading(.tight)   // session clock under the drill film
         static let numberLarge = Font.system(size: 40, weight: .bold).width(.condensed).monospacedDigit().leading(.tight)   // session-complete figures
         static let numberMedium = Font.system(size: 26, weight: .semibold).width(.condensed).monospacedDigit() // stat rails
         static let numberSmall = Font.system(size: 15, weight: .semibold).width(.condensed).monospacedDigit()  // figure units, meta numbers

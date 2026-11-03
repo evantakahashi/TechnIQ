@@ -261,7 +261,7 @@ enum TQDemoSeed {
         guard !exercises.isEmpty, exercises.filter({ $0.lastUsedAt != nil }).count <= 1 else { return }
         let sessions = ((player.sessions as? Set<TrainingSession>) ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
         let recent: [(name: String, daysAgo: Int)] = [
-            ("Passing Accuracy", 1), ("Two-touch wall passing", 1), ("First-touch directional", 3),
+            ("Passing Accuracy", 1), ("Juggling", 1), ("Agility Ladder", 3),
             ("Ball Control", 4), ("Shooting Practice", 9), ("Dribbling Cones", 16)
         ]
         for (index, entry) in recent.enumerated() {
@@ -314,29 +314,11 @@ enum TQDemoSeed {
         }
     }
 
-    /// Two demo drills so today's plan session has something to start.
+    /// Two pre-built drills so today's plan session has something to start.
     @MainActor
     private static func seedExercises(for player: Player, context: NSManagedObjectContext) -> [Exercise] {
-        let existing = (player.exercises as? Set<Exercise>) ?? []
-        let wanted: [(String, String, Int16, [String])] = [
-            ("Two-touch wall passing", "Pass with the left foot, receive the rebound with one touch, pass again on the second.", 2, ["Weak Foot", "Passing"]),
-            ("First-touch directional", "Receive across the body and play the next pass in one movement.", 2, ["First Touch"])
-        ]
-        return wanted.map { name, description, difficulty, skills in
-            if let found = existing.first(where: { $0.name == name }) { return found }
-            let exercise = Exercise(context: context)
-            exercise.id = UUID()
-            exercise.source = TrainDrill.Source.template.rawValue
-            exercise.name = name
-            exercise.exerciseDescription = description
-            exercise.category = "Technical"
-            exercise.difficulty = difficulty
-            exercise.targetSkills = skills
-            exercise.estimatedDurationSeconds = 15 * 60
-            exercise.instructions = "1. Stand 8 m from the wall between the two cones.\n2. \(description)\n3. Every 20 reps, shift to the other cone and change the angle."
-            exercise.player = player
-            return exercise
-        }
+        let rows = PrebuiltDrillSeeder.sync(player: player, context: context, createMissing: true).rows
+        return ["passing_accuracy", "ball_control"].compactMap { rows[$0] }
     }
 }
 

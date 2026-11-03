@@ -202,7 +202,7 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
         Achievement(
             id: "full_curriculum",
             name: "Full Curriculum",
-            description: "Complete all template exercises",
+            description: "Complete all 10 starter drills",
             icon: "book.closed.fill",
             category: .volume,
             requirement: .allTemplatesCompleted
@@ -474,25 +474,16 @@ final class AchievementService: ObservableObject, AchievementServiceProtocol {
     }
 
     private func areAllTemplatesCompleted(for player: Player, in context: NSManagedObjectContext) -> Bool {
-        let templates = TemplateExerciseLibrary.shared.allExercises
-        guard !templates.isEmpty,
-              let sessions = player.sessions as? Set<TrainingSession> else { return false }
-
-        var completedNames: Set<String> = []
+        // The ten pre-built drills: each must appear in at least one completed session.
+        guard let sessions = player.sessions as? Set<TrainingSession> else { return false }
+        var completedKeys: Set<String> = []
         for session in sessions {
             guard let sessionExercises = session.exercises as? Set<SessionExercise> else { continue }
             for sessionExercise in sessionExercises {
-                if let name = sessionExercise.exercise?.name?.lowercased() {
-                    completedNames.insert(name)
-                }
+                if let key = sessionExercise.exercise?.prebuiltKey { completedKeys.insert(key) }
             }
         }
-        guard !completedNames.isEmpty else { return false }
-
-        return templates.allSatisfy { template in
-            let target = template.name.lowercased()
-            return completedNames.contains(target) || completedNames.contains { $0.contains(target) || target.contains($0) }
-        }
+        return PrebuiltDrillCatalog.all.allSatisfy { completedKeys.contains($0.key) }
     }
 
     private func getCustomDrillCount(for player: Player, in context: NSManagedObjectContext) -> Int {

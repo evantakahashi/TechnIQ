@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import CoreData
+import AVKit
 
 // MARK: - Drill detail (Touchline 7c)
 //
@@ -75,7 +76,15 @@ struct ExerciseDetailView: View {
                         videoCard(videoId)
                     }
 
+                    if let clip = exercise.prebuiltDrill?.videoURL {
+                        DrillClipCard(url: clip)
+                    }
+
+                    DrillKitSection(equipment: exercise.equipmentList, space: exercise.space)
+
                     stepsSection
+
+                    levelUpSection
 
                     if content.steps.isEmpty, let description = exercise.exerciseDescription, !cleanDescription(description).isEmpty {
                         TQBody(cleanDescription(description))
@@ -271,6 +280,25 @@ struct ExerciseDetailView: View {
                 TQRule()
             }
         }
+    }
+
+    // MARK: - Level up (unlock criteria)
+
+    private var levelUpSection: some View {
+        let criteria = exercise.unlockCriteria
+        let progress = exercise.unlockProgress
+        return VStack(alignment: .leading, spacing: 10) {
+            TQGroupHeader("Level up")
+            TQBody(criteria.summary)
+            TQProgressBar(progress: progress.fraction)
+            if progress.isUnlocked {
+                TQEyebrow("Mastered", tone: .grass)
+            } else {
+                TQMeta(progress.countLabel, tone: .muted, size: 13)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Level up: \(criteria.summary). \(progress.isUnlocked ? "Mastered" : progress.countLabel)")
     }
 
     private var extrasSummary: String {
@@ -746,5 +774,52 @@ private extension String {
     var capitalizingFirstLetter: String {
         guard let first = first else { return self }
         return first.uppercased() + dropFirst()
+    }
+}
+
+// MARK: - Kit (equipment + space)
+
+/// "You need": the drill's equipment and space, on drill detail and the session drill sheet.
+/// Renders nothing when the drill has neither.
+struct DrillKitSection: View {
+    let equipment: [String]
+    let space: String?
+
+    private var spaceText: String? {
+        guard let trimmed = space?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
+
+    var body: some View {
+        if !equipment.isEmpty || spaceText != nil {
+            VStack(alignment: .leading, spacing: 0) {
+                TQGroupHeader("You need")
+                ForEach(Array(equipment.enumerated()), id: \.offset) { _, item in
+                    TQIndexRow(index: "•", text: item, indexTone: .muted)
+                }
+                if let spaceText {
+                    TQIndexRow(index: "•", text: "Space: \(spaceText)", indexTone: .muted)
+                }
+                TQRule()
+            }
+        }
+    }
+}
+
+// MARK: - Demo clip
+
+/// A bundled demo clip of the drill (pre-built drills, once filmed). Tap to play.
+struct DrillClipCard: View {
+    let url: URL
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        VideoPlayer(player: player)
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.pitchCardCompact, style: .continuous))
+            .onAppear { if player == nil { player = AVPlayer(url: url) } }
+            .onDisappear { player?.pause() }
+            .accessibilityLabel("Demo video of the drill")
     }
 }
