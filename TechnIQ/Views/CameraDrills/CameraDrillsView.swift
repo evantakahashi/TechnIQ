@@ -105,6 +105,7 @@ struct CameraDrillsView: View {
                   subtitle: drill.rules,
                   leading: .tile(TQTile(symbol: "camera.viewfinder")),
                   meta: best(drill).map { .init("Best \($0)") },
+                  note: drill.isBeta ? "beta" : nil,
                   verticalPadding: DesignSystem.Spacing.rowVertical) {
                 activeDrill = drill
             }

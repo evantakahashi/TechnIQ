@@ -18,14 +18,17 @@ final class FrameAnalyzer {
     private let sequenceHandler = VNSequenceRequestHandler()
     private var trajectoryRequest: VNDetectTrajectoriesRequest?
     private var yoloRequest: VNCoreMLRequest?
-    private let ballTracker = BallTracker()
+    private let ballTracker: BallTracker
     private let gapFiller = BallGapFiller()
     /// Fresh per seed: dropping the handler releases the previous tracker.
     private var trackHandler = VNSequenceRequestHandler()
     private var trackRequest: VNTrackObjectRequest?
 
     /// - Parameter yoloModel: compiled YOLO model; required for `.yolo`.
-    init(detector: Detector, yoloModel: MLModel? = nil) throws {
+    /// - Parameter stillBall: the ball rests on the ground for the drill (toe taps), so a detection that
+    ///   stays put isn't scenery.
+    init(detector: Detector, yoloModel: MLModel? = nil, stillBall: Bool = false) throws {
+        ballTracker = BallTracker(config: stillBall ? .stillBall : BallTracker.Config())
         self.detector = detector
         switch detector {
         case .trajectory:

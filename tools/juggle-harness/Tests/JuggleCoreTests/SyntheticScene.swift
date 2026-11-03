@@ -32,8 +32,20 @@ enum SyntheticScene {
         .leftAnkle: at(0.28, 0.10), .rightAnkle: at(0.36, 0.15)
     ])
 
+    /// The same player with the left foot raised instead (right foot planted).
+    static let leftFootPose: BodyPose = {
+        var p = pose
+        p.joints[.leftKnee] = at(0.26, 0.25)
+        p.joints[.leftAnkle] = at(0.24, 0.15)
+        p.joints[.rightKnee] = at(0.32, 0.22)
+        p.joints[.rightAnkle] = at(0.32, 0.10)
+        return p
+    }()
+
     /// Ball-centre heights for a touch on each part (x = 0.36 unless overridden).
     static let footContact = at(0.37, 0.17)
+    /// A left-foot touch (use with `leftFootPose`).
+    static let leftFootContact = at(0.23, 0.17)
     static let thighContact = at(0.36, 0.30)
     static let headContact = at(0.30, 0.57)
     static let wristContact = at(0.40, 0.31)
@@ -102,7 +114,7 @@ enum SyntheticScene {
 
 extension Array where Element == DrillEvent {
     var touches: [(count: Int, part: TouchPart)] {
-        compactMap { if case let .touch(count, part, _) = $0 { return (count, part) } else { return nil } }
+        compactMap { if case let .touch(count, part, _, _) = $0 { return (count, part) } else { return nil } }
     }
 
     var runEnds: [(count: Int, reason: RunEndReason)] {

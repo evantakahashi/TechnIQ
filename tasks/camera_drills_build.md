@@ -33,10 +33,12 @@ build after each step; one commit per phase; TQ components only; additive Core D
 - [ ] Result card via ImageRenderer; share sheet for both
 
 ## Phase 5 — More drills
-- [ ] Juggling variants: weak foot (from `Player.dominantFoot`), alternating — rule layer on JuggleCounter
-- [ ] `ToeTapCounter`: alternating sole contacts on a ball at rest, 30 s
-- [ ] `WallPassCounter`: ball leaves → returns to player = 1, 30 s
-- [ ] Synthetic tests for each; harness `--drill` flag; accuracy unknown until footage (flag in UI as beta)
+- [x] Juggling variants: weak foot (from `Player.dominantFoot`), alternating — `JuggleCounter.FootRule`; touches carry
+      `BodySide`; wrong foot ends the run (`.wrongFoot`)
+- [x] `ToeTapCounter`: alternating sole contacts on a ball at rest, 30 s (`BallTracker.Config.stillBall` keeps the ball)
+- [x] `WallPassCounter`: ball leaves feet → away (off frame / far) → back at feet = 1, miss after 4 s, 30 s; wall to
+      the player's side, phone in front
+- [x] Synthetic tests for each; flagged "beta" in the drill list. [ ] harness `--drill` flag; accuracy unknown until footage
 
 ## Phase 6 — Creator challenges
 - [ ] `challenges/{id}` (client read-only) + `challengeEntries/{id}` (owner create, status pending/approved/rejected — admin only)

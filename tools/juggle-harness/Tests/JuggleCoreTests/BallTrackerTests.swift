@@ -29,6 +29,15 @@ final class BallTrackerTests: XCTestCase {
         XCTAssertNil(picks.last ?? nil)     // after a second it's scenery
     }
 
+    func testAStillBallIsKeptForDrillsWhereTheBallRests() {
+        // Toe taps: the ball sits on the ground for the whole drill.
+        let tracker = BallTracker(config: .stillBall)
+        var picks: [BallSighting?] = []
+        for i in 0..<120 { picks.append(tracker.pick([ball(0.3, 0.1)], at: Double(i) * dt)) }
+
+        XCTAssertNotNil(picks.last ?? nil)
+    }
+
     func testSceneryTheDetectorOnlySometimesSeesIsStillScenery() {
         // The detector finds the pot in every other frame and the juggled ball in the rest.
         let tracker = BallTracker()

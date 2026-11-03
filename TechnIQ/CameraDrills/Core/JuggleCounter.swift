@@ -27,6 +27,17 @@ final class JuggleCounter: DrillCounter {
         var floorWindow = 2.0
         /// Ball radius used as the ruler (size 5 ≈ 0.11 m).
         var ballRadius = 0.11
+        /// Juggling variants: which foot touches count.
+        var footRule = FootRule.any
+    }
+
+    enum FootRule: Equatable {
+        /// Plain juggling: any legal part counts.
+        case any
+        /// Weak-foot juggling: only this foot counts; the other foot ends the run.
+        case only(BodySide)
+        /// Alternating juggling: feet must alternate; the same foot twice ends the run.
+        case alternate
     }
 
     private struct Sample {
@@ -49,6 +60,7 @@ final class JuggleCounter: DrillCounter {
     private var lastSightingTime: Double?
     private var radius: Double?
     private var ankleHistory: [(time: Double, y: Double)] = []
+    private var lastFoot: BodySide?
 
     init(config: Config = Config()) {
         self.config = config
@@ -104,44 +116,57 @@ final class JuggleCounter: DrillCounter {
         if isOnFloor(sample) {
             return isRunning ? [endRun(.ground, at: sample.time)] : []
         }
-        let part = classify(sample)
+        let (part, side) = classify(sample)
         if part == .arm {
             return isRunning ? [endRun(.handball, at: sample.time)] : []
+        }
+        switch config.footRule {
+        case .any:
+            break
+        case let .only(allowed):
+            guard part == .foot, let side else { return [] }
+            if side != allowed { return isRunning ? [endRun(.wrongFoot, at: sample.time)] : [] }
+        case .alternate:
+            guard part == .foot, let side else { return [] }
+            if isRunning, side == lastFoot { return [endRun(.wrongFoot, at: sample.time)] }
         }
         if !isRunning {
             isRunning = true
             count = 0
         }
+        if part == .foot { lastFoot = side }
         count += 1
-        return [.touch(count: count, part: part, time: sample.time)]
+        return [.touch(count: count, part: part, time: sample.time, side: side)]
     }
 
     private func endRun(_ reason: RunEndReason, at time: Double) -> DrillEvent {
         isRunning = false
+        lastFoot = nil
         return .runEnded(count: count, reason: reason, time: time)
     }
 
-    /// Nearest body part to the ball, or `.unknown` if there is no pose or nothing within reach.
-    private func classify(_ sample: Sample) -> TouchPart {
-        guard let pose = sample.pose else { return .unknown }
+    /// Nearest body part to the ball (with its side for legs), or `.unknown` if there is no pose or
+    /// nothing within reach.
+    private func classify(_ sample: Sample) -> (TouchPart, BodySide?) {
+        guard let pose = sample.pose else { return (.unknown, nil) }
         let ball = sample.center
-        var best: (part: TouchPart, gap: Double)?
+        var best: (part: TouchPart, side: BodySide?, gap: Double)?
 
-        func consider(_ part: TouchPart, thickness: Double, _ distance: Double?) {
+        func consider(_ part: TouchPart, side: BodySide? = nil, thickness: Double, _ distance: Double?) {
             guard let distance else { return }
             let gap = distance - metres(thickness)
-            if best == nil || gap < best!.gap { best = (part, gap) }
+            if best == nil || gap < best!.gap { best = (part, side, gap) }
         }
         func segment(_ a: BodyJoint, _ b: BodyJoint) -> Double? {
             guard let pa = pose[a], let pb = pose[b] else { return nil }
             return ball.distance(toSegment: pa, pb)
         }
 
-        for (ankle, knee, hip) in [(BodyJoint.leftAnkle, BodyJoint.leftKnee, BodyJoint.leftHip),
-                                   (.rightAnkle, .rightKnee, .rightHip)] {
-            consider(.foot, thickness: 0.10, pose[ankle].map(ball.distance(to:)))
-            consider(.foot, thickness: 0.05, segment(knee, ankle))
-            consider(.thigh, thickness: 0.08, segment(hip, knee))
+        for (side, ankle, knee, hip) in [(BodySide.left, BodyJoint.leftAnkle, BodyJoint.leftKnee, BodyJoint.leftHip),
+                                         (.right, .rightAnkle, .rightKnee, .rightHip)] {
+            consider(.foot, side: side, thickness: 0.10, pose[ankle].map(ball.distance(to:)))
+            consider(.foot, side: side, thickness: 0.05, segment(knee, ankle))
+            consider(.thigh, side: side, thickness: 0.08, segment(hip, knee))
         }
         for (shoulder, elbow, wrist) in [(BodyJoint.leftShoulder, BodyJoint.leftElbow, BodyJoint.leftWrist),
                                          (.rightShoulder, .rightElbow, .rightWrist)] {
@@ -157,8 +182,8 @@ final class JuggleCounter: DrillCounter {
         }
         consider(.head, thickness: 0.12, pose[.nose].map(ball.distance(to:)))
 
-        guard let best, best.gap <= sample.radius + metres(config.reach) else { return .unknown }
-        return best.part
+        guard let best, best.gap <= sample.radius + metres(config.reach) else { return (.unknown, nil) }
+        return (best.part, best.side)
     }
 
     // MARK: - Floor and scale

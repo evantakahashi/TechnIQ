@@ -33,9 +33,35 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         case .weakFootJuggling: return "Weak foot only. A strong-foot touch ends it."
         case .alternatingJuggling: return "Left, right, left. The same foot twice ends it."
         case .toeTaps: return "Alternate soles on top of the ball for 30 seconds."
-        case .wallPasses: return "Pass, receive, repeat against a wall for 30 seconds."
+        case .wallPasses: return "Wall to your side. Pass, receive, repeat for 30 seconds."
         }
     }
+
+    /// Positioning prompt detail: where the ball should be while the player gets in the outline.
+    var setupHint: String {
+        switch self {
+        case .juggling, .weakFootJuggling, .alternatingJuggling: return "Whole body in frame, ball in your hands"
+        case .toeTaps: return "Whole body in frame, ball on the ground in front of you"
+        case .wallPasses: return "Whole body in frame, wall to your side, ball at your feet"
+        }
+    }
+
+    /// Result-panel hint when a run counted nothing.
+    var noTouchesHint: String {
+        switch self {
+        case .juggling: return "Drop it from your hands and keep it up"
+        case .weakFootJuggling: return "Keep it up with your weaker foot only"
+        case .alternatingJuggling: return "Keep it up, left foot then right"
+        case .toeTaps: return "Tap the top of the ball, left sole then right"
+        case .wallPasses: return "Pass it off the wall and control it back at your feet"
+        }
+    }
+
+    /// Counting not yet checked against real footage.
+    var isBeta: Bool { self != .juggling }
+
+    /// The ball rests on the ground for the whole drill, so it mustn't be filtered out as scenery.
+    var ballRests: Bool { self == .toeTaps }
 
     var mode: Mode {
         switch self {
@@ -44,13 +70,24 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Drills with a counter today; the rest arrive in phase 5.
+    /// Drills with a counter.
     var isAvailable: Bool { makeCounter() != nil }
 
-    func makeCounter() -> DrillCounter? {
+    /// - Parameter dominantFoot: `Player.dominantFoot` ("Left" / "Right" / …); weak-foot juggling counts the
+    ///   other foot (right-footed when unknown).
+    func makeCounter(dominantFoot: String? = nil) -> DrillCounter? {
         switch self {
         case .juggling: return JuggleCounter()
-        default: return nil
+        case .weakFootJuggling: return juggleCounter(.only(dominantFoot == "Left" ? .right : .left))
+        case .alternatingJuggling: return juggleCounter(.alternate)
+        case .toeTaps: return ToeTapCounter()
+        case .wallPasses: return WallPassCounter()
         }
+    }
+
+    private func juggleCounter(_ rule: JuggleCounter.FootRule) -> JuggleCounter {
+        var config = JuggleCounter.Config()
+        config.footRule = rule
+        return JuggleCounter(config: config)
     }
 }

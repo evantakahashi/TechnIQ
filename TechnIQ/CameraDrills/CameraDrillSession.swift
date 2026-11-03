@@ -83,7 +83,7 @@ final class CameraDrillSession: ObservableObject {
             phase = .failed("Camera drills need an iPhone 12 or newer.")
             return
         }
-        guard let model = DrillModels.yolo, let analyzer = try? FrameAnalyzer(detector: .yolo, yoloModel: model) else {
+        guard let model = DrillModels.yolo, let analyzer = try? FrameAnalyzer(detector: .yolo, yoloModel: model, stillBall: drill.ballRests) else {
             phase = .failed("The ball detector couldn't load.")
             return
         }
@@ -163,7 +163,7 @@ final class CameraDrillSession: ObservableObject {
         let cues = flow.update(pose: frame.pose, time: frame.time)
 
         if flow.isLive && !wasLive {
-            counter = drill.makeCounter()
+            counter = drill.makeCounter(dominantFoot: player.dominantFoot)
             liveStartedAt = frame.time
         }
         if wasLive, flow.isLive || cues.contains(.timeUp), let counter {
@@ -199,7 +199,7 @@ final class CameraDrillSession: ObservableObject {
     private func handle(_ events: [DrillEvent]) {
         for event in events {
             switch event {
-            case let .touch(count, _, _):
+            case let .touch(count, _, _, _):
                 DispatchQueue.main.async {
                     self.count = count
                     self.say("\(count)")

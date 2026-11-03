@@ -91,7 +91,7 @@ struct CameraDrillSessionView: View {
             case .moveToMiddle?:
                 prompt("Move to the middle", detail: "Stand in the centre of the outline")
             case nil:
-                prompt("Step into the outline", detail: "Whole body in frame, ball in your hands")
+                prompt("Step into the outline", detail: session.drill.setupHint)
             }
         case let .countdown(n):
             bigNumber("\(n)")
@@ -145,7 +145,7 @@ struct CameraDrillSessionView: View {
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(.white)
             } else {
-                prompt("No touches counted", detail: "Drop it from your hands and keep it up")
+                prompt("No touches counted", detail: session.drill.noTouchesHint)
             }
         }
         .padding(DesignSystem.Spacing.md)

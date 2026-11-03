@@ -21,6 +21,13 @@ final class BallTracker {
         var sceneryMemory = 10.0
         /// Furthest the ball can plausibly move between consecutive picks.
         var maxJump = 0.15
+
+        /// Drills where the ball rests on the ground (toe taps): nothing is ever scenery.
+        static var stillBall: Config {
+            var config = Config()
+            config.staticAfter = .infinity
+            return config
+        }
     }
 
     private struct Spot {

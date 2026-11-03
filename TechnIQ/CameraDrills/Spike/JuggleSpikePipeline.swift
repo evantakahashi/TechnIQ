@@ -113,7 +113,7 @@ final class JuggleSpikePipeline: ObservableObject {
 
     private func apply(_ event: DrillEvent) {
         switch event {
-        case let .touch(count, part, _):
+        case let .touch(count, part, _, _):
             self.count = count
             lastTouch = part
             lastEnd = nil

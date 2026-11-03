@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4B75CF31BA054D85E19ED220 /* WallPassCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */; };
+		9A900E9E3706E4EB5943A792 /* ToeTapCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74B61ED93C990851B5C686A /* ToeTapCounter.swift */; };
 		8E7F17D07509AF155A19BA9C /* ShotAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */; };
 		2C834D32498EB1C6C902E1D9 /* ShotGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */; };
 		ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC4E3F73606760637D9C887 /* LicencesView.swift */; };
@@ -288,6 +290,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallPassCounter.swift; sourceTree = "<group>"; };
+		B74B61ED93C990851B5C686A /* ToeTapCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToeTapCounter.swift; sourceTree = "<group>"; };
 		C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotAnalyzer.swift; sourceTree = "<group>"; };
 		11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotGeometry.swift; sourceTree = "<group>"; };
 		ADC4E3F73606760637D9C887 /* LicencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicencesView.swift; sourceTree = "<group>"; };
@@ -1088,6 +1092,8 @@
 				38AD40BD9A4A23F2711E4C08 /* BallGapFiller.swift */,
 				11A21B3EC87E56FB963A7972 /* ShotGeometry.swift */,
 				C567D1DDF93748CCFAD4591E /* ShotAnalyzer.swift */,
+				B74B61ED93C990851B5C686A /* ToeTapCounter.swift */,
+				1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -1491,6 +1497,8 @@
 				ABAE8DE5BED79174847E93CE /* LicencesView.swift in Sources */,
 				2C834D32498EB1C6C902E1D9 /* ShotGeometry.swift in Sources */,
 				8E7F17D07509AF155A19BA9C /* ShotAnalyzer.swift in Sources */,
+				9A900E9E3706E4EB5943A792 /* ToeTapCounter.swift in Sources */,
+				4B75CF31BA054D85E19ED220 /* WallPassCounter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

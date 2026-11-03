@@ -179,7 +179,7 @@ func analyze(clip url: URL, detector: FrameAnalyzer.Detector, model: MLModel?, d
     func record(_ events: [DrillEvent]) {
         for event in events {
             switch event {
-            case let .touch(_, part, _): if part == .unknown { result.unknownTouches += 1 }
+            case let .touch(_, part, _, _): if part == .unknown { result.unknownTouches += 1 }
             case let .runEnded(count, _, _): result.runs.append(count)
             }
             if dump { print("    event \(event)") }

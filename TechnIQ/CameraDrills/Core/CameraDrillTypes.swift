@@ -61,16 +61,24 @@ enum TouchPart: String {
     case unknown
 }
 
+/// The player's own left / right (frames are never mirrored).
+enum BodySide: String {
+    case left, right
+}
+
 enum RunEndReason: String {
     case ground
     case handball
+    /// Weak-foot / alternating juggling: a touch with the wrong foot.
+    case wrongFoot
     case lostBall
     /// Footage or session ended mid-run.
     case stopped
 }
 
 enum DrillEvent: Equatable {
-    case touch(count: Int, part: TouchPart, time: Double)
+    /// `side`: which foot / leg for foot and thigh touches, when the pose says.
+    case touch(count: Int, part: TouchPart, time: Double, side: BodySide? = nil)
     case runEnded(count: Int, reason: RunEndReason, time: Double)
 }
 
