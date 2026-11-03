@@ -7,8 +7,9 @@ import SwiftUI
 //
 // Debug-only fixture so the Touchline screens can be compared against the handoff mocks on a
 // simulator. Launch with `-TQSeedDemo`: gives the current player kit #9, a 5-day streak, 450 XP (level 7),
-// an active 8-week "Striker Development" schedule with two weeks done, completed sessions earlier
-// this week, and a logged win. Idempotent per launch; never compiled into release builds.
+// an active 8-week "Striker Development" schedule (+ retest week) with two weeks done, completed
+// sessions earlier this week, a logged win, and two sets of benchmarks (assessment + a retest).
+// Idempotent per launch; never compiled into release builds.
 
 enum TQDemoSeed {
     static var isRequested: Bool {
@@ -59,6 +60,7 @@ enum TQDemoSeed {
         seedDrillUsage(for: player, context: context, calendar: calendar, now: now)
         seedMatch(for: player, calendar: calendar, now: now)
         seedCameraRuns(for: player, context: context, now: now)
+        seedBenchmarks(for: player, context: context, now: now)
 
         // Coach marks would cover the hero in screenshots.
         for id in ["dashboard", "train", "plans", "progress"] { CoachMarkManager.shared.markSeen(id) }
@@ -158,6 +160,7 @@ enum TQDemoSeed {
                 week.completedAt = now
             }
         }
+        TrainingPlanService.shared.appendRetestWeek(to: plan)
         plan.currentWeek = 3
         plan.progressPercentage = 31
         try? context.save()
@@ -176,6 +179,8 @@ enum TQDemoSeed {
         request.predicate = NSPredicate(format: "id == %@", model.id as CVarArg)
         request.fetchLimit = 1
         guard let plan = try? context.fetch(request).first else { return }
+        // Plans seeded before retest weeks existed get one (no-op when it is already there).
+        TrainingPlanService.shared.appendRetestWeek(to: plan)
         let calendar = Calendar.current
         let todayIndex = HomeWeekModel.mondayIndex(of: now, calendar: calendar)
         let thisMonday = calendar.date(byAdding: .day, value: -todayIndex, to: calendar.startOfDay(for: now)) ?? now
@@ -311,6 +316,30 @@ enum TQDemoSeed {
             run.createdAt = now.addingTimeInterval(-Double(daysAgo) * 86_400 - 3_600)
             run.updatedAt = run.createdAt
             run.player = player
+        }
+    }
+
+    /// The first assessment three weeks ago and a retest two days ago, so Home's benchmark rows show
+    /// last vs best (juggling camera-counted and a new best; toe taps below their best).
+    private static func seedBenchmarks(for player: Player, context: NSManagedObjectContext, now: Date) {
+        guard (player.benchmarks?.count ?? 0) == 0 else { return }
+        let sets: [(daysAgo: Double, values: [(BenchmarkType, Int32, Bool)])] = [
+            (21, [(.juggling, 14, false), (.wallPasses30, 18, false), (.toeTaps30, 41, false)]),
+            (2, [(.juggling, 22, true), (.wallPasses30, 21, false), (.toeTaps30, 39, false)])
+        ]
+        for set in sets {
+            let date = now.addingTimeInterval(-set.daysAgo * 86_400)
+            for (type, value, camera) in set.values {
+                let benchmark = Benchmark(context: context)
+                benchmark.id = UUID()
+                benchmark.type = type.rawValue
+                benchmark.value = value
+                benchmark.cameraVerified = camera
+                benchmark.date = date
+                benchmark.createdAt = date
+                benchmark.updatedAt = date
+                benchmark.player = player
+            }
         }
     }
 

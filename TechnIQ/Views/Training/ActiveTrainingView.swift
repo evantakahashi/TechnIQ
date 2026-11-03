@@ -45,7 +45,10 @@ struct ActiveTrainingView: View {
     }
 
     var body: some View {
-        if manager.exercises.isEmpty {
+        // An assessment plan session is never a drill session, whichever path started it.
+        if let planSession = manager.planSession, planSession.isAssessment, let player = currentPlayer {
+            AssessmentView(player: player, planSession: planSession)
+        } else if manager.exercises.isEmpty {
             emptySessionFallback
         } else {
             sessionBody

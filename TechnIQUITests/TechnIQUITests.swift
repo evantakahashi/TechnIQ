@@ -5,8 +5,8 @@ final class TechnIQUITests: XCTestCase {
     let app = XCUIApplication()
 
     /// Touchline's tab bar is a custom view (TQTabBar), not a UITabBar: the tabs are plain buttons
-    /// labelled Home / Train / Plans / Community / You.
-    private let tabLabels = ["Home", "Train", "Plans", "Community", "You"]
+    /// labelled Home / Train / Plans / You (Community only with `-TQCommunity`).
+    private let tabLabels = ["Home", "Train", "Plans", "You"]
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -30,7 +30,16 @@ final class TechnIQUITests: XCTestCase {
     func test_tabBar_hasExpectedTabs() {
         guard tabBarPresent() else { return }
         let present = tabLabels.filter { app.buttons[$0].exists }
-        XCTAssertGreaterThanOrEqual(present.count, 3, "Should have at least 3 tabs, found \(present)")
+        XCTAssertEqual(present, tabLabels, "four tabs")
+        XCTAssertFalse(app.buttons["Community"].exists, "Community is flagged off by default")
+    }
+
+    func test_tabBar_communityFlagAddsTheTab() {
+        app.terminate()
+        app.launchArguments = ["UI_TESTING", "-TQSeedDemo", "-TQLocalUser", "-TQCommunity"]
+        app.launch()
+        guard tabBarPresent() else { return }
+        XCTAssertTrue(app.buttons["Community"].exists, "-TQCommunity shows the Community tab")
     }
 
     func test_exerciseLibrary_navigable() {

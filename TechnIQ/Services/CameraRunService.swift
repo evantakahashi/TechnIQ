@@ -35,9 +35,12 @@ final class CameraRunService: ObservableObject {
 
     /// Records a finished run and pays its share of the sitting's XP. Runs of 0 touches are not stored.
     /// `sitting` is the camera session the run belongs to; the default is a sitting of this run alone.
+    /// A run of a benchmark drill also records a camera-verified Benchmark unless `recordsBenchmark`
+    /// is false (the assessment records its own best-of-three).
     @discardableResult
     func record(drill: CameraDrill, count: Int, duration: Double, player: Player,
-                sitting: CameraSitting = CameraSitting(), now: Date = Date()) -> Outcome? {
+                sitting: CameraSitting = CameraSitting(), now: Date = Date(),
+                recordsBenchmark: Bool = true) -> Outcome? {
         guard count > 0 else { return nil }
         let previousBest = personalBest(for: drill, player: player)
         let isBest = CameraRewards.isPersonalBest(count: count, previousBest: previousBest)
@@ -66,6 +69,9 @@ final class CameraRunService: ObservableObject {
         sitting.add(touches: count, seconds: duration, xp: xp)
 
         Task { @MainActor in try? await CloudService.shared.syncCameraRuns([run], for: player) }
+        if recordsBenchmark {
+            BenchmarkService(context: context).recordCameraRun(drill: drill, count: count, duration: duration, player: player, date: now)
+        }
         return Outcome(run: run, xp: xp, isPersonalBest: isBest, previousBest: previousBest, levelUp: levelUp)
     }
 }

@@ -17,6 +17,13 @@
 		96075C7F87B3C56A4B81AA9D /* Exercise+Content.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */; };
 		EB24085D6C0B7DF9AE77CABC /* PrebuiltDrillCatalog+Generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21DE86D880D12F925E56AA54 /* PrebuiltDrillCatalog+Generated.swift */; };
 		6B75E094F0F71AEC27CBDD23 /* PrebuiltDrillCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96EAA3B1383F61C0F4FE2B6 /* PrebuiltDrillCatalog.swift */; };
+		73A45E1D3009813AC2A56A2F /* RetestWeekTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */; };
+		F58FAD5B60D9FAC0BAE4F23A /* BenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */; };
+		76E046314C1807C6F103D6E3 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76BF21D1450BBA9185CE34A /* AssessmentView.swift */; };
+		B6AE2BC4B41B9F76344B5925 /* BenchmarkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587EB31D92869ABCE90A9636 /* BenchmarkService.swift */; };
+		B95E6785A347E09FC9146419 /* RetestWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */; };
+		88B67B9D5D234B4CE0063A02 /* AssessmentFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */; };
+		D4A3AAC4CBB54176895298DF /* BenchmarkSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */; };
 		CEADDA25692002072ABA5F84 /* ModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */; };
 		90ABEA975ECB9542DC5BE187 /* Benchmark+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */; };
 		9E5ED475318977135DF3DDF2 /* Benchmark+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */; };
@@ -307,6 +314,13 @@
 		CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Exercise+Content.swift"; sourceTree = "<group>"; };
 		21DE86D880D12F925E56AA54 /* PrebuiltDrillCatalog+Generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrebuiltDrillCatalog+Generated.swift"; sourceTree = "<group>"; };
 		A96EAA3B1383F61C0F4FE2B6 /* PrebuiltDrillCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrebuiltDrillCatalog.swift; sourceTree = "<group>"; };
+		F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetestWeekTests.swift; sourceTree = "<group>"; };
+		3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkTests.swift; sourceTree = "<group>"; };
+		F76BF21D1450BBA9185CE34A /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
+		587EB31D92869ABCE90A9636 /* BenchmarkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkService.swift; sourceTree = "<group>"; };
+		1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetestWeek.swift; sourceTree = "<group>"; };
+		20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentFlow.swift; sourceTree = "<group>"; };
+		DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkSummary.swift; sourceTree = "<group>"; };
 		434730238C3F5EB95E5E237C /* ModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMigrationTests.swift; sourceTree = "<group>"; };
 		FC7C4128EF5FAAB5B309A822 /* Benchmark+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		190A2F5742FEC3BFD1A1C305 /* Benchmark+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Benchmark+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -647,6 +661,7 @@
 				92A4CF90EDD30CF1EF260B1F /* PlanDayEditorView.swift */,
 				2313925E2EE1DE2959530E87 /* WeeklyReviewView.swift */,
 				7C6BD28C8462C7CAC8081AC3 /* SessionPreviewSheet.swift */,
+				F76BF21D1450BBA9185CE34A /* AssessmentView.swift */,
 			);
 			name = Training;
 			path = Training;
@@ -733,6 +748,9 @@
 				CBFBD9D3DD73BFF8DC85F6B0 /* Exercise+Content.swift */,
 				5B618FB9089EB3F0A0B8A45D /* UnlockProgress.swift */,
 				7CCE44E134201948966446CF /* PlanDrillPicker.swift */,
+				DF7FF979BF2CD49C72DE22C0 /* BenchmarkSummary.swift */,
+				20963E945387B0B4D5F2DD92 /* AssessmentFlow.swift */,
+				1C4C7F99429DCB6D458B9512 /* RetestWeek.swift */,
 			);
 			name = Models;
 			path = Models;
@@ -783,6 +801,7 @@
 				B5CC8F3CF982427750B1046B /* ActiveSessionManager+Resume.swift */,
 				577036B5FF9C26D5C4C63499 /* CameraRunService.swift */,
 				D66F2E0581E8990ED954F8F1 /* PrebuiltDrillSeeder.swift */,
+				587EB31D92869ABCE90A9636 /* BenchmarkService.swift */,
 			);
 			name = Services;
 			path = Services;
@@ -1001,6 +1020,8 @@
 				EC2024CDD530E43CA5A54B47 /* PrebuiltDrillCatalogTests.swift */,
 				1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */,
 				3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */,
+				3FC9454EF060E2F1DE370FAC /* BenchmarkTests.swift */,
+				F08672FC9CCFF4DB64FAE50B /* RetestWeekTests.swift */,
 			);
 			path = TechnIQTests;
 			sourceTree = "<group>";
@@ -1525,6 +1546,11 @@
 				995B7A17E5A9DB2A42B1241E /* UnlockProgress.swift in Sources */,
 				75CA30E8A1257E2C7BD8EFE5 /* PlanDrillPicker.swift in Sources */,
 				2D18EF1E48F93A2DDF9FF041 /* PrebuiltDrillSeeder.swift in Sources */,
+				D4A3AAC4CBB54176895298DF /* BenchmarkSummary.swift in Sources */,
+				88B67B9D5D234B4CE0063A02 /* AssessmentFlow.swift in Sources */,
+				B95E6785A347E09FC9146419 /* RetestWeek.swift in Sources */,
+				B6AE2BC4B41B9F76344B5925 /* BenchmarkService.swift in Sources */,
+				76E046314C1807C6F103D6E3 /* AssessmentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1562,6 +1588,8 @@
 				E538A8FE6F0E94F13E13952A /* PrebuiltDrillCatalogTests.swift in Sources */,
 				A4C2309EFAAC3E8934B87F91 /* UnlockProgressTests.swift in Sources */,
 				66A6C8AEF22EE137F98E5886 /* PlanDrillPickerTests.swift in Sources */,
+				F58FAD5B60D9FAC0BAE4F23A /* BenchmarkTests.swift in Sources */,
+				73A45E1D3009813AC2A56A2F /* RetestWeekTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

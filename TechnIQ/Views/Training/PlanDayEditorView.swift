@@ -26,7 +26,7 @@ struct PlanDayEditorView: View {
     @State private var addingToSession: PlanSessionModel?
     @State private var refreshToken = 0
 
-    private let sessionTypes = SessionType.allCases
+    private let sessionTypes = SessionType.pickable
 
     var body: some View {
         ScrollView {

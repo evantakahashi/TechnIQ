@@ -175,7 +175,12 @@ struct ExerciseDetailView: View {
                 ) {
                     toggleFavorite()
                 }
-                if isEditable {
+                if !FeatureFlags.community {
+                    // No community: nothing to share to, so only the editor remains.
+                    if isEditable {
+                        TQIconAction("pencil", accessibilityLabel: "Edit drill") { showingEditor = true }
+                    }
+                } else if isEditable {
                     Menu {
                         Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
                         Button { showingEditor = true } label: { Label("Edit drill", systemImage: "pencil") }
@@ -322,6 +327,10 @@ struct ExerciseDetailView: View {
         let sessions = TrainingPlanService.shared.getTodaysSessions(for: plan)
         guard let session = sessions.first(where: { !$0.isCompleted }) ?? sessions.first else {
             planNotice = "Nothing scheduled today in \(plan.name)."
+            return
+        }
+        if session.isAssessment {
+            planNotice = "Today is the retest in \(plan.name); it has no drills."
             return
         }
         if (session.exercises as? Set<Exercise>)?.contains(exercise) == true {

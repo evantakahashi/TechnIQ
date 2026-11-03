@@ -52,6 +52,8 @@ final class CameraDrillSession: ObservableObject {
     private let runService: CameraRunService?
     /// This session's runs share one XP cap (`CameraSitting`).
     private let sitting = CameraSitting()
+    /// Off inside the assessment, which records its own best-of-three benchmark.
+    private let recordsBenchmark: Bool
     private var analyzer: FrameAnalyzer?
     // Source-queue state.
     private var flow: HandsFreeFlow
@@ -62,10 +64,13 @@ final class CameraDrillSession: ObservableObject {
     /// - Parameters:
     ///   - source: frames to analyse; the front camera unless DEBUG `-TQCameraFile` names a clip.
     ///   - runService: where finished runs are recorded (`CameraRunService.shared` when nil).
-    init(drill: CameraDrill, player: Player, source: DrillFrameSource? = nil, runService: CameraRunService? = nil) {
+    ///   - recordsBenchmark: whether a run of a benchmark drill also records a Benchmark.
+    init(drill: CameraDrill, player: Player, source: DrillFrameSource? = nil, runService: CameraRunService? = nil,
+         recordsBenchmark: Bool = true) {
         self.drill = drill
         self.player = player
         self.runService = runService
+        self.recordsBenchmark = recordsBenchmark
         self.source = source ?? Self.defaultSource()
         aspect = self.source.aspect
         flow = HandsFreeFlow(mode: drill.mode, aspect: self.source.aspect)
@@ -227,7 +232,8 @@ final class CameraDrillSession: ObservableObject {
 
     @MainActor
     private func finishRun(count: Int, duration: Double) {
-        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player, sitting: sitting)
+        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player,
+                                                     sitting: sitting, recordsBenchmark: recordsBenchmark)
         let result = RunResult(count: count,
                                isPersonalBest: outcome?.isPersonalBest ?? false,
                                previousBest: outcome?.previousBest,

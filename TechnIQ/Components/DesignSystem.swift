@@ -298,6 +298,21 @@ struct DesignSystem {
                 case .you: return "You"
                 }
             }
+
+            /// Tabs on the bar: Community only behind `FeatureFlags.community`.
+            static var visible: [Tab] { visible(community: FeatureFlags.community) }
+
+            static func visible(community: Bool) -> [Tab] {
+                allCases.filter { $0 != .community || community }
+            }
+
+            /// `-TQTab` value → tab: a name ("plans") or the stable raw index (0 home, 1 train, 2 plans,
+            /// 3 community, 4 you). A hidden or unknown tab opens Home.
+            static func fromLaunchValue(_ value: String, visible: [Tab]) -> Tab {
+                let tab = Int(value).flatMap(Tab.init(rawValue:)) ?? allCases.first { String(describing: $0) == value.lowercased() }
+                guard let tab, visible.contains(tab) else { return .home }
+                return tab
+            }
         }
 
         // Action icons

@@ -42,9 +42,10 @@ final class PlanEditingTests: XCTestCase {
 
     func test_customPlanSpec_buildsAFullSkeleton() {
         let plan = makePlan(weeks: 3, days: [.monday, .wednesday, .friday])
-        XCTAssertEqual(plan.weeks.count, 3)
-        XCTAssertEqual(plan.durationWeeks, 3)
-        for week in plan.weeks {
+        XCTAssertEqual(plan.weeks.count, 4, "three weeks + the retest week")
+        XCTAssertEqual(plan.durationWeeks, 4)
+        XCTAssertEqual(plan.weeks.last?.isRetest, true)
+        for week in plan.weeks where !week.isRetest {
             XCTAssertEqual(week.days.count, 7)
             XCTAssertEqual(week.days.filter { !$0.isRestDay }.count, 3)
             XCTAssertTrue(week.days.filter { !$0.isRestDay }.allSatisfy { $0.sessions.count == 1 && $0.sessions[0].duration == 30 })
@@ -56,9 +57,10 @@ final class PlanEditingTests: XCTestCase {
         var plan = makePlan(weeks: 1)
         XCTAssertTrue(service.appendWeek(planId: plan.id))
         plan = reload(plan)
-        XCTAssertEqual(plan.weeks.count, 2)
-        XCTAssertEqual(plan.durationWeeks, 2)
+        XCTAssertEqual(plan.weeks.count, 3, "week 1, the added week 2, the retest week 3")
+        XCTAssertEqual(plan.durationWeeks, 3)
         let added = plan.weeks.first { $0.weekNumber == 2 }!
+        XCTAssertFalse(added.isRetest)
         XCTAssertEqual(added.days.filter { !$0.isRestDay }.map { $0.dayOfWeek }, [.monday, .thursday])
         XCTAssertTrue(added.days.flatMap(\.sessions).allSatisfy { !$0.isCompleted })
 
@@ -66,16 +68,18 @@ final class PlanEditingTests: XCTestCase {
         let lastSession = added.days.first { !$0.isRestDay }!.sessions[0]
         service.markSessionCompleted(lastSession, actualDuration: 30, actualIntensity: 3)
         XCTAssertFalse(service.removeLastWeek(planId: plan.id), "a week with completed sessions stays")
-        XCTAssertEqual(reload(plan).weeks.count, 2)
+        XCTAssertEqual(reload(plan).weeks.count, 3)
     }
 
     func test_removeLastWeek_neverRemovesTheOnlyWeek() {
+        // One training week + the retest week: the retest week is never what gets removed.
         let plan = makePlan(weeks: 1)
         XCTAssertFalse(service.removeLastWeek(planId: plan.id))
-        XCTAssertEqual(reload(plan).weeks.count, 1)
+        XCTAssertEqual(reload(plan).weeks.count, 2)
         XCTAssertTrue(service.appendWeek(planId: plan.id))
         XCTAssertTrue(service.removeLastWeek(planId: plan.id))
-        XCTAssertEqual(reload(plan).weeks.count, 1)
+        XCTAssertEqual(reload(plan).weeks.count, 2)
+        XCTAssertEqual(reload(plan).weeks.last?.isRetest, true)
     }
 
     func test_sessionsAndDrills_onADay() {
@@ -182,10 +186,15 @@ final class PlanEditingTests: XCTestCase {
         XCTAssertTrue(week2.days.filter { !$0.isRestDay }.allSatisfy { $0.sessions.count == 1 })
     }
 
-    func test_rebindTrainingDays_isANoOpWithoutFutureWeeksOrDays() {
+    func test_rebindTrainingDays_leavesTheCurrentWeek_movesOnlyTheRetestWeekAfterIt() {
+        // A one-week plan's only future week is its retest week.
         let plan = makePlan(weeks: 1)
-        XCTAssertFalse(service.rebindTrainingDays(planId: plan.id, to: [.friday]))
-        XCTAssertEqual(trainingWeekdays(reload(plan), week: 1), [.monday, .thursday])
+        XCTAssertTrue(service.rebindTrainingDays(planId: plan.id, to: [.friday]))
+        let reloaded = reload(plan)
+        XCTAssertEqual(trainingWeekdays(reloaded, week: 1), [.monday, .thursday])
+        XCTAssertEqual(trainingWeekdays(reloaded, week: 2), [.friday])
+        XCTAssertEqual(reloaded.weeks.first { $0.weekNumber == 2 }?.days.flatMap(\.sessions).first?.sessionType, .assessment,
+                       "the assessment stays first")
         XCTAssertFalse(service.rebindTrainingDays(planId: makePlan(weeks: 2).id, to: []))
     }
 

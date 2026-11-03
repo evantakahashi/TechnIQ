@@ -284,16 +284,27 @@ struct MainTabView: View {
 
     @FetchRequest var players: FetchedResults<Player>
     @State private var selectedTab = MainTabView.initialTab
+    /// Fixed per launch: Community is behind `FeatureFlags.community`.
+    private let tabs = DesignSystem.Icons.Tab.visible
 
-    /// `-TQTab n` (DEBUG) opens the app on a given tab for screenshot comparison.
-    private static var initialTab: Int {
+    /// `-TQTab n|name` (DEBUG) opens the app on a given tab for screenshot comparison. Numbers are the
+    /// stable tab ids (0 home … 3 community, 4 you); a hidden tab opens Home.
+    private static var initialTab: DesignSystem.Icons.Tab {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        if let index = args.firstIndex(of: "-TQTab"), index + 1 < args.count, let tab = Int(args[index + 1]), (0..<5).contains(tab) {
-            return tab
+        if let index = args.firstIndex(of: "-TQTab"), index + 1 < args.count {
+            return DesignSystem.Icons.Tab.fromLaunchValue(args[index + 1], visible: DesignSystem.Icons.Tab.visible)
         }
         #endif
-        return 0
+        return .home
+    }
+
+    /// The selected tab as its position on the bar, for the sliding tab content.
+    private var selectedIndex: Binding<Int> {
+        Binding(
+            get: { tabs.firstIndex(of: selectedTab) ?? 0 },
+            set: { index in if tabs.indices.contains(index) { selectedTab = tabs[index] } }
+        )
     }
 
     init() {
@@ -315,28 +326,28 @@ struct MainTabView: View {
         ZStack {
             DesignSystem.Colors.surfaceBase.ignoresSafeArea()
             VStack(spacing: 0) {
-                AnimatedTabContent(selectedTab: $selectedTab) { tab in
+                AnimatedTabContent(selectedTab: selectedIndex, tabCount: tabs.count) { index in
                     Group {
-                        switch tab {
-                        case 0:
-                            NavigationStack { DashboardView(selectedTab: $selectedTab) }
-                        case 1:
-                            NavigationStack { TrainHubView() }
-                        case 2:
-                            NavigationStack { PlanTabView() }
-                        case 3:
-                            NavigationStack { CommunityView() }
-                        case 4:
-                            NavigationStack { EnhancedProfileView() }
-                        default:
-                            EmptyView()
+                        if tabs.indices.contains(index) {
+                            switch tabs[index] {
+                            case .home:
+                                NavigationStack { DashboardView(selectedTab: $selectedTab) }
+                            case .train:
+                                NavigationStack { TrainHubView() }
+                            case .plans:
+                                NavigationStack { PlanTabView() }
+                            case .community:
+                                NavigationStack { CommunityView() }
+                            case .you:
+                                NavigationStack { EnhancedProfileView() }
+                            }
                         }
                     }
                     .environment(\.managedObjectContext, viewContext)
                     .environmentObject(authManager)
                 }
 
-                TQTabBar(selectedTab: $selectedTab)
+                TQTabBar(selectedTab: $selectedTab, tabs: tabs)
                     .ignoresSafeArea(.keyboard)
             }
         }

@@ -52,6 +52,11 @@ final class TouchlineHomeUITests: XCTestCase {
         app.buttons["row.\(title)"]
     }
 
+    /// Any element by accessibility identifier (rows without an action aren't buttons).
+    private func element(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
     private func goBack() {
         let back = app.buttons["Back"]
         if back.exists, back.isHittable {
@@ -108,6 +113,7 @@ final class TouchlineHomeUITests: XCTestCase {
 
         XCTAssertTrue(text(containing: "Today's session").exists, "hero eyebrow")
         XCTAssertTrue(text(containing: "This week").exists, "week section header")
+        XCTAssertTrue(app.buttons["Community"].exists == false, "four tabs without -TQCommunity")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "day streak")).firstMatch.exists
                       || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "XP")).firstMatch.exists, "footer line")
 
@@ -117,6 +123,10 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(tapWhenHittable(planRow), "plan row hittable")
         XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan detail opened")
         shot("plan-detail")
+        app.swipeUp()
+        settle(0.8)
+        XCTAssertTrue(text(containing: "RETEST").waitForExistence(timeout: 5), "the plan ends with a retest week")
+        shot("plan-detail-retest")
         goBack()
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after plan detail")
 
@@ -148,6 +158,16 @@ final class TouchlineHomeUITests: XCTestCase {
         XCTAssertTrue(text(containing: "Striker Development").waitForExistence(timeout: 8), "plan opened from next session")
         goBack()
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after next session")
+
+        // Benchmarks: last vs best per test (seeded assessment + retest)
+        app.swipeUp()
+        settle(0.8)
+        XCTAssertTrue(text(containing: "Benchmarks").waitForExistence(timeout: 5), "benchmarks section")
+        XCTAssertTrue(element("home.benchmark.juggling").exists, "one row per benchmark")
+        XCTAssertTrue(element("home.benchmark.toeTaps30").exists, "one row per benchmark")
+        shot("home-benchmarks")
+        app.swipeDown()
+        settle(0.8)
 
         // Tab bar round trip
         let trainTab = app.buttons["Train"]
@@ -292,12 +312,14 @@ final class TouchlineHomeUITests: XCTestCase {
 
     func test_emptyHome_rowsOfferCreationRoutes() throws {
         launch(["-TQHomeState", "empty"])
-        let quick = app.buttons["Start quick drill"]
-        XCTAssertTrue(quick.waitForExistence(timeout: 40), "first-run hero with Start quick drill should appear")
+        let quick = app.buttons["Start assessment"]
+        XCTAssertTrue(quick.waitForExistence(timeout: 40), "first-run hero is the assessment")
         dismissCoachMarkIfPresent()
         shot("home-empty")
 
         XCTAssertTrue(text(containing: "Your first session").exists, "first-run eyebrow")
+        XCTAssertTrue(text(containing: "10-minute assessment").exists, "first-run title")
+        XCTAssertTrue(app.buttons["home.takeAssessment"].exists, "benchmarks row offers the assessment")
         XCTAssertTrue(text(containing: "after your first session").exists, "disabled coach row note")
 
         // Build a training plan → generator sheet → cancel
@@ -324,12 +346,63 @@ final class TouchlineHomeUITests: XCTestCase {
         dismissSheet()
         XCTAssertTrue(quick.waitForExistence(timeout: 8), "back on Home after match log")
 
-        // Quick drill → generator sheet (or paywall) → cancel
-        XCTAssertTrue(tapWhenHittable(quick), "quick drill button hittable")
-        settle(2)
-        shot("quick-drill-sheet")
-        dismissSheet()
-        XCTAssertTrue(quick.waitForExistence(timeout: 8), "back on Home after quick drill sheet")
+        // Assessment opens full screen and closes from its intro.
+        XCTAssertTrue(tapWhenHittable(quick), "assessment button hittable")
+        XCTAssertTrue(text(containing: "Three numbers").waitForExistence(timeout: 8), "assessment intro")
+        XCTAssertTrue(tapWhenHittable(app.buttons["assessment.close"]), "close")
+        XCTAssertTrue(quick.waitForExistence(timeout: 8), "back on Home after the assessment intro")
+    }
+
+    // MARK: - First-session assessment
+
+    func test_firstAssessment_walksEveryStep() throws {
+        launch(["-TQHomeState", "empty"])
+        let startAssessment = app.buttons["Start assessment"]
+        XCTAssertTrue(startAssessment.waitForExistence(timeout: 40), "assessment hero")
+        dismissCoachMarkIfPresent()
+        XCTAssertTrue(tapWhenHittable(startAssessment))
+
+        let primary = app.buttons["assessment.primary"]
+        XCTAssertTrue(text(containing: "Three numbers").waitForExistence(timeout: 8), "intro")
+        shot("assessment-intro")
+        XCTAssertTrue(tapWhenHittable(primary), "start warm-up")
+        XCTAssertTrue(text(containing: "Warm-up").waitForExistence(timeout: 5), "warm-up")
+        settle(1.5)
+        shot("assessment-warmup")
+        XCTAssertTrue(tapWhenHittable(app.buttons["assessment.skipWarmup"]), "skip warm-up")
+
+        // Juggling: two typed attempts.
+        XCTAssertTrue(text(containing: "Keep it up").waitForExistence(timeout: 5), "juggling")
+        shot("assessment-juggling")
+        for count in ["12", "17"] {
+            let field = app.textFields.firstMatch
+            XCTAssertTrue(tapWhenHittable(field), "count field")
+            field.typeText(count)
+            XCTAssertTrue(tapWhenHittable(app.buttons["assessment.addAttempt"]), "add attempt")
+            settle(0.5)
+        }
+        XCTAssertTrue(element("row.Attempt 2").waitForExistence(timeout: 5), "attempts listed")
+        shot("assessment-juggling-attempts")
+        XCTAssertTrue(tapWhenHittable(primary), "next: wall passes")
+
+        // Wall passes and toe taps: start the clock, stop early, type the count.
+        for (title, count) in [("Wall passes", "19"), ("Toe taps", "42")] {
+            XCTAssertTrue(text(containing: title).waitForExistence(timeout: 5), title)
+            XCTAssertTrue(tapWhenHittable(primary), "start clock")
+            settle(1.5)
+            shot("assessment-\(title == "Toe taps" ? "toetaps" : "wallpasses")-running")
+            XCTAssertTrue(tapWhenHittable(app.buttons["assessment.stopClock"]), "stop early")
+            let field = app.textFields.firstMatch
+            XCTAssertTrue(tapWhenHittable(field), "count field")
+            field.typeText(count)
+            XCTAssertTrue(tapWhenHittable(primary), "save count")
+        }
+
+        XCTAssertTrue(text(containing: "Your numbers").waitForExistence(timeout: 8), "results")
+        XCTAssertTrue(element("row.Toe taps").exists, "toe taps result")
+        shot("assessment-results")
+        XCTAssertTrue(tapWhenHittable(app.buttons["assessment.done"]), "done")
+        XCTAssertTrue(text(containing: "This week").waitForExistence(timeout: 10), "back on Home")
     }
 
     // MARK: - Offline and loading slots (9c, 9d)

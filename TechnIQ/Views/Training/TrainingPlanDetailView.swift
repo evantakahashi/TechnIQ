@@ -45,6 +45,7 @@ struct TrainingPlanDetailView: View {
     @State private var duplicatedPlanName: String?
     @State private var selectedDay: SelectedDay?
     @State private var trainingLaunch: TrainingLaunch?
+    @State private var assessmentLaunch: AssessmentLaunch?
 
     private struct SelectedDay: Identifiable {
         let id = UUID()
@@ -91,7 +92,7 @@ struct TrainingPlanDetailView: View {
         .navigationDestination(isPresented: $showingAllPlans) {
             TrainingPlansListView(isPushed: true)
         }
-        .confirmationDialog("Remove week \(plan.weeks.count)?", isPresented: $showingConfirmRemoveWeek, titleVisibility: .visible) {
+        .confirmationDialog("Remove week \(lastTrainingWeekNumber)?", isPresented: $showingConfirmRemoveWeek, titleVisibility: .visible) {
             Button("Remove week", role: .destructive) { removeLastWeek() }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -142,6 +143,10 @@ struct TrainingPlanDetailView: View {
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
         }
+        .fullScreenCover(item: $assessmentLaunch, onDismiss: { refreshPlanData() }) { launch in
+            AssessmentView(player: player, planSession: launch.planSession)
+                .environment(\.managedObjectContext, viewContext)
+        }
         .confirmationDialog("Start this plan?", isPresented: $showingConfirmStart, titleVisibility: .visible) {
             Button("Start plan") { startPlan() }
             Button("Cancel", role: .cancel) {}
@@ -190,13 +195,15 @@ struct TrainingPlanDetailView: View {
             if isStored {
                 Button { showingEditor = true } label: { Label("Edit plan", systemImage: "pencil") }
                 Button { appendWeek() } label: { Label("Add a week", systemImage: "plus.rectangle.on.rectangle") }
-                if plan.weeks.count > 1 {
+                if trainingWeekCount > 1 {
                     Button { showingConfirmRemoveWeek = true } label: { Label("Remove last week", systemImage: "minus.rectangle") }
                 }
                 Divider()
             }
             Button { duplicatePlan() } label: { Label(isStored ? "Duplicate plan" : "Copy to My plans", systemImage: "doc.on.doc") }
-            Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
+            if FeatureFlags.community {
+                Button { showingShareSheet = true } label: { Label("Share to community", systemImage: "square.and.arrow.up") }
+            }
             if isStored {
                 Divider()
                 if plan.isActive {
@@ -257,7 +264,8 @@ struct TrainingPlanDetailView: View {
                 }
                 cells[index] = TQDayCell(state: state, sessions: day.sessions.count)
             }
-            return TQScheduleGrid.Row(label: "WK \(week.weekNumber)", cells: cells, isCurrent: currentWeekDay?.week == week.weekNumber)
+            return TQScheduleGrid.Row(label: week.isRetest ? "RETEST" : "WK \(week.weekNumber)", cells: cells,
+                                      isCurrent: currentWeekDay?.week == week.weekNumber)
         }
     }
 
@@ -287,7 +295,7 @@ struct TrainingPlanDetailView: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
                             TQEyebrow("\(isCatchUp ? "Catch-up" : "Today") · WK \(current.week) Day \(current.day)", size: 11)
-                            TQDisplayTitle(todaysExercises.first?.name ?? "\(todaysSessionType) session", size: .strip)
+                            TQDisplayTitle(pinnedTitle, size: .strip)
                                 .lineLimit(2)
                         }
                         TQButton("Start", icon: "play.fill", size: .compact, fullWidth: false) { startToday() }
@@ -324,6 +332,18 @@ struct TrainingPlanDetailView: View {
         return false
     }
 
+    private var pinnedTitle: String {
+        if todaysSession?.isAssessment == true { return "10-minute assessment" }
+        return todaysExercises.first?.name ?? "\(todaysSessionType) session"
+    }
+
+    /// Weeks before the closing retest week (the ones Add / Remove week act on).
+    private var trainingWeekCount: Int { plan.weeks.filter { !$0.isRetest }.count }
+
+    private var lastTrainingWeekNumber: Int {
+        plan.weeks.filter { !$0.isRetest }.map(\.weekNumber).max() ?? plan.weeks.count
+    }
+
     private var sessionsPerWeek: Int {
         plan.weeks.first.map { $0.days.filter { !$0.isRestDay }.count } ?? 0
     }
@@ -339,7 +359,9 @@ struct TrainingPlanDetailView: View {
     // MARK: - Actions
 
     private func startToday() {
-        if todaysExercises.isEmpty {
+        if let session = todaysSession, session.isAssessment {
+            assessmentLaunch = AssessmentLaunch(planSession: session)
+        } else if todaysExercises.isEmpty {
             showingLogSession = true
         } else if todaysExercises.count > 1 {
             showingPreview = true
@@ -361,15 +383,16 @@ struct TrainingPlanDetailView: View {
     private func appendWeek() {
         if TrainingPlanService.shared.appendWeek(planId: plan.id) {
             HapticManager.shared.success()
-            weekBanner = "Week \(plan.weeks.count + 1) added."
             refreshPlanData()
+            weekBanner = "Week \(lastTrainingWeekNumber) added."
         }
     }
 
     private func removeLastWeek() {
+        let removed = lastTrainingWeekNumber
         if TrainingPlanService.shared.removeLastWeek(planId: plan.id) {
             HapticManager.shared.selectionChanged()
-            weekBanner = "Week \(plan.weeks.count) removed."
+            weekBanner = "Week \(removed) removed."
             refreshPlanData()
         } else {
             weekBanner = "That week has completed sessions, so it stays."
@@ -492,7 +515,7 @@ struct PlanDaySheet: View {
                 TQRowList {
                     ForEach(day.sessions) { session in
                         TQRow(
-                            "\(session.sessionType.displayName) session",
+                            session.sessionType == .assessment ? "10-minute assessment" : "\(session.sessionType.displayName) session",
                             subtitle: "\(session.duration) min · intensity \(session.intensity)/5" + (session.exerciseIDs.isEmpty ? "" : " · \(session.exerciseIDs.count) drill\(session.exerciseIDs.count == 1 ? "" : "s")"),
                             leading: .tile(TQTile.category(session.sessionType.rawValue)),
                             badge: session.isCompleted ? TQBadge(.status("Done")) : nil,

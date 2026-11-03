@@ -82,8 +82,10 @@ struct SessionCompleteView: View {
                         TQButton("Done") { onDismiss() }
                             .disabled(feel == nil)
                             .accessibilityHint(feel == nil ? "Choose how it felt first" : "")
-                        TQIconButton("square.and.arrow.up", style: .raised, shape: .square, size: 54, iconSize: 18, accessibilityLabel: "Share to community") {
-                            showingShareSheet = true
+                        if FeatureFlags.community {
+                            TQIconButton("square.and.arrow.up", style: .raised, shape: .square, size: 54, iconSize: 18, accessibilityLabel: "Share to community") {
+                                showingShareSheet = true
+                            }
                         }
                     }
                     .padding(.top, 16)

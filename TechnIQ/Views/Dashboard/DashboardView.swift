@@ -12,6 +12,12 @@ struct TrainingLaunch: Identifiable {
     var resumeFrom: SessionSnapshot? = nil
 }
 
+/// Opens the assessment, standalone (first session, "Test again") or for a plan's retest session.
+struct AssessmentLaunch: Identifiable {
+    let id = UUID()
+    var planSession: PlanSession? = nil
+}
+
 // MARK: - Home (Touchline 4a / 9b / 9c / 9d)
 //
 // Home answers "what do I do today?" with one pitch card and one Start button. Everything else
@@ -25,7 +31,8 @@ struct DashboardView: View {
     @FetchRequest var players: FetchedResults<Player>
     @FetchRequest var recentSessions: FetchedResults<TrainingSession>
     @FetchRequest var recentMatches: FetchedResults<Match>
-    @Binding var selectedTab: Int
+    @FetchRequest var benchmarks: FetchedResults<Benchmark>
+    @Binding var selectedTab: DesignSystem.Icons.Tab
 
     @ObservedObject private var aiCoachService = AICoachService.shared
     @ObservedObject private var cloudService = CloudService.shared
@@ -63,6 +70,7 @@ struct DashboardView: View {
     @State private var showingProfileCreation = false
     @State private var isOnboardingComplete = false
     @State private var trainingLaunch: TrainingLaunch?
+    @State private var assessmentLaunch: AssessmentLaunch?
     @State private var route: HomeRoute?
 
     private enum HomeRoute: Hashable {
@@ -71,7 +79,7 @@ struct DashboardView: View {
         case coachDrills
     }
 
-    init(selectedTab: Binding<Int>) {
+    init(selectedTab: Binding<DesignSystem.Icons.Tab>) {
         self._selectedTab = selectedTab
         self._players = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Player.createdAt, ascending: false)],
@@ -85,6 +93,11 @@ struct DashboardView: View {
         )
         self._recentMatches = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Match.date, ascending: false)],
+            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
+            animation: .default
+        )
+        self._benchmarks = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Benchmark.date, ascending: true)],
             predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
@@ -107,6 +120,11 @@ struct DashboardView: View {
 
     private var isOffline: Bool { forcedState == "offline" || !cloudService.isNetworkAvailable }
     private var hasSessions: Bool { forcedState != "empty" && !recentSessions.isEmpty }
+    private var benchmarkSummaries: [BenchmarkType: BenchmarkSummary] {
+        forcedState == "empty" ? [:] : BenchmarkSummary.summarize(benchmarks.compactMap(BenchmarkService.entry))
+    }
+    /// A new player's first session is the assessment: it takes the hero until they've trained or tested.
+    private var needsFirstAssessment: Bool { !hasSessions && (forcedState == "empty" || benchmarks.isEmpty) }
     private var coachEnabled: Bool { subscriptionManager.isPro && !isOffline }
     /// The hero never waits on the network: the plan's drill shows at once and the coach's note lands
     /// when it arrives. Only the `-TQHomeState loading` screenshot state shows the skeleton.
@@ -141,6 +159,7 @@ struct DashboardView: View {
                     hero(player: player)
                         .coachMark(.dashboard)
                     weekSection
+                    benchmarksSection
                     rows(player: player)
                     footer(player: player)
                 } else {
@@ -233,6 +252,12 @@ struct DashboardView: View {
                 .environmentObject(authManager)
                 .environmentObject(subscriptionManager)
         }
+        .fullScreenCover(item: $assessmentLaunch, onDismiss: { loadPlan() }) { launch in
+            if let player = currentPlayer {
+                AssessmentView(player: player, planSession: launch.planSession)
+                    .environment(\.managedObjectContext, viewContext)
+            }
+        }
         .onChange(of: isOnboardingComplete) { _, completed in
             if completed {
                 showingProfileCreation = false
@@ -248,7 +273,7 @@ struct DashboardView: View {
             loadCoachDrillCount()
             if let player = currentPlayer { Task { await fetchCoaching(for: player, force: false) } }
             #if DEBUG
-            // `-TQRoute planDetail|matchHistory|coachDrills` pushes a destination for screenshots.
+            // `-TQRoute planDetail|matchHistory|coachDrills|assessment` opens a destination for screenshots.
             let args = ProcessInfo.processInfo.arguments
             if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -256,6 +281,7 @@ struct DashboardView: View {
                     case "planDetail": if let plan = activePlan { route = .planDetail(plan) }
                     case "matchHistory": route = .matchHistory
                     case "coachDrills": route = .coachDrills
+                    case "assessment": assessmentLaunch = AssessmentLaunch()
                     default: break
                     }
                 }
@@ -483,8 +509,12 @@ struct DashboardView: View {
     private func hero(player: Player) -> some View {
         if coachIsLoading {
             TQHeroCard(eyebrow: "Today's session", trailingMeta: weekDayMeta, title: "", actionTitle: "", state: .loading, markings: .heroSimple, action: {})
+        } else if needsFirstAssessment {
+            firstAssessmentHero
         } else if let session = todaysSession, isRestDay {
             restHero(session: session, player: player)
+        } else if let session = todaysSession, session.isAssessment {
+            retestHero(session: session)
         } else if let session = todaysSession {
             planHero(session: session, player: player)
         } else if let coaching = todaysCoaching, !planIsComplete {
@@ -498,18 +528,7 @@ struct DashboardView: View {
                 linkTitle: "choose a new plan",
                 markings: .heroSimple,
                 action: { startQuickDrill() },
-                linkAction: { selectedTab = 2 }
-            )
-        } else if !hasSessions {
-            TQHeroCard(
-                eyebrow: "Your first session",
-                title: "Ten minutes, one ball, a wall",
-                body: "No plan yet. Start with a quick drill built for your position and \(coachName) will learn from how it goes.\(freeDrillsSuffix)",
-                actionTitle: "Start quick drill",
-                linkTitle: "build a plan first",
-                markings: .heroSimple,
-                action: { startQuickDrill() },
-                linkAction: { openPlanGenerator(for: player) }
+                linkAction: { selectedTab = .plans }
             )
         } else {
             TQHeroCard(
@@ -523,6 +542,36 @@ struct DashboardView: View {
                 linkAction: { openPlanGenerator(for: player) }
             )
         }
+    }
+
+    /// New player: the 10-minute assessment comes before any plan session.
+    private var firstAssessmentHero: some View {
+        let session = isRestDay ? nil : todaysSession
+        return TQHeroCard(
+            eyebrow: "Your first session",
+            title: "10-minute assessment",
+            figures: [("10", "min"), ("3", "tests")],
+            body: "Juggling, wall passes, toe taps. One ball and a wall, and \(coachName) knows where you start.",
+            actionTitle: "Start assessment",
+            linkTitle: session.map { _ in "skip to today's session" },
+            markings: .heroSimple,
+            action: { assessmentLaunch = AssessmentLaunch() },
+            linkAction: { if let session { startPlanSession(session) } }
+        )
+    }
+
+    /// The plan's retest day: the same assessment, fulfilling the plan session.
+    private func retestHero(session: PlanSession) -> some View {
+        TQHeroCard(
+            eyebrow: sessionEyebrow == "Catch-up session" ? "Catch-up · retest" : "Retest day",
+            trailingMeta: weekDayMeta,
+            title: "10-minute assessment",
+            figures: [("\(max(Int(session.duration), 1))", "min"), ("3", "tests")],
+            body: "Same three tests as your first session. Beat your numbers.",
+            actionTitle: "Start assessment",
+            markings: .heroSimple,
+            action: { startPlanSession(session) }
+        )
     }
 
     /// No plan session today: the coach's pick from the library, or an offer to build one.
@@ -664,6 +713,46 @@ struct DashboardView: View {
             }
             TQWeekStrip(cells: week.cells, todayIndex: week.todayIndex)
         }
+    }
+
+    // MARK: - Benchmarks
+
+    /// Last vs best for each benchmark; before any result, one row into the assessment.
+    @ViewBuilder
+    private var benchmarksSection: some View {
+        let summaries = benchmarkSummaries
+        VStack(spacing: DesignSystem.Spacing.rowGap) {
+            if summaries.isEmpty {
+                TQSectionHeader("Benchmarks")
+            } else {
+                TQSectionHeader("Benchmarks") {
+                    TQTextLink("Test again", arrow: false) { assessmentLaunch = AssessmentLaunch() }
+                        .accessibilityIdentifier("home.testAgain")
+                }
+            }
+            TQRowList {
+                if summaries.isEmpty {
+                    TQRow("Take the 10-minute assessment",
+                          subtitle: "Juggling, wall passes, toe taps",
+                          action: { assessmentLaunch = AssessmentLaunch() })
+                        .accessibilityIdentifier("home.takeAssessment")
+                } else {
+                    ForEach(BenchmarkType.allCases) { type in
+                        benchmarkRow(type, summary: summaries[type])
+                    }
+                }
+            }
+        }
+    }
+
+    private func benchmarkRow(_ type: BenchmarkType, summary: BenchmarkSummary?) -> some View {
+        TQRow(type.title,
+              subtitle: type.unit,
+              meta: summary.map { .init($0.metaText) } ?? .init("Not tested", size: 14, face: .text),
+              badge: summary?.best.cameraVerified == true ? TQBadge(.text("Camera")) : nil,
+              accessory: .none,
+              verticalPadding: DesignSystem.Spacing.rowVertical)
+            .accessibilityIdentifier("home.benchmark.\(type.rawValue)")
     }
 
     // MARK: - Rows
@@ -810,7 +899,9 @@ struct DashboardView: View {
     }
 
     private func startPlanSession(_ session: PlanSession) {
-        if todaysExercises.isEmpty {
+        if session.isAssessment {
+            assessmentLaunch = AssessmentLaunch(planSession: session)
+        } else if todaysExercises.isEmpty {
             showingLogPlanSession = true
         } else if todaysExercises.count > 1 {
             // Several drills: show what the session holds before the clock starts.
@@ -850,6 +941,7 @@ struct DashboardView: View {
         players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
         recentSessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
         recentMatches.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
+        benchmarks.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
     }
 
     private func checkWelcomeBack() {
@@ -906,7 +998,7 @@ struct DashboardView: View {
 
 #Preview {
     NavigationStack {
-        DashboardView(selectedTab: .constant(0))
+        DashboardView(selectedTab: .constant(.home))
             .environment(\.managedObjectContext, CoreDataManager.shared.context)
             .environmentObject(AuthenticationManager.shared)
             .environmentObject(SubscriptionManager.shared)
