@@ -50,7 +50,8 @@ enum SyntheticScene {
     static let headContact = at(0.30, 0.57)
     static let wristContact = at(0.40, 0.31)
     /// Ball resting on the floor: ground ≈ ankle baseline 0.10 − 0.08 m.
-    static let groundContact = DrillPoint(x: at(0.42, 0).x, y: 0.10 - 0.08 * unitsPerMetre + ballRadius)
+    /// Lands away from the feet: a ball resting at floor level right by a foot may be a low touch.
+    static let groundContact = DrillPoint(x: at(0.52, 0).x, y: 0.10 - 0.08 * unitsPerMetre + ballRadius)
 
     struct Builder {
         private(set) var frames: [DrillFrame] = []

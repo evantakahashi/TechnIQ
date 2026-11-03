@@ -39,6 +39,11 @@ final class JuggleCounter: DrillCounter {
         var hiddenTouchRise = 0.25
         /// Gravity (m/s²), for the free-fall check.
         var gravity = 9.81
+        /// A ball at floor level within this (m) of an ankle may be a low touch, not the ground (a phone on
+        /// the floor sees a ball just in front of the feet as low as the floor): it's the ground only once
+        /// it has stayed down `groundHold` seconds.
+        var footClear = 0.25
+        var groundHold = 0.4
     }
 
     enum FootRule: Equatable {
@@ -73,6 +78,8 @@ final class JuggleCounter: DrillCounter {
     private var lastFoot: BodySide?
     /// Latest sightings (≤ 0.3 s), for the ball's velocity going into a detector gap.
     private var recent: [Sample] = []
+    /// When the ball last came down to floor level (nil while it's above it).
+    private var floorSince: Double?
 
     init(config: Config = Config()) {
         self.config = config
@@ -92,7 +99,8 @@ final class JuggleCounter: DrillCounter {
         let sample = Sample(time: frame.time, center: ball.center, radius: ball.radius, pose: frame.pose)
         var events: [DrillEvent] = []
 
-        if isRunning, isOnFloor(sample) {
+        floorSince = isOnFloor(sample) ? (floorSince ?? sample.time) : nil
+        if isRunning, isGround(sample) {
             events.append(endRun(.ground, at: frame.time))
         }
 
@@ -112,10 +120,17 @@ final class JuggleCounter: DrillCounter {
         case let .seekingLow(low, high):
             if sample.center.y < low.center.y {
                 phase = .seekingLow(low: sample, high: high)
-            } else if sample.center.y - low.center.y >= metres(config.reversal)
-                        || sample.time - low.time >= config.stall {
+            } else if sample.center.y - low.center.y >= metres(config.reversal) {
                 phase = .seekingHigh(high: sample.center.y)
                 events += contact(at: low, drop: high - low.center.y)
+            } else if sample.time - low.time >= config.stall {
+                phase = .seekingHigh(high: sample.center.y)
+                // Came to rest at floor level: the ground, even beside a foot (no rebound, no touch).
+                if isOnFloor(low) {
+                    if isRunning { events.append(endRun(.ground, at: sample.time)) }
+                } else {
+                    events += contact(at: low, drop: high - low.center.y)
+                }
             }
         case let .seekingHigh(high):
             if sample.center.y > high {
@@ -158,7 +173,7 @@ final class JuggleCounter: DrillCounter {
     ///   floor check, and the ball's position now doesn't say what touched it (never a handball).
     private func contact(at sample: Sample, drop: Double, hidden: Bool = false) -> [DrillEvent] {
         guard drop >= metres(config.minDrop) else { return [] }
-        if !hidden, isOnFloor(sample) {
+        if !hidden, isOnFloor(sample), !isAtFeet(sample) {
             return isRunning ? [endRun(.ground, at: sample.time)] : []
         }
         var (part, side) = classify(sample)
@@ -214,8 +229,15 @@ final class JuggleCounter: DrillCounter {
             consider(.foot, side: side, thickness: 0.05, segment(knee, ankle))
             consider(.thigh, side: side, thickness: 0.08, segment(hip, knee))
         }
+        // Arms only when the hand is raised to mid-chest or higher: hanging arms overlap the thighs front-on,
+        // and a phone on the floor even sees hanging hands a little above the hips (seen on device: thigh
+        // touches ended runs as handballs).
+        let hipY = [pose[.leftHip], pose[.rightHip]].compactMap { $0?.y }.max()
+        let shoulderY = [pose[.leftShoulder], pose[.rightShoulder]].compactMap { $0?.y }.min()
+        let raisedAbove = hipY.map { hip in shoulderY.map { hip + ($0 - hip) / 2 } ?? hip + metres(0.25) }
         for (shoulder, elbow, wrist) in [(BodyJoint.leftShoulder, BodyJoint.leftElbow, BodyJoint.leftWrist),
                                          (.rightShoulder, .rightElbow, .rightWrist)] {
+            if let raisedAbove, let hand = pose[wrist], hand.y < raisedAbove { continue }
             consider(.arm, thickness: 0.05, segment(elbow, wrist))
             consider(.arm, thickness: 0.05, segment(shoulder, elbow))
         }
@@ -245,6 +267,18 @@ final class JuggleCounter: DrillCounter {
     /// Floor height, from the lowest ankle seen recently (the standing foot). Nil without a pose.
     private var floorY: Double? {
         ankleHistory.map(\.y).min().map { $0 - metres(config.ankleHeight) }
+    }
+
+    /// The ball is down: at floor level away from the feet, or at floor level for `groundHold` seconds.
+    private func isGround(_ sample: Sample) -> Bool {
+        guard isOnFloor(sample) else { return false }
+        return !isAtFeet(sample) || sample.time - (floorSince ?? sample.time) >= config.groundHold
+    }
+
+    private func isAtFeet(_ sample: Sample) -> Bool {
+        guard let pose = sample.pose else { return false }
+        let reach = sample.radius + metres(config.footClear)
+        return [pose[.leftAnkle], pose[.rightAnkle]].contains { $0.map { $0.distance(to: sample.center) <= reach } ?? false }
     }
 
     private func isOnFloor(_ sample: Sample) -> Bool {

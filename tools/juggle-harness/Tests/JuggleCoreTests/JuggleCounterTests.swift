@@ -52,18 +52,55 @@ final class JuggleCounterTests: XCTestCase {
         XCTAssertEqual(events.runEnds.map(\.count), [2])
     }
 
-    func testArmTouchEndsTheRunAsHandballWithoutCounting() {
+    func testARaisedHandTouchEndsTheRunAsHandballWithoutCounting() {
+        var raised = S.pose
+        raised.joints[.rightElbow] = S.at(0.39, 0.42)
+        raised.joints[.rightWrist] = S.at(0.40, 0.46)
+        let hand = S.at(0.41, 0.46)
         var b = S.Builder()
+        b.pose = raised
         b.fall(from: S.at(0.37, 0.35), to: S.footContact)
         b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.footContact)
-        b.pop(from: S.footContact, height: 0.25 * S.scale, to: S.wristContact)
-        b.hold(S.wristContact, seconds: 0.5)
+        b.pop(from: S.footContact, height: 0.40 * S.scale, to: hand)
+        b.hold(hand, seconds: 0.5)
 
         let events = S.run(b.frames)
 
         XCTAssertEqual(events.touches.count, 2)
         XCTAssertEqual(events.runEnds.map(\.count), [2])
         XCTAssertEqual(events.runEnds.map(\.reason), [.handball])
+    }
+
+    func testATouchBesideAHangingHandIsNotAHandball() {
+        // Seen on device: front-on, a thigh touch lands right where the hanging hand is.
+        var b = S.Builder()
+        b.fall(from: S.at(0.37, 0.35), to: S.footContact)
+        b.pop(from: S.footContact, height: 0.25 * S.scale, to: S.wristContact)
+        b.pop(from: S.wristContact, height: 0.20 * S.scale, to: S.footContact)
+        b.pop(from: S.footContact, height: 0.20 * S.scale, to: S.groundContact)
+        b.hold(S.groundContact, seconds: 0.6)
+
+        let events = S.run(b.frames)
+
+        XCTAssertFalse(events.runEnds.map(\.reason).contains(.handball), "\(events.runEnds)")
+        XCTAssertEqual(events.runEnds.map(\.count), [3])
+    }
+
+    func testLowTouchesRightAtTheFootAreNotTheGround() {
+        // Seen on device with the phone on the floor: a ball touched just above the floor in front of the feet
+        // sits as low in the frame as the floor itself.
+        let lowFoot = DrillPoint(x: S.at(0.37, 0).x, y: S.groundContact.y + 0.03 * S.unitsPerMetre)
+        let awayOnTheFloor = DrillPoint(x: S.at(0.60, 0).x, y: S.groundContact.y)
+        var b = S.Builder()
+        b.fall(from: S.at(0.37, 0.35), to: lowFoot)
+        for _ in 0..<3 { b.pop(from: lowFoot, height: 0.20 * S.scale, to: lowFoot) }
+        b.pop(from: lowFoot, height: 0.20 * S.scale, to: awayOnTheFloor)
+        b.hold(awayOnTheFloor, seconds: 0.5)
+
+        let events = S.run(b.frames)
+
+        XCTAssertEqual(events.runEnds.map(\.count), [4], "\(events.touches) \(events.runEnds)")
+        XCTAssertEqual(events.runEnds.map(\.reason), [.ground])
     }
 
     func testLosingTheBallAndThePlayerEndsTheRunAfterTheTimeout() {
