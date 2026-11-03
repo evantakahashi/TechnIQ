@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Licences (You → About → Licences)
 //
-// Third-party code and models bundled in the app. The camera drills' ball detector is YOLOX-nano
+// Third-party code and models bundled in the app. The camera drills' ball detector is YOLOX-S
 // (Apache-2.0), which asks for its licence text to ship with the app.
 
 struct LicencesView: View {
@@ -20,7 +20,7 @@ struct LicencesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     TQGroupHeader("YOLOX")
-                    TQBody("The camera drills' ball detector is built on YOLOX-nano by Megvii Inc. "
+                    TQBody("The camera drills' ball detector is built on YOLOX-S by Megvii Inc. "
                         + "(github.com/Megvii-BaseDetection/YOLOX), used under the Apache License 2.0.")
                     Text(Self.apacheLicence)
                         .font(.system(size: 11, design: .monospaced))

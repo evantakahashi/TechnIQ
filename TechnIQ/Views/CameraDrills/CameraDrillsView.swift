@@ -90,10 +90,18 @@ struct CameraDrillsView: View {
         }
         #if DEBUG
         // `-TQCameraFile clip.mov` plays a clip in place of the camera; go straight into Juggling.
+        // `-TQCameraDrill <drill>` opens that drill with the live camera (device debugging).
         .onAppear {
-            guard !autoStarted, VideoFileSource.fromLaunchArguments != nil else { return }
-            autoStarted = true
-            activeDrill = .juggling
+            guard !autoStarted else { return }
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-TQCameraDrill"), args.indices.contains(i + 1),
+               let drill = CameraDrill(rawValue: args[i + 1]) {
+                autoStarted = true
+                activeDrill = drill
+            } else if VideoFileSource.fromLaunchArguments != nil {
+                autoStarted = true
+                activeDrill = .juggling
+            }
         }
         #endif
     }

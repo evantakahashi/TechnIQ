@@ -60,7 +60,7 @@ final class JuggleSpikePipeline: ObservableObject {
                 self.finishRecording()
             } else {
                 do {
-                    self.recorder = try SpikeClipRecorder()
+                    self.recorder = try SpikeClipRecorder(orientation: self.capture.orientation)
                     DispatchQueue.main.async { self.isRecording = true }
                 } catch {
                     DispatchQueue.main.async { self.error = "Recorder: \(error.localizedDescription)" }
@@ -96,7 +96,7 @@ final class JuggleSpikePipeline: ObservableObject {
     private func process(_ sampleBuffer: CMSampleBuffer) {
         recorder?.append(sampleBuffer)
         guard let analyzer else { return }
-        let analysed = analyzer.analyze(sampleBuffer, orientation: CameraCapture.orientation)
+        let analysed = analyzer.analyze(sampleBuffer, orientation: capture.orientation)
         let events = counter.process(analysed)
 
         let now = CACurrentMediaTime()
@@ -145,7 +145,9 @@ final class SpikeClipRecorder {
         return docs.appendingPathComponent("JuggleSpike", isDirectory: true)
     }
 
-    init() throws {
+    /// - Parameter orientation: the capture's buffers' orientation; landscape buffers get a portrait track transform.
+    init(orientation: CGImagePropertyOrientation) throws {
+        let landscape = orientation == .right
         try FileManager.default.createDirectory(at: Self.directory, withIntermediateDirectories: true)
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -153,10 +155,11 @@ final class SpikeClipRecorder {
         writer = try AVAssetWriter(outputURL: url, fileType: .mov)
         input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: 720,
-            AVVideoHeightKey: 1280
+            AVVideoWidthKey: landscape ? 1280 : 720,
+            AVVideoHeightKey: landscape ? 720 : 1280
         ])
         input.expectsMediaDataInRealTime = true
+        if landscape { input.transform = CGAffineTransform(rotationAngle: .pi / 2) }
         writer.add(input)
     }
 

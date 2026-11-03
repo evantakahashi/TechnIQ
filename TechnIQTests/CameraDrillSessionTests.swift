@@ -84,6 +84,13 @@ final class CameraDrillSessionTests: XCTestCase {
 
     // MARK: Tests
 
+    func test_cameraBuffers_areTurnedUprightWhateverShapeTheyArrive() {
+        // Seen on an iPhone 17 Pro: the connection's rotation didn't take, front-camera buffers came in
+        // landscape (1280 × 720) and the player was analysed lying on their side.
+        XCTAssertEqual(CameraCapture.uprightOrientation(width: 1280, height: 720), .right)
+        XCTAssertEqual(CameraCapture.uprightOrientation(width: 720, height: 1280), .up)
+    }
+
     func test_standingInTheOutline_countsDownThenGoesLive() {
         var b = Scene.Builder()
         b.pose = Scene.pose

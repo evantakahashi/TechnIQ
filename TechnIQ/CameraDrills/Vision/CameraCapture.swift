@@ -3,7 +3,7 @@ import CoreML
 
 /// Models bundled with the app.
 enum DrillModels {
-    /// The ball detector (`BallDetector`, label "ball"): YOLOX-nano (Apache-2.0, see LicencesView), today the
+    /// The ball detector (`BallDetector`, label "ball"): YOLOX-S (Apache-2.0, see LicencesView), today the
     /// COCO-pretrained "sports ball" class; replaced by our fine-tuned export from tools/ball-yolox.
     static let yolo: MLModel? = load("BallDetector")
 
@@ -37,12 +37,19 @@ protocol DrillFrameSource: AnyObject {
 final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputSampleBufferDelegate {
     enum CaptureError: Error { case denied, noCamera }
 
-    /// Buffers arrive upright.
-    static let orientation = CGImagePropertyOrientation.up
     /// Width / height of the upright frame (720 × 1280).
     static let aspect = 720.0 / 1280.0
 
-    var orientation: CGImagePropertyOrientation { Self.orientation }
+    /// How to turn this camera's buffers upright: the connection is asked to rotate them, but that
+    /// doesn't always take (seen on an iPhone 17 Pro front camera), so each buffer's shape decides.
+    /// Set on `queue` from the latest buffer; read there by the analyser.
+    private(set) var orientation = CGImagePropertyOrientation.up
+
+    /// Portrait app: a landscape buffer is the sensor's raw landscape, upright after a quarter turn
+    /// clockwise (both cameras; the front camera's buffers are unmirrored).
+    static func uprightOrientation(width: Int, height: Int) -> CGImagePropertyOrientation {
+        width > height ? .right : .up
+    }
     var aspect: Double { Self.aspect }
     var previewSession: AVCaptureSession? { session }
     var isMirrored: Bool { position == .front }
@@ -128,6 +135,9 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        if let pixels = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            orientation = Self.uprightOrientation(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels))
+        }
         onFrame?(sampleBuffer)
     }
 }

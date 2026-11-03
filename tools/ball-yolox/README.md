@@ -1,6 +1,6 @@
 # ball-yolox — train the ball detector on a GPU PC (Windows + WSL2)
 
-YOLOX-nano (Apache-2.0, shippable) fine-tuned on our labelled frames, exported to a Core ML pipeline
+YOLOX (Apache-2.0, shippable) fine-tuned on our labelled frames — the app bundles the COCO-pretrained YOLOX-S today (the nano missed a real ball indoors); fine-tune S (`exps/default/yolox_s.py` settings in `ball_nano.py`: depth 0.33, width 0.50, no depthwise) for the shipping model — exported to a Core ML pipeline
 (`BallDetector.mlpackage`, label `ball`) that `FrameAnalyzer` uses through Vision like any Core ML detector.
 Labels come from the same flow as Create ML: `juggle-harness --labels-out` → `tools/ball-labeler` → `checked.json`.
 
