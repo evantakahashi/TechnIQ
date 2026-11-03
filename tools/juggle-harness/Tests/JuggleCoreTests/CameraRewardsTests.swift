@@ -2,30 +2,55 @@ import XCTest
 @testable import JuggleCore
 
 final class CameraRewardsTests: XCTestCase {
-    func testAnOrdinaryRunEarnsTheBaseReward() {
-        let reward = CameraRewards.reward(count: 12, isPersonalBest: false, beatChallenge: false, rewardedRunsToday: 0)
+    func testASittingUnderAMinuteOfLiveTimeEarnsNothing() {
+        let sitting = CameraSitting()
 
-        XCTAssertEqual(reward, CameraReward(xp: 5, coins: 2, countsTowardCap: true))
+        XCTAssertEqual(sitting.xp(forRunWith: 40, seconds: 59), 0)
     }
 
-    func testRunsUnderThreeTouchesEarnNothing() {
-        let reward = CameraRewards.reward(count: 2, isPersonalBest: false, beatChallenge: false, rewardedRunsToday: 0)
+    func testARunIsPaidTheFormulaOverTheSittingSoFar() {
+        let sitting = CameraSitting()
 
-        XCTAssertEqual(reward, .none)
+        // 2 full minutes + 25 touches → 2 + 2.
+        XCTAssertEqual(sitting.xp(forRunWith: 25, seconds: 130), 4)
     }
 
-    func testTheDailyCapStopsTheBaseRewardButNotAPersonalBest() {
-        let capped = CameraRewards.reward(count: 12, isPersonalBest: false, beatChallenge: false, rewardedRunsToday: 10)
-        let cappedBest = CameraRewards.reward(count: 40, isPersonalBest: true, beatChallenge: false, rewardedRunsToday: 10)
+    func testLaterRunsArePaidOnlyTheIncrease() {
+        let sitting = CameraSitting()
+        sitting.add(touches: 6, seconds: 40, xp: sitting.xp(forRunWith: 6, seconds: 40))   // 0 XP: under a minute
+        let second = sitting.xp(forRunWith: 8, seconds: 30)                                 // 70 s, 14 touches → 1 + 1
 
-        XCTAssertEqual(capped, .none)
-        XCTAssertEqual(cappedBest, CameraReward(xp: 25, coins: 10, countsTowardCap: false))
+        XCTAssertEqual(second, 2)
+        sitting.add(touches: 8, seconds: 30, xp: second)
+        XCTAssertEqual(sitting.xpAwarded, 2)
+        XCTAssertEqual(sitting.touches, 14)
+        XCTAssertEqual(sitting.liveSeconds, 70)
     }
 
-    func testPersonalBestAndChallengeStackOnTheBase() {
-        let reward = CameraRewards.reward(count: 40, isPersonalBest: true, beatChallenge: true, rewardedRunsToday: 3)
+    func testASittingNeverPassesThirty() {
+        let sitting = CameraSitting()
+        var total = 0
+        for _ in 0..<40 {
+            let xp = sitting.xp(forRunWith: 50, seconds: 90)
+            sitting.add(touches: 50, seconds: 90, xp: xp)
+            total += xp
+        }
 
-        XCTAssertEqual(reward, CameraReward(xp: 5 + 25 + 100, coins: 2 + 10 + 50, countsTowardCap: true))
+        XCTAssertEqual(total, 30)
+        XCTAssertEqual(sitting.xp(forRunWith: 500, seconds: 600), 0)
+    }
+
+    func testBadDurationsCountAsZero() {
+        let sitting = CameraSitting()
+
+        XCTAssertEqual(sitting.xp(forRunWith: 10, seconds: -.infinity), 0)
+        XCTAssertEqual(sitting.xp(forRunWith: 10, seconds: .nan), 0)
+    }
+
+    func testFormulaParts() {
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 0, activeSeconds: 59.9), .zero)
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 9, activeSeconds: 60), SessionXPBreakdown(timeXP: 1, touchXP: 0))
+        XCTAssertEqual(XPFormula.session(verifiedTouches: 1_000, activeSeconds: 3_600).total, 30)
     }
 
     func testPersonalBestNeedsThreeTouchesAndToBeatThePrevious() {

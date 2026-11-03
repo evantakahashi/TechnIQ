@@ -1,33 +1,27 @@
 import Foundation
 import CoreData
 
-/// Saves camera-counted runs: personal bests, capped XP/coin rewards, cloud sync.
+/// Saves camera-counted runs: personal bests, sitting-capped XP (`CameraSitting`), cloud sync.
 @MainActor
 final class CameraRunService: ObservableObject {
     static let shared = CameraRunService()
 
     struct Outcome {
         let run: CameraRun
-        let reward: CameraReward
+        let xp: Int
         let isPersonalBest: Bool
         let previousBest: Int?
         let levelUp: Int?
     }
 
     private let context: NSManagedObjectContext
-    private let defaults: UserDefaults
-    private let coins: CoinService
 
     private init() {
         context = CoreDataManager.shared.context
-        defaults = .standard
-        coins = .shared
     }
 
-    init(context: NSManagedObjectContext, defaults: UserDefaults, coins: CoinService) {
+    init(context: NSManagedObjectContext) {
         self.context = context
-        self.defaults = defaults
-        self.coins = coins
     }
 
     /// Best count so far for `drill`, or nil if the player has no runs of it.
@@ -39,16 +33,15 @@ final class CameraRunService: ObservableObject {
         return (try? context.fetch(request))?.first.map { Int($0.count) }
     }
 
-    /// Records a finished run and pays its reward. Runs of 0 touches are not stored.
+    /// Records a finished run and pays its share of the sitting's XP. Runs of 0 touches are not stored.
+    /// `sitting` is the camera session the run belongs to; the default is a sitting of this run alone.
     @discardableResult
-    func record(drill: CameraDrill, count: Int, duration: Double, player: Player, now: Date = Date()) -> Outcome? {
+    func record(drill: CameraDrill, count: Int, duration: Double, player: Player,
+                sitting: CameraSitting = CameraSitting(), now: Date = Date()) -> Outcome? {
         guard count > 0 else { return nil }
         let previousBest = personalBest(for: drill, player: player)
         let isBest = CameraRewards.isPersonalBest(count: count, previousBest: previousBest)
-        let ledgerKey = Self.ledgerKey(player: player, day: now)
-        let rewardedToday = defaults.integer(forKey: ledgerKey)
-        let reward = CameraRewards.reward(count: count, isPersonalBest: isBest, beatChallenge: false,
-                                          rewardedRunsToday: rewardedToday)
+        let xp = sitting.xp(forRunWith: count, seconds: duration)
 
         let run = CameraRun(context: context)
         run.id = UUID()
@@ -56,14 +49,13 @@ final class CameraRunService: ObservableObject {
         run.count = Int32(count)
         run.duration = duration
         run.isPersonalBest = isBest
-        run.xpEarned = Int32(reward.xp)
-        run.coinsEarned = Int32(reward.coins)
+        run.xpEarned = Int32(xp)
         run.createdAt = now
         run.updatedAt = now
         run.player = player
         player.addToCameraRuns(run)
 
-        let levelUp = reward.xp > 0 ? XPService.shared.awardXP(to: player, amount: Int32(reward.xp)) : nil
+        let levelUp = xp > 0 ? XPService.shared.awardXP(to: player, amount: Int32(xp)) : nil
         do {
             try context.save()
         } catch {
@@ -71,18 +63,9 @@ final class CameraRunService: ObservableObject {
             context.rollback()
             return nil
         }
-        if reward.countsTowardCap { defaults.set(rewardedToday + 1, forKey: ledgerKey) }
-        if reward.coins > 0 { coins.awardCoins(reward.coins, for: .cameraRun(coins: reward.coins), context: context) }
-        if let levelUp { coins.awardLevelUpCoins(newLevel: levelUp, context: context) }
+        sitting.add(touches: count, seconds: duration, xp: xp)
 
         Task { @MainActor in try? await CloudService.shared.syncCameraRuns([run], for: player) }
-        return Outcome(run: run, reward: reward, isPersonalBest: isBest, previousBest: previousBest, levelUp: levelUp)
-    }
-
-    private static func ledgerKey(player: Player, day: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "cameraRewards.\(player.id?.uuidString ?? "none").\(formatter.string(from: day))"
+        return Outcome(run: run, xp: xp, isPersonalBest: isBest, previousBest: previousBest, levelUp: levelUp)
     }
 }

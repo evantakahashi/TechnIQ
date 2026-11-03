@@ -157,8 +157,9 @@ class InsightsEngine: InsightsEngineProtocol {
         var insights: [TrainingInsight] = []
         let calendar = Calendar.current
 
-        // Calculate current streak
-        let dates = Array(Set(sessions.compactMap { $0.date }.map { calendar.startOfDay(for: $0) })).sorted()
+        // Calculate current streak: only sessions that pass StreakRule count as training days
+        let dates = Array(Set(sessions.filter(\.countsTowardStreak).compactMap { $0.date }.map { calendar.startOfDay(for: $0) })).sorted()
+        let lastSessionDay = sessions.compactMap { $0.date }.max().map { calendar.startOfDay(for: $0) }
         var currentStreak = 0
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
@@ -190,7 +191,7 @@ class InsightsEngine: InsightsEngineProtocol {
                 priority: 8,
                 actionable: nil
             ))
-        } else if currentStreak == 0 && !sessions.isEmpty, let lastDate = dates.last {
+        } else if currentStreak == 0, let lastDate = lastSessionDay {
             let daysSinceLastSession = calendar.dateComponents([.day], from: lastDate, to: today).day ?? 0
 
             if daysSinceLastSession >= 3 {

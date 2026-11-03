@@ -141,13 +141,10 @@ struct AvatarCustomizationView: View {
 
     private func optionCell(_ option: CustomizationOption) -> some View {
         let isSelected = viewModel.isSelected(option)
-        let isLocked = option.isLocked
 
         return Button {
-            if !isLocked {
-                HapticManager.shared.selectionChanged()
-                viewModel.selectOption(option)
-            }
+            HapticManager.shared.selectionChanged()
+            viewModel.selectOption(option)
         } label: {
             VStack(spacing: 8) {
                 // Cell with preview
@@ -167,18 +164,8 @@ struct AvatarCustomizationView: View {
                     // Option preview
                     optionPreview(option)
 
-                    // Lock overlay
-                    if isLocked {
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.black.opacity(0.6))
-                            .frame(width: 80, height: 80)
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-
                     // Checkmark badge for selected
-                    if isSelected && !isLocked {
+                    if isSelected {
                         VStack {
                             HStack {
                                 Spacer()
@@ -201,7 +188,7 @@ struct AvatarCustomizationView: View {
                 // Label below cell
                 Text(option.name)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isLocked ? DesignSystem.Colors.textTertiary : .white)
+                    .foregroundColor(.white)
                     .lineLimit(1)
             }
         }
@@ -351,8 +338,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: skinTone.rawValue,
                     name: skinTone.displayName,
                     value: skinTone.rawValue,
-                    previewType: .assetImage(skinTone.bodyAssetName),
-                    isLocked: false
+                    previewType: .assetImage(skinTone.bodyAssetName)
                 )
             }
 
@@ -362,8 +348,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: hairStyle.rawValue,
                     name: hairStyle.displayName,
                     value: hairStyle.rawValue,
-                    previewType: .assetImage(hairStyle.assetName(color: currentState.hairColor)),
-                    isLocked: false
+                    previewType: .assetImage(hairStyle.assetName(color: currentState.hairColor))
                 )
             }
 
@@ -373,8 +358,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: hairColor.rawValue,
                     name: hairColor.displayName,
                     value: hairColor.rawValue,
-                    previewType: .color(hairColor.color),
-                    isLocked: false
+                    previewType: .color(hairColor.color)
                 )
             }
 
@@ -384,8 +368,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: face.rawValue,
                     name: face.displayName,
                     value: face.rawValue,
-                    previewType: .assetImage(face.assetName),
-                    isLocked: false
+                    previewType: .assetImage(face.assetName)
                 )
             }
 
@@ -395,8 +378,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: jersey.rawValue,
                     name: jersey.displayName,
                     value: jersey.rawValue,
-                    previewType: .assetImage(jersey.assetName),
-                    isLocked: !jersey.isStarter && !avatarService.ownsItem(jersey.rawValue)
+                    previewType: .assetImage(jersey.assetName)
                 )
             }
 
@@ -406,8 +388,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: shorts.rawValue,
                     name: shorts.displayName,
                     value: shorts.rawValue,
-                    previewType: .assetImage(shorts.assetName),
-                    isLocked: !shorts.isStarter && !avatarService.ownsItem(shorts.rawValue)
+                    previewType: .assetImage(shorts.assetName)
                 )
             }
 
@@ -417,8 +398,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: socks.rawValue,
                     name: socks.displayName,
                     value: socks.rawValue,
-                    previewType: .assetImage(socks.assetName),
-                    isLocked: !socks.isStarter && !avatarService.ownsItem(socks.rawValue)
+                    previewType: .assetImage(socks.assetName)
                 )
             }
 
@@ -428,8 +408,7 @@ final class AvatarCustomizationViewModel: ObservableObject {
                     id: cleats.rawValue,
                     name: cleats.displayName,
                     value: cleats.rawValue,
-                    previewType: .assetImage(cleats.assetName),
-                    isLocked: !cleats.isStarter && !avatarService.ownsItem(cleats.rawValue)
+                    previewType: .assetImage(cleats.assetName)
                 )
             }
         }
@@ -482,7 +461,6 @@ struct CustomizationOption: Identifiable {
     let name: String
     let value: String
     let previewType: PreviewType
-    let isLocked: Bool
 
     enum PreviewType {
         case color(Color)

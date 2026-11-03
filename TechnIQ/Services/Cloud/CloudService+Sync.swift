@@ -141,9 +141,6 @@ extension CloudService {
         if let avatar = player.avatarConfiguration {
             try await syncAvatarConfiguration(avatar, for: player)
         }
-        if let ownedItems = player.ownedAvatarItems?.allObjects as? [OwnedAvatarItem], !ownedItems.isEmpty {
-            try await syncOwnedAvatarItems(ownedItems, for: player)
-        }
     }
 
     // MARK: - Custom Exercises Sync

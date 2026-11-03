@@ -56,7 +56,6 @@ struct DesignSystem {
         static let streakOrange = accentLime
         static let xpGold = accentLime
         static let levelPurple = accentLime
-        static let coinGold = accentLime
 
         // Semantic
         static let success = accentLime
@@ -78,16 +77,9 @@ struct DesignSystem {
         static let darkModeBackground = surfaceBase
         static let cellBackground = surfaceOverlay      // one step above cardBackground so cells inside cards stay visible
 
-        // Kit colours for avatar items and shop swatches — literal hues, independent of the UI accent.
+        // Kit colours for avatar items — literal hues, independent of the UI accent.
         static let kitBlue = Color(hex: 0x2F6BFF)
         static let kitGold = Color(hex: 0xE5B93C)
-
-        // Preserved: rarity system (players recognize these)
-        static let rarityCommon = Color(red: 0.62, green: 0.62, blue: 0.62)
-        static let rarityUncommon = Color(red: 0.3, green: 0.69, blue: 0.31)
-        static let rarityRare = Color(red: 0.13, green: 0.59, blue: 0.95)
-        static let rarityEpic = Color(red: 0.61, green: 0.15, blue: 0.69)
-        static let rarityLegendary = Color(red: 1.0, green: 0.76, blue: 0.03)
 
         // Legacy neutrals (aliases to chalk tones / surfaces)
         static let neutral100 = chalkWhite

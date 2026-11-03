@@ -18,7 +18,6 @@ extension CameraRun {
     /// Local highlight clip (Documents-relative), when one was kept.
     @NSManaged public var clipPath: String?
     @NSManaged public var xpEarned: Int32
-    @NSManaged public var coinsEarned: Int32
     @NSManaged public var createdAt: Date?
     @NSManaged public var updatedAt: Date?
     @NSManaged public var player: Player?

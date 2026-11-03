@@ -417,9 +417,6 @@ struct MatchDetailView: View {
                         if let notes = match.notes, !notes.isEmpty {
                             notesCard(notes: notes)
                         }
-
-                        // XP Card
-                        xpCard
                     }
                     .padding(.horizontal, DesignSystem.Spacing.screenPadding)
                     .padding(.top, DesignSystem.Spacing.md)
@@ -567,22 +564,6 @@ struct MatchDetailView: View {
                 Text(notes)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-        }
-    }
-
-    private var xpCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            HStack {
-                Image(systemName: "star.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(DesignSystem.Colors.accentYellow)
-
-                Text("+\(match.xpEarned) XP Earned")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Spacer()
             }
         }
     }

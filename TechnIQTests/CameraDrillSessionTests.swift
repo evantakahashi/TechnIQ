@@ -22,24 +22,19 @@ final class CameraDrillSessionTests: XCTestCase {
     }
 
     private var stack: TestCoreDataStack!
-    private var defaults: UserDefaults!
     private var player: Player!
     private var sut: CameraDrillSession!
 
     override func setUp() {
         super.setUp()
         stack = TestCoreDataStack()
-        defaults = UserDefaults(suiteName: "CameraDrillSessionTests")
-        defaults.removePersistentDomain(forName: "CameraDrillSessionTests")
-        player = stack.makePlayer(xp: 0, coins: 0)
-        let service = CameraRunService(context: stack.context, defaults: defaults,
-                                       coins: CoinService(coreDataManager: stack))
+        player = stack.makePlayer(xp: 0)
+        let service = CameraRunService(context: stack.context)
         sut = CameraDrillSession(drill: .juggling, player: player, source: NoSource(), runService: service)
         sut.voiceOn = false
     }
 
     override func tearDown() {
-        defaults.removePersistentDomain(forName: "CameraDrillSessionTests")
         sut = nil
         player = nil
         stack = nil
@@ -132,11 +127,11 @@ final class CameraDrillSessionTests: XCTestCase {
         XCTAssertEqual(sut.phase, .result)
         XCTAssertEqual(sut.lastResult?.count, 6)
         XCTAssertEqual(sut.lastResult?.isPersonalBest, true)
-        XCTAssertEqual(sut.lastResult?.xp, 30)
+        XCTAssertEqual(sut.lastResult?.xp, 0, "a few seconds of live time is under the one-minute XP floor")
         let runs = try savedRuns()
         XCTAssertEqual(runs.map(\.count), [6])
         XCTAssertEqual(runs.first?.drill, CameraDrill.juggling.rawValue)
-        XCTAssertEqual(player.totalXP, 30)
+        XCTAssertEqual(player.totalXP, 0)
     }
 
     func test_touchesDuringTheCountdown_dontCount() throws {

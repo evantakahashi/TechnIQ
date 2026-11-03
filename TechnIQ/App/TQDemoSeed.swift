@@ -6,7 +6,7 @@ import SwiftUI
 // MARK: - TQDemoSeed
 //
 // Debug-only fixture so the Touchline screens can be compared against the handoff mocks on a
-// simulator. Launch with `-TQSeedDemo`: gives the current player kit #9, a 5-day streak, 2,450 XP,
+// simulator. Launch with `-TQSeedDemo`: gives the current player kit #9, a 5-day streak, 450 XP (level 7),
 // an active 8-week "Striker Development" schedule with two weeks done, completed sessions earlier
 // this week, and a logged win. Idempotent per launch; never compiled into release builds.
 
@@ -49,7 +49,7 @@ enum TQDemoSeed {
         player.kitNumber = 9
         player.currentStreak = 5
         player.longestStreak = max(player.longestStreak, 5)
-        player.totalXP = max(player.totalXP, 2450)
+        player.totalXP = max(player.totalXP, 450)
         player.currentLevel = Int16(XPService.shared.levelForXP(player.totalXP))
         if player.position == nil || player.position?.isEmpty == true { player.position = "Forward" }
         if player.dominantFoot == nil { player.dominantFoot = "Right" }
@@ -226,10 +226,12 @@ enum TQDemoSeed {
             session.player = player
             session.date = calendar.date(byAdding: .hour, value: 17, to: date)
             session.duration = 42
+            session.activeSeconds = 42 * 60
             session.intensity = 3
             session.overallRating = 4
             session.sessionType = "Training"
-            session.xpEarned = 180
+            session.xpEarned = 20
+            session.feel = SessionFeel.right.rawValue
         }
     }
 

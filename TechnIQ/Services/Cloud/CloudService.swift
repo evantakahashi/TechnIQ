@@ -143,7 +143,6 @@ struct CloudUserData {
     let trainingSessions: [[String: Any]]
     let recommendationFeedback: [[String: Any]]
     let avatarConfiguration: [String: Any]?
-    let ownedAvatarItems: [[String: Any]]
     let customExercises: [[String: Any]]
     let trainingPlans: [[String: Any]]
     let playerStats: [[String: Any]]

@@ -55,15 +55,22 @@ struct SessionDetailView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                     
-                    HStack(spacing: 2) {
-                        ForEach(0..<5, id: \.self) { index in
-                            Image(systemName: index < session.overallRating ? "star.fill" : "star")
-                                .font(.subheadline)
-                                .foregroundColor(.yellow)
+                    if let feel = SessionFeel(raw: session.feel) {
+                        Text(feel.label)
+                            .font(.subheadline)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .accessibilityLabel("Felt \(feel.label.lowercased())")
+                    } else {
+                        HStack(spacing: 2) {
+                            ForEach(0..<5, id: \.self) { index in
+                                Image(systemName: index < session.overallRating ? "star.fill" : "star")
+                                    .font(.subheadline)
+                                    .foregroundColor(.yellow)
+                            }
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Rating: \(session.overallRating) out of 5")
                     }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Rating: \(session.overallRating) out of 5")
                 }
             }
             

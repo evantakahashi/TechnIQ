@@ -11,9 +11,10 @@ struct SessionRecapItem: Identifiable {
 // MARK: - Session complete (Touchline 6a)
 //
 // Pitch header (radius 28 bottom) with "FULL TIME", headline, summary line and a stat rail
-// (+XP, streak, +coins). Level bar animates from before to after over 0.8 s; a level-up completes
-// the bar and adds one row. Drill recap rows, "How did it feel?" writes the session rating, Done
-// and Share. No confetti, no modals.
+// (+XP, streak). Level bar animates from before to after over 0.8 s, with the XP parts under it; a
+// level-up completes the bar and adds one row. Drill recap rows, then "How did it feel?" (Too easy /
+// Right / Too hard, no default): Done stays disabled until the player picks one, and there is no
+// close button to skip it. The answer is saved on the session. Share. No confetti, no modals.
 
 struct SessionCompleteView: View {
     let xpBreakdown: SessionXPBreakdown?
@@ -24,7 +25,8 @@ struct SessionCompleteView: View {
 
     var exercises: [Exercise] = []
     var sessionDurationMinutes: Int = 0
-    var sessionRating: Int? = nil
+    /// False when the session was under five active minutes (`StreakRule`): the summary says so.
+    var countsTowardStreak: Bool = true
 
     // Touchline
     /// Completed drills. nil = not supplied (legacy callers): every exercise is listed.
@@ -33,17 +35,21 @@ struct SessionCompleteView: View {
     var xpBefore: Int64? = nil
     var levelBefore: Int? = nil
     var weekSummary: String? = nil
-    var onEffort: ((SessionEffort) -> Void)? = nil
+    var onFeel: ((SessionFeel) -> Void)? = nil
 
-    @State private var effortIndex: Int = 2   // Easy · OK · Good · Hard → Good
-    @State private var coinsEarned = 0
-    @State private var didAwardCoins = false
+    /// Index into `feels`; nil until the player answers.
+    @State private var feelIndex: Int?
     @State private var showingWeeklyCheckIn = false
     @State private var showingShareSheet = false
     @ObservedObject private var aiCoachService = AICoachService.shared
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
-    private let efforts = SessionEffort.allCases
+    private let feels = SessionFeel.allCases
+
+    private var feel: SessionFeel? {
+        guard let feelIndex, feelIndex < feels.count else { return nil }
+        return feels[feelIndex]
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -70,10 +76,12 @@ struct SessionCompleteView: View {
 
                     Spacer(minLength: 28)
 
-                    effortSection
+                    feelSection
 
                     HStack(spacing: 10) {
                         TQButton("Done") { onDismiss() }
+                            .disabled(feel == nil)
+                            .accessibilityHint(feel == nil ? "Choose how it felt first" : "")
                         TQIconButton("square.and.arrow.up", style: .raised, shape: .square, size: 54, iconSize: 18, accessibilityLabel: "Share to community") {
                             showingShareSheet = true
                         }
@@ -90,16 +98,11 @@ struct SessionCompleteView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             HapticManager.shared.sessionComplete()
-            awardCoinsIfNeeded()
-            if let rating = sessionRating, let index = efforts.firstIndex(of: SessionEffort.from(rating: rating)) {
-                effortIndex = index
-            }
             if newLevel != nil { HapticManager.shared.levelUp() }
             if !achievements.isEmpty { HapticManager.shared.achievementUnlocked() }
         }
-        .onChange(of: effortIndex) { _, index in
-            guard index < efforts.count else { return }
-            onEffort?(efforts[index])
+        .onChange(of: feelIndex) { _, _ in
+            if let feel { onFeel?(feel) }
         }
         .task {
             NotificationManager.shared.refresh(for: player)
@@ -112,7 +115,7 @@ struct SessionCompleteView: View {
                 shareType: .session(
                     duration: sessionDurationMinutes,
                     exerciseCount: completedCount,
-                    rating: Double(efforts[min(effortIndex, efforts.count - 1)].rating),
+                    rating: Double(feel?.rating ?? SessionFeel.right.rating),
                     xp: Int(xpBreakdown?.total ?? 0)
                 ),
                 player: player,
@@ -125,11 +128,8 @@ struct SessionCompleteView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Spacer()
-                TQIconButton("xmark", style: .translucent, shape: .circle, size: 36, iconSize: 13, accessibilityLabel: "Close") { onDismiss() }
-            }
-            .padding(.top, 4)
+            // No close button: the session ends through Done, after "How did it feel?".
+            Color.clear.frame(height: 40)
 
             VStack(alignment: .leading, spacing: 10) {
                 TQEyebrow("Full time · \(dateLine)")
@@ -162,6 +162,7 @@ struct SessionCompleteView: View {
         if let focus = dominantSkill { parts.append("\(focus.lowercased()) work done") }
         var line = parts.joined(separator: " · ") + "."
         if let weekSummary { line += " " + weekSummary }
+        if !countsTowardStreak { line += " Five active minutes count toward the streak." }
         return line
     }
 
@@ -174,12 +175,18 @@ struct SessionCompleteView: View {
     }
 
     private var statItems: [TQStatRail.Item] {
-        var items: [TQStatRail.Item] = [
+        [
             .init("+\(xpBreakdown?.total ?? 0)", label: "xp", accent: true),
-            .init("\(player.currentStreak)", label: player.currentStreak == 1 ? "day streak" : "day streak")
+            .init("\(player.currentStreak)", label: "day streak")
         ]
-        if coinsEarned > 0 { items.append(.init("+\(coinsEarned)", label: "coins")) }
-        return items
+    }
+
+    /// The parts of `XPFormula`: "Time +12 · Touches +3".
+    private var xpPartsLine: String {
+        guard let xpBreakdown, xpBreakdown.total > 0 else { return "Train a minute or more to earn xp" }
+        var parts = ["Time +\(xpBreakdown.timeXP)"]
+        if xpBreakdown.touchXP > 0 { parts.append("Touches +\(xpBreakdown.touchXP)") }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Level
@@ -205,6 +212,8 @@ struct SessionCompleteView: View {
                 detail: "\(inLevel.formatted()) / \(span.formatted()) · ",
                 detailAccent: level >= 50 ? "max level" : "\(toNext.formatted()) to lvl \(level + 1)"
             )
+            TQMeta(xpPartsLine, size: 13)
+                .padding(.top, 10)
             if let newLevel {
                 TQRowList(topRule: true) {
                     TQRow("Level \(newLevel) · \(XPService.shared.tierForLevel(newLevel)?.title ?? "")",
@@ -258,7 +267,7 @@ struct SessionCompleteView: View {
                     TQRow(achievement.name,
                           subtitle: achievement.description,
                           leading: .tile(TQTile("ACH")),
-                          meta: .init("+\(achievement.xpReward) XP", size: 14),
+                          badge: TQBadge(.status("Unlocked")),
                           accessory: .none,
                           verticalPadding: DesignSystem.Spacing.rowVertical)
                 }
@@ -279,37 +288,17 @@ struct SessionCompleteView: View {
         }
     }
 
-    // MARK: - Effort
+    // MARK: - Feel
 
-    private var effortSection: some View {
+    private var feelSection: some View {
         VStack(spacing: 10) {
             Text("How did it feel?")
                 .font(DesignSystem.Typography.bodySmallStrong)
                 .foregroundColor(DesignSystem.Colors.dimIvory)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 4)
-            TQSegment(options: efforts.map(\.label), selectedIndex: $effortIndex, style: .detached)
+            TQSegment(options: feels.map(\.label), selection: $feelIndex, style: .detached)
         }
     }
 
-    // MARK: - Coins
-
-    private func awardCoinsIfNeeded() {
-        guard !didAwardCoins else { return }
-        didAwardCoins = true
-
-        var total = CoinService.shared.awardSessionCoins(
-            duration: sessionDurationMinutes,
-            isFirstOfDay: (xpBreakdown?.firstSessionBonus ?? 0) > 0,
-            rating: sessionRating,
-            streakDay: Int(player.currentStreak)
-        )
-        if let level = newLevel {
-            total += CoinService.shared.awardLevelUpCoins(newLevel: level)
-        }
-        for achievement in achievements {
-            total += CoinService.shared.awardAchievementCoins(xpReward: Int(achievement.xpReward))
-        }
-        coinsEarned = total
-    }
 }

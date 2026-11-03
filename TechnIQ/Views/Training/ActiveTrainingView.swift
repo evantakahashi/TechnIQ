@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Active session (Touchline 5c)
 //
 // The pitch goes full screen. Top: close, "DRILL n OF m", menu; 3 pt progress segments. Eyebrow +
-// drill name; 128 pt clock centred; reps and effort as numberLarge at the bottom; coach tip strip on
+// drill name; 128 pt clock centred; reps (numberLarge) and up next at the bottom; coach tip strip on
 // a 35 % base overlay; controls row: pause 64, "+10 reps" grass, next. No per-drill rating step —
 // Session Complete asks once how it felt.
 
@@ -103,7 +103,7 @@ struct ActiveTrainingView: View {
                 if clockWasRunningBeforeEndPrompt { manager.startClock() }
             }
         } message: {
-            Text("Drills you finished are saved with pro-rated XP.")
+            Text("Drills you finished are saved. XP counts your active time.")
         }
         .sheet(isPresented: $showingDrillSheet, onDismiss: { manager.startClock() }) {
             if let exercise = manager.currentExercise {
@@ -216,15 +216,16 @@ struct ActiveTrainingView: View {
                 TQEyebrow("reps", tone: .onPitch)
             }
             .accessibilityElement(children: .combine)
-            Spacer()
+            Spacer(minLength: 16)
             VStack(alignment: .trailing, spacing: 6) {
-                Text("Z\(manager.currentEffortZone)")
-                    .font(Font.system(size: 44, weight: .semibold).width(.condensed).monospacedDigit().leading(.tight))
+                Text(manager.upNextExercise?.name ?? "Full time")
+                    .font(Font.system(size: 20, weight: .semibold).width(.condensed))
                     .foregroundColor(DesignSystem.Colors.chalkWhite)
-                TQEyebrow("effort", tone: .onPitch)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                TQEyebrow("up next", tone: .onPitch)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Effort zone \(manager.currentEffortZone)")
         }
     }
 
@@ -288,7 +289,7 @@ struct ActiveTrainingView: View {
                 TQHeroCard(
                     eyebrow: "Ended early",
                     title: "Nothing saved",
-                    body: "Finish at least one drill and the session counts toward your streak and XP.",
+                    body: "Finish at least one drill to save the session.",
                     actionTitle: "Done",
                     actionIcon: nil,
                     markings: .heroSimple,
@@ -322,13 +323,13 @@ struct ActiveTrainingView: View {
                     onDismiss: { dismiss() },
                     exercises: manager.exercises,
                     sessionDurationMinutes: manager.totalMinutes,
-                    sessionRating: SessionEffort.good.rating,
+                    countsTowardStreak: manager.completedSession?.countsTowardStreak ?? true,
                     recap: recapItems,
                     xpBefore: xpBeforeSession,
                     levelBefore: levelBeforeSession,
                     weekSummary: weekSummary(for: player),
-                    onEffort: { effort in
-                        manager.applyEffort(effort, to: manager.completedSession, player: player, context: viewContext)
+                    onFeel: { feel in
+                        manager.applyFeel(feel, to: manager.completedSession, player: player, context: viewContext)
                     }
                 )
             }

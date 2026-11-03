@@ -23,7 +23,7 @@ TRACK EVERYTHING
 • Smart insights that spot your weaknesses and recommend what to work on next
 
 STAY MOTIVATED
-• 30 achievements, coin economy, and a customizable avatar
+• 30 achievement badges and a customizable avatar
 • Community: share drills, post progress, learn from other players
 • Curated YouTube drill videos matched to your training needs
 

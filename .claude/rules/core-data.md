@@ -16,7 +16,7 @@ paths:
 ## Entity Hierarchy
 ```
 Player (root) → exercises, sessions, trainingPlans, avatarConfiguration,
-  ownedAvatarItems, stats, playerProfile, playerGoals, matches, seasons,
+  stats, playerProfile, playerGoals, matches, seasons,
   recommendationFeedback, cameraRuns, benchmarks
 Independent: CloudSyncStatus, MLRecommendation
 ```

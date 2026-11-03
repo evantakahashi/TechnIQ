@@ -61,8 +61,8 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         match.player = player
         match.season = season
 
-        // Calculate XP using clamped values
-        match.xpEarned = calculateMatchXP(goals: match.goals, assists: match.assists, minutesPlayed: match.minutesPlayed, result: result)
+        // Matches pay no XP: XP comes from training only. `xpEarned` stays 0 on new matches.
+        match.xpEarned = 0
 
         saveContext()
         // Push immediately so a match logged just before quitting still reaches the cloud (the
@@ -280,28 +280,6 @@ final class MatchService: ObservableObject, MatchServiceProtocol {
         let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) ?? endDate
         let matches = fetchMatches(for: player, from: startDate, to: endDate)
         return calculateStats(for: matches)
-    }
-
-    // MARK: - XP Calculation
-
-    /// Calculates XP earned for a match
-    private func calculateMatchXP(goals: Int16, assists: Int16, minutesPlayed: Int16, result: String?) -> Int32 {
-        var xp: Int32 = 50 // Base XP for logging a match
-
-        xp += Int32(goals) * 20  // 20 XP per goal
-        xp += Int32(assists) * 15 // 15 XP per assist
-
-        if minutesPlayed >= 90 {
-            xp += 25 // Bonus for playing full match
-        }
-
-        if result == "W" {
-            xp += 30 // Bonus for a win
-        } else if result == "D" {
-            xp += 10 // Small bonus for a draw
-        }
-
-        return xp
     }
 
     // MARK: - Private Helpers

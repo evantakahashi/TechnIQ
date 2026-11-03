@@ -348,16 +348,23 @@ struct SessionHistoryRow: View {
                         .fontWeight(.semibold)
                         .foregroundColor(DesignSystem.Colors.textPrimary)
 
-                    // Star rating
-                    HStack(spacing: 2) {
-                        ForEach(0..<5, id: \.self) { index in
-                            Image(systemName: index < session.overallRating ? "star.fill" : "star")
-                                .font(.system(size: 10))
-                                .foregroundColor(index < session.overallRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400)
+                    // How it felt (sessions before the feel question show the old star rating)
+                    if let feel = SessionFeel(raw: session.feel) {
+                        Text(feel.label)
+                            .font(DesignSystem.Typography.labelSmall)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .accessibilityLabel("Felt \(feel.label.lowercased())")
+                    } else {
+                        HStack(spacing: 2) {
+                            ForEach(0..<5, id: \.self) { index in
+                                Image(systemName: index < session.overallRating ? "star.fill" : "star")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(index < session.overallRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400)
+                            }
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Rating: \(session.overallRating) out of 5")
                     }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Rating: \(session.overallRating) out of 5")
 
                     // Intensity bars
                     IntensityBars(level: Int(session.intensity))

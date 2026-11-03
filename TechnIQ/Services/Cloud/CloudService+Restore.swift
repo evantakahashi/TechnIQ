@@ -69,11 +69,6 @@ extension CloudService {
                 try restoreAvatarConfiguration(from: avatarData, for: player, in: context)
             }
 
-            restoreProgress = 0.55
-            for itemData in cloudData.ownedAvatarItems {
-                try restoreOwnedAvatarItem(from: itemData, for: player, in: context)
-            }
-
             restoreProgress = 0.6
             for goalData in cloudData.playerGoals where docBelongs(goalData, to: restoredPlayerId) {
                 try restorePlayerGoal(from: goalData, for: player, in: context)
@@ -197,8 +192,6 @@ extension CloudService {
         player.currentLevel = Self.int16Value(from: data["currentLevel"], default: 1)
         player.currentStreak = Self.int16Value(from: data["currentStreak"])
         player.longestStreak = Self.int16Value(from: data["longestStreak"])
-        player.coins = Int64(data["coins"] as? Int ?? 0)
-        player.totalCoinsEarned = Int64(data["totalCoinsEarned"] as? Int ?? 0)
         player.streakFreezes = Self.int16Value(from: data["streakFreezes"])
         player.unlockedAchievements = data["unlockedAchievements"] as? [String]
 
@@ -222,16 +215,6 @@ extension CloudService {
         avatar.lastModified = (data["lastModified"] as? Timestamp)?.dateValue() ?? Date()
         avatar.player = player
         player.avatarConfiguration = avatar
-    }
-
-    private func restoreOwnedAvatarItem(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
-        let item = OwnedAvatarItem(context: context)
-        item.id = UUID(uuidString: data["id"] as? String ?? "") ?? UUID()
-        item.itemId = data["itemId"] as? String
-        item.purchasedAt = (data["purchasedAt"] as? Timestamp)?.dateValue() ?? Date()
-        item.equippedSlot = data["equippedSlot"] as? String
-        item.player = player
-        player.addToOwnedAvatarItems(item)
     }
 
     private func restorePlayerGoal(from data: [String: Any], for player: Player, in context: NSManagedObjectContext) throws {
@@ -333,7 +316,6 @@ extension CloudService {
         let challengeId = data["challengeId"] as? String ?? ""
         run.challengeId = challengeId.isEmpty ? nil : challengeId
         run.xpEarned = Self.int32Value(from: data["xpEarned"])
-        run.coinsEarned = Self.int32Value(from: data["coinsEarned"])
         run.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? Date()
         run.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? (data["updatedAt"] as? Date) ?? run.createdAt
         run.player = player
@@ -580,16 +562,6 @@ extension CloudService {
         let cloudXP = Int64(cloudData["totalXP"] as? Int ?? 0)
         if cloudXP > local.totalXP {
             local.totalXP = cloudXP
-        }
-
-        let cloudCoins = Int64(cloudData["coins"] as? Int ?? 0)
-        if cloudCoins > local.coins {
-            local.coins = cloudCoins
-        }
-
-        let cloudTotalCoins = Int64(cloudData["totalCoinsEarned"] as? Int ?? 0)
-        if cloudTotalCoins > local.totalCoinsEarned {
-            local.totalCoinsEarned = cloudTotalCoins
         }
 
         local.currentLevel = Int16(XPService.shared.levelForXP(local.totalXP))

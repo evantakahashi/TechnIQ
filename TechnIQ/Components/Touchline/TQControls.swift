@@ -4,28 +4,36 @@ import SwiftUI
 //
 // Raised track (r6, 3 pt inset); selected option is a chalk fill (r4, 36 pt) with base text.
 // `.detached` renders the options as separate 40 pt chips with a 6 pt gap (Session complete
-// "How did it feel?").
+// "How did it feel?"). The optional-selection initializer starts with nothing highlighted.
 
 struct TQSegment: View {
     enum Style { case track, detached }
 
     let options: [String]
-    @Binding var selectedIndex: Int
+    @Binding var selection: Int?
     var style: Style = .track
 
     init(options: [String], selectedIndex: Binding<Int>, style: Style = .track) {
         self.options = options
-        self._selectedIndex = selectedIndex
+        self._selection = Binding(get: { selectedIndex.wrappedValue },
+                                  set: { if let index = $0 { selectedIndex.wrappedValue = index } })
+        self.style = style
+    }
+
+    /// No option is highlighted while `selection` is nil (e.g. a required answer with no default).
+    init(options: [String], selection: Binding<Int?>, style: Style = .track) {
+        self.options = options
+        self._selection = selection
         self.style = style
     }
 
     var body: some View {
         HStack(spacing: style == .track ? 0 : 6) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
-                let isSelected = index == selectedIndex
+                let isSelected = index == selection
                 Button {
                     HapticManager.shared.selectionChanged()
-                    withAnimation(DesignSystem.Animation.quick) { selectedIndex = index }
+                    withAnimation(DesignSystem.Animation.quick) { selection = index }
                 } label: {
                     segmentLabel(option, isSelected: isSelected)
                 }
@@ -362,7 +370,7 @@ struct TQProgressBar: View {
 #Preview("Controls") {
     VStack(alignment: .leading, spacing: 16) {
         TQSegment(options: ["Feed", "Drills", "Leaderboard"], selectedIndex: .constant(1))
-        TQSegment(options: ["Easy", "OK", "Good", "Hard"], selectedIndex: .constant(2), style: .detached)
+        TQSegment(options: ["Too easy", "Right", "Too hard"], selection: .constant(nil), style: .detached)
         TQChipRow {
             TQChip("All", isSelected: true) {}
             TQChip("Saved") {}

@@ -87,7 +87,7 @@ final class MatchServiceTests: XCTestCase {
         XCTAssertEqual(match.rating, 5)
     }
 
-    func test_createMatch_calculatesXP() {
+    func test_createMatch_awardsNoXP() {
         let player = stack.makePlayer()
         let match = sut.createMatch(
             for: player, date: Date(), opponent: nil,
@@ -95,8 +95,9 @@ final class MatchServiceTests: XCTestCase {
             goals: 2, assists: 1, positionPlayed: nil,
             isHomeGame: true, result: "W", notes: nil, rating: 3
         )
-        // base(50) + goals(40) + assists(15) + fullMatch(25) + win(30) = 160
-        XCTAssertEqual(match.xpEarned, 160)
+        // XP comes from training only: logging a match pays nothing.
+        XCTAssertEqual(match.xpEarned, 0)
+        XCTAssertEqual(player.totalXP, 0)
     }
 
     // MARK: - Season Comparison

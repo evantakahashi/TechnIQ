@@ -1,0 +1,1 @@
+../../../../TechnIQ/Models/XPModels.swift
