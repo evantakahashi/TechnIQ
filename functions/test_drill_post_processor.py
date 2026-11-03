@@ -573,3 +573,15 @@ def test_short_pass_becomes_layoff():
     repair_short_passes(d)
     q = d["diagram"]["paths"][0]
     assert q["style"] == "receive" and q["from"] == "P2" and q["to"] == "P1"
+
+
+def test_self_toss_is_not_turned_into_a_layoff():
+    """A self-toss (juggling, volley setup) goes up; it has zero ground length by design."""
+    from drill_post_processor import repair_short_passes
+    d = {"diagram": {"elements": [
+        {"type": "player", "x": 5, "y": 5, "label": "P1"},
+    ], "paths": [{"from": "P1", "to": "P1", "style": "toss", "step": 1,
+                  "fx": 5, "fy": 5, "tx": 5, "ty": 5}]}}
+    repair_short_passes(d)
+    q = d["diagram"]["paths"][0]
+    assert q["style"] == "toss" and q["from"] == "P1" and q["to"] == "P1"
