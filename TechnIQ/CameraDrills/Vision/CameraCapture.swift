@@ -31,7 +31,7 @@ protocol DrillFrameSource: AnyObject {
     func stop()
 }
 
-/// Front camera (the player watches the screen) at 720p / 30 fps, delivering sample buffers on a private
+/// Front camera (the player watches the screen) at 720p / 60 fps (30 where it can't), delivering sample buffers on a private
 /// queue. The connection rotates buffers upright (portrait) and leaves them unmirrored, so body sides
 /// are real; only the preview is a mirror image.
 final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -115,13 +115,31 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
             self?.queue.async { self?.applyRotation(angle) }
         }
 
-        // Lock 30 fps so the counter's timing and the gate's numbers are comparable.
+        // 60 fps where the camera can (twice the looks at the ball around each touch, half the blur), else
+        // 30. Late frames are dropped, so a slower phone just analyses fewer; the counters run on timestamps.
         if (try? camera.lockForConfiguration()) != nil {
-            camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 30)
-            camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)
+            let rate: Int32
+            if let format = Self.format(for: camera, fps: 60) {
+                camera.activeFormat = format
+                rate = 60
+            } else {
+                rate = 30
+            }
+            camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: rate)
+            camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: rate)
             camera.unlockForConfiguration()
         }
         return true
+    }
+
+    /// A 1280 × 720 full-range 4:2:0 format that runs at `fps`.
+    private static func format(for camera: AVCaptureDevice, fps: Double) -> AVCaptureDevice.Format? {
+        camera.formats.first { format in
+            let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return size.width == 1280 && size.height == 720
+                && CMFormatDescriptionGetMediaSubType(format.formatDescription) == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+                && format.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= fps }
+        }
     }
 
     /// Portrait angles only (90 / 270): the frame is always 720 × 1280. A phone lying flat reports

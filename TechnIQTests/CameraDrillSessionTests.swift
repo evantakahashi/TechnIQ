@@ -94,13 +94,13 @@ final class CameraDrillSessionTests: XCTestCase {
     func test_standingInTheOutline_countsDownThenGoesLive() {
         var b = Scene.Builder()
         b.pose = Scene.pose
-        b.hold(Scene.at(0.37, 0.35), seconds: 1.5)
+        b.hold(Scene.at(0.37, 0.35), seconds: 0.8)  // 0.5 s hold, then "3"
         feed(b.frames)
         XCTAssertEqual(sut.phase, .countdown(3))
 
         b = Scene.Builder()
-        b.time = 1.5
-        b.hold(Scene.at(0.37, 0.35), seconds: 3.0)
+        b.time = 0.8
+        b.hold(Scene.at(0.37, 0.35), seconds: 2.0)
         feed(b.frames)
         XCTAssertEqual(sut.phase, .live)
     }
@@ -116,10 +116,10 @@ final class CameraDrillSessionTests: XCTestCase {
     }
 
     func test_standingTooFarAway_asksThePlayerToStepCloser() {
-        // The old 4 m setup: whole body in frame but small.
+        // ~5 m away: whole body in frame but small (nose to ankle about a third of the frame).
         var far = BodyPose(joints: [:])
         for (joint, p) in Scene.pose.joints {
-            far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) / Scene.scale, y: 0.10 + (p.y - 0.10) / Scene.scale)
+            far.joints[joint] = DrillPoint(x: 0.30 + (p.x - 0.30) * 0.6, y: 0.10 + (p.y - 0.10) * 0.6)
         }
         var b = Scene.Builder()
         b.pose = far

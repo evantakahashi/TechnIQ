@@ -281,10 +281,15 @@ final class CameraDebugDump {
     private var eventLog: FileHandle?
     private let encoder = JSONEncoder()
 
+    /// Each session gets its own folder (CameraDebug/<time>); the last 5 are kept.
     init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        directory = docs.appendingPathComponent("CameraDebug", isDirectory: true)
-        try? FileManager.default.removeItem(at: directory)
+        let root = docs.appendingPathComponent("CameraDebug", isDirectory: true)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        directory = root.appendingPathComponent(formatter.string(from: Date()), isDirectory: true)
+        let old = ((try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []).sorted()
+        for name in old.dropLast(4) { try? FileManager.default.removeItem(at: root.appendingPathComponent(name)) }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         frameLog = Self.open(directory.appendingPathComponent("frames.jsonl"))
         eventLog = Self.open(directory.appendingPathComponent("events.txt"))
