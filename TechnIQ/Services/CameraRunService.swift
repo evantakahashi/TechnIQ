@@ -41,7 +41,8 @@ final class CameraRunService: ObservableObject {
 
     /// Records a finished run and pays its reward. Runs of 0 touches are not stored.
     @discardableResult
-    func record(drill: CameraDrill, count: Int, duration: Double, player: Player, now: Date = Date()) -> Outcome? {
+    func record(drill: CameraDrill, count: Int, duration: Double, player: Player, stats: RunStats? = nil,
+                now: Date = Date()) -> Outcome? {
         guard count > 0 else { return nil }
         let previousBest = personalBest(for: drill, player: player)
         let isBest = CameraRewards.isPersonalBest(count: count, previousBest: previousBest)
@@ -58,6 +59,8 @@ final class CameraRunService: ObservableObject {
         run.isPersonalBest = isBest
         run.xpEarned = Int32(reward.xp)
         run.coinsEarned = Int32(reward.coins)
+        run.endReason = stats?.endReason?.rawValue
+        run.stats = stats
         run.createdAt = now
         run.updatedAt = now
         run.player = player

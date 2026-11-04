@@ -330,6 +330,10 @@ extension CloudService {
         run.challengeId = challengeId.isEmpty ? nil : challengeId
         run.xpEarned = Self.int32Value(from: data["xpEarned"])
         run.coinsEarned = Self.int32Value(from: data["coinsEarned"])
+        let endReason = data["endReason"] as? String ?? ""
+        run.endReason = endReason.isEmpty ? nil : endReason
+        let statsJSON = data["statsJSON"] as? String ?? ""
+        run.statsJSON = statsJSON.isEmpty ? nil : statsJSON
         run.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? (data["createdAt"] as? Date) ?? Date()
         run.updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? (data["updatedAt"] as? Date) ?? run.createdAt
         run.player = player

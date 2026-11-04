@@ -329,6 +329,8 @@
         <attribute name="isPersonalBest" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="challengeId" optional="YES" attributeType="String"/>
         <attribute name="clipPath" optional="YES" attributeType="String"/>
+        <attribute name="endReason" optional="YES" attributeType="String"/>
+        <attribute name="statsJSON" optional="YES" attributeType="String"/>
         <attribute name="xpEarned" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="coinsEarned" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

@@ -253,7 +253,8 @@ final class CameraDrillSession: ObservableObject {
 
     @MainActor
     private func finishRun(count: Int, duration: Double, stats: RunStats, sessionLine: String?) {
-        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player)
+        let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player,
+                                                      stats: stats)
         let brokeRule = Self.ruleCall[stats.endReason ?? .stopped] != nil
         let result = RunResult(count: count,
                                isPersonalBest: outcome?.isPersonalBest ?? false,

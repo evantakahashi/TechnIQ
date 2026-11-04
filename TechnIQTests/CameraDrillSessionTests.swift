@@ -143,6 +143,11 @@ final class CameraDrillSessionTests: XCTestCase {
         let runs = try savedRuns()
         XCTAssertEqual(runs.map(\.count), [6])
         XCTAssertEqual(runs.first?.drill, CameraDrill.juggling.rawValue)
+        // Why it ended and the run's stats are kept for history and trends.
+        XCTAssertEqual(runs.first?.endReason, RunEndReason.ground.rawValue)
+        let stats = try XCTUnwrap(runs.first?.stats)
+        XCTAssertEqual(stats.count, 6)
+        XCTAssertEqual(stats.rightFoot, 6)
         XCTAssertEqual(player.totalXP, 30)
     }
 

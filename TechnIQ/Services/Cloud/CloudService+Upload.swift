@@ -603,6 +603,8 @@ extension CloudService {
             "challengeId": run.challengeId ?? "",
             "xpEarned": run.xpEarned,
             "coinsEarned": run.coinsEarned,
+            "endReason": run.endReason ?? "",
+            "statsJSON": run.statsJSON ?? "",
             "createdAt": run.createdAt ?? Date(),
             "updatedAt": run.updatedAt ?? Date()
         ]
