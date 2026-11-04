@@ -40,15 +40,15 @@ failure: each run says why it ended, and the session says how runs usually end.
 - [x] Tests: every rule's violation and its ambiguous near-miss, on synthetic scenes; replay Evan's logs to
       check no false calls
 
-## Phase J3 — Results + storage
-- [ ] Additive Core Data on `CameraRun`: `rules` (preset / rule-set key), `statsJSON`, `endReason` — model +
-      `+CoreDataProperties`; Firestore sync fields
-- [ ] Result panel / back-to-back run banner: count, why it ended, one or two insight lines
-- [ ] Personal bests per rule set (a "below the waist" best is its own record)
+## Phase J3 — Results + storage — done
+- [x] Additive Core Data on `CameraRun`: `statsJSON`, `endReason` (the drill already names the rule set) —
+      model + `+CoreDataProperties`; Firestore sync fields
+- [x] Result panel / back-to-back run banner: count, why it ended, one or two insight lines
+- [x] Personal bests per rule set (presets are drills, so bests are per drill)
 
-## Phase J4 — Trends
-- [ ] Run history → per-drill trend screen (Swift Charts, TQ styling): best per day, weak-foot best,
-      left/right split, touches/min over time; headline line "Weak foot: 8 → 23 in 3 weeks"
+## Phase J4 — Trends — done (Run history, Pro)
+- [x] `Core/CameraTrends` (pure): best per day, headline ("Juggling: 14 → 37 in 2 weeks"), how runs end,
+      left-foot share, tempo; `CameraTrendsSection` (Swift Charts) on Run history; `-TQCameraHistory` (DEBUG)
 - [ ] Home / Train surfaces the headline when there's a meaningful change
 
 ## Phase J5 — Ball effects (Evan, 2026-11-03)

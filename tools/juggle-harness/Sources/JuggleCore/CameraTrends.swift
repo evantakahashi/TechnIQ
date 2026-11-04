@@ -1,0 +1,1 @@
+../../../../TechnIQ/CameraDrills/Core/CameraTrends.swift

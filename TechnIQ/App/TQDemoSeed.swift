@@ -299,16 +299,30 @@ enum TQDemoSeed {
     /// A few juggling runs so Camera drills shows a best (no rewards — written directly).
     private static func seedCameraRuns(for player: Player, context: NSManagedObjectContext, now: Date) {
         guard (player.cameraRuns?.count ?? 0) == 0 else { return }
-        for (daysAgo, count) in [(6, 14), (4, 22), (1, 37), (0, 19)] {
-            let run = CameraRun(context: context)
-            run.id = UUID()
-            run.drill = CameraDrill.juggling.rawValue
-            run.count = Int32(count)
-            run.duration = Double(count) * 0.6
-            run.isPersonalBest = count == 37 || count == 22 || count == 14
-            run.createdAt = now.addingTimeInterval(-Double(daysAgo) * 86_400 - 3_600)
-            run.updatedAt = run.createdAt
-            run.player = player
+        // Two weeks of juggling (trends headline + chart) and a few feet-only runs ending on thigh touches.
+        let juggling: [(Int, Int, RunEndReason)] = [(13, 8, .ground), (12, 11, .ground), (9, 14, .handball), (6, 19, .ground),
+                                                     (4, 22, .ground), (1, 37, .ground), (0, 19, .ground)]
+        let feetOnly: [(Int, Int, RunEndReason)] = [(2, 6, .thighTouch), (1, 9, .thighTouch), (0, 12, .ground)]
+        for (drill, list) in [(CameraDrill.juggling, juggling), (.feetOnlyJuggling, feetOnly)] {
+            var best = 0
+            for (daysAgo, count, end) in list {
+                let run = CameraRun(context: context)
+                run.id = UUID()
+                run.drill = drill.rawValue
+                run.count = Int32(count)
+                run.duration = Double(count) * 0.6
+                run.isPersonalBest = count > best
+                best = max(best, count)
+                run.endReason = end.rawValue
+                // Left foot catching up: a quarter of touches two weeks ago, close to half now.
+                let left = Int(Double(count) * (0.25 + 0.2 * Double(13 - daysAgo) / 13))
+                run.stats = RunStats(count: count, endReason: end, touches: (0..<count).map { i in
+                    TouchRecord(time: Double(i) * 0.6, part: .foot, side: i < left ? .left : .right, offset: 0, apex: 0.8)
+                })
+                run.createdAt = now.addingTimeInterval(-Double(daysAgo) * 86_400 - 3_600)
+                run.updatedAt = run.createdAt
+                run.player = player
+            }
         }
     }
 

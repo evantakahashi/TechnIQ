@@ -90,11 +90,15 @@ struct CameraDrillsView: View {
         }
         #if DEBUG
         // `-TQCameraFile clip.mov` plays a clip in place of the camera; go straight into Juggling.
-        // `-TQCameraDrill <drill>` opens that drill with the live camera (device debugging).
+        // `-TQCameraDrill <drill>` opens that drill with the live camera (device debugging); `-TQCameraHistory`
+        // opens run history + trends.
         .onAppear {
             guard !autoStarted else { return }
             let args = ProcessInfo.processInfo.arguments
-            if let i = args.firstIndex(of: "-TQCameraDrill"), args.indices.contains(i + 1),
+            if args.contains("-TQCameraHistory") {
+                autoStarted = true
+                showingHistory = true
+            } else if let i = args.firstIndex(of: "-TQCameraDrill"), args.indices.contains(i + 1),
                let drill = CameraDrill(rawValue: args[i + 1]) {
                 autoStarted = true
                 activeDrill = drill
@@ -153,13 +157,16 @@ struct CameraRunHistoryView: View {
                     Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                 }
                 TQDisplayTitle("Run history", size: .small)
+                CameraTrendsSection(runs: runs.compactMap(\.trendRun))
                 TQRowList {
                     if runs.isEmpty {
                         TQRow("No runs yet", accessory: .none, note: "finish a camera drill").disabled(true)
                     }
                     ForEach(runs) { run in
                         TQRow(CameraDrill(rawValue: run.drill ?? "")?.title ?? "Drill",
-                              subtitle: (run.createdAt ?? Date()).formatted(date: .abbreviated, time: .shortened),
+                              subtitle: [(run.createdAt ?? Date()).formatted(date: .abbreviated, time: .shortened),
+                                         run.endReason.flatMap(RunEndReason.init(rawValue:)).map(CameraTrendsSection.label)]
+                                  .compactMap { $0 }.joined(separator: " · "),
                               meta: .init("\(run.count)", accent: run.isPersonalBest ? "PB" : nil),
                               accessory: .none,
                               verticalPadding: DesignSystem.Spacing.rowVertical)

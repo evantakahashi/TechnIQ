@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E9FCE28A9CC7D116BAEC6E70 /* CameraTrendsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAE61646A1D750EBE982531 /* CameraTrendsSection.swift */; };
+		45FA75F7798DF43014467090 /* CameraTrends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90DB23DD2D7A9B40A7F88E3B /* CameraTrends.swift */; };
 		6438DFD26918A46336E87321 /* RunStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD06CA91B1A8F02175D4683 /* RunStats.swift */; };
 		4B75CF31BA054D85E19ED220 /* WallPassCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */; };
 		9A900E9E3706E4EB5943A792 /* ToeTapCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74B61ED93C990851B5C686A /* ToeTapCounter.swift */; };
@@ -291,6 +293,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		BDAE61646A1D750EBE982531 /* CameraTrendsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrendsSection.swift; sourceTree = "<group>"; };
+		90DB23DD2D7A9B40A7F88E3B /* CameraTrends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrends.swift; sourceTree = "<group>"; };
 		9FD06CA91B1A8F02175D4683 /* RunStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStats.swift; sourceTree = "<group>"; };
 		1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallPassCounter.swift; sourceTree = "<group>"; };
 		B74B61ED93C990851B5C686A /* ToeTapCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToeTapCounter.swift; sourceTree = "<group>"; };
@@ -1097,6 +1101,7 @@
 				B74B61ED93C990851B5C686A /* ToeTapCounter.swift */,
 				1EF91DA176FEC99E07B81914 /* WallPassCounter.swift */,
 				9FD06CA91B1A8F02175D4683 /* RunStats.swift */,
+				90DB23DD2D7A9B40A7F88E3B /* CameraTrends.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -1133,6 +1138,7 @@
 			children = (
 				0F8C9D22FB491DEAA3455DC6 /* CameraDrillsView.swift */,
 				96717FF03E439A9160D5FE80 /* CameraDrillSessionView.swift */,
+				BDAE61646A1D750EBE982531 /* CameraTrendsSection.swift */,
 			);
 			path = CameraDrills;
 			sourceTree = "<group>";
@@ -1503,6 +1509,8 @@
 				9A900E9E3706E4EB5943A792 /* ToeTapCounter.swift in Sources */,
 				4B75CF31BA054D85E19ED220 /* WallPassCounter.swift in Sources */,
 				6438DFD26918A46336E87321 /* RunStats.swift in Sources */,
+				45FA75F7798DF43014467090 /* CameraTrends.swift in Sources */,
+				E9FCE28A9CC7D116BAEC6E70 /* CameraTrendsSection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
