@@ -311,6 +311,17 @@ final class MatchDayRulesTests: XCTestCase {
         XCTAssertEqual(wednesday.duration, 10)
     }
 
+    func test_emptyTrainingDayAfterTheMatchStaysATrainingDay() {
+        // Friday (the day after a Thursday match) trains but has no sessions yet, and no assessment moved off it.
+        var built = week(1)
+        let fridayIndex = built.days.firstIndex { $0.dayOfWeek == .friday }!
+        built.days[fridayIndex].sessions = []
+        let outcome = apply(plan([built]), matches: [date(2026, 9, 10)])
+        XCTAssertTrue(outcome.changes.moves.isEmpty)
+        XCTAssertFalse(day(outcome.plan, week: 1, .friday).isRestDay, "only a move empties a day into rest")
+        XCTAssertFalse(outcome.changes.days.contains { $0.dayID == built.days[fridayIndex].id && $0.isRestDay })
+    }
+
     func test_assessmentMovesAreIdempotent() {
         let matches = [date(2026, 9, 10)]
         let first = apply(plan([assessmentWeek(on: .thursday)]), matches: matches)

@@ -127,7 +127,6 @@ final class BenchmarkService {
         let values = BenchmarkType.allCases.compactMap { type in
             flow.results[type].map { Value(type: type, value: $0.value, cameraVerified: $0.cameraVerified) }
         }
-        let startingLevel = Int(player.currentLevel)
         let benchmarks = values.map { insert($0, player: player, date: now) }
 
         let session = TrainingSession(context: context)
@@ -155,10 +154,9 @@ final class BenchmarkService {
             TrainingPlanService.shared.markSessionCompleted(planSession.toModel(), actualDuration: Int(session.duration),
                                                             actualIntensity: Int(session.intensity))
         }
-        let (xp, _) = XPService.shared.processSessionCompletion(session: session, player: player, context: context,
+        let (xp, newLevel) = XPService.shared.processSessionCompletion(session: session, player: player, context: context,
                                                                 allExercisesCompleted: true)
         let achievements = AchievementService.shared.checkAndUnlockAchievements(for: player, in: context)
-        let newLevel = XPService.shared.syncLevel(for: player, previousLevel: startingLevel)
         try? context.save()
         if !CloudService.isRunningUnitTests { NotificationManager.shared.refresh(for: player) }
         return AssessmentOutcome(session: session, xp: xp, newLevel: newLevel, achievements: achievements)

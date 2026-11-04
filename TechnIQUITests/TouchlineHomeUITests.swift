@@ -89,13 +89,20 @@ final class TouchlineHomeUITests: XCTestCase {
         settle(0.8)
     }
 
-    /// Taps once the element is on screen and hittable (sheet/animation settled).
-    private func tapWhenHittable(_ element: XCUIElement, timeout: TimeInterval = 8) -> Bool {
+    /// Taps once the element is on screen and hittable (sheet/animation settled); scrolls down to
+    /// rows below the fold (or back up to ones above it).
+    private func tapWhenHittable(_ element: XCUIElement, timeout: TimeInterval = 12) -> Bool {
         let deadline = Date(timeIntervalSinceNow: timeout)
+        let scrollAfter = Date(timeIntervalSinceNow: 1) // let sheets and animations settle first
+        var swipes = 0
         while Date() < deadline {
             if element.exists, element.isHittable {
                 element.tap()
                 return true
+            }
+            if element.exists, Date() > scrollAfter, swipes < 8 {
+                if swipes < 3 { app.swipeUp(velocity: .slow) } else { app.swipeDown(velocity: .slow) }
+                swipes += 1
             }
             settle(0.3)
         }
@@ -127,6 +134,8 @@ final class TouchlineHomeUITests: XCTestCase {
         settle(0.8)
         XCTAssertTrue(text(containing: "RETEST").waitForExistence(timeout: 5), "the plan ends with a retest week")
         shot("plan-detail-retest")
+        app.swipeDown() // the Back button scrolls with the content
+        settle(0.8)
         goBack()
         XCTAssertTrue(start.waitForExistence(timeout: 8), "back on Home after plan detail")
 

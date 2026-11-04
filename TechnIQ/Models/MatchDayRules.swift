@@ -120,6 +120,7 @@ enum MatchDayRules {
                 // A plain rest day's sessions are not in play; a rules-made match day's still are.
                 guard dayRole == .matchDay || dayRole == .dayAfter, isOpen(day, on: dayDate),
                       !day.isRestDay || day.isMatchDay else { continue }
+                var moved = false
                 for session in day.sessions where session.sessionType == .assessment {
                     let candidates = weeks[wi].days.indices.filter { index in
                         guard index != di else { return false }
@@ -135,10 +136,11 @@ enum MatchDayRules {
                     let orderIndex = weeks[wi].days[target].sessions.count
                     weeks[wi].days[target].sessions.append(session.with(orderIndex: orderIndex))
                     changes.moves.append(SessionMove(sessionID: session.id, toDayID: weeks[wi].days[target].id, orderIndex: orderIndex))
+                    moved = true
                 }
-                // A training day left with nothing on it becomes a rest day.
+                // A training day the move left with nothing on it becomes a rest day.
                 let source = weeks[wi].days[di]
-                if source.sessions.isEmpty && !source.isRestDay {
+                if moved && source.sessions.isEmpty && !source.isRestDay {
                     weeks[wi].days[di] = source.with(isRestDay: true, notes: source.notes)
                     changes.days.append(DayChange(dayID: source.id, isRestDay: true, notes: source.notes))
                 }

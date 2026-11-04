@@ -958,6 +958,8 @@ struct DrillWebAnimationView: UIViewRepresentable {
     /// Film only: no play bar or captions, the pitch scaled to fit the frame, no touch handling.
     /// The active-session screen uses it as a looping picture of the drill.
     var compact: Bool = false
+    /// Called once the film has been handed to the page (it draws from then on).
+    var onReady: (() -> Void)? = nil
 
     private static let compactCSS = "html,body{height:100%}#stage,#stage>div{height:100%}"
         + ".animbar,.animcap{display:none!important}"
@@ -984,6 +986,7 @@ struct DrillWebAnimationView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.pendingDrillJSON = drillJSON
+        context.coordinator.onReady = onReady
         context.coordinator.injectIfReady(into: webView)
     }
 
@@ -991,6 +994,7 @@ struct DrillWebAnimationView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var pendingDrillJSON: String?
+        var onReady: (() -> Void)?
         private var loaded = false
         private var lastInjected: String?
 
@@ -1002,7 +1006,10 @@ struct DrillWebAnimationView: UIViewRepresentable {
         func injectIfReady(into webView: WKWebView) {
             guard loaded, let json = pendingDrillJSON, json != lastInjected else { return }
             lastInjected = json
-            webView.evaluateJavaScript("window.loadDrill(\(json));", completionHandler: nil)
+            webView.evaluateJavaScript("window.loadDrill(\(json));") { [weak self] _, error in
+                guard error == nil else { return }
+                self?.onReady?()
+            }
         }
     }
 }

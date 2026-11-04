@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21513" systemVersion="22G320" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="6.0">
-    <entity name="Exercise" representedClassName="Exercise" syncable="YES" codeGenerationType="class">
+    <entity name="Exercise" representedClassName="Exercise" syncable="YES">
         <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="communityAuthor" optional="YES" attributeType="String"/>
         <attribute name="communityDrillID" optional="YES" attributeType="String"/>
@@ -85,7 +85,7 @@
             </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
-    <entity name="PlayerStats" representedClassName="PlayerStats" syncable="YES" codeGenerationType="class">
+    <entity name="PlayerStats" representedClassName="PlayerStats" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="skillRatings" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String: Double]"/>
@@ -94,7 +94,7 @@
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="stats" inverseEntity="Player"/>
     </entity>
-    <entity name="SessionExercise" representedClassName="SessionExercise" syncable="YES" codeGenerationType="class">
+    <entity name="SessionExercise" representedClassName="SessionExercise" syncable="YES">
         <attribute name="duration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="notes" optional="YES" attributeType="String"/>
@@ -104,7 +104,7 @@
         <relationship name="exercise" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Exercise" inverseName="sessionExercises" inverseEntity="Exercise"/>
         <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TrainingSession" inverseName="exercises" inverseEntity="TrainingSession"/>
     </entity>
-    <entity name="TrainingSession" representedClassName="TrainingSession" syncable="YES" codeGenerationType="class">
+    <entity name="TrainingSession" representedClassName="TrainingSession" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="duration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="focusWeakness" optional="YES" attributeType="String"/>
@@ -128,7 +128,7 @@
             </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
-    <entity name="PlayerProfile" representedClassName="PlayerProfile" syncable="YES" codeGenerationType="class">
+    <entity name="PlayerProfile" representedClassName="PlayerProfile" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="skillGoals" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
         <attribute name="physicalFocusAreas" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData" customClassName="[String]"/>
@@ -145,7 +145,7 @@
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="playerProfile" inverseEntity="Player"/>
     </entity>
-    <entity name="PlayerGoal" representedClassName="PlayerGoal" syncable="YES" codeGenerationType="class">
+    <entity name="PlayerGoal" representedClassName="PlayerGoal" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="skillName" optional="YES" attributeType="String"/>
         <attribute name="currentLevel" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -163,7 +163,7 @@
             </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
-    <entity name="RecommendationFeedback" representedClassName="RecommendationFeedback" syncable="YES" codeGenerationType="class">
+    <entity name="RecommendationFeedback" representedClassName="RecommendationFeedback" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="exerciseID" optional="YES" attributeType="String"/>
         <attribute name="recommendationSource" optional="YES" attributeType="String"/>
@@ -177,7 +177,7 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="player" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Player" inverseName="recommendationFeedback" inverseEntity="Player"/>
     </entity>
-    <entity name="MLRecommendation" representedClassName="MLRecommendation" syncable="YES" codeGenerationType="class">
+    <entity name="MLRecommendation" representedClassName="MLRecommendation" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="playerID" optional="YES" attributeType="String"/>
         <attribute name="exerciseID" optional="YES" attributeType="String"/>
@@ -191,7 +191,7 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="expiresAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="CloudSyncStatus" representedClassName="CloudSyncStatus" syncable="YES" codeGenerationType="class">
+    <entity name="CloudSyncStatus" representedClassName="CloudSyncStatus" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="playerID" optional="YES" attributeType="String"/>
         <attribute name="entityType" optional="YES" attributeType="String"/>
@@ -203,7 +203,7 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="TrainingPlan" representedClassName="TrainingPlan" syncable="YES" codeGenerationType="category">
+    <entity name="TrainingPlan" representedClassName="TrainingPlan" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="planDescription" optional="YES" attributeType="String"/>
@@ -227,7 +227,7 @@
             </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
-    <entity name="PlanWeek" representedClassName="PlanWeek" syncable="YES" codeGenerationType="category">
+    <entity name="PlanWeek" representedClassName="PlanWeek" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="weekNumber" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
         <attribute name="focusArea" optional="YES" attributeType="String"/>
@@ -238,7 +238,7 @@
         <relationship name="plan" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TrainingPlan" inverseName="weeks" inverseEntity="TrainingPlan"/>
         <relationship name="days" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlanDay" inverseName="week" inverseEntity="PlanDay"/>
     </entity>
-    <entity name="PlanDay" representedClassName="PlanDay" syncable="YES" codeGenerationType="category">
+    <entity name="PlanDay" representedClassName="PlanDay" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="dayNumber" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
         <attribute name="dayOfWeek" optional="YES" attributeType="String"/>
@@ -250,7 +250,7 @@
         <relationship name="week" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PlanWeek" inverseName="days" inverseEntity="PlanWeek"/>
         <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlanSession" inverseName="day" inverseEntity="PlanSession"/>
     </entity>
-    <entity name="PlanSession" representedClassName="PlanSession" syncable="YES" codeGenerationType="category">
+    <entity name="PlanSession" representedClassName="PlanSession" syncable="YES">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="sessionType" optional="YES" attributeType="String"/>
         <attribute name="duration" optional="YES" attributeType="Integer 16" defaultValueString="60" usesScalarValueType="YES"/>

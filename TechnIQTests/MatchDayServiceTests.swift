@@ -110,7 +110,9 @@ final class MatchDayServiceTests: XCTestCase {
         spec.weakSpots = [.weakFoot, .passing]
         spec.position = "Defender"
         let plan = service.createCustomPlan(spec, for: player)!.toModel()
-        XCTAssertEqual(plan.weeks.sorted { $0.weekNumber < $1.weekNumber }.map(\.focusArea), ["Weak Foot", "Passing", "Weak Foot"])
+        let weeks = plan.weeks.sorted { $0.weekNumber < $1.weekNumber }
+        XCTAssertEqual(weeks.filter { !$0.isRetest }.map(\.focusArea), ["Weak Foot", "Passing", "Weak Foot"])
+        XCTAssertEqual(weeks.last?.isRetest, true, "Closing retest week stays last")
         XCTAssertEqual(plan.targetRole, "Defender")
         XCTAssertEqual(plan.weeks[0].days.first { !$0.isRestDay }?.sessions[0].notes?.hasPrefix("Focus: "), true)
     }

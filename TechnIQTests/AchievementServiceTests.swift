@@ -92,14 +92,15 @@ final class AchievementServiceTests: XCTestCase {
         XCTAssertTrue(newly.contains { $0.id == "week_warrior" })
     }
 
-    func test_checkAndUnlock_awardsXP() {
+    func test_checkAndUnlock_awardsNoXP() {
         let player = stack.makePlayer(xp: 0)
         player.unlockedAchievements = []
         stack.makeSession(player: player)
         let xpBefore = player.totalXP
 
-        _ = sut.checkAndUnlockAchievements(for: player, in: stack.context)
-        XCTAssertGreaterThan(player.totalXP, xpBefore, "Should award XP for unlocked achievements")
+        let newly = sut.checkAndUnlockAchievements(for: player, in: stack.context)
+        XCTAssertFalse(newly.isEmpty, "Precondition: something unlocks")
+        XCTAssertEqual(player.totalXP, xpBefore, "XP comes from training only; badges award none")
     }
 
     // MARK: - Progress

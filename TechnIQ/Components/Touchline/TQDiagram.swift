@@ -149,6 +149,7 @@ struct TQDiagram: View {
 struct TQSessionDiagram: View {
     let diagramJSON: String?
     let animationJSON: String?
+    @State private var filmReady = false
 
     static func hasContent(diagramJSON: String?, animationJSON: String?) -> Bool {
         decode(diagramJSON) != nil
@@ -167,12 +168,9 @@ struct TQSessionDiagram: View {
     }
 
     var body: some View {
-        Group {
-            if let film {
-                DrillWebAnimationView(drillJSON: film, compact: true)
-                    .padding(6)
-                    .accessibilityLabel("Drill film")
-            } else if let diagram = Self.decode(diagramJSON) {
+        ZStack {
+            // The still diagram shows at once, until the film's page has loaded and taken over.
+            if !filmReady, let diagram = Self.decode(diagramJSON) {
                 AnimatedDrillDiagramView(
                     diagram: diagram,
                     instructions: [],
@@ -180,6 +178,12 @@ struct TQSessionDiagram: View {
                     isAutoPlaying: .constant(false),
                     chrome: false
                 )
+            }
+            if let film {
+                DrillWebAnimationView(drillJSON: film, compact: true) { filmReady = true }
+                    .padding(6)
+                    .opacity(filmReady ? 1 : 0)
+                    .accessibilityLabel("Drill film")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

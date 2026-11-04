@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C3EF8D663D08D93BE2435EA2 /* MatchDayUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C144059C726895629FF46682 /* MatchDayUITests.swift */; };
 		79CAF72A60371B4A681852B1 /* StreakRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380E3A01EABE2AB9A34DB9EE /* StreakRule.swift */; };
 		66A6C8AEF22EE137F98E5886 /* PlanDrillPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */; };
 		A4C2309EFAAC3E8934B87F91 /* UnlockProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */; };
@@ -314,6 +315,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C144059C726895629FF46682 /* MatchDayUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDayUITests.swift; sourceTree = "<group>"; };
 		380E3A01EABE2AB9A34DB9EE /* StreakRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakRule.swift; sourceTree = "<group>"; };
 		3245D7020F4C98B8B307A4F9 /* PlanDrillPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDrillPickerTests.swift; sourceTree = "<group>"; };
 		1AA0B7D94F46400AA38AE3F4 /* UnlockProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockProgressTests.swift; sourceTree = "<group>"; };
@@ -1063,6 +1065,7 @@
 				7ABF30004A57BA5A8B2B991C /* TouchlineHomeUITests.swift */,
 				EB5226A89F1F99F4E05171DB /* TouchlineScreensUITests.swift */,
 				66BD0A5B68DFA7FE2BC533CE /* TouchlineTourUITests.swift */,
+				C144059C726895629FF46682 /* MatchDayUITests.swift */,
 			);
 			path = TechnIQUITests;
 			sourceTree = "<group>";
@@ -1642,6 +1645,7 @@
 				9FFD6978C1092160F0CC727B /* TouchlineHomeUITests.swift in Sources */,
 				9E5121D5EF0270A1C92AA4CD /* TouchlineScreensUITests.swift in Sources */,
 				35B653AFD9DC6E2E796EEE0B /* TouchlineTourUITests.swift in Sources */,
+				C3EF8D663D08D93BE2435EA2 /* MatchDayUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
