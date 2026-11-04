@@ -99,14 +99,9 @@ struct CameraDrillSessionView: View {
             VStack(spacing: DesignSystem.Spacing.xs) {
                 bigNumber("\(session.count)")
                 if session.drill.mode == .streak, let last = session.lastResult {
-                    // Streaks run back to back: the last run and best stay up while the next one starts.
-                    Text(last.isPersonalBest ? "Last \(last.count) · New best!"
-                                             : "Last \(last.count) · Best \(max(last.count, last.previousBest ?? 0))")
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, DesignSystem.Spacing.sm)
-                        .padding(.vertical, DesignSystem.Spacing.xs)
-                        .background(Color.black.opacity(0.55))
+                    // Streaks run back to back: the last run, why it ended and what the camera noticed stay
+                    // up while the next one starts.
+                    lastRunBanner(last)
                 }
                 if let left = session.timeLeft {
                     Text(String(format: "0:%02d", Int(left.rounded(.up))))
@@ -146,6 +141,42 @@ struct CameraDrillSessionView: View {
         }
     }
 
+    /// Last run's count and best, then why it ended (red when the judge called a rule), the camera's
+    /// insights, and how runs usually end this session.
+    private func lastRunBanner(_ last: CameraDrillSession.RunResult) -> some View {
+        VStack(spacing: 4) {
+            Text(last.isPersonalBest ? "Last \(last.count) · New best!"
+                                     : "Last \(last.count) · Best \(max(last.count, last.previousBest ?? 0))")
+                .font(DesignSystem.Typography.labelMedium)
+                .foregroundColor(.white)
+            failureLines(last)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, DesignSystem.Spacing.sm)
+        .padding(.vertical, DesignSystem.Spacing.xs)
+        .background(Color.black.opacity(0.55))
+    }
+
+    @ViewBuilder
+    private func failureLines(_ result: CameraDrillSession.RunResult) -> some View {
+        if !result.endLine.isEmpty {
+            Text(result.endLine)
+                .font(DesignSystem.Typography.labelMedium)
+                .foregroundColor(result.brokeRule ? DesignSystem.Colors.error : .white.opacity(0.85))
+                .accessibilityIdentifier("camera.endLine")
+        }
+        ForEach(result.insights.prefix(2), id: \.self) { line in
+            Text(line)
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(.white.opacity(0.85))
+        }
+        if let line = session.sessionLine {
+            Text(line)
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(DesignSystem.Colors.cone)
+        }
+    }
+
     private var resultPanel: some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
             if let result = session.lastResult {
@@ -156,6 +187,7 @@ struct CameraDrillSessionView: View {
                 Text(resultDetail(result))
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(.white)
+                failureLines(result)
             } else {
                 prompt("No touches counted", detail: session.drill.noTouchesHint)
             }

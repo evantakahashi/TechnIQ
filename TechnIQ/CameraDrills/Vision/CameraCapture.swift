@@ -81,6 +81,16 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
                                                        object: self.session, queue: nil) { note in
                     print("CameraCapture: runtime error \(String(describing: note.userInfo?[AVCaptureSessionErrorKey]))")
                 }
+                NotificationCenter.default.addObserver(forName: AVCaptureSession.wasInterruptedNotification,
+                                                       object: self.session, queue: nil) { note in
+                    let reason = (note.userInfo?[AVCaptureSessionInterruptionReasonKey] as? Int)
+                        .flatMap(AVCaptureSession.InterruptionReason.init(rawValue:))
+                    print("CameraCapture: interrupted, reason \(String(describing: reason)) (\(String(describing: note.userInfo)))")
+                }
+                NotificationCenter.default.addObserver(forName: AVCaptureSession.interruptionEndedNotification,
+                                                       object: self.session, queue: nil) { _ in
+                    print("CameraCapture: interruption ended")
+                }
                 #endif
                 self.session.startRunning()
                 #if DEBUG
@@ -151,6 +161,9 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
     /// 30 fps rather than leave the player with a dead camera.
     private func fallBackIfSilent() {
         queue.asyncAfter(deadline: .now() + 2) { [weak self] in
+            #if DEBUG
+            print("CameraCapture: after 2 s: \(self == nil ? "released" : "running \(self!.session.isRunning), \(self!.frames) frames")")
+            #endif
             guard let self, self.frames == 0, self.onFrame != nil,
                   let camera = (self.session.inputs.first as? AVCaptureDeviceInput)?.device else { return }
             #if DEBUG
@@ -164,8 +177,16 @@ final class CameraCapture: NSObject, DrillFrameSource, AVCaptureVideoDataOutputS
                 camera.unlockForConfiguration()
             }
             self.session.commitConfiguration()
+            if !self.session.isRunning { self.session.startRunning() }
+            #if DEBUG
+            print("CameraCapture: at 30 fps, running \(self.session.isRunning)")
+            #endif
         }
     }
+
+    #if DEBUG
+    deinit { print("CameraCapture: released") }
+    #endif
 
     /// A 1280 × 720 full-range 4:2:0 format that runs at `fps`.
     private static func format(for camera: AVCaptureDevice, fps: Double) -> AVCaptureDevice.Format? {

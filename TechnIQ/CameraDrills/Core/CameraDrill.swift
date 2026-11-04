@@ -5,6 +5,8 @@ enum CameraDrill: String, CaseIterable, Identifiable {
     case juggling
     case weakFootJuggling
     case alternatingJuggling
+    case feetOnlyJuggling
+    case belowWaistJuggling
     case toeTaps
     case wallPasses
 
@@ -22,6 +24,8 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         case .juggling: return "Juggling"
         case .weakFootJuggling: return "Weak-foot juggling"
         case .alternatingJuggling: return "Alternating juggling"
+        case .feetOnlyJuggling: return "Feet only"
+        case .belowWaistJuggling: return "Below the waist"
         case .toeTaps: return "Toe taps"
         case .wallPasses: return "Wall passes"
         }
@@ -32,6 +36,8 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         case .juggling: return "Feet, thighs, chest, head. Hands or the ground end it."
         case .weakFootJuggling: return "Weak foot only. A strong-foot touch ends it."
         case .alternatingJuggling: return "Left, right, left. The same foot twice ends it."
+        case .feetOnlyJuggling: return "Feet only. A thigh, chest or head touch ends it."
+        case .belowWaistJuggling: return "Keep it below your waist. Higher ends it."
         case .toeTaps: return "Alternate soles on top of the ball for 30 seconds."
         case .wallPasses: return "Wall to your side. Pass, receive, repeat for 30 seconds."
         }
@@ -40,7 +46,8 @@ enum CameraDrill: String, CaseIterable, Identifiable {
     /// Positioning prompt detail: where the ball should be while the player gets in the outline.
     var setupHint: String {
         switch self {
-        case .juggling, .weakFootJuggling, .alternatingJuggling: return "Whole body in frame, ball in your hands"
+        case .juggling, .weakFootJuggling, .alternatingJuggling, .feetOnlyJuggling, .belowWaistJuggling:
+            return "Whole body in frame, ball in your hands"
         case .toeTaps: return "Whole body in frame, ball on the ground in front of you"
         case .wallPasses: return "Whole body in frame, wall to your side, ball at your feet"
         }
@@ -52,6 +59,8 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         case .juggling: return "Drop it from your hands and keep it up"
         case .weakFootJuggling: return "Keep it up with your weaker foot only"
         case .alternatingJuggling: return "Keep it up, left foot then right"
+        case .feetOnlyJuggling: return "Keep it up with your feet only"
+        case .belowWaistJuggling: return "Small touches: keep it below your waist"
         case .toeTaps: return "Tap the top of the ball, left sole then right"
         case .wallPasses: return "Pass it off the wall and control it back at your feet"
         }
@@ -65,7 +74,7 @@ enum CameraDrill: String, CaseIterable, Identifiable {
 
     var mode: Mode {
         switch self {
-        case .juggling, .weakFootJuggling, .alternatingJuggling: return .streak
+        case .juggling, .weakFootJuggling, .alternatingJuggling, .feetOnlyJuggling, .belowWaistJuggling: return .streak
         case .toeTaps, .wallPasses: return .timed(seconds: 30)
         }
     }
@@ -80,6 +89,14 @@ enum CameraDrill: String, CaseIterable, Identifiable {
         case .juggling: return JuggleCounter()
         case .weakFootJuggling: return juggleCounter(.only(dominantFoot == "Left" ? .right : .left))
         case .alternatingJuggling: return juggleCounter(.alternate)
+        case .feetOnlyJuggling:
+            var config = JuggleCounter.Config()
+            config.partRule = .feetOnly
+            return JuggleCounter(config: config)
+        case .belowWaistJuggling:
+            var config = JuggleCounter.Config()
+            config.heightLimit = .waist
+            return JuggleCounter(config: config)
         case .toeTaps: return ToeTapCounter()
         case .wallPasses: return WallPassCounter()
         }

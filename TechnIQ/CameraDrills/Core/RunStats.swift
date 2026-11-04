@@ -58,6 +58,10 @@ struct RunStats: Equatable, Codable {
         case .ground?: return "Ended: the ball hit the ground"
         case .handball?: return "Ended: hands touched it"
         case .wrongFoot?: return "Ended: wrong foot"
+        case .thighTouch?: return "Ended: thigh touch (feet only)"
+        case .chestTouch?: return "Ended: chest touch (feet only)"
+        case .headTouch?: return "Ended: header (feet only)"
+        case .tooHigh?: return "Ended: ball went too high"
         case .lostBall?: return "Ended: the camera lost the ball"
         case .stopped?, nil: return "Stopped"
         }
@@ -104,6 +108,8 @@ struct RunStats: Equatable, Codable {
         case .ground: how = "with the ball hitting the ground"
         case .handball: how = "on a handball"
         case .wrongFoot: how = "on the wrong foot"
+        case .thighTouch, .chestTouch, .headTouch: how = "on a touch that wasn't a foot"
+        case .tooHigh: how = "with the ball going too high"
         case .lostBall: how = "when the camera lost the ball"
         case .stopped: return nil
         }

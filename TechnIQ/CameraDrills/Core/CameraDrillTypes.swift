@@ -71,6 +71,10 @@ enum RunEndReason: String, Codable {
     case handball
     /// Weak-foot / alternating juggling: a touch with the wrong foot.
     case wrongFoot
+    /// Feet-only juggling: a clear touch with the thigh / chest / head.
+    case thighTouch, chestTouch, headTouch
+    /// Height-limited juggling: the ball went clearly above the line.
+    case tooHigh
     case lostBall
     /// Footage or session ended mid-run.
     case stopped

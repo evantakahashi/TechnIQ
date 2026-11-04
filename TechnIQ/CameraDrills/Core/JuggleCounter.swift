@@ -41,11 +41,32 @@ final class JuggleCounter: DrillCounter {
         var gravity = 9.81
         /// A hidden contact is placed once this long (s) of rise has been seen, or three sightings.
         var settleTime = 0.15
+        /// Judge: which body parts may touch, and how high the ball may go.
+        var partRule = PartRule.any
+        var heightLimit: HeightLimit?
+        /// A rule is only called when the illegal body part is this much (m) closer to the ball than any legal
+        /// one, and the touch was seen (not estimated across a detector gap): ambiguous evidence never ends a run.
+        var callMargin = 0.08
+        /// The ball must clear a height limit by this much (m) on `tooHighFrames` sightings in a row.
+        var heightMargin = 0.05
+        var tooHighFrames = 2
         /// A ball at floor level within this (m) of an ankle may be a low touch, not the ground (a phone on
         /// the floor sees a ball just in front of the feet as low as the floor): it's the ground only once
         /// it has stayed down `groundHold` seconds.
         var footClear = 0.25
         var groundHold = 0.4
+    }
+
+    enum PartRule: String, Codable {
+        /// Any legal part (feet, thighs, chest, head).
+        case any
+        /// Feet only: a clear thigh / chest / head touch ends the run.
+        case feetOnly
+    }
+
+    /// The ball must stay below this part of the body.
+    enum HeightLimit: String, Codable {
+        case knee, waist
     }
 
     enum FootRule: Equatable {
@@ -78,6 +99,8 @@ final class JuggleCounter: DrillCounter {
     private var radius: Double?
     private var ankleHistory: [(time: Double, y: Double)] = []
     private var lastFoot: BodySide?
+    /// Sightings in a row above the height limit.
+    private var aboveLimit = 0
     /// Latest sightings (≤ 0.3 s), for the ball's velocity going into a detector gap.
     private var recent: [Sample] = []
     /// When the ball last came down to floor level (nil while it's above it).
@@ -122,6 +145,9 @@ final class JuggleCounter: DrillCounter {
         if isRunning, isGround(sample) {
             events.append(endRun(.ground, at: frame.time))
         }
+        if isRunning, isTooHigh(sample) {
+            events.append(endRun(.tooHigh, at: frame.time))
+        }
 
         defer {
             recent.append(sample)
@@ -139,32 +165,40 @@ final class JuggleCounter: DrillCounter {
         case nil:
             phase = .seekingLow(low: sample, high: sample.center.y)
         case let .seekingLow(low, high):
-            if sample.center.y < low.center.y {
-                phase = .seekingLow(low: sample, high: high)
-            } else if sample.center.y - low.center.y >= metres(config.reversal) {
-                phase = .seekingHigh(high: sample.center.y)
-                if sample.time - low.time >= config.hiddenTouchGap {
-                    // The ball was out of sight around the contact: place it once the rise is clear.
-                    if let earlier = pending { events += settle(earlier) }
-                    pending = PendingContact(high: high, pre: recent.filter { $0.time <= low.time },
-                                             post: [sample], hidden: false)
-                } else {
-                    events += contact(at: low, drop: high - low.center.y)
-                }
-            } else if sample.time - low.time >= config.stall {
-                phase = .seekingHigh(high: sample.center.y)
-                // Came to rest at floor level: the ground, even beside a foot (no rebound, no touch).
-                if isOnFloor(low) {
-                    if isRunning { events.append(endRun(.ground, at: sample.time)) }
-                } else {
-                    events += contact(at: low, drop: high - low.center.y)
-                }
-            }
+            events += descend(low: low, high: high, sample: sample)
         case let .seekingHigh(high):
             if sample.center.y > high {
                 phase = .seekingHigh(high: sample.center.y)
             } else if high - sample.center.y >= metres(config.reversal) {
                 phase = .seekingLow(low: sample, high: high)
+            }
+        }
+        return events
+    }
+
+    /// The ball is coming down: follow it to its low point, then count the contact once it rises again (or
+    /// rests there).
+    private func descend(low: Sample, high: Double, sample: Sample) -> [DrillEvent] {
+        var events: [DrillEvent] = []
+        if sample.center.y < low.center.y {
+            phase = .seekingLow(low: sample, high: high)
+        } else if sample.center.y - low.center.y >= metres(config.reversal) {
+            phase = .seekingHigh(high: sample.center.y)
+            if sample.time - low.time >= config.hiddenTouchGap {
+                // The ball was out of sight around the contact: place it once the rise is clear.
+                if let earlier = pending { events += settle(earlier) }
+                pending = PendingContact(high: high, pre: recent.filter { $0.time <= low.time },
+                                         post: [sample], hidden: false)
+            } else {
+                events += contact(at: low, drop: high - low.center.y)
+            }
+        } else if sample.time - low.time >= config.stall {
+            phase = .seekingHigh(high: sample.center.y)
+            // Came to rest at floor level: the ground, even beside a foot (no rebound, no touch).
+            if isOnFloor(low) {
+                if isRunning { events.append(endRun(.ground, at: sample.time)) }
+            } else {
+                events += contact(at: low, drop: high - low.center.y)
             }
         }
         return events
@@ -192,12 +226,26 @@ final class JuggleCounter: DrillCounter {
         return settle(waiting)
     }
 
-    /// Counts a pending contact at its estimated point.
+    /// Counts a pending contact at its estimated point (never judged: the touch wasn't seen).
     private func settle(_ waiting: PendingContact) -> [DrillEvent] {
         let point = estimatedContact(pre: waiting.pre, post: waiting.post)
             ?? (waiting.hidden ? waiting.post[0] : waiting.pre.last ?? waiting.post[0])
         let drop = waiting.high == .infinity ? .infinity : waiting.high - point.center.y
-        return contact(at: point, drop: drop, hidden: waiting.hidden)
+        return contact(at: point, drop: drop, hidden: waiting.hidden, seen: false)
+    }
+
+    /// The ball clearly above the run's height limit, `tooHighFrames` sightings in a row.
+    private func isTooHigh(_ sample: Sample) -> Bool {
+        guard let limit = config.heightLimit, let pose = sample.pose,
+              // A detection far off the ball's usual size is something else (seen on device: a quarter-size
+              // false detection near the top of the frame).
+              let usual = radius, sample.radius > usual * 0.6, sample.radius < usual * 1.6 else { aboveLimit = 0; return false }
+        let joints: [BodyJoint] = limit == .waist ? [.leftHip, .rightHip] : [.leftKnee, .rightKnee]
+        let ys = joints.compactMap { pose[$0]?.y }
+        guard !ys.isEmpty else { aboveLimit = 0; return false }
+        let line = ys.reduce(0, +) / Double(ys.count)
+        aboveLimit = sample.center.y - sample.radius > line + metres(config.heightMargin) ? aboveLimit + 1 : 0
+        return aboveLimit >= config.tooHighFrames
     }
 
     /// Where the ball's fall (last sightings before the gap) and rise (first sightings after it) meet, both
@@ -254,7 +302,8 @@ final class JuggleCounter: DrillCounter {
 
     /// - Parameter hidden: the touch happened out of the detector's sight (`wasTouchedWhileHidden`): no drop or
     ///   floor check, and the ball's position now doesn't say what touched it (never a handball).
-    private func contact(at sample: Sample, drop: Double, hidden: Bool = false) -> [DrillEvent] {
+    /// - Parameter seen: the contact point was seen, not estimated; only seen touches are judged.
+    private func contact(at sample: Sample, drop: Double, hidden: Bool = false, seen: Bool = true) -> [DrillEvent] {
         guard drop >= metres(config.minDrop) else { return [] }
         if !hidden, isOnFloor(sample), !isAtFeet(sample) {
             return isRunning ? [endRun(.ground, at: sample.time)] : []
@@ -264,15 +313,26 @@ final class JuggleCounter: DrillCounter {
         if part == .arm {
             return isRunning ? [endRun(.handball, at: sample.time)] : []
         }
+        let judged = seen && !hidden
+        if config.partRule == .feetOnly, isRunning, judged, let reason = Self.partReason[part],
+           isClear(sample, illegal: { $0.part == part }, legal: { $0.part == .foot }) {
+            return [endRun(reason, at: sample.time)]
+        }
         switch config.footRule {
         case .any:
             break
         case let .only(allowed):
             guard part == .foot, let side else { return [] }
-            if side != allowed { return isRunning ? [endRun(.wrongFoot, at: sample.time)] : [] }
+            if side != allowed, judged,
+               isClear(sample, illegal: { $0.part == .foot && $0.side == side }, legal: { $0.part == .foot && $0.side == allowed }) {
+                return isRunning ? [endRun(.wrongFoot, at: sample.time)] : []
+            }
         case .alternate:
             guard part == .foot, let side else { return [] }
-            if isRunning, side == lastFoot { return [endRun(.wrongFoot, at: sample.time)] }
+            if isRunning, side == lastFoot, judged,
+               isClear(sample, illegal: { $0.part == .foot && $0.side == side }, legal: { $0.part == .foot && $0.side != side }) {
+                return [endRun(.wrongFoot, at: sample.time)]
+            }
         }
         if !isRunning {
             isRunning = true
@@ -289,17 +349,36 @@ final class JuggleCounter: DrillCounter {
         return .runEnded(count: count, reason: reason, time: time)
     }
 
+    private static let partReason: [TouchPart: RunEndReason] = [.thigh: .thighTouch, .chest: .chestTouch, .head: .headTouch]
+
+    private typealias Candidate = (part: TouchPart, side: BodySide?, gap: Double)
+
+    /// The illegal option is closer to the ball than every legal one by at least `callMargin`.
+    private func isClear(_ sample: Sample, illegal: (Candidate) -> Bool, legal: (Candidate) -> Bool) -> Bool {
+        let all = candidates(sample)
+        guard let bad = all.filter(illegal).map(\.gap).min() else { return false }
+        guard let good = all.filter(legal).map(\.gap).min() else { return true }
+        return good - bad >= metres(config.callMargin)
+    }
+
     /// Nearest body part to the ball (with its side for legs), or `.unknown` if there is no pose or
     /// nothing within reach.
     private func classify(_ sample: Sample) -> (TouchPart, BodySide?) {
-        guard let pose = sample.pose else { return (.unknown, nil) }
+        guard sample.pose != nil else { return (.unknown, nil) }
+        guard let best = candidates(sample).min(by: { $0.gap < $1.gap }),
+              best.gap <= sample.radius + metres(config.reach) else { return (.unknown, nil) }
+        return (best.part, best.side)
+    }
+
+    /// Every body part's gap to the ball (distance minus the part's thickness).
+    private func candidates(_ sample: Sample) -> [Candidate] {
+        guard let pose = sample.pose else { return [] }
         let ball = sample.center
-        var best: (part: TouchPart, side: BodySide?, gap: Double)?
+        var all: [Candidate] = []
 
         func consider(_ part: TouchPart, side: BodySide? = nil, thickness: Double, _ distance: Double?) {
             guard let distance else { return }
-            let gap = distance - metres(thickness)
-            if best == nil || gap < best!.gap { best = (part, side, gap) }
+            all.append((part, side, distance - metres(thickness)))
         }
         func segment(_ a: BodyJoint, _ b: BodyJoint) -> Double? {
             guard let pa = pose[a], let pb = pose[b] else { return nil }
@@ -329,12 +408,11 @@ final class JuggleCounter: DrillCounter {
             let top = DrillPoint(x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2)
             let mid = DrillPoint(x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2)
             let chestBottom = DrillPoint(x: (top.x + mid.x) / 2, y: (top.y + mid.y) / 2)
-            consider(.chest, thickness: 0.12, ball.distance(toSegment: top, chestBottom))
+            // Below the hips it's a thigh, never the chest (seen on device: hip-height touches called chest).
+            if ball.y > mid.y { consider(.chest, thickness: 0.12, ball.distance(toSegment: top, chestBottom)) }
         }
         consider(.head, thickness: 0.12, pose[.nose].map(ball.distance(to:)))
-
-        guard let best, best.gap <= sample.radius + metres(config.reach) else { return (.unknown, nil) }
-        return (best.part, best.side)
+        return all
     }
 
     // MARK: - Floor and scale

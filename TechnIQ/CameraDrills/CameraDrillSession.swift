@@ -22,6 +22,12 @@ final class CameraDrillSession: ObservableObject {
         let previousBest: Int?
         let xp: Int
         let coins: Int
+        /// Why it ended, said plainly ("Ended: thigh touch (feet only)").
+        var endLine = ""
+        /// A rule was broken (not just the ball dropping): shown as a failure.
+        var brokeRule = false
+        /// What the camera noticed about the run ("Right foot sends it 40% higher than your left").
+        var insights: [String] = []
     }
 
     let drill: CameraDrill
@@ -39,6 +45,8 @@ final class CameraDrillSession: ObservableObject {
     @Published private(set) var ball: BallSighting?
     @Published private(set) var lastResult: RunResult?
     @Published private(set) var runs: [RunResult] = []
+    /// How runs usually end this session, once there are a few ("3 of 4 runs ended on a thigh touch").
+    @Published private(set) var sessionLine: String?
     @Published var voiceOn = true
     /// Width / height of the upright frame, for mapping overlays.
     @Published private(set) var aspect: Double
@@ -55,6 +63,8 @@ final class CameraDrillSession: ObservableObject {
     // Source-queue state.
     private var flow: HandsFreeFlow
     private var counter: DrillCounter?
+    private var recorder = RunRecorder()
+    private var sessionStats: [RunStats] = []
     private var liveStartedAt = 0.0
     private let speech = AVSpeechSynthesizer()
 
@@ -123,7 +133,8 @@ final class CameraDrillSession: ObservableObject {
         source.queue.async {
             // A run in progress still counts: close it at the last analysed frame.
             if self.flow.isLive, let counter = self.counter {
-                self.handle(counter.finish(at: self.lastFrameTime))
+                let closing = counter.finish(at: self.lastFrameTime)
+                self.handle(closing, stats: self.recorder.record(DrillFrame(time: self.lastFrameTime), events: closing))
             }
             DispatchQueue.main.async { self.phase = .finished }
         }
@@ -164,11 +175,16 @@ final class CameraDrillSession: ObservableObject {
 
         if flow.isLive && !wasLive {
             counter = drill.makeCounter(dominantFoot: player.dominantFoot)
+            recorder = RunRecorder()
             liveStartedAt = frame.time
         }
         if wasLive, flow.isLive || cues.contains(.timeUp), let counter {
-            handle(counter.process(frame))
-            if cues.contains(.timeUp) { handle(counter.finish(at: frame.time)) }
+            let events = counter.process(frame)
+            handle(events, stats: recorder.record(frame, events: events))
+            if cues.contains(.timeUp) {
+                let closing = counter.finish(at: frame.time)
+                handle(closing, stats: recorder.record(frame, events: closing))
+            }
         }
 
         let inPosition = frame.pose.map { HandsFreeFlow.isInPosition($0, aspect: flow.aspect) } ?? false
@@ -196,7 +212,9 @@ final class CameraDrillSession: ObservableObject {
         }
     }
 
-    private func handle(_ events: [DrillEvent]) {
+    /// - Parameter stats: the runs `events` ended, from the recorder (runs with no touches have none).
+    private func handle(_ events: [DrillEvent], stats: [RunStats] = []) {
+        var finished = stats
         for event in events {
             #if DEBUG
             debugDump.event("\(event)")
@@ -207,10 +225,16 @@ final class CameraDrillSession: ObservableObject {
                     self.count = count
                     self.say("\(count)")
                 }
-            case let .runEnded(count, _, time):
+            case let .runEnded(count, reason, time):
                 if drill.mode == .streak { flow.runEnded(at: time) }
                 let duration = time - liveStartedAt
-                DispatchQueue.main.async { MainActor.assumeIsolated { self.finishRun(count: count, duration: duration) } }
+                let run = finished.first(where: { $0.count == count }) ?? RunStats(count: count, endReason: reason, touches: [])
+                finished.removeAll { $0 == run }
+                if count > 0 { sessionStats.append(run) }
+                let sessionLine = RunStats.sessionLine(sessionStats)
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { self.finishRun(count: count, duration: duration, stats: run, sessionLine: sessionLine) }
+                }
             }
         }
     }
@@ -228,22 +252,35 @@ final class CameraDrillSession: ObservableObject {
     // MARK: - Main actor
 
     @MainActor
-    private func finishRun(count: Int, duration: Double) {
+    private func finishRun(count: Int, duration: Double, stats: RunStats, sessionLine: String?) {
         let outcome = (runService ?? .shared).record(drill: drill, count: count, duration: duration, player: player)
+        let brokeRule = Self.ruleCall[stats.endReason ?? .stopped] != nil
         let result = RunResult(count: count,
                                isPersonalBest: outcome?.isPersonalBest ?? false,
                                previousBest: outcome?.previousBest,
                                xp: outcome?.reward.xp ?? 0,
-                               coins: outcome?.reward.coins ?? 0)
+                               coins: outcome?.reward.coins ?? 0,
+                               endLine: stats.endLine,
+                               brokeRule: brokeRule,
+                               insights: stats.insights)
         lastResult = result
         runs.append(result)
+        self.sessionLine = sessionLine
         self.count = count
+        // The judge says why first: "Thigh. 7."
+        let call = stats.endReason.flatMap { Self.ruleCall[$0] }.map { "\($0). " } ?? ""
         if result.isPersonalBest {
-            say("\(count). New best!")
-        } else if count > 0 {
-            say("\(count)")
+            say("\(call)\(count). New best!")
+        } else if count > 0 || !call.isEmpty {
+            say("\(call)\(count)")
         }
     }
+
+    /// What the judge says out loud when a run ends on a rule (the ball dropping isn't a call).
+    private static let ruleCall: [RunEndReason: String] = [
+        .handball: "Hands", .wrongFoot: "Wrong foot", .thighTouch: "Thigh", .chestTouch: "Chest",
+        .headTouch: "Header", .tooHigh: "Too high"
+    ]
 
     private func speak(_ cue: HandsFreeFlow.Cue) {
         switch cue {

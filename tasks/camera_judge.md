@@ -12,24 +12,32 @@ pose + ball track the counter already uses (no video model, no AI review).
 - The judge says why: spoken and on screen ("Thigh — run over at 23"), with the frame time kept for the replay.
 - Stats come from the same run data, so they need no extra effort from the player.
 
-## Phase J1 — Run stats (pure, TDD)
-- [ ] `RunRecorder` (Core): takes frames + counter events for one run → per touch: time, part, side, apex
-      height after the touch (m above the floor, ball as the ruler), sideways position; flags ambiguous touches
-- [ ] `RunStats` (pure): touches/min, left/right foot split, part split, apex mean + spread per foot,
-      interval consistency, drift (how far the ball wanders sideways, metres), ambiguous share
-- [ ] Insight lines from stats, deterministic thresholds only: "Right foot sends it 40% higher than your
-      left", "Drifting 0.6 m to your left", "62 touches a minute", "Left foot: 30% of touches"
-- [ ] Harness: `replay` prints stats; check them on Evan's logged sessions
+Decisions (Evan, 2026-11-03): all five rules; presets as separate drills; hidden touches count (benefit of
+the doubt); per-run insights free, trends Pro; heights shown as body bands, metres underneath. Surface every
+failure: each run says why it ended, and the session says how runs usually end.
 
-## Phase J2 — Judge (rules engine, TDD)
-- [ ] `JuggleRule` set on `JuggleCounter.Config` (replaces `FootRule`): feet only (no thighs / chest /
-      head), weak foot only, alternating feet, below the waist (ball never above hip line), below the knee,
-      no hands (always on)
-- [ ] Each rule checked at the touch (part / side) or every frame (height); violation → run ends with a
-      `RunEndReason.rule(…)` + spoken reason; confidence margins so ambiguous evidence never ends a run
-- [ ] Drill presets from rule sets: Juggling (no hands), Weak foot, Alternating, Feet only, Below the waist;
-      plus "Custom" (toggle rules) — existing weak-foot / alternating drills migrate to presets
-- [ ] Tests: every rule's violation and its ambiguous near-miss, on synthetic scenes; replay Evan's logs to
+## Phase J1 — Run stats (pure, TDD) — done
+- [x] `RunRecorder` (Core): takes frames + counter events for one run → per touch: time, part, side, apex
+      height after the touch (m above the floor, ball as the ruler), sideways position; flags ambiguous touches
+- [x] `RunStats` (pure): touches/min, left/right foot split, part split, apex mean + spread per foot,
+      interval consistency, drift (how far the ball wanders sideways, metres), ambiguous share
+- [x] Insight lines from stats, deterministic thresholds only: "Right foot sends it 40% higher than your
+      left", "Drifting 0.6 m to your left", "62 touches a minute", "Left foot: 30% of touches"
+- [x] Harness: `replay` prints stats; check them on Evan's logged sessions
+
+- [x] Hidden contacts placed where the fall and the rise meet (foot touches were judged thigh / chest when the
+      ball vanished below the knees): Evan's session went from 13 → 31 foot touches
+
+## Phase J2 — Judge (rules engine, TDD) — engine done
+- [x] `JuggleCounter.Config.partRule` (.feetOnly) + `heightLimit` (.waist / .knee) beside `footRule` (weak foot,
+      alternating); no hands always on (raised hand only)
+- [x] Each rule checked at the touch (part / side) or every frame (height); violation → run ends with a
+      `RunEndReason` (thighTouch / chestTouch / headTouch / tooHigh / wrongFoot) + spoken call ("Thigh. 7");
+      only seen touches with a `callMargin` are judged; height needs 2 sightings in a row of a normal-sized ball
+- [x] Drill presets: Juggling, Weak foot, Alternating, Feet only, Below the waist. [ ] "Custom" (toggle rules),
+      below-the-knee preset
+- [x] Session shows why each run ended (red for a rule call), the run's insights, and how runs usually end
+- [x] Tests: every rule's violation and its ambiguous near-miss, on synthetic scenes; replay Evan's logs to
       check no false calls
 
 ## Phase J3 — Results + storage
@@ -42,6 +50,9 @@ pose + ball track the counter already uses (no video model, no AI review).
 - [ ] Run history → per-drill trend screen (Swift Charts, TQ styling): best per day, weak-foot best,
       left/right split, touches/min over time; headline line "Weak foot: 8 → 23 in 3 weeks"
 - [ ] Home / Train surfaces the headline when there's a meaningful change
+
+## Phase J5 — Ball effects (Evan, 2026-11-03)
+- [ ] Live effects on the tracked ball (trail, fire, glow) + in the share replay, Juggle Dude-style
 
 ## Unresolved
 - Launch rule set: feet only, weak foot, alternating, below waist, below knee — all, or fewer?
