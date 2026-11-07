@@ -196,12 +196,14 @@ struct CameraDrillSessionView: View {
     // MARK: Overlay (frame units → aspect-fill screen points)
 
     private func overlay(in size: CGSize) -> some View {
-        let a = session.aspect
-        let scale = max(size.width / a, size.height)
+        // All CGFloat: mixing Double and CGFloat here is ambiguous for some Swift compilers.
+        let a = CGFloat(session.aspect)
+        let scale: CGFloat = max(size.width / a, size.height)
         let origin = CGPoint(x: (size.width - a * scale) / 2, y: (size.height - scale) / 2)
         let mirrored = session.isMirrored
         func point(_ x: Double, _ y: Double) -> CGPoint {
-            CGPoint(x: origin.x + (mirrored ? a - x : x) * scale, y: origin.y + (1 - y) * scale)
+            let x = CGFloat(x), y = CGFloat(y)
+            return CGPoint(x: origin.x + (mirrored ? a - x : x) * scale, y: origin.y + (1 - y) * scale)
         }
         let showOutline = session.phase == .positioning || session.phase == .result
             || { if case .countdown = session.phase { return true } else { return false } }()
@@ -216,7 +218,7 @@ struct CameraDrillSessionView: View {
             }
             if session.phase == .live, let ball = session.ball {
                 let c = point(ball.center.x, ball.center.y)
-                let r = ball.radius * scale * 1.2
+                let r = CGFloat(ball.radius) * scale * 1.2
                 context.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)),
                                with: .color(DesignSystem.Colors.grass), lineWidth: 3)
             }
