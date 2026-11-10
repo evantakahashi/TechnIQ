@@ -1,252 +1,132 @@
 import SwiftUI
+import Charts
 
-// MARK: - Supporting Views
+// MARK: - Progress charts (flat, one accent)
 
-struct SkillProgressRow: View {
-    let skill: SkillProgress
+/// Minutes per day (week range) or per week: the current bucket in grass, the rest raised.
+struct ProgressMinutesChart: View {
+    let summary: ProgressSummary
+    let range: TimeRange
 
-    var body: some View {
-        VStack(spacing: 6) {
-            HStack {
-                Text(skill.skillName)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+    private var title: String { range == .week ? "Minutes per day" : "Minutes per week" }
 
-                Spacer()
-
-                HStack(spacing: 4) {
-                    if skill.change > 0 {
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 10))
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        Text("+\(String(format: "%.1f", skill.change))")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    } else if skill.change < 0 {
-                        Image(systemName: "arrow.down.right")
-                            .font(.system(size: 10))
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                        Text("\(String(format: "%.1f", skill.change))")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                    }
-
-                    Text(String(format: "%.1f", skill.currentLevel))
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Text("/ 5.0")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-            }
-
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(DesignSystem.Colors.neutral300)
-                        .frame(height: 4)
-                        .cornerRadius(2)
-
-                    Rectangle()
-                        .fill(progressColor(for: skill.currentLevel))
-                        .frame(width: geometry.size.width * (skill.currentLevel / 5.0), height: 4)
-                        .cornerRadius(2)
-                }
-            }
-            .frame(height: 4)
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
+    /// Show at most ~6 axis labels however many bars there are.
+    private var labelledStarts: Set<Date> {
+        let buckets = summary.buckets
+        let stride = max(1, Int((Double(buckets.count) / 6).rounded(.up)))
+        return Set(buckets.enumerated().filter { ($0.offset - (buckets.count - 1)) % stride == 0 }.map(\.element.start))
     }
 
-    private func progressColor(for level: Double) -> Color {
-        switch level {
-        case 0..<2.0: return DesignSystem.Colors.accentOrange
-        case 2.0..<3.5: return DesignSystem.Colors.accentYellow
-        case 3.5...5.0: return DesignSystem.Colors.primaryGreen
-        default: return DesignSystem.Colors.secondaryBlue
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TQSectionHeader(title) {
+                TQMeta("avg \(summary.averageBucketMinutes) min", tone: .muted, size: 14)
+            }
+            Chart(summary.buckets) { bucket in
+                BarMark(
+                    x: .value("Start", bucket.start, unit: range == .week ? .day : .weekOfYear),
+                    y: .value("Minutes", bucket.minutes),
+                    width: .ratio(0.72)
+                )
+                .cornerRadius(2)
+                .foregroundStyle(bucket.isCurrent ? DesignSystem.Colors.grass : DesignSystem.Colors.surfaceHighlight)
+            }
+            .chartXAxis {
+                AxisMarks(values: summary.buckets.map(\.start)) { value in
+                    if let date = value.as(Date.self), labelledStarts.contains(date),
+                       let bucket = summary.buckets.first(where: { $0.start == date }) {
+                        AxisValueLabel {
+                            Text(bucket.label)
+                                .font(Font.system(size: 11, weight: .semibold).width(.condensed))
+                                .foregroundColor(bucket.isCurrent ? DesignSystem.Colors.grass : DesignSystem.Colors.dimIvory)
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1)).foregroundStyle(DesignSystem.Colors.surfaceOverlay)
+                    AxisValueLabel()
+                        .font(Font.system(size: 11, weight: .semibold).width(.condensed))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                }
+            }
+            .frame(height: 150)
+            .accessibilityLabel("\(title), average \(summary.averageBucketMinutes) minutes")
         }
     }
 }
 
-struct AchievementCard: View {
-    let achievement: ProgressAchievement
+/// "How it felt": one bar split three ways, counts underneath.
+struct ProgressFeelBar: View {
+    let feel: [SessionFeel: Int]
+
+    private var total: Int { max(1, feel.values.reduce(0, +)) }
+
+    private func color(_ feel: SessionFeel) -> Color {
+        switch feel {
+        case .tooEasy: return DesignSystem.Colors.dimIvory
+        case .right: return DesignSystem.Colors.grass
+        case .tooHard: return DesignSystem.Colors.cone
+        }
+    }
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(achievement.color.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: achievement.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(achievement.color)
+        VStack(alignment: .leading, spacing: 12) {
+            TQSectionHeader("How it felt")
+            GeometryReader { proxy in
+                HStack(spacing: 2) {
+                    ForEach(SessionFeel.allCases) { item in
+                        let count = feel[item] ?? 0
+                        if count > 0 {
+                            Rectangle()
+                                .fill(color(item))
+                                .frame(width: max(4, (proxy.size.width - 4) * CGFloat(count) / CGFloat(total)))
+                        }
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(achievement.title)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text(achievement.description)
-                    .font(DesignSystem.Typography.labelMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+            .frame(height: 10)
+            HStack(spacing: 16) {
+                ForEach(SessionFeel.allCases) { item in
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2).fill(color(item)).frame(width: 8, height: 8)
+                        TQMeta("\(item.label) \(feel[item] ?? 0)", tone: .muted, size: 13)
+                    }
+                }
             }
-
-            Spacer()
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(SessionFeel.allCases.map { "\($0.label) \(feel[$0] ?? 0)" }.joined(separator: ", "))
     }
 }
 
-struct CategoryBar: View {
-    let category: String
-    let percentage: Double
-    let color: Color
+/// Small line of a benchmark's values, last point marked.
+struct ProgressSparkline: View {
+    let values: [Int]
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
+        GeometryReader { proxy in
+            let low = Double(values.min() ?? 0), high = Double(values.max() ?? 1)
+            let span = max(1, high - low)
+            let inset: CGFloat = 4
+            let points: [CGPoint] = values.enumerated().map { index, value in
+                let x = inset + (proxy.size.width - 2 * inset) * CGFloat(index) / CGFloat(max(1, values.count - 1))
+                let y = inset + (proxy.size.height - 2 * inset) * CGFloat(1 - (Double(value) - low) / span)
+                return CGPoint(x: x, y: y)
+            }
             ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                Image(systemName: iconForCategory)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-            }
-
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                HStack {
-                    Text(category)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.medium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Spacer()
-
-                    Text("\(Int(percentage))%")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(color)
+                Path { path in
+                    guard let first = points.first else { return }
+                    path.move(to: first)
+                    points.dropFirst().forEach { path.addLine(to: $0) }
                 }
-
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(DesignSystem.Colors.neutral300)
-                            .frame(height: 6)
-
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(color)
-                            .frame(width: geometry.size.width * (percentage / 100.0), height: 6)
-                    }
-                }
-                .frame(height: 6)
-            }
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
-    }
-
-    private var iconForCategory: String {
-        switch category.lowercased() {
-        case "technical": return "figure.soccer"
-        case "physical": return "heart.fill"
-        case "tactical": return "brain.head.profile"
-        default: return "sportscourt"
-        }
-    }
-}
-
-// MARK: - Insight Card
-
-struct InsightCard: View {
-    let insight: TrainingInsight
-
-    private var cardColor: Color {
-        switch insight.color {
-        case "primaryGreen":
-            return DesignSystem.Colors.primaryGreen
-        case "secondaryBlue":
-            return DesignSystem.Colors.secondaryBlue
-        case "accentOrange":
-            return DesignSystem.Colors.accentOrange
-        case "accentYellow":
-            return DesignSystem.Colors.accentYellow
-        case "error":
-            return DesignSystem.Colors.error
-        default:
-            return DesignSystem.Colors.neutral400
-        }
-    }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(cardColor.opacity(0.15))
-                    .frame(width: 44, height: 44)
-
-                Image(systemName: insight.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(cardColor)
-            }
-
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(insight.title)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Spacer()
-
-                    // Priority badge for high priority items
-                    if insight.priority >= 8 {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(cardColor)
-                    }
-                }
-
-                Text(insight.description)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // Actionable suggestion
-                if let actionable = insight.actionable {
-                    HStack(spacing: 4) {
-                        Image(systemName: "lightbulb.fill")
-                            .font(.caption2)
-                            .foregroundColor(cardColor)
-
-                        Text(actionable)
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(cardColor)
-                            .fontWeight(.medium)
-                    }
-                    .padding(.top, 4)
+                .stroke(DesignSystem.Colors.dimIvory, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                if let last = points.last {
+                    Circle().fill(DesignSystem.Colors.grass).frame(width: 7, height: 7).position(last)
                 }
             }
-
-            Spacer()
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.card)
-        .customShadow(DesignSystem.Shadow.small)
     }
 }

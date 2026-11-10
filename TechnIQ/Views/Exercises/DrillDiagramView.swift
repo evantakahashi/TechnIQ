@@ -108,7 +108,7 @@ struct AnimatedDrillDiagramView: View {
                     if chrome {
                         Text("\(Int(diagram.field.width))m x \(Int(diagram.field.length))m")
                             .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                            .foregroundColor(DesignSystem.Colors.mutedIvory)
                             .position(x: geometry.size.width / 2, y: offsetY + fieldHeight + fieldPadding / 2 + 2)
                     }
                 }
@@ -279,7 +279,7 @@ struct AnimatedDrillDiagramView: View {
             // Pulsing glow when active
             if isActive {
                 Circle()
-                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.3))
+                    .fill(DesignSystem.Colors.grass.opacity(0.3))
                     .frame(width: playerSize + 14, height: playerSize + 14)
                     .scaleEffect(pulseScale)
                     .onAppear {
@@ -413,15 +413,15 @@ struct AnimatedDrillDiagramView: View {
         VStack(spacing: 1) {
             HStack(spacing: 10) {
                 Capsule()
-                    .fill(DesignSystem.Colors.accentOrange)
+                    .fill(DesignSystem.Colors.cone)
                     .frame(width: 3, height: 10)
                 Capsule()
-                    .fill(DesignSystem.Colors.accentOrange)
+                    .fill(DesignSystem.Colors.cone)
                     .frame(width: 3, height: 10)
             }
             .overlay(
                 Rectangle()
-                    .fill(DesignSystem.Colors.accentOrange.opacity(0.5))
+                    .fill(DesignSystem.Colors.cone.opacity(0.5))
                     .frame(width: 8, height: 1)
             )
             Text(label)
@@ -722,7 +722,7 @@ struct AnimatedDrillDiagramView: View {
                step <= instructions.count {
                 Text(instructions[step - 1])
                     .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, DesignSystem.Spacing.sm)
                     .transition(.opacity)
@@ -740,14 +740,14 @@ struct AnimatedDrillDiagramView: View {
                         .font(DesignSystem.Typography.labelMedium)
                         .foregroundColor(
                             currentStep ?? 0 > 1
-                                ? DesignSystem.Colors.textPrimary
+                                ? DesignSystem.Colors.chalkWhite
                                 : DesignSystem.Colors.textTertiary
                         )
                         .frame(width: 36, height: 36)
                         .background(DesignSystem.Colors.surfaceOverlay)
                         .clipShape(Circle())
                 }
-                .a11y(label: "Previous step")
+                .accessibilityLabel("Previous step")
                 .disabled((currentStep ?? 0) <= 1)
 
                 Spacer()
@@ -756,7 +756,7 @@ struct AnimatedDrillDiagramView: View {
                 if let step = currentStep {
                     Text("Step \(step) of \(totalSteps)")
                         .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .foregroundColor(DesignSystem.Colors.mutedIvory)
                 }
 
                 Spacer()
@@ -776,7 +776,7 @@ struct AnimatedDrillDiagramView: View {
                             .foregroundColor(DesignSystem.Colors.textOnAccent)
                             .padding(.horizontal, DesignSystem.Spacing.md)
                             .padding(.vertical, DesignSystem.Spacing.sm)
-                            .background(DesignSystem.Colors.primaryGreen)
+                            .background(DesignSystem.Colors.grass)
                             .clipShape(Capsule())
                     }
                 } else {
@@ -790,14 +790,14 @@ struct AnimatedDrillDiagramView: View {
                             .font(DesignSystem.Typography.labelMedium)
                             .foregroundColor(
                                 (currentStep ?? 0) < totalSteps
-                                    ? DesignSystem.Colors.textPrimary
+                                    ? DesignSystem.Colors.chalkWhite
                                     : DesignSystem.Colors.textTertiary
                             )
                             .frame(width: 36, height: 36)
                             .background(DesignSystem.Colors.surfaceOverlay)
                             .clipShape(Circle())
                     }
-                    .a11y(label: "Next step")
+                    .accessibilityLabel("Next step")
                     .disabled((currentStep ?? 0) >= totalSteps)
                 }
             }
@@ -814,7 +814,7 @@ struct AnimatedDrillDiagramView: View {
                             Text(isAutoPlaying ? "Pause" : "Auto-play")
                                 .font(DesignSystem.Typography.labelSmall)
                         }
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
+                        .foregroundColor(DesignSystem.Colors.grass)
                     }
 
                     Spacer()
@@ -839,13 +839,13 @@ struct AnimatedDrillDiagramView: View {
             .foregroundColor(
                 isSelected
                     ? DesignSystem.Colors.textOnAccent
-                    : DesignSystem.Colors.textSecondary
+                    : DesignSystem.Colors.mutedIvory
             )
             .padding(.horizontal, DesignSystem.Spacing.sm)
             .padding(.vertical, DesignSystem.Spacing.xs)
             .background(
                 isSelected
-                    ? DesignSystem.Colors.primaryGreen
+                    ? DesignSystem.Colors.grass
                     : DesignSystem.Colors.surfaceOverlay
             )
             .clipShape(Capsule())
@@ -860,29 +860,6 @@ struct ConeTriangle: Shape {
         path.move(to: CGPoint(x: rect.midX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
-    }
-}
-
-/// Small pentagon shape for ball overlay
-struct PentagonShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let radius = min(rect.width, rect.height) / 2
-        var path = Path()
-        for i in 0..<5 {
-            let angle = (CGFloat(i) * 2 * .pi / 5) - .pi / 2
-            let point = CGPoint(
-                x: center.x + radius * cos(angle),
-                y: center.y + radius * sin(angle)
-            )
-            if i == 0 {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
-            }
-        }
         path.closeSubpath()
         return path
     }
@@ -926,7 +903,7 @@ struct CurvedPathShape: Shape {
     return VStack {
         Text("Drill Diagram")
             .font(DesignSystem.Typography.headlineSmall)
-            .foregroundColor(DesignSystem.Colors.textPrimary)
+            .foregroundColor(DesignSystem.Colors.chalkWhite)
 
         AnimatedDrillDiagramView(
             diagram: sampleDiagram,

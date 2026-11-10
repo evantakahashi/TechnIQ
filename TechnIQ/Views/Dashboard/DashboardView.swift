@@ -158,7 +158,6 @@ struct DashboardView: View {
                     banners
                     resumeStrip
                     hero(player: player)
-                        .coachMark(.dashboard)
                     weekSection
                     benchmarksSection
                     rows(player: player)
@@ -366,11 +365,7 @@ struct DashboardView: View {
     private func avatar(player: Player) -> some View {
         TQAvatarCircle {
             if player.avatarConfiguration != nil {
-                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .small, kitNumber: player.kitNumberValue)
-                    .frame(width: 60, height: 90)
-                    .scaleEffect(1.05, anchor: .top)
-                    .offset(y: -2)
-                    .frame(width: 40, height: 40, alignment: .top)
+                AvatarBustView(avatarState: avatarService.currentAvatarState, kitNumber: player.kitNumberValue, diameter: 40)
             } else {
                 Text(String((player.name ?? "P").prefix(1)).uppercased())
                     .font(Font.system(size: 15, weight: .bold).width(.condensed))

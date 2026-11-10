@@ -1,441 +1,189 @@
 import SwiftUI
 import CoreData
 
-enum SessionViewMode: String, CaseIterable {
-    case list = "list"
-    case calendar = "calendar"
-    
-    var displayName: String {
-        switch self {
-        case .list:
-            return "List"
-        case .calendar:
-            return "Calendar"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .list:
-            return "list.bullet"
-        case .calendar:
-            return "calendar"
-        }
-    }
-}
+// MARK: - Session history (You → Session history)
+//
+// One screen: totals, a month calendar that marks training days, then every session grouped by
+// month. Tapping a calendar day narrows the list to that day; tapping a session opens its detail.
 
 struct SessionHistoryView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authManager: AuthenticationManager
     @FetchRequest var sessions: FetchedResults<TrainingSession>
-    @FetchRequest var players: FetchedResults<Player>
 
-    @State private var selectedSession: TrainingSession?
-    @State private var showingSessionDetail = false
-    @State private var viewMode: SessionViewMode = .list
-    
+    @State private var month = Date()
+    @State private var selectedDay: Date?
+    @State private var openSession: TrainingSession?
+
+    private let calendar = Calendar.current
+
     init() {
-        // Predicates are derived from the signed-in user here (not only in onAppear): SwiftUI
-        // re-runs init whenever the parent re-renders, so an initial "match nothing" predicate
-        // would empty the list again after the first appearance.
+        // Derived from the signed-in user here (not only in onAppear): SwiftUI re-runs init whenever
+        // the parent re-renders, so a "match nothing" initial predicate would empty the list again.
         self._sessions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
             predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
             animation: .default
         )
-        self._players = FetchRequest(
-            sortDescriptors: [],
-            predicate: AuthenticationManager.shared.playerPredicate,
-            animation: .default
-        )
     }
-    
+
     var body: some View {
-        ZStack {
-            AdaptiveBackground()
-                .ignoresSafeArea()
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                TQNavBar("History") {
+                    TQBackButton { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+                }
+                .padding(.top, 8)
 
-            VStack(spacing: 0) {
-                // View Mode Picker
-                viewModePickerSection
-
-                // Content based on view mode
-                if viewMode == .list {
-                    listView
+                if sessions.isEmpty {
+                    emptyState
                 } else {
-                    calendarView
+                    TQStatRail(items: [
+                        .init("\(sessions.count)", label: sessions.count == 1 ? "session" : "sessions"),
+                        .init(totalTime.value, unit: totalTime.unit, label: "trained"),
+                        .init("\(sessionsThisMonth)", label: "this month", accent: sessionsThisMonth > 0)
+                    ])
+
+                    SessionMonthCalendar(month: $month, selectedDay: $selectedDay, trainedDays: trainedDays)
+
+                    sessionList
                 }
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .navigationTitle("Training History")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: toggleViewMode) {
-                    Image(systemName: viewMode == .list ? "calendar" : "list.bullet")
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .a11y(label: viewMode == .list ? "Switch to calendar view" : "Switch to list view")
-            }
-        }
-        .sheet(isPresented: $showingSessionDetail) {
-            if let session = selectedSession {
-                SessionDetailView(session: session)
-            }
-        }
-        .onAppear {
-            updateSessionsFilter()
-            updatePlayersFilter()
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .sheet(item: $openSession) { session in
+            SessionDetailView(session: session)
         }
         .onChange(of: authManager.userUID) {
-            updateSessionsFilter()
-            updatePlayersFilter()
+            sessions.nsPredicate = AuthenticationManager.shared.ownedByPlayerPredicate
         }
     }
-    
-    // MARK: - View Mode Picker
-    
-    private var viewModePickerSection: some View {
-        let selectedIndex = Binding<Int>(
-            get: { SessionViewMode.allCases.firstIndex(of: viewMode) ?? 0 },
-            set: { newIndex in
-                withAnimation(DesignSystem.Animation.quick) {
-                    viewMode = SessionViewMode.allCases[newIndex]
-                }
-            }
-        )
-        return VStack(spacing: DesignSystem.Spacing.sm) {
-            ModernSegmentControl(
-                options: SessionViewMode.allCases.map { $0.displayName },
-                selectedIndex: selectedIndex,
-                icons: SessionViewMode.allCases.map { $0.icon }
-            )
-            .padding(.horizontal, DesignSystem.Spacing.md)
 
-            // Session summary for current month/week
-            if !sessions.isEmpty {
-                sessionSummaryView
-            }
+    // MARK: Empty
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TQDisplayTitle("No sessions\nyet", size: .medium)
+            TQBody("Finish a session and it lands here with its drills, time and how it felt.")
         }
-        .padding(.bottom, DesignSystem.Spacing.md)
+        .padding(.top, DesignSystem.Spacing.md)
     }
-    
-    // MARK: - List View
-    
-    private var listView: some View {
-        List {
-            if sessions.isEmpty {
-                ContentUnavailableView(
-                    "No Training Sessions",
-                    systemImage: "calendar.badge.plus",
-                    description: Text("Start your first training session to see it here")
-                )
-                .listRowBackground(Color.clear)
-            } else {
-                ForEach(sessions, id: \.objectID) { session in
-                    SessionHistoryRow(session: session)
-                        .onTapGesture {
-                            selectedSession = session
-                            showingSessionDetail = true
-                        }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+
+    // MARK: List
+
+    private var sessionList: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            if let selectedDay {
+                HStack {
+                    TQGroupHeader(Self.dayTitle(selectedDay, calendar: calendar))
+                    Spacer()
+                    TQTextLink("All sessions", arrow: false) { self.selectedDay = nil }
                 }
-                .onDelete(perform: deleteSessions)
+                let daySessions = sessions.filter { session in
+                    session.date.map { calendar.isDate($0, inSameDayAs: selectedDay) } ?? false
+                }
+                if daySessions.isEmpty {
+                    TQBody("No session on this day.", tone: .muted)
+                } else {
+                    TQRowList { rows(for: daySessions) }
+                }
+            } else {
+                ForEach(monthGroups, id: \.start) { group in
+                    VStack(alignment: .leading, spacing: 0) {
+                        TQGroupHeader(group.title)
+                        TQRowList { rows(for: group.sessions) }
+                    }
+                }
             }
         }
-        .listStyle(PlainListStyle())
-        .background(Color.clear)
     }
-    
-    // MARK: - Session Summary View
-    
-    private var sessionSummaryView: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            // Total Sessions
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text("\(sessions.count)")
-                    .font(DesignSystem.Typography.numberMedium)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                
-                Text("Sessions")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-            
-            Divider()
-                .frame(height: 30)
-            
-            // Total Training Time
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text(totalDurationText)
-                    .font(DesignSystem.Typography.numberMedium)
-                    .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                
-                Text("Minutes")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-            }
-            
-            Divider()
-                .frame(height: 30)
-            
-            // Average Intensity
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text(String(format: "%.1f", averageIntensity))
-                    .font(DesignSystem.Typography.numberMedium)
-                    .foregroundColor(DesignSystem.Colors.accentOrange)
-                
-                Text("Avg Intensity")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+    private func rows(for list: [TrainingSession]) -> some View {
+        ForEach(list, id: \.objectID) { session in
+            TQRow(session.sessionType ?? "Training",
+                  subtitle: Self.subtitle(for: session),
+                  leading: .tile(TQTile(number: Self.dayNumber(session.date, calendar: calendar), unit: "")),
+                  meta: .init("\(Int(session.duration)) min")) {
+                openSession = session
             }
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.card)
-        .customShadow(DesignSystem.Shadow.small)
-        .padding(.horizontal, DesignSystem.Spacing.md)
     }
-    
-    // MARK: - Calendar View
-    
-    private var calendarView: some View {
-        SessionCalendarView(onSessionSelected: { session in
-            // Handle session selection from calendar
-            self.selectedSession = session
-            self.showingSessionDetail = true
-        })
-        .frame(maxWidth: CGFloat.infinity, maxHeight: CGFloat.infinity)
+
+    // MARK: Derived
+
+    private struct MonthGroup {
+        let start: Date
+        let title: String
+        let sessions: [TrainingSession]
     }
-    
-    private func formatDate(_ date: Date) -> String {
+
+    private var monthGroups: [MonthGroup] {
         let formatter = DateFormatter()
-        formatter.dateStyle = .short
+        formatter.dateFormat = "MMMM yyyy"
+        let grouped = Dictionary(grouping: sessions.filter { $0.date != nil }) { session -> Date in
+            let date = session.date ?? Date()
+            return calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
+        }
+        return grouped.keys.sorted(by: >).map { start in
+            MonthGroup(start: start, title: formatter.string(from: start), sessions: grouped[start] ?? [])
+        }
+    }
+
+    private var trainedDays: Set<Date> {
+        Set(sessions.compactMap { $0.date.map { calendar.startOfDay(for: $0) } })
+    }
+
+    private var sessionsThisMonth: Int {
+        sessions.filter { session in
+            session.date.map { calendar.isDate($0, equalTo: Date(), toGranularity: .month) } ?? false
+        }.count
+    }
+
+    private var totalTime: (value: String, unit: String) {
+        let minutes = Int(sessions.reduce(0) { $0 + $1.duration })
+        if minutes < 60 { return ("\(minutes)", "min") }
+        let hours = Double(minutes) / 60
+        return (hours >= 10 ? "\(Int(hours.rounded()))" : String(format: "%.1f", hours), "h")
+    }
+
+    // MARK: Formatting
+
+    static func subtitle(for session: TrainingSession) -> String {
+        var parts: [String] = []
+        if let date = session.date {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEE"
+            parts.append(formatter.string(from: date))
+        }
+        let drills = session.exercises?.count ?? 0
+        if drills > 0 { parts.append("\(drills) drill\(drills == 1 ? "" : "s")") }
+        if let feel = SessionFeel(raw: session.feel) { parts.append(feel.label) }
+        return parts.joined(separator: " · ")
+    }
+
+    private static func dayNumber(_ date: Date?, calendar: Calendar) -> String {
+        guard let date else { return "–" }
+        return "\(calendar.component(.day, from: date))"
+    }
+
+    private static func dayTitle(_ date: Date, calendar: Calendar) -> String {
+        if calendar.isDateInToday(date) { return "Today" }
+        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE d MMMM"
         return formatter.string(from: date)
     }
-    
-    // MARK: - Computed Properties
-    
-    private var totalDurationText: String {
-        let totalMinutes = sessions.reduce(0) { $0 + $1.duration }
-        return "\(Int(totalMinutes))"
-    }
-    
-    private var averageIntensity: Double {
-        guard !sessions.isEmpty else { return 0 }
-        let totalIntensity = sessions.reduce(0) { $0 + $1.intensity }
-        return Double(totalIntensity) / Double(sessions.count)
-    }
-    
-    // MARK: - Helper Methods
-
-    private func toggleViewMode() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            viewMode = viewMode == .list ? .calendar : .list
-        }
-    }
-
-    private func updateSessionsFilter() {
-        guard !authManager.userUID.isEmpty else { return }
-
-        // Filter sessions by player's Firebase UID
-        sessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-        #if DEBUG
-        print("Updated SessionHistoryView filter for user: \(authManager.userUID)")
-        #endif
-    }
-
-    private func updatePlayersFilter() {
-        guard !authManager.userUID.isEmpty else { return }
-        players.nsPredicate = NSPredicate(format: "firebaseUID == %@", authManager.userUID)
-    }
-
-
-    private func deleteSessions(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { sessions[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                #if DEBUG
-                print("Error deleting sessions: \(error)")
-                #endif
-            }
-        }
-    }
 }
 
-struct SessionHistoryRow: View {
-    let session: TrainingSession
-
-    private var sessionColor: Color {
-        switch session.sessionType?.lowercased() {
-        case "dribbling", "ball control":
-            return DesignSystem.Colors.primaryGreen
-        case "shooting", "finishing":
-            return DesignSystem.Colors.error
-        case "passing":
-            return DesignSystem.Colors.secondaryBlue
-        case "fitness", "conditioning":
-            return DesignSystem.Colors.accentOrange
-        case "match", "game":
-            return DesignSystem.Colors.levelPurple
-        default:
-            return DesignSystem.Colors.primaryGreen
-        }
-    }
-
-    private var sessionIcon: String {
-        switch session.sessionType?.lowercased() {
-        case "dribbling", "ball control":
-            return "figure.soccer"
-        case "shooting", "finishing":
-            return "target"
-        case "passing":
-            return "arrow.left.and.right"
-        case "fitness", "conditioning":
-            return "heart.fill"
-        case "match", "game":
-            return "sportscourt"
-        default:
-            return "figure.run"
-        }
-    }
-
-    var body: some View {
-        ModernCard(padding: DesignSystem.Spacing.md) {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                // Session type icon in colored circle
-                ZStack {
-                    Circle()
-                        .fill(sessionColor.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: sessionIcon)
-                        .font(.system(size: 20))
-                        .foregroundColor(sessionColor)
-                }
-
-                // Info column
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text(session.sessionType ?? "Training")
-                        .font(DesignSystem.Typography.titleSmall)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Text(formatDate(session.date ?? Date()))
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    if let location = session.location, !location.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location")
-                                .font(.system(size: 10))
-                            Text(location)
-                        }
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                    }
-                }
-
-                Spacer()
-
-                // Stats column
-                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.xs) {
-                    Text("\(Int(session.duration))min")
-                        .font(DesignSystem.Typography.labelLarge)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    // How it felt (sessions before the feel question show the old star rating)
-                    if let feel = SessionFeel(raw: session.feel) {
-                        Text(feel.label)
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .accessibilityLabel("Felt \(feel.label.lowercased())")
-                    } else {
-                        HStack(spacing: 2) {
-                            ForEach(0..<5, id: \.self) { index in
-                                Image(systemName: index < session.overallRating ? "star.fill" : "star")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(index < session.overallRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.neutral400)
-                            }
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Rating: \(session.overallRating) out of 5")
-                    }
-
-                    // Intensity bars
-                    IntensityBars(level: Int(session.intensity))
-                }
-            }
-
-            // Exercise count if present
-            if let exercises = session.exercises, exercises.count > 0 {
-                HStack {
-                    Spacer()
-                    Text("\(exercises.count) exercises")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .padding(.top, DesignSystem.Spacing.xs)
-                }
-            }
-        }
-    }
-
-    private func formatDate(_ date: Date) -> String {
-        if Calendar.current.isDate(date, inSameDayAs: Date()) {
-            return "Today"
-        } else if Calendar.current.isDate(date, inSameDayAs: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter.string(from: date)
-        }
-    }
-}
-
-struct IntensityBars: View {
-    let level: Int
-
-    private var intensityColor: Color {
-        switch level {
-        case 1...2: return DesignSystem.Colors.primaryGreen
-        case 3: return DesignSystem.Colors.accentYellow
-        case 4: return DesignSystem.Colors.accentOrange
-        default: return DesignSystem.Colors.error
-        }
-    }
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(1...5, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(index <= level ? intensityColor : Color.gray.opacity(0.3))
-                    .frame(width: 4, height: 12)
-            }
-        }
-    }
-}
-
-// Legacy support - kept for any other usage
-struct IntensityIndicator: View {
-    let level: Int
-
-    var body: some View {
-        HStack(spacing: 2) {
-            Text("Intensity:")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            IntensityBars(level: level)
-        }
-    }
-}
-
+#if DEBUG
 #Preview {
     SessionHistoryView()
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
+        .environmentObject(AuthenticationManager.shared)
 }
+#endif

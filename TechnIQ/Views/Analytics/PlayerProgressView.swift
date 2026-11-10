@@ -2,813 +2,258 @@ import SwiftUI
 import Charts
 import CoreData
 
+// MARK: - Progress (You → Progress & analytics)
+//
+// What the player can actually measure: time on the ball per week, the three benchmark numbers over
+// time, how sessions felt, and which skills the drills trained. Level, streak and achievements live
+// on You; they are not repeated here. Numbers come from `ProgressSummary` (pure, tested).
+
 struct PlayerProgressView: View {
     let player: Player
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedTimeRange: TimeRange = .month
-    @State private var skillProgressData: [SkillProgress] = []
-    @State private var overallStats: OverallStats?
-    @State private var recentAchievements: [ProgressAchievement] = []
-    @State private var trainingInsights: [TrainingInsight] = []
-    @State private var trainingSessions: [TrainingSession] = []
-    @State private var focusAreas: [FocusArea] = []
+    @State private var rangeIndex = 1
+    @State private var summary: ProgressSummary?
+    @State private var benchmarks: [BenchmarkTrend] = []
+    @State private var tips: [TrainingInsight] = []
+    @State private var records: PlayerRecords?
     @ObservedObject private var aiCoachService = AICoachService.shared
 
-    private struct FocusArea: Identifiable {
-        let id = UUID()
-        let category: String
-        let before: Double?
-        let after: Double?
-    }
+    private var range: TimeRange { TimeRange.allCases[rangeIndex] }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Time Range Picker
-                timeRangePicker
-
-                // Your Focus (weakness-driven)
-                if !focusAreas.isEmpty {
-                    focusSection
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                TQNavBar("Progress") {
+                    TQBackButton { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                 }
+                .padding(.top, 8)
 
-                // Overall Stats Cards
-                overallStatsSection
+                TQSegment(options: TimeRange.allCases.map(\.displayName), selectedIndex: $rangeIndex)
 
-                // Smart Insights Section (NEW)
-                if !trainingInsights.isEmpty {
-                    insightsSection
+                if let summary {
+                    headline(summary)
+                    if !summary.isEmpty {
+                        ProgressMinutesChart(summary: summary, range: range)
+                    }
+                    if !benchmarks.isEmpty { benchmarkSection }
+                    if summary.feelTotal > 0 { ProgressFeelBar(feel: summary.feel) }
+                    if !summary.skills.isEmpty { skillsSection(summary) }
+                    if !tips.isEmpty { tipsSection }
+                    if let records, records.totalSessions > 0 { recordsSection(records) }
                 }
-
-                // Training Calendar Heat Map (NEW)
-                if !trainingSessions.isEmpty && trainingSessions.count > 0 {
-                    calendarHeatMapSection
-                }
-
-                // Skill Trend Charts (NEW)
-                if !trainingSessions.isEmpty && trainingSessions.count > 0 {
-                    skillTrendSection
-                }
-
-                // Skills Development Chart
-                skillsDevelopmentSection
-
-                // Recent Achievements
-                achievementsSection
-
-                // Training Consistency
-                trainingConsistencySection
-
-                // Category Breakdown
-                categoryBreakdownSection
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-            .padding(.vertical, DesignSystem.Spacing.md)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .background(DesignSystem.Colors.background.ignoresSafeArea())
-        .navigationTitle("Progress")
-        .navigationBarTitleDisplayMode(.large)
-        .onAppear {
-            loadProgressData()
-        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .onAppear(perform: load)
+        .onChange(of: rangeIndex) { _, _ in load() }
     }
 
-    // MARK: - Time Range Picker
+    // MARK: Headline
 
-    private var timeRangePicker: some View {
-        let selectedIndex = Binding<Int>(
-            get: { TimeRange.allCases.firstIndex(of: selectedTimeRange) ?? 0 },
-            set: { newIndex in
-                selectedTimeRange = TimeRange.allCases[newIndex]
-                loadProgressData()
-            }
-        )
-        return ModernSegmentControl(
-            options: TimeRange.allCases.map { $0.displayName },
-            selectedIndex: selectedIndex
-        )
-    }
-
-    // MARK: - Your Focus Section
-
-    private var focusSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Your Focus")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            VStack(spacing: 10) {
-                ForEach(focusAreas) { focus in
-                    focusRow(focus)
+    private func headline(_ summary: ProgressSummary) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: 8) {
+                TQEyebrow(range == .all ? "All time" : "Last \(range.displayName.lowercased())", size: 11)
+                TQDisplayTitle(summary.isEmpty ? "Nothing yet" : "\(summary.totalSessions) session\(summary.totalSessions == 1 ? "" : "s")", size: .medium)
+                if summary.isEmpty {
+                    TQBody("Finish a session and it shows up here.")
                 }
             }
-        }
-    }
-
-    private func focusRow(_ focus: FocusArea) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                Image(systemName: iconForFocus(focus.category))
-                    .font(.system(size: 16))
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            }
-
-            Text(focus.category)
-                .font(DesignSystem.Typography.bodyMedium)
-                .fontWeight(.medium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            Spacer()
-
-            focusTrend(focus)
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
-    }
-
-    @ViewBuilder
-    private func focusTrend(_ focus: FocusArea) -> some View {
-        if let after = focus.after {
-            if let before = focus.before, abs(after - before) >= 1 {
-                HStack(spacing: 4) {
-                    Text("\(Int(before.rounded()))")
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                    Image(systemName: "arrow.right")
-                        .font(.caption2)
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                    Text("\(Int(after.rounded()))")
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Image(systemName: after >= before ? "arrow.up.right" : "arrow.down.right")
-                        .foregroundColor(after >= before ? DesignSystem.Colors.successGreen : DesignSystem.Colors.error)
-                }
-                .font(DesignSystem.Typography.labelMedium)
-            } else {
-                Text("\(Int(after.rounded()))")
-                    .font(DesignSystem.Typography.labelMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-        } else {
-            Text("Keep training")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textTertiary)
-        }
-    }
-
-    private func iconForFocus(_ categoryName: String) -> String {
-        for cat in WeaknessCategory.allCases where cat.displayName == categoryName {
-            return cat.icon
-        }
-        return "scope"
-    }
-
-    // MARK: - Overall Stats Section
-
-    private var weekComparison: PlayerRecords.WeekComparison {
-        PlayerRecords.build(sessions: RecordsView.facts(for: player), now: Date(), calendar: .current).comparison
-    }
-
-    private var overallStatsSection: some View {
-        VStack(spacing: 12) {
-            if let stats = overallStats {
-                HStack(spacing: 12) {
-                    StatCard(
-                        title: "Sessions",
-                        value: "\(stats.totalSessions)",
-                        icon: "calendar",
-                        color: DesignSystem.Colors.primaryGreen
-                    )
-
-                    StatCard(
-                        title: "Hours",
-                        value: String(format: "%.1f", stats.totalHours),
-                        icon: "clock.fill",
-                        color: DesignSystem.Colors.accentOrange
-                    )
-                }
-
-                HStack(spacing: 12) {
-                    StatCard(
-                        title: "Avg Rating",
-                        value: String(format: "%.1f", stats.averageRating),
-                        subtitle: "/ 5.0",
-                        icon: "star.fill",
-                        color: DesignSystem.Colors.accentYellow
-                    )
-
-                    StatCard(
-                        title: "This week",
-                        value: "\(weekComparison.thisWeekSessions)",
-                        subtitle: weekComparison.thisWeekSessions == weekComparison.lastWeekSessions ? "same as last week" : "\(weekComparison.lastWeekSessions) last week",
-                        icon: "calendar.badge.clock",
-                        color: weekComparison.thisWeekSessions >= weekComparison.lastWeekSessions ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.secondaryBlue
-                    )
-                }
-            } else {
-                ProgressView("Loading stats...")
-                    .padding()
+            if !summary.isEmpty {
+                TQStatRail(items: [
+                    .init(summary.timeValue.value, unit: summary.timeValue.unit, label: "trained"),
+                    .init(String(format: "%.1f", summary.sessionsPerWeek), label: "per week"),
+                    .init("\(player.currentStreak)", label: "day streak", accent: player.currentStreak > 0)
+                ])
             }
         }
     }
 
-    // MARK: - Skills Development Section
+    // MARK: Benchmarks
 
-    private var skillsDevelopmentSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Skills Development")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            if !skillProgressData.isEmpty {
-                VStack(spacing: 10) {
-                    ForEach(skillProgressData) { skill in
-                        SkillProgressRow(skill: skill)
-                    }
-                }
-            } else {
-                Text("Start training to track your skill development")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.vertical, DesignSystem.Spacing.md)
-                    .frame(maxWidth: .infinity)
-                    .background(DesignSystem.Colors.cardBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.md)
-                    .customShadow(DesignSystem.Shadow.small)
-            }
-        }
-    }
-
-    // MARK: - Achievements Section
-
-    private var achievementsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Achievements")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            if !recentAchievements.isEmpty {
-                VStack(spacing: 10) {
-                    ForEach(recentAchievements) { achievement in
-                        AchievementCard(achievement: achievement)
-                    }
-                }
-            } else {
-                Text("Keep training to unlock achievements!")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .padding(.vertical, DesignSystem.Spacing.md)
-                    .frame(maxWidth: .infinity)
-                    .background(DesignSystem.Colors.cardBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.md)
-                    .customShadow(DesignSystem.Shadow.small)
-            }
-        }
-    }
-
-    // MARK: - Training Consistency Section
-
-    private var trainingConsistencySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Training Consistency")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            VStack(spacing: 10) {
-                // XP and Level Display
-                xpLevelRow
-
-                // Training streak (using stored player values)
-                HStack {
-                    ZStack {
-                        Circle()
-                            .fill(DesignSystem.Colors.accentOrange.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                    }
+    private var benchmarkSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Benchmarks")
+            TQRule()
+            ForEach(benchmarks) { trend in
+                HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(player.currentStreak) day streak")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .fontWeight(.medium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Text("Best: \(player.longestStreak)")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                        Text(trend.type.title)
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
+                        TQMeta("Best \(trend.best) \(trend.type.unit)", tone: .muted, size: 13, weight: .regular)
                     }
-                    Spacer()
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.cardBackground)
-                .cornerRadius(DesignSystem.CornerRadius.md)
-                .customShadow(DesignSystem.Shadow.small)
-
-                // Sessions per week
-                if let stats = overallStats {
-                    HStack {
-                        ZStack {
-                            Circle()
-                                .fill(DesignSystem.Colors.secondaryBlue.opacity(0.15))
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "calendar.badge.clock")
-                                .font(.system(size: 16))
-                                .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                        }
-                        Text("\(String(format: "%.1f", stats.sessionsPerWeek)) sessions/week")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .fontWeight(.medium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Spacer()
+                    Spacer(minLength: 8)
+                    if trend.values.count > 1 {
+                        ProgressSparkline(values: trend.values)
+                            .frame(width: 84, height: 30)
+                            .accessibilityHidden(true)
                     }
-                    .padding(DesignSystem.Spacing.md)
-                    .background(DesignSystem.Colors.cardBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.md)
-                    .customShadow(DesignSystem.Shadow.small)
-                }
-            }
-        }
-    }
-
-    // MARK: - XP and Level Row
-
-    private var xpLevelRow: some View {
-        let tier = XPService.shared.tierForLevel(Int(player.currentLevel))
-        let progress = XPService.shared.progressToNextLevel(totalXP: player.totalXP, currentLevel: Int(player.currentLevel))
-
-        return VStack(spacing: 8) {
-            HStack {
-                // Level Badge
-                HStack(spacing: 6) {
-                    Image(systemName: "star.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(DesignSystem.Colors.accentYellow)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Level \(player.currentLevel)")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .fontWeight(.semibold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        if let tier = tier {
-                            Text(tier.title)
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text("\(trend.last)")
+                            .font(DesignSystem.Typography.numberMedium)
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
+                        if let delta = trend.deltaText {
+                            Text(delta)
+                                .font(Font.system(size: 13, weight: .semibold).width(.condensed).monospacedDigit())
+                                .foregroundColor(trend.delta >= 0 ? DesignSystem.Colors.grass : DesignSystem.Colors.cone)
                         }
                     }
+                    .frame(minWidth: 44, alignment: .trailing)
                 }
+                .padding(.vertical, DesignSystem.Spacing.rowVertical)
+                .overlay(alignment: .bottom) { TQRule() }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(trend.type.title): last \(trend.last), best \(trend.best) \(trend.type.unit)")
+            }
+        }
+    }
 
-                Spacer()
+    // MARK: Skills
 
-                // XP Display
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(player.totalXP) XP")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    if player.currentLevel < 50 {
-                        Text("\(Int(XPService.shared.xpRequiredForLevel(Int(player.currentLevel) + 1) - player.totalXP)) to next")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
+    private func skillsSection(_ summary: ProgressSummary) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Skills you trained")
+            TQRule()
+            ForEach(summary.skills) { skill in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(skill.name)
+                            .font(DesignSystem.Typography.titleMedium)
+                            .foregroundColor(DesignSystem.Colors.chalkWhite)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        TQMeta("\(skill.count) drill\(skill.count == 1 ? "" : "s")", tone: .muted, size: 14)
+                    }
+                    TQProgressBar(progress: skill.share, height: 4, track: DesignSystem.Colors.surfaceRaised)
+                }
+                .padding(.vertical, DesignSystem.Spacing.rowVertical)
+                .overlay(alignment: .bottom) { TQRule() }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(skill.name), \(skill.count) drills")
+            }
+        }
+    }
+
+    // MARK: Personal bests
+
+    private static let bestDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM"
+        return formatter
+    }()
+
+    private func recordsSection(_ records: PlayerRecords) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Personal bests")
+            TQRowList {
+                TQRow("Longest session", subtitle: records.longestSessionDate.map { Self.bestDate.string(from: $0) },
+                      meta: .init(records.longestSessionMinutes > 0 ? "\(records.longestSessionMinutes) min" : "–"), accessory: .none)
+                TQRow("Best week", subtitle: records.bestWeekStart.map { "week of \(Self.bestDate.string(from: $0))" },
+                      meta: .init(records.bestWeekSessions > 0 ? "\(records.bestWeekSessions) sessions" : "–"), accessory: .none)
+                TQRow("Most drills in a day", subtitle: records.mostDrillsDate.map { Self.bestDate.string(from: $0) },
+                      meta: .init(records.mostDrillsInADay > 0 ? "\(records.mostDrillsInADay)" : "–"), accessory: .none)
+                TQRow("Longest streak", subtitle: "current \(player.currentStreak)",
+                      meta: .init("\(player.longestStreak) day\(player.longestStreak == 1 ? "" : "s")"), accessory: .none)
+            }
+        }
+    }
+
+    // MARK: Coach tips
+
+    private var tipsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("\(CoachIdentity.name())'s notes")
+            TQRule()
+            ForEach(tips) { tip in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(tip.title)
+                        .font(DesignSystem.Typography.titleMedium)
+                        .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    TQBody(tip.description, tone: .muted, size: 13)
+                    if let action = tip.actionable {
+                        Text(action)
+                            .font(DesignSystem.Typography.bodySmallStrong)
+                            .foregroundColor(DesignSystem.Colors.grass)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            }
-
-            // Progress Bar
-            if player.currentLevel < 50 {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(DesignSystem.Colors.neutral300)
-                            .frame(height: 8)
-
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(DesignSystem.Colors.primaryGreen)
-                            .frame(width: geometry.size.width * progress, height: 8)
-                    }
-                }
-                .frame(height: 8)
-            }
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .customShadow(DesignSystem.Shadow.small)
-    }
-
-    // MARK: - Smart Insights Section
-
-    private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("\(CoachIdentity.name())'s tips")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            VStack(spacing: 10) {
-                ForEach(Array(trainingInsights.prefix(3)), id: \.id) { insight in
-                    InsightCard(insight: insight)
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, DesignSystem.Spacing.rowVertical)
+                .overlay(alignment: .bottom) { TQRule() }
+                .accessibilityElement(children: .combine)
             }
         }
     }
 
-    // MARK: - Calendar Heat Map Section
+    // MARK: Data
 
-    private var calendarHeatMapSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Training Activity")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            CalendarHeatMapView(player: player, sessions: trainingSessions)
-        }
-    }
-
-    // MARK: - Skill Trend Section
-
-    private var skillTrendSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("How You're Improving")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            SkillTrendChartView(sessions: trainingSessions)
-        }
-    }
-
-    // MARK: - Category Breakdown Section
-
-    private var categoryBreakdownSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("What to Work On")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .fontWeight(.semibold)
-
-            if let stats = overallStats {
-                VStack(spacing: 10) {
-                    CategoryBar(
-                        category: "Technical",
-                        percentage: stats.technicalPercentage,
-                        color: DesignSystem.Colors.primaryGreen
-                    )
-
-                    CategoryBar(
-                        category: "Physical",
-                        percentage: stats.physicalPercentage,
-                        color: DesignSystem.Colors.accentOrange
-                    )
-
-                    CategoryBar(
-                        category: "Tactical",
-                        percentage: stats.tacticalPercentage,
-                        color: DesignSystem.Colors.secondaryBlue
-                    )
-                }
-            }
-        }
-    }
-
-    // MARK: - Data Loading
-
-    private func loadProgressData() {
-        let sessions = fetchTrainingSessions()
-        trainingSessions = sessions
-
-        // Calculate overall stats
-        overallStats = calculateOverallStats(from: sessions)
-
-        // Calculate skill progress
-        skillProgressData = calculateSkillProgress(from: sessions)
-
-        // Weakness-driven focus areas with before/after skill ratings
-        focusAreas = computeFocusAreas()
-
-        // Generate achievements
-        recentAchievements = generateAchievements(from: sessions, stats: overallStats)
-
-        // Generate smart insights — AI first, then rule-based fallback
-        let ruleBasedInsights = InsightsEngine.shared.generateInsights(
-            for: player,
-            sessions: sessions,
-            timeRange: selectedTimeRange
-        )
-
-        let aiInsights = aiCoachService.aiInsights
-        if !aiInsights.isEmpty {
-            let aiTypes = Set(aiInsights.map { $0.type })
-            let filteredRuleBased = ruleBasedInsights.filter { !aiTypes.contains($0.type) }
-            trainingInsights = (aiInsights + filteredRuleBased).sorted { $0.priority > $1.priority }
-        } else {
-            trainingInsights = ruleBasedInsights
-        }
-    }
-
-    private func fetchTrainingSessions() -> [TrainingSession] {
-        let fetchRequest: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "player == %@", player)
-
-        let calendar = Calendar.current
-        let endDate = Date()
-        let startDate: Date
-
-        switch selectedTimeRange {
-        case .week:
-            startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
-        case .month:
-            startDate = calendar.date(byAdding: .month, value: -1, to: endDate) ?? endDate
-        case .threeMonths:
-            startDate = calendar.date(byAdding: .month, value: -3, to: endDate) ?? endDate
-        case .year:
-            startDate = calendar.date(byAdding: .year, value: -1, to: endDate) ?? endDate
-        case .all:
-            // Get all sessions
-            fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: true)]
-            return (try? viewContext.fetch(fetchRequest)) ?? []
-        }
-
-        fetchRequest.predicate = NSPredicate(format: "player == %@ AND date >= %@ AND date <= %@", player, startDate as NSDate, endDate as NSDate)
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: true)]
-
-        return (try? viewContext.fetch(fetchRequest)) ?? []
-    }
-
-    private func calculateOverallStats(from sessions: [TrainingSession]) -> OverallStats {
-        guard !sessions.isEmpty else {
-            return OverallStats(
-                totalSessions: 0,
-                totalHours: 0,
-                averageRating: 0,
-                improvementPercentage: 0,
-                currentStreak: 0,
-                longestStreak: 0,
-                sessionsPerWeek: 0,
-                technicalPercentage: 0,
-                physicalPercentage: 0,
-                tacticalPercentage: 0
+    private func load() {
+        let sessions = ((player.sessions as? Set<TrainingSession>) ?? []).filter { $0.date != nil }
+        let facts = sessions.compactMap { session -> ProgressSummary.SessionFact? in
+            guard let date = session.date else { return nil }
+            let drills = (session.exercises as? Set<SessionExercise>) ?? []
+            return ProgressSummary.SessionFact(
+                date: date,
+                minutes: Int(session.duration),
+                feel: SessionFeel(raw: session.feel),
+                skills: drills.flatMap { $0.exercise?.targetSkills ?? [] }
             )
         }
+        let now = Date()
+        let built = ProgressSummary.build(facts: facts, range: range, now: now, calendar: .current)
+        summary = built
 
-        // Total sessions and hours
-        let totalSessions = sessions.count
-        let totalMinutes = sessions.compactMap { $0.duration }.reduce(0, +)
-        let totalHours = Double(totalMinutes) / 60.0
+        records = PlayerRecords.build(sessions: PlayerRecords.facts(for: player), now: now, calendar: .current)
 
-        // Average rating
-        let ratings = sessions.compactMap { $0.overallRating > 0 ? Double($0.overallRating) : nil }
-        let averageRating = ratings.isEmpty ? 0 : ratings.reduce(0, +) / Double(ratings.count)
+        let entries = BenchmarkService.shared.entries(for: player)
+        benchmarks = BenchmarkType.allCases.compactMap { BenchmarkTrend(type: $0, entries: entries) }
 
-        // Improvement calculation (compare first half vs second half)
-        let halfPoint = sessions.count / 2
-        if halfPoint > 0 {
-            let firstHalfSessions = Array(sessions.prefix(halfPoint))
-            let secondHalfSessions = Array(sessions.suffix(sessions.count - halfPoint))
+        let start = range.start(from: now, calendar: .current) ?? .distantPast
+        let inRange = sessions.filter { ($0.date ?? .distantPast) >= start }.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
+        let ruleBased = built.isEmpty ? [] : InsightsEngine.shared.generateInsights(for: player, sessions: inRange, timeRange: range)
+        let ai = aiCoachService.aiInsights
+        let aiTypes = Set(ai.map(\.type))
+        tips = Array((ai + ruleBased.filter { !aiTypes.contains($0.type) }).sorted { $0.priority > $1.priority }.prefix(3))
+    }
+}
 
-            let firstHalfAvg = firstHalfSessions.compactMap { $0.overallRating > 0 ? Double($0.overallRating) : nil }.reduce(0, +) / Double(max(1, firstHalfSessions.count))
-            let secondHalfAvg = secondHalfSessions.compactMap { $0.overallRating > 0 ? Double($0.overallRating) : nil }.reduce(0, +) / Double(max(1, secondHalfSessions.count))
+// MARK: - Benchmark trend
 
-            let improvement = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0
+/// One benchmark's history, oldest first.
+struct BenchmarkTrend: Identifiable {
+    let type: BenchmarkType
+    let values: [Int]
 
-            // Calculate streaks
-            let streaks = storedStreaks
-
-            // Calculate sessions per week
-            let validSessions = sessions.filter { $0.date != nil }
-            guard let firstDate = validSessions.first?.date, let lastDate = validSessions.last?.date else {
-                let streaks = storedStreaks
-                let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
-                return OverallStats(
-                    totalSessions: totalSessions,
-                    totalHours: totalHours,
-                    averageRating: averageRating,
-                    improvementPercentage: improvement,
-                    currentStreak: streaks.current,
-                    longestStreak: streaks.longest,
-                    sessionsPerWeek: 0,
-                    technicalPercentage: categoryBreakdown.technical,
-                    physicalPercentage: categoryBreakdown.physical,
-                    tacticalPercentage: categoryBreakdown.tactical
-                )
-            }
-            let daysBetween = Calendar.current.dateComponents([.day], from: firstDate, to: lastDate).day ?? 1
-            let weeks = max(1, Double(daysBetween) / 7.0)
-            let sessionsPerWeek = Double(totalSessions) / weeks
-
-            // Calculate category breakdown
-            let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
-
-            return OverallStats(
-                totalSessions: totalSessions,
-                totalHours: totalHours,
-                averageRating: averageRating,
-                improvementPercentage: improvement,
-                currentStreak: streaks.current,
-                longestStreak: streaks.longest,
-                sessionsPerWeek: sessionsPerWeek,
-                technicalPercentage: categoryBreakdown.technical,
-                physicalPercentage: categoryBreakdown.physical,
-                tacticalPercentage: categoryBreakdown.tactical
-            )
-        }
-
-        let streaks = storedStreaks
-        let categoryBreakdown = calculateCategoryBreakdown(sessions: sessions)
-
-        return OverallStats(
-            totalSessions: totalSessions,
-            totalHours: totalHours,
-            averageRating: averageRating,
-            improvementPercentage: 0,
-            currentStreak: streaks.current,
-            longestStreak: streaks.longest,
-            sessionsPerWeek: 0,
-            technicalPercentage: categoryBreakdown.technical,
-            physicalPercentage: categoryBreakdown.physical,
-            tacticalPercentage: categoryBreakdown.tactical
-        )
+    var id: String { type.rawValue }
+    var last: Int { values.last ?? 0 }
+    var best: Int { values.max() ?? 0 }
+    var delta: Int { (values.last ?? 0) - (values.first ?? 0) }
+    var deltaText: String? {
+        guard values.count > 1 else { return nil }
+        return delta >= 0 ? "+\(delta)" : "\(delta)"
     }
 
-    /// The one streak the app shows everywhere: XPService maintains it on the player.
-    private var storedStreaks: (current: Int, longest: Int) {
-        (Int(player.currentStreak), Int(player.longestStreak))
+    init?(type: BenchmarkType, entries: [BenchmarkEntry]) {
+        let ordered = entries.filter { $0.type == type }.sorted { $0.date < $1.date }.map(\.value)
+        guard !ordered.isEmpty else { return nil }
+        self.type = type
+        self.values = ordered
     }
+}
 
-    private func calculateCategoryBreakdown(sessions: [TrainingSession]) -> (technical: Double, physical: Double, tactical: Double) {
-        var technicalCount = 0
-        var physicalCount = 0
-        var tacticalCount = 0
-
-        for session in sessions {
-            if let sessionExercises = session.exercises as? Set<SessionExercise> {
-                for sessionExercise in sessionExercises {
-                    if let exercise = sessionExercise.exercise {
-                        let category = exercise.category?.lowercased() ?? ""
-                        if category.contains("technical") {
-                            technicalCount += 1
-                        } else if category.contains("physical") {
-                            physicalCount += 1
-                        } else if category.contains("tactical") {
-                            tacticalCount += 1
-                        }
-                    }
-                }
-            }
+extension PlayerRecords {
+    /// The player's sessions as plain facts for `PlayerRecords.build`.
+    static func facts(for player: Player) -> [SessionFact] {
+        ((player.sessions as? Set<TrainingSession>) ?? []).compactMap { session in
+            guard let date = session.date else { return nil }
+            return SessionFact(date: date, minutes: Int(session.duration), drillCount: session.exercises?.count ?? 0)
         }
-
-        let total = Double(technicalCount + physicalCount + tacticalCount)
-        guard total > 0 else { return (0, 0, 0) }
-
-        return (
-            Double(technicalCount) / total * 100,
-            Double(physicalCount) / total * 100,
-            Double(tacticalCount) / total * 100
-        )
-    }
-
-    private func calculateSkillProgress(from sessions: [TrainingSession]) -> [SkillProgress] {
-        var skillData: [String: [Double]] = [:]
-
-        for session in sessions {
-            if let sessionExercises = session.exercises as? Set<SessionExercise> {
-                for sessionExercise in sessionExercises {
-                    if let exercise = sessionExercise.exercise,
-                       let skills = exercise.targetSkills {
-                        for skill in skills {
-                            let rating = Double(sessionExercise.performanceRating)
-                            skillData[skill, default: []].append(rating)
-                        }
-                    }
-                }
-            }
-        }
-
-        return skillData.map { skill, ratings in
-            let average = ratings.reduce(0, +) / Double(max(1, ratings.count))
-            let change = calculateSkillChange(ratings: ratings)
-
-            return SkillProgress(
-                id: UUID(),
-                skillName: skill,
-                currentLevel: average,
-                change: change,
-                sessionsCount: ratings.count
-            )
-        }
-        .sorted { $0.currentLevel < $1.currentLevel }
-    }
-
-    private func computeFocusAreas() -> [FocusArea] {
-        let profile = WeaknessAnalysisService.shared.getCachedProfile(for: player)
-            ?? WeaknessAnalysisService.shared.analyzeWeaknesses(for: player)
-
-        return profile.suggestedWeaknesses.prefix(3).map { weakness in
-            let (before, after) = focusRatings(for: weakness.category)
-            return FocusArea(category: weakness.category, before: before, after: after)
-        }
-    }
-
-    private func focusRatings(for category: String) -> (before: Double?, after: Double?) {
-        guard let stats = player.stats as? Set<PlayerStats>, !stats.isEmpty else { return (nil, nil) }
-        let sorted = stats.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
-
-        func lookup(_ ratings: [String: Double]?) -> Double? {
-            guard let ratings = ratings else { return nil }
-            if let exact = ratings[category] { return exact }
-            return ratings.first { $0.key.caseInsensitiveCompare(category) == .orderedSame }?.value
-        }
-
-        let after = lookup(sorted.last?.skillRatings)
-        let before = sorted.count >= 2 ? lookup(sorted.first?.skillRatings) : nil
-        return (before, after)
-    }
-
-    private func calculateSkillChange(ratings: [Double]) -> Double {
-        guard ratings.count >= 2 else { return 0 }
-
-        let halfPoint = ratings.count / 2
-        let firstHalf = Array(ratings.prefix(halfPoint))
-        let secondHalf = Array(ratings.suffix(ratings.count - halfPoint))
-
-        let firstAvg = firstHalf.reduce(0, +) / Double(max(1, firstHalf.count))
-        let secondAvg = secondHalf.reduce(0, +) / Double(max(1, secondHalf.count))
-
-        return secondAvg - firstAvg
-    }
-
-    private func generateAchievements(from sessions: [TrainingSession], stats: OverallStats?) -> [ProgressAchievement] {
-        var achievements: [ProgressAchievement] = []
-
-        guard let stats = stats else { return [] }
-
-        // Session milestones
-        if stats.totalSessions >= 10 && stats.totalSessions < 25 {
-            achievements.append(ProgressAchievement(
-                id: UUID(),
-                icon: "star.fill",
-                title: "Getting Started",
-                description: "Completed 10 training sessions",
-                date: Date(),
-                color: DesignSystem.Colors.accentYellow
-            ))
-        }
-
-        if stats.totalSessions >= 25 && stats.totalSessions < 50 {
-            achievements.append(ProgressAchievement(
-                id: UUID(),
-                icon: "flame.fill",
-                title: "Committed Player",
-                description: "Completed 25 training sessions",
-                date: Date(),
-                color: DesignSystem.Colors.accentOrange
-            ))
-        }
-
-        if stats.totalSessions >= 50 {
-            achievements.append(ProgressAchievement(
-                id: UUID(),
-                icon: "crown.fill",
-                title: "Dedicated Athlete",
-                description: "Completed 50+ training sessions",
-                date: Date(),
-                color: DesignSystem.Colors.primaryGreen
-            ))
-        }
-
-        // Streak achievements
-        if stats.currentStreak >= 7 {
-            achievements.append(ProgressAchievement(
-                id: UUID(),
-                icon: "calendar.badge.checkmark",
-                title: "Week Warrior",
-                description: "\(stats.currentStreak) day training streak",
-                date: Date(),
-                color: DesignSystem.Colors.secondaryBlue
-            ))
-        }
-
-        // Improvement achievement
-        if stats.improvementPercentage >= 20 {
-            achievements.append(ProgressAchievement(
-                id: UUID(),
-                icon: "chart.line.uptrend.xyaxis",
-                title: "Rising Star",
-                description: "\(Int(stats.improvementPercentage))% improvement",
-                date: Date(),
-                color: DesignSystem.Colors.primaryGreen
-            ))
-        }
-
-        return achievements
     }
 }

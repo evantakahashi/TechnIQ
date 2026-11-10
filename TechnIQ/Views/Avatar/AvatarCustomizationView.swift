@@ -1,476 +1,224 @@
 import SwiftUI
 
-/// Main avatar customization view where players can edit their avatar
+// MARK: - Kit & avatar (You → Kit & avatar)
+//
+// The character on the pitch card is the live preview; every option cell draws the same character
+// with that one option applied, so what you tap is what you get. Nothing saves until Save.
+
 struct AvatarCustomizationView: View {
-    var kitNumber: Int? = nil
+    var kitNumber: Int?
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AvatarCustomizationViewModel()
+    @State private var category: AvatarCategory = .skinTone
+    @State private var draft = AvatarService.shared.getAvatarState()
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Avatar Preview
-                avatarPreview
-
-                // Category Tabs
-                categoryTabs
-
-                // Options Grid
-                optionsGrid
+        VStack(spacing: 0) {
+            TQNavBar("Kit & avatar") {
+                TQNavAction("Cancel") { dismiss() }
+            } trailing: {
+                TQNavAction("Save") { save() }
+                    .accessibilityIdentifier("avatar.save")
             }
-            .background(DesignSystem.Colors.darkModeBackground)
-            .navigationTitle("Customize Avatar")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(DesignSystem.Colors.darkModeBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        viewModel.revertChanges()
-                        dismiss()
+            .padding(.top, 8)
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+
+            TQPitchCard(.hero, markings: .profile) {
+                AvatarFigureView(avatarState: draft, kitNumber: kitNumber)
+                    .frame(height: 232)
+                    .frame(maxWidth: .infinity)
+                    .animation(DesignSystem.Animation.quick, value: draft)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 10)
+
+            TQChipRow {
+                ForEach(AvatarCategory.allCases) { item in
+                    TQChip(item.title, isSelected: category == item) {
+                        category = item
+                        HapticManager.shared.selectionChanged()
                     }
-                    .foregroundColor(.white.opacity(0.8))
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        viewModel.saveChanges()
-                        dismiss()
+            }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.top, 16)
+
+            ScrollView(showsIndicators: false) {
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(category.options, id: \.self) { value in
+                        optionCell(value)
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
                 }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
 
-    // MARK: - Avatar Preview
-
-    private var avatarPreview: some View {
-        ZStack {
-            // Dark gradient background
-            LinearGradient(
-                colors: [
-                    Color(red: 0.15, green: 0.20, blue: 0.15),
-                    DesignSystem.Colors.darkModeBackground
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(spacing: DesignSystem.Spacing.md) {
-                ProgrammaticAvatarView(avatarState: viewModel.currentState, size: .xlarge, kitNumber: kitNumber)
-                    .animation(.spring(response: 0.3), value: viewModel.currentState)
-
-                // Current selection label
-                if let currentSelection = viewModel.currentSelectionLabel {
-                    Text(currentSelection)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                        .padding(.vertical, DesignSystem.Spacing.xs)
-                        .background(DesignSystem.Colors.cellBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.pill)
-                }
-            }
-            .padding(.vertical, DesignSystem.Spacing.lg)
-        }
-        .frame(height: 280)
+    private func save() {
+        AvatarService.shared.saveAvatarState(draft)
+        HapticManager.shared.selectionChanged()
+        dismiss()
     }
 
-    // MARK: - Category Tabs
+    // MARK: Option cell
 
-    private var categoryTabs: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(AvatarCustomizationCategory.allCases) { category in
-                    categoryTab(category)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            .padding(.vertical, DesignSystem.Spacing.sm)
-        }
-        .background(DesignSystem.Colors.darkModeBackground)
-    }
-
-    private func categoryTab(_ category: AvatarCustomizationCategory) -> some View {
-        let isSelected = viewModel.selectedCategory == category
-
+    private func optionCell(_ value: String) -> some View {
+        let isSelected = category.value(in: draft) == value
+        let name = category.name(of: value)
         return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                viewModel.selectedCategory = category
-            }
+            category.apply(value, to: &draft)
             HapticManager.shared.selectionChanged()
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: category.icon)
-                    .font(.system(size: 24, weight: .medium))
-                Text(category.displayName)
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
-            .frame(width: 60, height: 56)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? DesignSystem.Colors.primaryGreen : Color.clear)
-            )
-        }
-    }
-
-    // MARK: - Options Grid
-
-    private var optionsGrid: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16)
-                ],
-                spacing: 16
-            ) {
-                ForEach(viewModel.currentOptions, id: \.id) { option in
-                    optionCell(option)
-                }
-            }
-            .padding(DesignSystem.Spacing.md)
-        }
-        .background(DesignSystem.Colors.darkModeBackground)
-    }
-
-    private func optionCell(_ option: CustomizationOption) -> some View {
-        let isSelected = viewModel.isSelected(option)
-
-        return Button {
-            HapticManager.shared.selectionChanged()
-            viewModel.selectOption(option)
-        } label: {
-            VStack(spacing: 8) {
-                // Cell with preview
-                ZStack {
-                    // Background
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(DesignSystem.Colors.cellBackground)
-                        .frame(width: 80, height: 80)
-
-                    // Selection border
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(DesignSystem.Colors.primaryGreen, lineWidth: 2.5)
-                            .frame(width: 80, height: 80)
-                    }
-
-                    // Option preview
-                    optionPreview(option)
-
-                    // Checkmark badge for selected
-                    if isSelected {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                ZStack {
-                                    Circle()
-                                        .fill(DesignSystem.Colors.primaryGreen)
-                                        .frame(width: 20, height: 20)
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.white)
-                                }
-                                .offset(x: 4, y: -4)
-                            }
-                            Spacer()
-                        }
-                        .frame(width: 80, height: 80)
-                    }
-                }
-
-                // Label below cell
-                Text(option.name)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white)
+            VStack(spacing: 6) {
+                optionPreview(value)
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(1, contentMode: .fit)
+                    .background(DesignSystem.Colors.surfaceRaised)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl, style: .continuous)
+                            .strokeBorder(isSelected ? DesignSystem.Colors.grass : .clear, lineWidth: 2)
+                    )
+                Text(name)
+                    .font(Font.system(size: 12, weight: .semibold).width(.condensed))
+                    .textCase(.uppercase)
+                    .tracking(0.4)
+                    .foregroundColor(isSelected ? DesignSystem.Colors.chalkWhite : DesignSystem.Colors.dimIvory)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(name)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     @ViewBuilder
-    private func optionPreview(_ option: CustomizationOption) -> some View {
-        switch option.previewType {
-        case .color(let color):
+    private func optionPreview(_ value: String) -> some View {
+        if let swatch = category.swatch(of: value) {
             Circle()
-                .fill(color)
-                .frame(width: 50, height: 50)
-
-        case .icon(let systemName):
-            Image(systemName: systemName)
-                .font(.system(size: 28))
-                .foregroundColor(.white)
-
-        case .assetImage(let assetName):
-            Image(assetName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 60, height: 60)
-        }
-    }
-}
-
-// MARK: - View Model
-
-@MainActor
-final class AvatarCustomizationViewModel: ObservableObject {
-    @Published var selectedCategory: AvatarCustomizationCategory = .skinTone {
-        didSet {
-            updateOptionsForCategory()
-        }
-    }
-    @Published var currentState: AvatarState
-    @Published var currentOptions: [CustomizationOption] = []
-
-    private let avatarService = AvatarService.shared
-    private var originalState: AvatarState
-
-    init() {
-        let state = AvatarService.shared.getAvatarState()
-        self.currentState = state
-        self.originalState = state
-        updateOptionsForCategory()
-    }
-
-    var currentSelectionLabel: String? {
-        switch selectedCategory {
-        case .skinTone:
-            return currentState.skinTone.displayName
-        case .hairStyle:
-            return currentState.hairStyle.displayName
-        case .hairColor:
-            return currentState.hairColor.displayName
-        case .face:
-            return currentState.faceStyle.displayName
-        case .jersey:
-            return currentState.jerseyStyle.displayName
-        case .shorts:
-            return currentState.shortsStyle.displayName
-        case .socks:
-            return currentState.socksStyle.displayName
-        case .cleats:
-            return currentState.cleatsStyle.displayName
-        }
-    }
-
-    func isSelected(_ option: CustomizationOption) -> Bool {
-        switch selectedCategory {
-        case .skinTone:
-            return currentState.skinTone.rawValue == option.value
-        case .hairStyle:
-            return currentState.hairStyle.rawValue == option.value
-        case .hairColor:
-            return currentState.hairColor.rawValue == option.value
-        case .face:
-            return currentState.faceStyle.rawValue == option.value
-        case .jersey:
-            return currentState.jerseyStyle.rawValue == option.value
-        case .shorts:
-            return currentState.shortsStyle.rawValue == option.value
-        case .socks:
-            return currentState.socksStyle.rawValue == option.value
-        case .cleats:
-            return currentState.cleatsStyle.rawValue == option.value
-        }
-    }
-
-    func selectOption(_ option: CustomizationOption) {
-        switch selectedCategory {
-        case .skinTone:
-            if let skinTone = SkinTone(rawValue: option.value) {
-                currentState.skinTone = skinTone
-            }
-        case .hairStyle:
-            if let hairStyle = HairStyle(rawValue: option.value) {
-                currentState.hairStyle = hairStyle
-            }
-        case .hairColor:
-            if let hairColor = HairColor(rawValue: option.value) {
-                currentState.hairColor = hairColor
-            }
-        case .face:
-            if let faceStyle = FaceStyle(rawValue: option.value) {
-                currentState.faceStyle = faceStyle
-            }
-        case .jersey:
-            if let jerseyStyle = JerseyStyle(rawValue: option.value) {
-                currentState.jerseyStyle = jerseyStyle
-            }
-        case .shorts:
-            if let shortsStyle = ShortsStyle(rawValue: option.value) {
-                currentState.shortsStyle = shortsStyle
-            }
-        case .socks:
-            if let socksStyle = SocksStyle(rawValue: option.value) {
-                currentState.socksStyle = socksStyle
-            }
-        case .cleats:
-            if let cleatsStyle = CleatsStyle(rawValue: option.value) {
-                currentState.cleatsStyle = cleatsStyle
-            }
-        }
-    }
-
-    func saveChanges() {
-        avatarService.saveAvatarState(currentState)
-    }
-
-    func revertChanges() {
-        currentState = originalState
-    }
-
-    private func updateOptionsForCategory() {
-        currentOptions = buildOptions(for: selectedCategory)
-    }
-
-    private func buildOptions(for category: AvatarCustomizationCategory) -> [CustomizationOption] {
-        switch category {
-        case .skinTone:
-            return SkinTone.allCases.map { skinTone in
-                CustomizationOption(
-                    id: skinTone.rawValue,
-                    name: skinTone.displayName,
-                    value: skinTone.rawValue,
-                    previewType: .assetImage(skinTone.bodyAssetName)
-                )
-            }
-
-        case .hairStyle:
-            return HairStyle.allCases.map { hairStyle in
-                CustomizationOption(
-                    id: hairStyle.rawValue,
-                    name: hairStyle.displayName,
-                    value: hairStyle.rawValue,
-                    previewType: .assetImage(hairStyle.assetName(color: currentState.hairColor))
-                )
-            }
-
-        case .hairColor:
-            return HairColor.allCases.map { hairColor in
-                CustomizationOption(
-                    id: hairColor.rawValue,
-                    name: hairColor.displayName,
-                    value: hairColor.rawValue,
-                    previewType: .color(hairColor.color)
-                )
-            }
-
-        case .face:
-            return FaceStyle.allCases.map { face in
-                CustomizationOption(
-                    id: face.rawValue,
-                    name: face.displayName,
-                    value: face.rawValue,
-                    previewType: .assetImage(face.assetName)
-                )
-            }
-
-        case .jersey:
-            return JerseyStyle.allCases.map { jersey in
-                CustomizationOption(
-                    id: jersey.rawValue,
-                    name: jersey.displayName,
-                    value: jersey.rawValue,
-                    previewType: .assetImage(jersey.assetName)
-                )
-            }
-
-        case .shorts:
-            return ShortsStyle.allCases.map { shorts in
-                CustomizationOption(
-                    id: shorts.rawValue,
-                    name: shorts.displayName,
-                    value: shorts.rawValue,
-                    previewType: .assetImage(shorts.assetName)
-                )
-            }
-
-        case .socks:
-            return SocksStyle.allCases.map { socks in
-                CustomizationOption(
-                    id: socks.rawValue,
-                    name: socks.displayName,
-                    value: socks.rawValue,
-                    previewType: .assetImage(socks.assetName)
-                )
-            }
-
-        case .cleats:
-            return CleatsStyle.allCases.map { cleats in
-                CustomizationOption(
-                    id: cleats.rawValue,
-                    name: cleats.displayName,
-                    value: cleats.rawValue,
-                    previewType: .assetImage(cleats.assetName)
-                )
+                .fill(swatch)
+                .overlay(Circle().strokeBorder(DesignSystem.Colors.chalkWhite.opacity(0.12), lineWidth: 1))
+                .padding(16)
+        } else {
+            GeometryReader { geo in
+                AvatarBustView(avatarState: category.applying(value, to: draft),
+                               kitNumber: category == .jersey ? kitNumber : nil,
+                               diameter: geo.size.width,
+                               background: .clear,
+                               focus: category.focus,
+                               isCircular: false)
             }
         }
     }
 }
 
-// MARK: - Supporting Types
+// MARK: - Categories
 
-enum AvatarCustomizationCategory: String, CaseIterable, Identifiable {
-    case skinTone
-    case hairStyle
-    case hairColor
-    case face
-    case jersey
-    case shorts
-    case socks
-    case cleats
+enum AvatarCategory: String, CaseIterable, Identifiable {
+    case skinTone, hairStyle, hairColor, face, jersey, shorts, socks, cleats
 
     var id: String { rawValue }
 
-    var displayName: String {
+    var title: String {
         switch self {
         case .skinTone: return "Skin"
         case .hairStyle: return "Hair"
-        case .hairColor: return "Color"
+        case .hairColor: return "Hair colour"
         case .face: return "Face"
         case .jersey: return "Jersey"
         case .shorts: return "Shorts"
         case .socks: return "Socks"
-        case .cleats: return "Cleats"
+        case .cleats: return "Boots"
         }
     }
 
-    var icon: String {
+    /// Raw values of every option in this category.
+    var options: [String] {
         switch self {
-        case .skinTone: return "hand.raised.fill"
-        case .hairStyle: return "comb.fill"
-        case .hairColor: return "paintpalette.fill"
-        case .face: return "face.smiling.fill"
-        case .jersey: return "tshirt.fill"
-        case .shorts: return "rectangle.fill"
-        case .socks: return "figure.walk"
-        case .cleats: return "shoe.fill"
+        case .skinTone: return SkinTone.allCases.map(\.rawValue)
+        case .hairStyle: return HairStyle.allCases.map(\.rawValue)
+        case .hairColor: return HairColor.allCases.map(\.rawValue)
+        case .face: return FaceStyle.allCases.map(\.rawValue)
+        case .jersey: return JerseyStyle.allCases.map(\.rawValue)
+        case .shorts: return ShortsStyle.allCases.map(\.rawValue)
+        case .socks: return SocksStyle.allCases.map(\.rawValue)
+        case .cleats: return CleatsStyle.allCases.map(\.rawValue)
+        }
+    }
+
+    func name(of value: String) -> String {
+        switch self {
+        case .skinTone: return SkinTone(rawValue: value)?.displayName ?? value
+        case .hairStyle: return HairStyle(rawValue: value)?.displayName ?? value
+        case .hairColor: return HairColor(rawValue: value)?.displayName ?? value
+        case .face: return FaceStyle(rawValue: value)?.displayName ?? value
+        case .jersey: return JerseyStyle(rawValue: value)?.displayName ?? value
+        case .shorts: return ShortsStyle(rawValue: value)?.displayName ?? value
+        case .socks: return SocksStyle(rawValue: value)?.displayName ?? value
+        case .cleats: return CleatsStyle(rawValue: value)?.displayName ?? value
+        }
+    }
+
+    func value(in state: AvatarState) -> String {
+        switch self {
+        case .skinTone: return state.skinTone.rawValue
+        case .hairStyle: return state.hairStyle.rawValue
+        case .hairColor: return state.hairColor.rawValue
+        case .face: return state.faceStyle.rawValue
+        case .jersey: return state.jerseyStyle.rawValue
+        case .shorts: return state.shortsStyle.rawValue
+        case .socks: return state.socksStyle.rawValue
+        case .cleats: return state.cleatsStyle.rawValue
+        }
+    }
+
+    func apply(_ value: String, to state: inout AvatarState) {
+        switch self {
+        case .skinTone: if let v = SkinTone(rawValue: value) { state.skinTone = v }
+        case .hairStyle: if let v = HairStyle(rawValue: value) { state.hairStyle = v }
+        case .hairColor: if let v = HairColor(rawValue: value) { state.hairColor = v }
+        case .face: if let v = FaceStyle(rawValue: value) { state.faceStyle = v }
+        case .jersey: if let v = JerseyStyle(rawValue: value) { state.jerseyStyle = v }
+        case .shorts: if let v = ShortsStyle(rawValue: value) { state.shortsStyle = v }
+        case .socks: if let v = SocksStyle(rawValue: value) { state.socksStyle = v }
+        case .cleats: if let v = CleatsStyle(rawValue: value) { state.cleatsStyle = v }
+        }
+    }
+
+    func applying(_ value: String, to state: AvatarState) -> AvatarState {
+        var copy = state
+        apply(value, to: &copy)
+        return copy
+    }
+
+    /// Colour-only categories show a swatch instead of the character.
+    func swatch(of value: String) -> Color? {
+        switch self {
+        case .skinTone: return SkinTone(rawValue: value)?.color
+        case .hairColor: return HairColor(rawValue: value)?.color
+        default: return nil
+        }
+    }
+
+    /// The part of the character an option cell shows.
+    var focus: CGRect {
+        switch self {
+        case .jersey, .shorts: return AvatarRenderer.kitFocus
+        case .socks, .cleats: return AvatarRenderer.bootsFocus
+        default: return AvatarRenderer.bustFocus
         }
     }
 }
 
-struct CustomizationOption: Identifiable {
-    let id: String
-    let name: String
-    let value: String
-    let previewType: PreviewType
-
-    enum PreviewType {
-        case color(Color)
-        case icon(String)
-        case assetImage(String)
-    }
-}
-
-// MARK: - Preview
-
+#if DEBUG
 #Preview {
-    AvatarCustomizationView()
+    AvatarCustomizationView(kitNumber: 9)
 }
+#endif

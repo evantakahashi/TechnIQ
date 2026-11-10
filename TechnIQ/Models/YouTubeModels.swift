@@ -143,13 +143,6 @@ struct YouTubeVideo {
     let duration: String
 }
 
-struct YouTubeTestVideo {
-    let videoId: String
-    let title: String
-    let channel: String
-    let duration: String
-}
-
 struct DrillVideo {
     let youtubeVideoId: String
     let title: String

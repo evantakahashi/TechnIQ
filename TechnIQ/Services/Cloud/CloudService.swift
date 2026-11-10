@@ -152,16 +152,6 @@ struct CloudUserData {
     var benchmarks: [[String: Any]] = []
 }
 
-struct CloudPlayerProfile {
-    let playerId: String
-    let skillGoals: [String]
-    let experienceLevel: String
-    let competitiveLevel: String
-    let position: String
-    let preferredIntensity: Int
-    let physicalFocusAreas: [String]
-}
-
 struct MLAnalyticsData {
     let sessionId: String
     let playerId: String

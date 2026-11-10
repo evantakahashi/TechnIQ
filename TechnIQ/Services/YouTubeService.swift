@@ -409,17 +409,6 @@ class YouTubeService: YouTubeServiceProtocol {
         }
     }
 
-    private func analyzeVideoDifficulty(title: String) -> Int {
-        let analysis = analyzeVideoDifficultyComprehensive(
-            title: title,
-            description: "",
-            transcript: nil,
-            duration: 0,
-            channelTitle: ""
-        )
-        return analysis.difficulty
-    }
-
     // MARK: - Enhanced Difficulty Analysis System
 
     // Using DifficultyAnalysis and VideoTranscript from YouTubeModels.swift
@@ -1580,31 +1569,6 @@ class YouTubeService: YouTubeServiceProtocol {
         print("Used exercises: \(globalUsedExercises)")
         #endif
         return Array(sortedRecommendations)
-    }
-
-    private func removeDuplicateRecommendations(_ recommendations: [DrillRecommendation]) -> [DrillRecommendation] {
-        var uniqueRecommendations: [DrillRecommendation] = []
-        var seenExerciseNames: Set<String> = []
-
-        for recommendation in recommendations {
-            let exerciseName = recommendation.exercise.name ?? ""
-
-            if !seenExerciseNames.contains(exerciseName) {
-                seenExerciseNames.insert(exerciseName)
-                uniqueRecommendations.append(recommendation)
-            } else {
-                #if DEBUG
-                print("Skipping duplicate recommendation: \(exerciseName)")
-                #endif
-            }
-        }
-
-        #if DEBUG
-
-        print("Filtered \(recommendations.count) recommendations to \(uniqueRecommendations.count) unique ones")
-
-        #endif
-        return uniqueRecommendations
     }
 
     private struct TrainingHistory {
@@ -2924,17 +2888,4 @@ class YouTubeService: YouTubeServiceProtocol {
         return "https://www.youtube.com/watch?v=\(videoId)"
     }
 
-    func validateAPIKey() async -> Bool {
-        guard YouTubeConfig.isConfigured else { return false }
-
-        do {
-            _ = try await searchSoccerDrills(query: "test", maxResults: 1)
-            return true
-        } catch {
-            #if DEBUG
-            print("API key validation failed: \(error)")
-            #endif
-            return false
-        }
-    }
 }

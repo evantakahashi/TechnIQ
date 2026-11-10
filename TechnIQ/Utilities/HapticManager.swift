@@ -41,21 +41,6 @@ final class HapticManager {
         mediumImpact.impactOccurred()
     }
 
-    /// Heavy impact - for important actions
-    func heavyTap() {
-        heavyImpact.impactOccurred()
-    }
-
-    /// Rigid impact - for firm feedback
-    func rigidTap() {
-        rigidImpact.impactOccurred()
-    }
-
-    /// Soft impact - for gentle feedback
-    func softTap() {
-        softImpact.impactOccurred()
-    }
-
     /// Selection changed - for picker/selection changes
     func selectionChanged() {
         selectionFeedback.selectionChanged()
@@ -80,37 +65,7 @@ final class HapticManager {
 
     // MARK: - Context-Specific Haptics
 
-    /// Button tap feedback
-    func buttonTap() {
-        lightImpact.impactOccurred()
-    }
-
-    /// Toggle switch feedback
-    func toggleSwitch() {
-        lightImpact.impactOccurred(intensity: 0.7)
-    }
-
-    /// Slider value changed
-    func sliderTick() {
-        lightImpact.impactOccurred(intensity: 0.3)
-    }
-
-    /// Card swipe feedback
-    func cardSwipe() {
-        mediumImpact.impactOccurred()
-    }
-
-    /// Pull to refresh
-    func pullToRefresh() {
-        mediumImpact.impactOccurred()
-    }
-
     // MARK: - Achievement & Celebration Haptics
-
-    /// XP earned feedback - subtle but noticeable
-    func xpEarned() {
-        lightImpact.impactOccurred(intensity: 0.8)
-    }
 
     /// Achievement unlocked - celebratory pattern
     func achievementUnlocked() {
@@ -157,55 +112,7 @@ final class HapticManager {
         }
     }
 
-    /// Countdown tick (for timers)
-    func countdownTick() {
-        lightImpact.impactOccurred(intensity: 0.4)
-    }
-
-    /// Countdown complete
-    func countdownComplete() {
-        heavyImpact.impactOccurred()
-    }
-
     // MARK: - Transition Haptics
-
-    /// Prepare generators for imminent transition
-    func prepareForTransition() {
-        mediumImpact.prepare()
-        softImpact.prepare()
-        rigidImpact.prepare()
-        lightImpact.prepare()
-    }
-
-    /// Hero transition launch
-    func heroLaunch() {
-        mediumImpact.impactOccurred()
-    }
-
-    /// Hero transition settle
-    func heroSettle() {
-        softImpact.impactOccurred()
-    }
-
-    /// Sheet presented
-    func sheetPresent() {
-        softImpact.impactOccurred()
-    }
-
-    /// Sheet dismissed
-    func sheetDismiss() {
-        lightImpact.impactOccurred()
-    }
-
-    /// Pulse expand (achievement, reveal)
-    func pulseExpand() {
-        rigidImpact.impactOccurred()
-    }
-
-    /// Card flip midpoint
-    func cardFlipMidpoint() {
-        mediumImpact.impactOccurred()
-    }
 
     /// Tab changed
     func tabChanged() {
@@ -214,71 +121,15 @@ final class HapticManager {
 
     // MARK: - Training-Specific Haptics
 
-    /// Exercise started
-    func exerciseStart() {
-        mediumImpact.impactOccurred()
-    }
-
     /// Exercise completed
     func exerciseComplete() {
         success()
     }
 
-    /// Rep completed
-    func repComplete() {
-        lightImpact.impactOccurred(intensity: 0.5)
-    }
-
-    /// Set completed
-    func setComplete() {
-        mediumImpact.impactOccurred()
-    }
-
-    /// Rest period start
-    func restStart() {
-        softImpact.impactOccurred()
-    }
-
-    /// Rest period end
-    func restEnd() {
-        mediumImpact.impactOccurred()
-    }
 }
 
 // MARK: - SwiftUI View Extension
 
 extension View {
-    /// Add haptic feedback to any view action
-    func hapticFeedback(_ type: HapticType, trigger: Bool) -> some View {
-        self.onChange(of: trigger) { _, newValue in
-            if newValue {
-                switch type {
-                case .light: HapticManager.shared.lightTap()
-                case .medium: HapticManager.shared.mediumTap()
-                case .heavy: HapticManager.shared.heavyTap()
-                case .success: HapticManager.shared.success()
-                case .warning: HapticManager.shared.warning()
-                case .error: HapticManager.shared.error()
-                case .selection: HapticManager.shared.selectionChanged()
-                case .achievement: HapticManager.shared.achievementUnlocked()
-                case .levelUp: HapticManager.shared.levelUp()
-                case .sessionComplete: HapticManager.shared.sessionComplete()
-                }
-            }
-        }
-    }
 }
 
-/// Types of haptic feedback available
-enum HapticType {
-    case light
-    case medium
-    case heavy
-    case success
-    case warning
-    case error
-    case selection
-    case achievement
-    case levelUp
-    case sessionComplete
-}

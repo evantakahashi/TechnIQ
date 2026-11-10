@@ -1,6 +1,12 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Community feed (Touchline)
+//
+// Flat posts separated by rules: author line, body, an optional attachment line (shared drill,
+// session figures, achievement, level), then like / comment counts. The pieces every community
+// screen shares (initial circle, empty block, attachment, text area) live at the bottom.
+
 struct CommunityFeedView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @Environment(\.managedObjectContext) private var viewContext
@@ -25,50 +31,23 @@ struct CommunityFeedView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: DesignSystem.Spacing.md) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if communityService.isLoading && communityService.posts.isEmpty {
-                    LoadingStateView(message: "Loading community...")
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, DesignSystem.Spacing.xxl)
-                } else if communityService.posts.isEmpty && !communityService.isLoading {
-                    EmptyStateView(
-                        context: .noPosts,
-                        actionTitle: "Create Post",
+                    CommunitySkeletonRows()
+                } else if communityService.posts.isEmpty {
+                    CommunityEmptyBlock(
+                        title: "No posts yet",
+                        message: "Be the first to share something with the community.",
+                        actionTitle: "Create post",
                         action: { showingCreatePost = true }
                     )
-                    .padding(.top, DesignSystem.Spacing.lg)
+                    .padding(.top, DesignSystem.Spacing.sm)
                 } else {
+                    TQRule()
                     ForEach(communityService.posts) { post in
-                        CommunityPostCard(
-                            post: post,
-                            isOwnPost: post.authorID == authManager.userUID,
-                            onLike: { likePost(post) },
-                            onComment: {
-                                selectedPost = post
-                                showingPostDetail = true
-                            },
-                            onReport: { reportPost(post) },
-                            onBlock: { blockUser(post.authorID) },
-                            onDelete: { deletePost(post) },
-                            onAuthorTap: {
-                                selectedPost = post
-                                showingPostDetail = true
-                            }
-                        )
+                        postCard(post)
                     }
-
-                    // Load more trigger
-                    if communityService.isLoading {
-                        ProgressView()
-                            .tint(DesignSystem.Colors.grass)
-                            .padding()
-                    } else {
-                        Color.clear
-                            .frame(height: 1)
-                            .onAppear {
-                                Task { await communityService.fetchPosts() }
-                            }
-                    }
+                    loadMore
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.screenPadding)
@@ -92,6 +71,39 @@ struct CommunityFeedView: View {
                 PostDetailView(post: post, currentPlayer: player)
             }
         }
+    }
+
+    private func postCard(_ post: CommunityPost) -> some View {
+        CommunityPostCard(
+            post: post,
+            isOwnPost: post.authorID == authManager.userUID,
+            onLike: { likePost(post) },
+            onComment: { open(post) },
+            onReport: { reportPost(post) },
+            onBlock: { blockUser(post.authorID) },
+            onDelete: { deletePost(post) },
+            onAuthorTap: { open(post) }
+        )
+    }
+
+    @ViewBuilder
+    private var loadMore: some View {
+        if communityService.isLoading {
+            TQSpinner(size: 18)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignSystem.Spacing.md)
+        } else {
+            Color.clear
+                .frame(height: 1)
+                .onAppear {
+                    Task { await communityService.fetchPosts() }
+                }
+        }
+    }
+
+    private func open(_ post: CommunityPost) {
+        selectedPost = post
+        showingPostDetail = true
     }
 
     // MARK: - Actions
@@ -164,138 +176,36 @@ struct CommunityPostCard: View {
 
     @State private var showingActions = false
 
-    // Public identity only — first name + last initial.
-    private var authorDisplayName: String {
-        CommunityService.displayName(for: post.authorName)
-    }
-
     var body: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                // Author row
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    // Avatar placeholder circle
-                    ZStack {
-                        Circle()
-                            .fill(postTypeColor.opacity(0.15))
-                            .frame(width: 44, height: 44)
-                        Text(String(authorDisplayName.prefix(1)).uppercased())
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(postTypeColor)
-                    }
-                    .onTapGesture(perform: onAuthorTap)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                CommunityAuthorLine(post: post, onTap: onAuthorTap)
+                Spacer(minLength: 8)
+                TQIconAction("ellipsis", accessibilityLabel: "More actions") { showingActions = true }
+            }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Text(authorDisplayName)
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .fontWeight(.semibold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                                .onTapGesture(perform: onAuthorTap)
+            CommunityPostBody(post: post)
 
-                            if post.postType != .general {
-                                HStack(spacing: 2) {
-                                    Image(systemName: post.postType.icon)
-                                        .font(.system(size: 10))
-                                    Text(post.postType.displayName)
-                                        .font(DesignSystem.Typography.labelSmall)
-                                }
-                                .foregroundColor(postTypeColor)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(postTypeColor.opacity(0.12))
-                                .cornerRadius(DesignSystem.CornerRadius.xs)
-                            }
-                        }
-
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Text("Lv.\(post.authorLevel)")
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            if !post.authorPosition.isEmpty {
-                                Text("·")
-                                    .foregroundColor(DesignSystem.Colors.textTertiary)
-                                Text(post.authorPosition)
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                            Text("·")
-                                .foregroundColor(DesignSystem.Colors.textTertiary)
-                            Text(post.timestamp.timeAgoDisplay())
-                                .font(DesignSystem.Typography.labelSmall)
-                                .foregroundColor(DesignSystem.Colors.textTertiary)
-                        }
-                    }
-
-                    Spacer()
-
-                    // More actions
-                    Button {
-                        showingActions = true
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.title3)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .accessibilityLabel("More actions")
-                }
-
-                // Content
-                if post.isHidden {
-                    Text("This post was hidden after multiple reports.")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .italic()
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    Text(post.content)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    // Rich content for new post types
-                    richContentSection
-                }
-
-                // Interaction bar
-                HStack(spacing: DesignSystem.Spacing.lg) {
-                    // Like
-                    Button(action: onLike) {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Image(systemName: post.isLikedByCurrentUser ? "heart.fill" : "heart")
-                                .foregroundColor(post.isLikedByCurrentUser ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
-                            if post.likesCount > 0 {
-                                Text("\(post.likesCount)")
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .accessibilityLabel(post.isLikedByCurrentUser ? "Unlike, \(post.likesCount) likes" : "Like, \(post.likesCount) likes")
-
-                    // Comment
-                    Button(action: onComment) {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Image(systemName: "bubble.left")
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            if post.commentsCount > 0 {
-                                Text("\(post.commentsCount)")
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .accessibilityLabel("Comments, \(post.commentsCount)")
-
-                    Spacer()
-                }
-                .font(.system(size: 18))
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                CommunityCountButton(
+                    systemImage: post.isLikedByCurrentUser ? "heart.fill" : "heart",
+                    count: post.likesCount,
+                    isOn: post.isLikedByCurrentUser,
+                    accessibilityLabel: post.isLikedByCurrentUser ? "Unlike, \(post.likesCount) likes" : "Like, \(post.likesCount) likes",
+                    action: onLike
+                )
+                CommunityCountButton(
+                    systemImage: "bubble.left",
+                    count: post.commentsCount,
+                    isOn: false,
+                    accessibilityLabel: "Comments, \(post.commentsCount)",
+                    action: onComment
+                )
+                Spacer()
             }
         }
+        .padding(.vertical, DesignSystem.Spacing.rowVerticalLarge)
+        .overlay(alignment: .bottom) { TQRule() }
         .confirmationDialog("Post Actions", isPresented: $showingActions, titleVisibility: .hidden) {
             if isOwnPost {
                 Button("Delete Post", role: .destructive, action: onDelete)
@@ -306,127 +216,275 @@ struct CommunityPostCard: View {
             Button("Cancel", role: .cancel) {}
         }
     }
+}
 
-    // MARK: - Rich Content
+// MARK: - Shared community pieces
 
-    @ViewBuilder
-    private var richContentSection: some View {
+/// Initial in a raised circle: the only "avatar" other players get (public identity is a first name).
+struct CommunityInitial: View {
+    let name: String
+    var size: CGFloat = 40
+
+    var body: some View {
+        TQAvatarCircle(size: size) {
+            Text(String(name.prefix(1)).uppercased())
+                .font(Font.system(size: size * 0.4, weight: .bold).width(.condensed))
+                .foregroundColor(DesignSystem.Colors.dimIvory)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// "Sam K." over "LVL 7 · FORWARD · 2H", with the initial circle. Tapping it opens the author.
+struct CommunityAuthorLine: View {
+    let post: CommunityPost
+    var onTap: () -> Void
+
+    private var name: String { CommunityService.displayName(for: post.authorName) }
+
+    private var meta: String {
+        var parts = ["Lvl \(post.authorLevel)"]
+        if !post.authorPosition.isEmpty { parts.append(post.authorPosition) }
+        if post.postType != .general { parts.append(post.postType.displayName) }
+        parts.append(post.timestamp.timeAgoDisplay())
+        return parts.joined(separator: " · ")
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                CommunityInitial(name: name)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(DesignSystem.Typography.titleMedium)
+                        .foregroundColor(DesignSystem.Colors.chalkWhite)
+                        .lineLimit(1)
+                    TQMeta(meta, tone: .muted, size: 13, weight: .regular)
+                        .lineLimit(1)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(name), \(meta)")
+    }
+}
+
+/// Post text (or the hidden notice) plus its attachment.
+struct CommunityPostBody: View {
+    let post: CommunityPost
+    var textSize: CGFloat = 14
+
+    var body: some View {
+        if post.isHidden {
+            TQBody("This post was hidden after multiple reports.", tone: .italicMuted, size: textSize)
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(post.content)
+                    .font(Font.system(size: textSize, weight: .regular))
+                    .lineSpacing(textSize * 0.4)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    .fixedSize(horizontal: false, vertical: true)
+                CommunityPostAttachment(post: post)
+            }
+        }
+    }
+}
+
+/// What a shared post carries: one raised block with an eyebrow, a condensed title and figures.
+struct CommunityPostAttachment: View {
+    let post: CommunityPost
+
+    var body: some View {
         switch post.postType {
         case .sharedDrill:
             if let title = post.drillTitle {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text(title)
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            if let cat = post.drillCategory {
-                                GlowBadge(cat.capitalized, color: DesignSystem.Colors.primaryGreen)
-                            }
-                            if let diff = post.drillDifficulty {
-                                HStack(spacing: 3) {
-                                    ForEach(1...5, id: \.self) { i in
-                                        Circle()
-                                            .fill(i <= diff ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textTertiary.opacity(0.3))
-                                            .frame(width: 6, height: 6)
-                                    }
-                                }
-                            }
+                block(eyebrow: "Drill", title: title) {
+                    HStack(spacing: 8) {
+                        if let category = post.drillCategory {
+                            TQMeta(category, tone: .muted, size: 13)
+                        }
+                        if let difficulty = post.drillDifficulty {
+                            TQBadge(difficulty: "\(difficulty)")
                         }
                     }
-                    Spacer()
                 }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
             }
-
         case .sharedAchievement:
-            if let name = post.achievementName, let icon = post.achievementIcon {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Image(systemName: icon)
-                        .font(.system(size: 28))
-                        .foregroundColor(DesignSystem.Colors.accentGold)
-                        .frame(width: 48, height: 48)
-                        .background(DesignSystem.Colors.accentGold.opacity(0.12))
-                        .clipShape(Circle())
-                    GlowBadge(name, color: DesignSystem.Colors.accentGold)
-                    Spacer()
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.accentGold.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
+            if let name = post.achievementName {
+                block(eyebrow: "Achievement", title: name) { EmptyView() }
             }
-
         case .sharedSession:
-            HStack(spacing: DesignSystem.Spacing.lg) {
-                if let dur = post.sessionDuration {
-                    sessionStatItem(icon: "clock", value: "\(dur)m", label: "Duration")
-                }
-                if let count = post.sessionExerciseCount {
-                    sessionStatItem(icon: "figure.run", value: "\(count)", label: "Exercises")
-                }
-                if let xp = post.sessionXP {
-                    sessionStatItem(icon: "star.fill", value: "+\(xp)", label: "XP")
-                }
+            block(eyebrow: "Session", title: nil) {
+                TQFigureRow(sessionFigures, onPitch: false)
             }
-            .padding(DesignSystem.Spacing.md)
-            .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
-            .cornerRadius(DesignSystem.CornerRadius.md)
-
         case .sharedLevelUp:
             if let level = post.newLevel {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Text("\(level)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(DesignSystem.Colors.accentGold)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Level Up!")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        if let rank = post.rankName {
-                            GlowBadge(rank, color: DesignSystem.Colors.accentGold)
-                        }
+                block(eyebrow: "Level up", title: "Level \(level)") {
+                    if let rank = post.rankName {
+                        TQMeta(rank, tone: .muted, size: 13)
                     }
-                    Spacer()
                 }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.accentGold.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
             }
-
         default:
             EmptyView()
         }
     }
 
-    private func sessionStatItem(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-            Text(value)
-                .font(DesignSystem.Typography.labelLarge)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            Text(label)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
+    private var sessionFigures: [(String, String)] {
+        var figures: [(String, String)] = []
+        if let duration = post.sessionDuration { figures.append(("\(duration)", "min")) }
+        if let count = post.sessionExerciseCount { figures.append(("\(count)", count == 1 ? "drill" : "drills")) }
+        if let xp = post.sessionXP { figures.append(("+\(xp)", "XP")) }
+        return figures
     }
 
-    private var postTypeColor: Color {
-        switch post.postType {
-        case .general: return DesignSystem.Colors.secondaryBlue
-        case .sessionComplete: return DesignSystem.Colors.primaryGreen
-        case .achievement: return DesignSystem.Colors.accentYellow
-        case .milestone: return DesignSystem.Colors.levelPurple
-        case .sharedDrill, .sharedSession: return DesignSystem.Colors.primaryGreen
-        case .sharedAchievement, .sharedLevelUp: return DesignSystem.Colors.accentGold
+    private func block<Detail: View>(eyebrow: String, title: String?, @ViewBuilder detail: () -> Detail) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TQEyebrow(eyebrow, size: 11)
+            if let title {
+                TQDisplayTitle(title, size: .strip)
+                    .lineLimit(2)
+            }
+            detail()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg, style: .continuous)
+                .fill(DesignSystem.Colors.surfaceRaised)
+        )
+    }
+}
+
+/// Heart / bubble with a count; grass when on.
+struct CommunityCountButton: View {
+    let systemImage: String
+    let count: Int
+    let isOn: Bool
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            HapticManager.shared.selectionChanged()
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 16, weight: .semibold))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(DesignSystem.Typography.numberSmall)
+                }
+            }
+            .foregroundColor(isOn ? DesignSystem.Colors.grass : DesignSystem.Colors.dimIvory)
+            .frame(minHeight: 32)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+/// Left-aligned empty state: condensed title, one line, optional action.
+struct CommunityEmptyBlock: View {
+    let title: String
+    let message: String
+    var actionTitle: String?
+    var action: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TQDisplayTitle(title, size: .small)
+            TQBody(message)
+            if let actionTitle, let action {
+                TQButton(actionTitle, style: .raised, size: .compact, fullWidth: false, action: action)
+                    .padding(.top, 6)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Loading placeholder: three post-shaped skeletons.
+struct CommunitySkeletonRows: View {
+    var count = 3
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(0..<count, id: \.self) { _ in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        TQSkeleton(width: 40, height: 40, cornerRadius: 20)
+                        VStack(alignment: .leading, spacing: 6) {
+                            TQSkeleton(width: 120, height: 12)
+                            TQSkeleton(width: 80, height: 10)
+                        }
+                    }
+                    TQSkeleton(widthFraction: 0.9, height: 12)
+                    TQSkeleton(widthFraction: 0.6, height: 12)
+                }
+                .padding(.vertical, DesignSystem.Spacing.rowVerticalLarge)
+                .overlay(alignment: .bottom) { TQRule() }
+            }
+        }
+        .accessibilityLabel("Loading")
+    }
+}
+
+/// Multi-line text input with a character cap and counter.
+struct CommunityTextArea: View {
+    let label: String
+    let placeholder: String
+    @Binding var text: String
+    let limit: Int
+    var minHeight: CGFloat = 120
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(label)
+                    .font(Font.system(size: 12, weight: .semibold).width(.condensed))
+                    .textCase(.uppercase)
+                    .tracking(DesignSystem.Typography.Tracking.eyebrow)
+                    .foregroundColor(DesignSystem.Colors.dimIvory)
+                Spacer()
+                Text("\(text.count)/\(limit)")
+                    .font(Font.system(size: 12, weight: .semibold).width(.condensed).monospacedDigit())
+                    .foregroundColor(text.count > limit - 50 ? DesignSystem.Colors.cone : DesignSystem.Colors.textTertiary)
+            }
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(Font.system(size: 16, weight: .regular))
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $text)
+                    .font(Font.system(size: 16, weight: .regular))
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    .tint(DesignSystem.Colors.grass)
+                    .scrollContentBackground(.hidden)
+                    .focused($isFocused)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .frame(minHeight: minHeight)
+                    .accessibilityLabel(label)
+                    .onChange(of: text) { _, newValue in
+                        if newValue.count > limit { text = String(newValue.prefix(limit)) }
+                    }
+            }
+            .background(DesignSystem.Colors.surfaceRaised)
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous)
+                    .strokeBorder(isFocused ? DesignSystem.Colors.grass : DesignSystem.Colors.surfaceHighlight, lineWidth: 1)
+            )
         }
     }
 }

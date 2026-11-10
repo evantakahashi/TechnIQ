@@ -29,7 +29,7 @@ struct TQStatRail: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 0) {
                         Text(item.value)

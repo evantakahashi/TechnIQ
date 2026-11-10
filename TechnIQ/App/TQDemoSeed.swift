@@ -63,9 +63,6 @@ enum TQDemoSeed {
         seedCameraRuns(for: player, context: context, now: now)
         seedBenchmarks(for: player, context: context, now: now)
 
-        // Coach marks would cover the hero in screenshots.
-        for id in ["dashboard", "train", "plans", "progress"] { CoachMarkManager.shared.markSeen(id) }
-
         try? context.save()
     }
 
@@ -380,7 +377,7 @@ enum TQDemoSeed {
 // without signing out of the simulator.
 
 enum TQDebugScreen: String {
-    case signIn, onboarding, jugglespike
+    case signIn, onboarding, jugglespike, avatar, avatarEditor
 
     static var requested: TQDebugScreen? {
         let args = ProcessInfo.processInfo.arguments
@@ -401,7 +398,44 @@ struct TQDebugScreenHost: View {
             UnifiedOnboardingView(isOnboardingComplete: $onboardingComplete)
         case .jugglespike:
             JuggleSpikeView()
+        case .avatar:
+            TQAvatarLookbook()
+        case .avatarEditor:
+            AvatarCustomizationView(kitNumber: 9)
         }
+    }
+}
+
+/// Every hair style, face and kit on one screen, for eyeballing the character.
+private struct TQAvatarLookbook: View {
+    private var looks: [AvatarState] {
+        let skins = SkinTone.allCases, colours = HairColor.allCases, faces = FaceStyle.allCases
+        let shorts = ShortsStyle.allCases, socks = SocksStyle.allCases, cleats = CleatsStyle.allCases
+        return HairStyle.allCases.enumerated().map { index, hair in
+            AvatarState(skinTone: skins[(index * 4 + 2) % skins.count], hairStyle: hair,
+                        hairColor: colours[(index * 2) % colours.count], faceStyle: faces[index % faces.count],
+                        jerseyStyle: JerseyStyle.allCases[index % JerseyStyle.allCases.count],
+                        shortsStyle: shorts[index % shorts.count], socksStyle: socks[index % socks.count],
+                        cleatsStyle: cleats[index % cleats.count])
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 14) {
+                ForEach(Array(looks.enumerated()), id: \.offset) { index, look in
+                    AvatarFigureView(avatarState: look, kitNumber: index + 4)
+                }
+            }
+            HStack(spacing: 10) {
+                ForEach(Array(looks.prefix(6).enumerated()), id: \.offset) { _, look in
+                    AvatarBustView(avatarState: look, diameter: 52)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
     }
 }
 #endif

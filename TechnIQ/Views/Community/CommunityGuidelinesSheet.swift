@@ -24,68 +24,49 @@ struct CommunityGuidelinesSheet: View {
     let onAgree: () -> Void
     @Environment(\.dismiss) private var dismiss
 
-    private let rules: [(icon: String, text: String)] = [
-        ("heart.fill", "Be kind — treat everyone the way you'd want to be treated."),
-        ("soccerball", "Keep it about soccer and training."),
-        ("lock.fill", "No personal info — don't share your full name, address, school, or contact details."),
-        ("hand.raised.fill", "No mean words, bullying, or harassment.")
+    private let rules: [String] = [
+        "Be kind — treat everyone the way you'd want to be treated.",
+        "Keep it about soccer and training.",
+        "No personal info — don't share your full name, address, school, or contact details.",
+        "No mean words, bullying, or harassment."
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Community Rules")
-                            .font(DesignSystem.Typography.headlineMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Text("A quick agreement before you join in.")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                    .padding(.top, DesignSystem.Spacing.md)
-
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        ForEach(rules, id: \.text) { rule in
-                            HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-                                Image(systemName: rule.icon)
-                                    .font(.body)
-                                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                    .frame(width: 24)
-                                    .accessibilityHidden(true)
-                                Text(rule.text)
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Spacer(minLength: 0)
-                            }
-                        }
-                    }
-
-                    Text("Breaking the rules removes your content and can lead to a ban.")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    ModernButton("I Agree", icon: "checkmark.circle.fill", style: .primary) {
-                        CommunityGuidelines.accept()
-                        dismiss()
-                        onAgree()
-                    }
-                    .accessibilityLabel("Agree to community rules")
-                }
-                .padding(DesignSystem.Spacing.lg)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+            TQNavBar("Before you post") {
+                TQNavAction("Cancel") { dismiss() }
+            } trailing: {
+                Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
             }
-            .background(AdaptiveBackground().ignoresSafeArea())
-            .navigationTitle("Before You Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
+            .padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 8) {
+                TQDisplayTitle("Community rules", size: .medium)
+                TQBody("A quick agreement before you join in.")
             }
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(rules.enumerated()), id: \.offset) { index, rule in
+                    TQIndexRow(index: String(format: "%02d", index + 1), text: rule)
+                }
+                TQRule()
+            }
+
+            TQBody("Breaking the rules removes your content and can lead to a ban.", tone: .muted, size: 13)
+
+            Spacer(minLength: 0)
+
+            TQButton("I agree") {
+                CommunityGuidelines.accept()
+                dismiss()
+                onAgree()
+            }
+            .accessibilityLabel("Agree to community rules")
+            .padding(.bottom, DesignSystem.Spacing.md)
         }
+        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
     }
 }

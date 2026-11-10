@@ -80,11 +80,6 @@ final class NotificationManager {
         refresh(plan: plan, streak: Int(player.currentStreak), trainedToday: trainedToday, now: now, calendar: calendar)
     }
 
-    /// Cancel the streak-at-risk nudge — call when a session is logged so the player isn't nagged today.
-    func cancelStreakAtRiskForToday() {
-        center.removePendingNotificationRequests(withIdentifiers: [Identifier.streakAtRisk])
-    }
-
     // MARK: - Planning (pure)
 
     struct Planned: Equatable {

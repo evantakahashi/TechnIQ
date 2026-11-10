@@ -1,13 +1,16 @@
 import SwiftUI
 
+// MARK: - Leaderboard (Community → Leaderboard)
+//
+// One flat ranked list: rank index (top three in grass), name, level, XP. The player's own rank
+// is pinned on a pitch strip at the bottom.
+
 struct LeaderboardView: View {
     @ObservedObject private var communityService = CommunityService.shared
     @FetchRequest(sortDescriptors: [])
     private var players: FetchedResults<Player>
 
     @State private var selectedProfile: String?
-    @State private var animatePodium = false
-    @State private var animateList = false
 
     private var player: Player? { players.first }
 
@@ -16,54 +19,38 @@ struct LeaderboardView: View {
         CommunityService.displayName(for: entry.name)
     }
 
-    private var topThree: [LeaderboardEntry] {
-        Array(communityService.leaderboard.prefix(3))
-    }
-
-    private var restOfList: [LeaderboardEntry] {
-        Array(communityService.leaderboard.dropFirst(3))
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            if communityService.isLoadingLeaderboard && communityService.leaderboard.isEmpty {
-                Spacer()
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    SoccerBallSpinner()
-                    Text("Loading leaderboard...")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-                Spacer()
-            } else if communityService.leaderboard.isEmpty {
-                Spacer()
-                EmptyStateView(context: .noLeaderboard)
-                Spacer()
-            } else {
-                ScrollView {
-                    VStack(spacing: DesignSystem.Spacing.xl) {
-                        // Podium
-                        if topThree.count >= 3 {
-                            podiumSection
-                        }
-
-                        // Ranked list
-                        if !restOfList.isEmpty {
-                            rankedListSection
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if communityService.isLoadingLeaderboard && communityService.leaderboard.isEmpty {
+                        CommunitySkeletonRows()
+                    } else if communityService.leaderboard.isEmpty {
+                        CommunityEmptyBlock(
+                            title: "No rankings yet",
+                            message: "Complete sessions to earn XP and climb the board."
+                        )
+                        .padding(.top, DesignSystem.Spacing.sm)
+                    } else {
+                        TQRowList {
+                            ForEach(communityService.leaderboard) { entry in
+                                row(entry)
+                            }
                         }
                     }
-                    .padding(.vertical, DesignSystem.Spacing.lg)
                 }
-                .refreshable {
-                    await communityService.fetchLeaderboard(forceRefresh: true)
-                }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.lg)
+            }
+            .refreshable {
+                await communityService.fetchLeaderboard(forceRefresh: true)
             }
 
-            // Sticky rank bar
             if let rank = communityService.currentPlayerRank {
-                stickyRankBar(rank: rank)
+                rankStrip(rank: rank)
             }
         }
+        .background(DesignSystem.Colors.surfaceBase)
         .onAppear {
             Task {
                 await communityService.fetchLeaderboard()
@@ -71,178 +58,44 @@ struct LeaderboardView: View {
                     await communityService.fetchCurrentPlayerRank(playerXP: Int(xp))
                 }
             }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2)) {
-                animatePodium = true
-            }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5)) {
-                animateList = true
-            }
         }
         .sheet(item: $selectedProfile) { userID in
             PublicProfileView(userID: userID)
         }
     }
 
-    // MARK: - Podium
+    // MARK: - Row
 
-    private var podiumSection: some View {
-        HStack(alignment: .bottom, spacing: DesignSystem.Spacing.md) {
-            // 2nd place (left)
-            podiumColumn(entry: topThree[1], height: 90, ringColor: Color.gray)
-                .scaleEffect(animatePodium ? 1 : 0.5)
-                .opacity(animatePodium ? 1 : 0)
+    private func row(_ entry: LeaderboardEntry) -> some View {
+        let isCurrentPlayer = entry.id == (player?.id?.uuidString ?? "")
+        return TQRow(
+            publicName(entry),
+            subtitle: "Lvl \(entry.level)",
+            leading: .index(String(format: "%02d", entry.rank), tone: entry.rank <= 3 ? .grass : .muted),
+            meta: .init("\(entry.xp) XP"),
+            accessory: .none,
+            titleColor: isCurrentPlayer ? DesignSystem.Colors.grass : DesignSystem.Colors.chalkWhite,
+            action: { selectedProfile = entry.id }
+        )
+    }
 
-            // 1st place (center, taller)
-            podiumColumn(entry: topThree[0], height: 120, ringColor: DesignSystem.Colors.accentGold)
-                .scaleEffect(animatePodium ? 1 : 0.5)
-                .opacity(animatePodium ? 1 : 0)
+    // MARK: - Your rank
 
-            // 3rd place (right)
-            podiumColumn(entry: topThree[2], height: 70, ringColor: DesignSystem.Colors.accentOrange)
-                .scaleEffect(animatePodium ? 1 : 0.5)
-                .opacity(animatePodium ? 1 : 0)
+    private func rankStrip(rank: Int) -> some View {
+        TQPitchCard(.strip, markings: .strip) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    TQEyebrow("Your rank", size: 11)
+                    TQDisplayTitle("#\(rank) · \(player?.name ?? "You")", size: .strip)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                TQFigureRow([("\(player?.totalXP ?? 0)", "XP")])
+            }
         }
         .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-    }
-
-    private func podiumColumn(entry: LeaderboardEntry, height: CGFloat, ringColor: Color) -> some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            // Avatar circle with rank
-            ZStack {
-                Circle()
-                    .fill(DesignSystem.Colors.backgroundSecondary)
-                    .frame(width: 56, height: 56)
-                    .overlay(Circle().stroke(ringColor, lineWidth: 3))
-
-                Text(String(publicName(entry).prefix(1)).uppercased())
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(ringColor)
-
-                // Rank badge
-                Text("\(entry.rank)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 22, height: 22)
-                    .background(ringColor)
-                    .clipShape(Circle())
-                    .offset(x: 20, y: 20)
-            }
-
-            Text(publicName(entry))
-                .font(DesignSystem.Typography.labelMedium)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .lineLimit(1)
-
-            Text("Lv. \(entry.level)")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            Text("\(entry.xp) XP")
-                .font(DesignSystem.Typography.labelSmall)
-                .fontWeight(.bold)
-                .foregroundColor(ringColor)
-
-            // Pedestal
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                .fill(ringColor.opacity(0.15))
-                .frame(height: height)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                        .stroke(ringColor.opacity(0.3), lineWidth: 1)
-                )
-        }
-        .frame(maxWidth: .infinity)
-        .onTapGesture { selectedProfile = entry.id }
-    }
-
-    // MARK: - Ranked List
-
-    private var rankedListSection: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(restOfList.enumerated()), id: \.element.id) { index, entry in
-                let isCurrentPlayer = entry.id == (player?.id?.uuidString ?? "")
-
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Text("\(entry.rank)")
-                        .font(DesignSystem.Typography.labelLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .frame(width: 30, alignment: .center)
-
-                    Circle()
-                        .fill(DesignSystem.Colors.backgroundSecondary)
-                        .frame(width: 36, height: 36)
-                        .overlay(
-                            Text(String(publicName(entry).prefix(1)).uppercased())
-                                .font(DesignSystem.Typography.labelMedium)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                        )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(publicName(entry))
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .fontWeight(.semibold)
-                            .foregroundColor(isCurrentPlayer ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textPrimary)
-
-                        Text("Lv. \(entry.level)")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-
-                    Text("\(entry.xp) XP")
-                        .font(DesignSystem.Typography.labelLarge)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                }
-                .padding(.vertical, DesignSystem.Spacing.md)
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .background(
-                    index % 2 == 0
-                        ? Color.clear
-                        : DesignSystem.Colors.backgroundSecondary.opacity(0.5)
-                )
-                .background(isCurrentPlayer ? DesignSystem.Colors.primaryGreen.opacity(0.08) : Color.clear)
-                .onTapGesture { selectedProfile = entry.id }
-                .opacity(animateList ? 1 : 0)
-                .offset(y: animateList ? 0 : 10)
-            }
-        }
-    }
-
-    // MARK: - Sticky Rank Bar
-
-    private func stickyRankBar(rank: Int) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            Text("#\(rank)")
-                .font(DesignSystem.Typography.titleMedium)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-            Text(player?.name ?? "You")
-                .font(DesignSystem.Typography.bodyMedium)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            Spacer()
-
-            Text("\(player?.totalXP ?? 0) XP")
-                .font(DesignSystem.Typography.labelLarge)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.surfaceOverlay)
-        .overlay(
-            Rectangle()
-                .fill(DesignSystem.Colors.primaryGreen)
-                .frame(height: 2),
-            alignment: .top
-        )
+        .padding(.bottom, DesignSystem.Spacing.sm)
+        .accessibilityElement(children: .combine)
     }
 }
 

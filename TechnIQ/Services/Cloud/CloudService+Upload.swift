@@ -255,17 +255,6 @@ extension CloudService {
 
     // MARK: - Data Retrieval
 
-    func fetchPlayerProfile(for playerID: String) async throws -> [String: Any]? {
-        guard let userUID = auth.currentUser?.uid else {
-            throw CloudDataError.notAuthenticated
-        }
-
-        let document = try await db.collection("users").document(userUID)
-            .collection("playerProfiles").document(playerID).getDocument()
-
-        return document.data()
-    }
-
     func fetchAllUserData() async throws -> CloudUserData {
         guard let userUID = auth.currentUser?.uid else {
             throw CloudDataError.notAuthenticated
@@ -354,29 +343,7 @@ extension CloudService {
         try await db.collection("mlAnalytics").document(data.sessionId).setData(analyticsData, merge: true)
     }
 
-    func fetchSimilarPlayerProfiles(for playerProfile: PlayerProfile, limit: Int = 10) async throws -> [CloudPlayerProfile] {
-        // arrayContainsAny throws NSInvalidArgumentException on an empty array (uncatchable in Swift).
-        guard let skillGoals = playerProfile.skillGoals, !skillGoals.isEmpty else {
-            return []
-        }
-
-        let skillGoalsQuery = db.collection("aggregatedProfiles")
-            .whereField("skillGoals", arrayContainsAny: skillGoals)
-            .limit(to: limit)
-
-        let snapshot = try await skillGoalsQuery.getDocuments()
-        return snapshot.documents.compactMap { document in
-            try? createCloudPlayerProfile(from: document.data())
-        }
-    }
-
     // MARK: - Offline Queue Management
-
-    func syncOfflineChanges() async throws {
-        syncStatus = .syncing
-        syncStatus = .success
-        lastSyncDate = Date()
-    }
 
     // MARK: - Deletion Propagation
 
@@ -745,18 +712,6 @@ extension CloudService {
             "updatedAt": plan.updatedAt ?? Date(),
             "weeks": weeksData
         ] as [String: Any]
-    }
-
-    private func createCloudPlayerProfile(from data: [String: Any]) throws -> CloudPlayerProfile {
-        return CloudPlayerProfile(
-            playerId: data["playerId"] as? String ?? "",
-            skillGoals: data["skillGoals"] as? [String] ?? [],
-            experienceLevel: data["experienceLevel"] as? String ?? "",
-            competitiveLevel: data["competitiveLevel"] as? String ?? "",
-            position: data["position"] as? String ?? "",
-            preferredIntensity: data["preferredIntensity"] as? Int ?? 5,
-            physicalFocusAreas: data["physicalFocusAreas"] as? [String] ?? []
-        )
     }
 
     private func createSharedPlanDocument(plan: TrainingPlanModel, message: String, userUID: String) throws -> [String: Any] {

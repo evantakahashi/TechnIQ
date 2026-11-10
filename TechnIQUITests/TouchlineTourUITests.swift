@@ -199,10 +199,10 @@ final class TouchlineTourUITests: XCTestCase {
 
     func test_tour_you() throws {
         launch(["-TQTab", "4"])
-        XCTAssertTrue(row("Progress & analytics").waitForExistence(timeout: 40), "you tab")
+        XCTAssertTrue(row("Progress").waitForExistence(timeout: 40), "you tab")
         dismissCoachMarkIfPresent()
 
-        tapWhenHittable(row("Progress & analytics"))
+        tapWhenHittable(row("Progress"))
         settle(1.5)
         shot("progress")
         goBack()
@@ -210,12 +210,6 @@ final class TouchlineTourUITests: XCTestCase {
         tapWhenHittable(row("Session history"))
         settle(1.5)
         shot("session-history")
-        goBack()
-
-        tapWhenHittable(row("This week"))
-        settle(1.5)
-        XCTAssertTrue(text(containing: "Personal bests").waitForExistence(timeout: 5), "records screen")
-        shot("records")
         goBack()
 
         tapWhenHittable(row("Edit profile"))

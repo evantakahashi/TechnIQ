@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - Community drill (Community → Drills → a drill)
+//
+// Read-only drill card from another player: who made it, the figures, the steps, and one action —
+// save it to your library.
+
 struct SharedDrillDetailView: View {
     let drill: SharedDrill
 
@@ -17,222 +22,113 @@ struct SharedDrillDetailView: View {
 
     private var player: Player? { players.first }
 
-    private var accentColor: Color {
-        switch drill.category.lowercased() {
-        case "technical": return DesignSystem.Colors.primaryGreen
-        case "tactical": return DesignSystem.Colors.accentGold
-        case "physical": return DesignSystem.Colors.accentOrange
-        default: return DesignSystem.Colors.primaryGreen
-        }
-    }
-
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
-                    // Title & Author
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text(drill.title)
-                            .font(DesignSystem.Typography.headlineLarge)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                TQNavBar("Community drill") {
+                    TQNavAction("Close") { dismiss() }
+                } trailing: {
+                    TQIconAction("flag", accessibilityLabel: "Report drill") { showReportAlert = true }
+                }
+                .padding(.top, 8)
 
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Image(systemName: "person.circle.fill")
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            Text("Created by \(drill.authorName)")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                            GlowBadge("Lv. \(drill.authorLevel)", color: DesignSystem.Colors.secondaryBlue)
-                        }
-                    }
+                headerSection
+                TQStatRail(items: figures)
 
-                    // Badges row
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        GlowBadge(drill.category.capitalized, color: accentColor)
-
-                        HStack(spacing: 3) {
-                            ForEach(1...5, id: \.self) { i in
-                                Circle()
-                                    .fill(i <= drill.difficulty ? accentColor : DesignSystem.Colors.textTertiary.opacity(0.3))
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down.circle.fill")
-                                .font(.system(size: 14))
-                            Text("\(drill.saveCount) saves")
-                                .font(DesignSystem.Typography.labelSmall)
-                        }
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    // Description
-                    if !drill.description.isEmpty {
-                        ModernCard {
-                            Text(drill.description)
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    // Target skills
-                    if !drill.targetSkills.isEmpty {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text("Target Skills")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            FlowLayout(spacing: DesignSystem.Spacing.sm) {
-                                ForEach(drill.targetSkills, id: \.self) { skill in
-                                    GlowBadge(skill, color: accentColor)
-                                }
-                            }
-                        }
-                    }
-
-                    // Details
-                    ModernCard {
-                        HStack(spacing: DesignSystem.Spacing.lg) {
-                            detailItem(icon: "clock", value: "\(drill.duration) min", label: "Duration")
-                            if drill.sets > 0 && drill.reps > 0 {
-                                detailItem(icon: "repeat", value: "\(drill.sets) × \(drill.reps)", label: "Sets × Reps")
-                            }
-                        }
-                    }
-
-                    // Equipment
-                    if !drill.equipment.isEmpty {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text("Equipment")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            ForEach(drill.equipment, id: \.self) { item in
-                                HStack(spacing: DesignSystem.Spacing.sm) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                        .font(.system(size: 14))
-                                    Text(item)
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                                }
-                            }
-                        }
-                    }
-
-                    // Steps
-                    if !drill.steps.isEmpty {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            Text("Instructions")
-                                .font(DesignSystem.Typography.titleSmall)
-                                .fontWeight(.bold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            ForEach(Array(drill.steps.enumerated()), id: \.offset) { index, step in
-                                HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-                                    Text("\(index + 1)")
-                                        .font(DesignSystem.Typography.labelLarge)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(accentColor)
-                                        .frame(width: 24, height: 24)
-                                        .background(accentColor.opacity(0.12))
-                                        .clipShape(Circle())
-
-                                    Text(step)
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                        }
-                    }
-
-                    // Error message
-                    if let error = saveError {
-                        Text(error)
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.error)
-                    }
-
-                    // Save button
-                    if let player = player {
-                        if drill.isSavedByCurrentUser {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                Text("Saved to Library")
-                                    .fontWeight(.semibold)
-                            }
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(DesignSystem.Colors.primaryGreen.opacity(0.12))
-                            .cornerRadius(DesignSystem.CornerRadius.button)
-                        } else {
-                            ModernButton("Save to Library", icon: "arrow.down.circle", style: .primary) {
-                                saveDrill(player: player)
-                            }
-                            .disabled(isSaving)
-                        }
+                if !drill.targetSkills.isEmpty {
+                    DrillFormGroup("Skills") {
+                        TQBody(drill.targetSkills.joined(separator: " · "))
                     }
                 }
-                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                .padding(.vertical, DesignSystem.Spacing.xl)
+
+                if !drill.equipment.isEmpty {
+                    DrillFormGroup("Equipment") {
+                        TQBody(drill.equipment.joined(separator: " · "))
+                    }
+                }
+
+                if !drill.steps.isEmpty {
+                    stepsSection
+                }
+
+                saveSection
             }
-            .background(AdaptiveBackground().ignoresSafeArea())
-            .navigationTitle("Drill Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showReportAlert = true
-                    } label: {
-                        Image(systemName: "flag")
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .alert("Report drill", isPresented: $showReportAlert) {
+            TextField("Reason", text: $reportReason)
+            Button("Report", role: .destructive) {
+                Task {
+                    try? await communityService.reportDrill(drill, reason: reportReason)
+                    dismiss()
                 }
             }
-            .alert("Report Drill", isPresented: $showReportAlert) {
-                TextField("Reason", text: $reportReason)
-                Button("Report", role: .destructive) {
-                    Task {
-                        try? await communityService.reportDrill(drill, reason: reportReason)
-                        dismiss()
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Why are you reporting this drill?")
+        }
+    }
+
+    // MARK: - Sections
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                TQEyebrow("\(drill.category) · by \(drill.authorName)")
+                    .lineLimit(1)
+                TQBadge(difficulty: String(drill.difficulty))
+            }
+            TQDisplayTitle(drill.title, size: .medium)
+            if !drill.description.isEmpty {
+                TQBody(drill.description)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var figures: [TQStatRail.Item] {
+        var items: [TQStatRail.Item] = [.init("\(drill.duration)", unit: "min", label: "duration")]
+        if drill.sets > 0 && drill.reps > 0 {
+            items.append(.init("\(drill.sets)×\(drill.reps)", label: "sets × reps"))
+        }
+        items.append(.init("\(drill.saveCount)", label: drill.saveCount == 1 ? "save" : "saves"))
+        items.append(.init("\(drill.authorLevel)", unit: "lvl", label: "author"))
+        return items
+    }
+
+    private var stepsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Steps")
+            ForEach(Array(drill.steps.enumerated()), id: \.offset) { index, step in
+                TQIndexRow(index: String(format: "%02d", index + 1), text: step)
+            }
+            TQRule()
+        }
+    }
+
+    @ViewBuilder
+    private var saveSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let saveError {
+                TQBanner(.error, lead: "Couldn't save.", message: saveError)
+            }
+            if let player {
+                if drill.isSavedByCurrentUser {
+                    TQButton("Saved to library", icon: "checkmark", style: .raised) {}
+                        .disabled(true)
+                } else {
+                    TQButton("Save to library", isLoading: isSaving) {
+                        saveDrill(player: player)
                     }
                 }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Why are you reporting this drill?")
             }
         }
     }
 
-    // MARK: - Helpers
-
-    private func detailItem(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: DesignSystem.Spacing.xs) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(accentColor)
-            Text(value)
-                .font(DesignSystem.Typography.titleSmall)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            Text(label)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
+    // MARK: - Actions
 
     private func saveDrill(player: Player) {
         isSaving = true

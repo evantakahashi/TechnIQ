@@ -1,6 +1,11 @@
 import SwiftUI
 import CoreData
 
+// MARK: - New drill, written by hand (Train → New drill → Write your own)
+//
+// One form: name, then either a quick note or step-by-step sections, then category, level,
+// duration and skills. Saved drills are stamped `.manual` and land in "My drills".
+
 struct ManualDrillCreatorView: View {
     let player: Player
     @Environment(\.dismiss) private var dismiss
@@ -12,18 +17,16 @@ struct ManualDrillCreatorView: View {
     @State private var selectedDifficulty: DifficultyLevel = .beginner
     @State private var duration = 30
     @State private var selectedSkills: Set<String> = []
-    @State private var showingSuccessMessage = false
+    @State private var saveFailed = false
 
-    // Phase 6: Structured sections
+    // Step-by-step sections
     @State private var useStructuredMode = false
     @State private var setupRequirements = ""
     @State private var instructionSteps: [String] = [""]
     @State private var coachingPoints: [String] = [""]
     @State private var progressions: [String] = [""]
     @State private var selectedEquipment: Set<Equipment> = []
-    @State private var showingPreview = false
 
-    // Available skills for selection
     private let availableSkills = [
         "Ball Control", "Dribbling", "Passing", "Shooting", "First Touch",
         "Speed", "Agility", "Endurance", "Strength", "Coordination",
@@ -41,11 +44,22 @@ struct ManualDrillCreatorView: View {
         }
     }
 
+    /// What is still missing, shown above the save button.
+    private var validationHint: String? {
+        if drillName.count < 3 { return "Give the drill a name (3 characters or more)." }
+        if useStructuredMode {
+            if setupRequirements.isEmpty { return "Describe the set-up." }
+            if !instructionSteps.contains(where: { !$0.isEmpty }) { return "Add at least one step." }
+        } else if drillDescription.count < 10 {
+            return "Describe the drill in a sentence or two."
+        }
+        return nil
+    }
+
     // Generate formatted instructions from structured sections
     private var formattedInstructions: String {
         var output = ""
 
-        // Setup section
         if !setupRequirements.isEmpty {
             output += "**Setup:**\n\(setupRequirements)\n"
             if !selectedEquipment.isEmpty {
@@ -55,7 +69,6 @@ struct ManualDrillCreatorView: View {
             output += "\n"
         }
 
-        // Instructions section
         let validSteps = instructionSteps.filter { !$0.isEmpty }
         if !validSteps.isEmpty {
             output += "**Instructions:**\n"
@@ -65,7 +78,6 @@ struct ManualDrillCreatorView: View {
             output += "\n"
         }
 
-        // Coaching points section
         let validPoints = coachingPoints.filter { !$0.isEmpty }
         if !validPoints.isEmpty {
             output += "**Coaching Points:**\n"
@@ -75,7 +87,6 @@ struct ManualDrillCreatorView: View {
             output += "\n"
         }
 
-        // Progressions section
         let validProgressions = progressions.filter { !$0.isEmpty }
         if !validProgressions.isEmpty {
             output += "**Progressions:**\n"
@@ -88,547 +99,161 @@ struct ManualDrillCreatorView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AdaptiveBackground()
-                    .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: DesignSystem.Spacing.lg) {
-                        headerSection
-                        modeToggleSection
-                        nameSection
-
-                        if useStructuredMode {
-                            setupSection
-                            equipmentSection
-                            instructionsSection
-                            coachingPointsSection
-                            progressionsSection
-                            previewButton
-                        } else {
-                            descriptionSection
-                        }
-
-                        categorySection
-                        difficultySection
-                        durationSection
-                        skillsSection
-                        createButton
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-                    .padding(.bottom, DesignSystem.Spacing.xxl)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                TQNavBar("New drill") {
+                    TQNavAction("Cancel") { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                 }
-            }
-            .navigationTitle("Manual Drill")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                .padding(.top, 8)
+
+                headerSection
+
+                TQFormField("Name", text: $drillName, placeholder: "Cone dribbling circuit")
+                    .onChange(of: drillName) { _, newValue in
+                        if newValue.count > 50 { drillName = String(newValue.prefix(50)) }
                     }
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+
+                modeSection
+
+                if useStructuredMode {
+                    structuredSections
+                } else {
+                    DrillFormTextArea(label: "Description", text: $drillDescription,
+                                      placeholder: "Set-up, what you do, what to focus on", lines: 4...8, limit: 500)
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveDrill()
-                    }
-                    .disabled(!isValid)
-                    .foregroundColor(isValid ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textSecondary)
-                    .fontWeight(.semibold)
-                }
+                categorySection
+                levelSection
+                durationSection
+                skillsSection
+                saveSection
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .alert("Drill Created!", isPresented: $showingSuccessMessage) {
-            Button("OK") {
-                dismiss()
-            }
-        } message: {
-            Text("Your drill has been added to your exercise library!")
-        }
-        .sheet(isPresented: $showingPreview) {
-            DrillPreviewSheet(
-                drillName: drillName,
-                instructions: formattedInstructions,
-                onDismiss: { showingPreview = false }
-            )
-        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
     }
 
-    // MARK: - Mode Toggle Section
-
-    private var modeToggleSection: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Structured Mode")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("Create drills with organized sections like AI-generated drills")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: $useStructuredMode)
-                        .labelsHidden()
-                        .tint(DesignSystem.Colors.primaryGreen)
-                }
-            }
-        }
-    }
-
-    // MARK: - Setup Section
-
-    private var setupSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            HStack {
-                Image(systemName: "map")
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                Text("Setup Requirements")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    TextField("Describe the setup area, cone placements, etc.", text: $setupRequirements, axis: .vertical)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .lineLimit(3...6)
-                        .textFieldStyle(.plain)
-                }
-                .padding(DesignSystem.Spacing.sm)
-            }
-        }
-    }
-
-    // MARK: - Equipment Section
-
-    private var equipmentSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            HStack {
-                Image(systemName: "sportscourt")
-                    .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                Text("Equipment (Optional)")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: DesignSystem.Spacing.sm) {
-                ForEach(Equipment.allCases.filter { $0 != .none }, id: \.self) { equipment in
-                    EquipmentSelectionCard(
-                        equipment: equipment,
-                        isSelected: selectedEquipment.contains(equipment)
-                    ) {
-                        if selectedEquipment.contains(equipment) {
-                            selectedEquipment.remove(equipment)
-                        } else {
-                            selectedEquipment.insert(equipment)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Instructions Section
-
-    private var instructionsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            HStack {
-                Image(systemName: "list.number")
-                    .foregroundColor(DesignSystem.Colors.accentOrange)
-                Text("Step-by-Step Instructions")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(instructionSteps.indices, id: \.self) { index in
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(DesignSystem.Colors.accentOrange.opacity(0.15))
-                                .frame(width: 28, height: 28)
-                            Text("\(index + 1)")
-                                .font(DesignSystem.Typography.labelMedium)
-                                .fontWeight(.semibold)
-                                .foregroundColor(DesignSystem.Colors.accentOrange)
-                        }
-
-                        ModernCard {
-                            TextField("Enter step \(index + 1)...", text: $instructionSteps[index])
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .textFieldStyle(.plain)
-                                .padding(DesignSystem.Spacing.sm)
-                        }
-
-                        if instructionSteps.count > 1 {
-                            Button {
-                                instructionSteps.remove(at: index)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundColor(.red.opacity(0.7))
-                            }
-                        }
-                    }
-                }
-
-                Button {
-                    instructionSteps.append("")
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Add Step")
-                    }
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    // MARK: - Coaching Points Section
-
-    private var coachingPointsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            HStack {
-                Image(systemName: "lightbulb")
-                    .foregroundColor(.yellow)
-                Text("Coaching Points (Optional)")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(coachingPoints.indices, id: \.self) { index in
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Circle()
-                            .fill(Color.yellow)
-                            .frame(width: 8, height: 8)
-
-                        ModernCard {
-                            TextField("Enter coaching tip...", text: $coachingPoints[index])
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .textFieldStyle(.plain)
-                                .padding(DesignSystem.Spacing.sm)
-                        }
-
-                        if coachingPoints.count > 1 {
-                            Button {
-                                coachingPoints.remove(at: index)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundColor(.red.opacity(0.7))
-                            }
-                        }
-                    }
-                }
-
-                Button {
-                    coachingPoints.append("")
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Add Coaching Point")
-                    }
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    // MARK: - Progressions Section
-
-    private var progressionsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            HStack {
-                Image(systemName: "arrow.up.right")
-                    .foregroundColor(.purple)
-                Text("Progressions/Variations (Optional)")
-                    .font(DesignSystem.Typography.titleSmall)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-            }
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(progressions.indices, id: \.self) { index in
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Circle()
-                            .fill(Color.purple)
-                            .frame(width: 8, height: 8)
-
-                        ModernCard {
-                            TextField("e.g., Harder: Add defender pressure", text: $progressions[index])
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .textFieldStyle(.plain)
-                                .padding(DesignSystem.Spacing.sm)
-                        }
-
-                        if progressions.count > 1 {
-                            Button {
-                                progressions.remove(at: index)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundColor(.red.opacity(0.7))
-                            }
-                        }
-                    }
-                }
-
-                Button {
-                    progressions.append("")
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Add Progression")
-                    }
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    // MARK: - Preview Button
-
-    private var previewButton: some View {
-        Button {
-            showingPreview = true
-        } label: {
-            HStack {
-                Image(systemName: "eye")
-                Text("Preview Formatted Drill")
-            }
-            .font(DesignSystem.Typography.bodyMedium)
-            .fontWeight(.medium)
-            .foregroundColor(DesignSystem.Colors.secondaryBlue)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, DesignSystem.Spacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(DesignSystem.Colors.secondaryBlue, lineWidth: 1.5)
-            )
-        }
-        .disabled(!isValid)
-        .opacity(isValid ? 1.0 : 0.5)
-    }
-
-    // MARK: - Header Section
+    // MARK: - Sections
 
     private var headerSection: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Create Your Own Drill")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("Manually design a custom drill with your own specifications.")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-                }
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            TQEyebrow("Your own drill")
+            TQDisplayTitle("Write it\nyour way", size: .medium)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Name Section
-
-    private var nameSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Drill Name")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    TextField("e.g., Cone Dribbling Circuit", text: $drillName)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .textFieldStyle(.plain)
-
-                    HStack {
-                        Spacer()
-                        Text("\(drillName.count)/50")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(drillName.count >= 3 ?
-                                           DesignSystem.Colors.textSecondary : DesignSystem.Colors.error)
-                    }
-                }
-                .padding(DesignSystem.Spacing.sm)
-            }
-
-            if !drillName.isEmpty && drillName.count < 3 {
-                Text("Name must be at least 3 characters")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.error)
-            }
-        }
+    private var modeSection: some View {
+        TQSegment(
+            options: ["Quick note", "Step by step"],
+            selectedIndex: Binding(
+                get: { useStructuredMode ? 1 : 0 },
+                set: { useStructuredMode = $0 == 1 }
+            )
+        )
     }
 
-    // MARK: - Description Section
+    @ViewBuilder
+    private var structuredSections: some View {
+        DrillFormTextArea(label: "Set-up", text: $setupRequirements,
+                          placeholder: "Area, cone placement, where you start", lines: 3...6)
 
-    private var descriptionSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Description")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    TextField("Describe the drill, setup, and execution...", text: $drillDescription, axis: .vertical)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .lineLimit(4...8)
-                        .textFieldStyle(.plain)
-
-                    HStack {
-                        Spacer()
-                        Text("\(drillDescription.count)/500")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(drillDescription.count >= 10 ?
-                                           DesignSystem.Colors.textSecondary : DesignSystem.Colors.error)
+        DrillFormGroup("Equipment") {
+            DrillFormChips(
+                options: Equipment.allCases.filter { $0 != .none }.map(\.displayName),
+                isSelected: { name in selectedEquipment.contains { $0.displayName == name } },
+                onTap: { name in
+                    guard let item = Equipment.allCases.first(where: { $0.displayName == name }) else { return }
+                    if selectedEquipment.contains(item) {
+                        selectedEquipment.remove(item)
+                    } else {
+                        selectedEquipment.insert(item)
                     }
                 }
-                .padding(DesignSystem.Spacing.sm)
-            }
-
-            if !drillDescription.isEmpty && drillDescription.count < 10 {
-                Text("Description must be at least 10 characters")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.error)
-            }
+            )
         }
-    }
 
-    // MARK: - Category Section
+        DrillFormLineList(title: "Steps", lines: $instructionSteps, numbered: true,
+                          placeholder: "What happens next", addTitle: "Add step")
+        DrillFormLineList(title: "Coaching points", lines: $coachingPoints, numbered: false,
+                          placeholder: "One thing to get right", addTitle: "Add point")
+        DrillFormLineList(title: "Make it harder or easier", lines: $progressions, numbered: false,
+                          placeholder: "Harder: add a defender", addTitle: "Add variation")
+    }
 
     private var categorySection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Category")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: DesignSystem.Spacing.sm) {
-                ForEach(DrillCategory.allCases, id: \.self) { category in
-                    CategorySelectionCard(
-                        category: category,
-                        isSelected: selectedCategory == category
-                    ) {
-                        selectedCategory = category
+        DrillFormGroup("Category") {
+            DrillFormChips(
+                options: DrillCategory.allCases.map(\.displayName),
+                isSelected: { $0 == selectedCategory.displayName },
+                onTap: { name in
+                    if let match = DrillCategory.allCases.first(where: { $0.displayName == name }) {
+                        selectedCategory = match
                     }
                 }
-            }
+            )
         }
     }
 
-    // MARK: - Difficulty Section
-
-    private var difficultySection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Difficulty Level")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(DifficultyLevel.allCases, id: \.self) { difficulty in
-                    DifficultySelectionCard(
-                        difficulty: difficulty,
-                        isSelected: selectedDifficulty == difficulty
-                    ) {
-                        selectedDifficulty = difficulty
+    private var levelSection: some View {
+        DrillFormGroup("Level") {
+            TQSegment(
+                options: DifficultyLevel.allCases.map(\.displayName),
+                selectedIndex: Binding(
+                    get: { DifficultyLevel.allCases.firstIndex(of: selectedDifficulty) ?? 0 },
+                    set: { index in
+                        let levels = DifficultyLevel.allCases
+                        if levels.indices.contains(index) { selectedDifficulty = levels[index] }
                     }
-                }
-            }
+                )
+            )
         }
     }
-
-    // MARK: - Duration Section
 
     private var durationSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Duration: \(duration) minutes")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Slider(value: Binding(
-                        get: { Double(duration) },
-                        set: { duration = Int($0) }
-                    ), in: 10...120, step: 5)
-                    .accentColor(DesignSystem.Colors.primaryGreen)
-
-                    HStack {
-                        Text("10 min")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        Spacer()
-                        Text("120 min")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .padding(DesignSystem.Spacing.sm)
-            }
+        VStack(spacing: 0) {
+            TQRule()
+            TQValueStepper(label: "Duration", value: $duration, range: 10...120, step: 5) { "\($0) min" }
+            TQRule()
         }
     }
-
-    // MARK: - Skills Section
 
     private var skillsSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Target Skills (Optional)")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: DesignSystem.Spacing.sm) {
-                ForEach(availableSkills, id: \.self) { skill in
-                    SkillSelectionCard(
-                        skill: skill,
-                        isSelected: selectedSkills.contains(skill)
-                    ) {
-                        if selectedSkills.contains(skill) {
-                            selectedSkills.remove(skill)
-                        } else {
-                            selectedSkills.insert(skill)
-                        }
-                    }
+        DrillFormGroup("Skills") {
+            DrillFormChips(options: availableSkills, isSelected: { selectedSkills.contains($0) }) { skill in
+                if selectedSkills.contains(skill) {
+                    selectedSkills.remove(skill)
+                } else {
+                    selectedSkills.insert(skill)
                 }
             }
         }
     }
 
-    // MARK: - Create Button
-
-    private var createButton: some View {
-        ModernButton(
-            "Create Drill",
-            icon: "checkmark.circle.fill",
-            style: .primary
-        ) {
-            saveDrill()
+    private var saveSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if saveFailed {
+                TQBanner(.error, lead: "Couldn't save.", message: "Try again.")
+            } else if let validationHint {
+                TQBody(validationHint, tone: .muted, size: 13)
+            }
+            TQButton("Save drill") { saveDrill() }
+                .disabled(!isValid)
+                .opacity(isValid ? 1 : 0.4)
+                .accessibilityIdentifier("manualDrill.save")
         }
-        .disabled(!isValid)
-        .opacity(isValid ? 1.0 : 0.6)
+        .padding(.top, DesignSystem.Spacing.sm)
     }
 
     // MARK: - Actions
 
     private func saveDrill() {
+        guard isValid else { return }
         let exercise = Exercise(context: viewContext)
         exercise.id = UUID()
         exercise.source = TrainDrill.Source.manual.rawValue
@@ -640,7 +265,6 @@ struct ManualDrillCreatorView: View {
         exercise.estimatedDurationSeconds = Int16(clamping: max(duration, 1) * 60)
 
         if useStructuredMode {
-            // Use formatted instructions for structured mode
             exercise.exerciseDescription = "Manual Drill"
             exercise.instructions = formattedInstructions
             exercise.equipment = Exercise.equipmentText(selectedEquipment.filter { $0 != .none }.map { $0.displayName }.sorted())
@@ -648,18 +272,20 @@ struct ManualDrillCreatorView: View {
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .first { !$0.isEmpty }
         } else {
-            // Simple mode - use description directly
             exercise.exerciseDescription = drillDescription
             exercise.instructions = nil
         }
 
-        // Link to player
         exercise.player = player
 
         do {
             try viewContext.save()
-            showingSuccessMessage = true
+            HapticManager.shared.success()
+            dismiss()
         } catch {
+            viewContext.delete(exercise)
+            saveFailed = true
+            HapticManager.shared.error()
             #if DEBUG
             print("Failed to save drill: \(error)")
             #endif
@@ -667,85 +293,73 @@ struct ManualDrillCreatorView: View {
     }
 }
 
-// MARK: - Drill Preview Sheet
+// MARK: - Editable line list (steps, points, variations)
 
-struct DrillPreviewSheet: View {
-    let drillName: String
-    let instructions: String
-    let onDismiss: () -> Void
+/// A growing list of one-line fields: "01 …" when numbered, a grass dash otherwise.
+struct DrillFormLineList: View {
+    let title: String
+    @Binding var lines: [String]
+    let numbered: Bool
+    let placeholder: String
+    let addTitle: String
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                    // Header
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text(drillName)
-                            .font(DesignSystem.Typography.titleLarge)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("Preview how your drill will appear")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-
-                    // Formatted Instructions
-                    DrillInstructionsView(instructions: instructions)
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                }
-                .padding(.vertical, DesignSystem.Spacing.md)
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader(title)
+            TQRule()
+            ForEach(Array(lines.indices), id: \.self) { index in
+                row(index)
             }
-            .adaptiveBackground()
-            .navigationTitle("Preview")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        onDismiss()
-                    }
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-            }
+            TQTextLink(addTitle, arrow: false) { lines.append("") }
+                .padding(.top, 10)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-}
 
-// MARK: - Skill Selection Card
+    private func binding(_ index: Int) -> Binding<String> {
+        Binding(
+            get: { lines.indices.contains(index) ? lines[index] : "" },
+            set: { if lines.indices.contains(index) { lines[index] = $0 } }
+        )
+    }
 
-struct SkillSelectionCard: View {
-    let skill: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ModernCard(padding: DesignSystem.Spacing.xs) {
-                Text(skill)
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(isSelected ? DesignSystem.Colors.primaryDark : DesignSystem.Colors.textPrimary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, minHeight: 40)
+    private func row(_ index: Int) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(numbered ? String(format: "%02d", index + 1) : "–")
+                .font(Font.system(size: 14, weight: .bold).width(.condensed))
+                .tracking(0.6)
+                .foregroundColor(DesignSystem.Colors.grass)
+                .frame(width: 22, alignment: .leading)
+            TextField(placeholder, text: binding(index), axis: .vertical)
+                .lineLimit(1...4)
+                .font(Font.system(size: 15, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .tint(DesignSystem.Colors.grass)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("\(title) \(index + 1)")
+            if lines.count > 1 {
+                Button {
+                    if lines.indices.contains(index) { lines.remove(at: index) }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(DesignSystem.Colors.dimIvory)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Remove \(title.lowercased()) \(index + 1)")
             }
-            .background(
-                isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
-            )
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(
-                        isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 10)
+        .frame(minHeight: DesignSystem.Spacing.hitTarget)
+        .overlay(alignment: .bottom) { TQRule() }
     }
 }
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     let context = CoreDataManager.shared.context
     let mockPlayer = Player(context: context)
@@ -754,3 +368,4 @@ struct SkillSelectionCard: View {
     return ManualDrillCreatorView(player: mockPlayer)
         .environment(\.managedObjectContext, context)
 }
+#endif

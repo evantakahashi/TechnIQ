@@ -272,31 +272,9 @@ class AICoachService: ObservableObject, AICoachServiceProtocol {
             type: insightType,
             title: ai.title,
             description: ai.description,
-            icon: iconForType(insightType),
-            color: colorForType(insightType),
             priority: ai.priority,
             actionable: ai.actionable
         )
-    }
-
-    private func iconForType(_ type: InsightType) -> String {
-        switch type {
-        case .celebration: return "star.fill"
-        case .warning: return "exclamationmark.triangle"
-        case .recommendation: return "lightbulb.fill"
-        case .pattern: return "chart.line.uptrend.xyaxis"
-        case .achievement: return "trophy.fill"
-        }
-    }
-
-    private func colorForType(_ type: InsightType) -> String {
-        switch type {
-        case .celebration: return "primaryGreen"
-        case .warning: return "error"
-        case .recommendation: return "secondaryBlue"
-        case .pattern: return "accentOrange"
-        case .achievement: return "accentYellow"
-        }
     }
 
     // MARK: - Firebase Function Call

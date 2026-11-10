@@ -1,5 +1,9 @@
 import SwiftUI
 
+// MARK: - Post (Community → a post)
+//
+// The post at full size, its comments as flat rows, and a comment field pinned to the bottom.
+
 struct PostDetailView: View {
     let post: CommunityPost
     let currentPlayer: Player
@@ -15,320 +19,116 @@ struct PostDetailView: View {
     @State private var showingGuidelines = false
     @State private var commentError: String?
 
+    private var trimmedComment: String { newCommentText.trimmingCharacters(in: .whitespacesAndNewlines) }
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        // Original post
-                        postSection
-
-                        // Comments header
-                        if !comments.isEmpty || !isLoadingComments {
-                            HStack {
-                                Text("Comments")
-                                    .font(DesignSystem.Typography.titleSmall)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                                Text("(\(comments.count))")
-                                    .font(DesignSystem.Typography.labelMedium)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                                Spacer()
-                            }
-                            .padding(.top, DesignSystem.Spacing.sm)
-                        }
-
-                        // Comments list
-                        if isLoadingComments {
-                            ProgressView()
-                                .tint(DesignSystem.Colors.primaryGreen)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                        } else if comments.isEmpty {
-                            Text("No comments yet. Be the first!")
-                                .font(DesignSystem.Typography.bodySmall)
-                                .foregroundColor(DesignSystem.Colors.textTertiary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, DesignSystem.Spacing.lg)
-                        } else {
-                            ForEach(comments) { comment in
-                                CommentRow(
-                                    comment: comment,
-                                    isOwnComment: comment.authorID == currentPlayer.firebaseUID,
-                                    onReport: { reportComment(comment) },
-                                    onBlock: { blockCommentAuthor(comment) },
-                                    onAuthorTap: {
-                                        profileUserID = comment.authorID
-                                        showingProfile = true
-                                    }
-                                )
-                            }
-                        }
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                    TQNavBar("Post") {
+                        TQNavAction("Close") { dismiss() }
+                    } trailing: {
+                        Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
                     }
-                    .padding(DesignSystem.Spacing.md)
-                }
+                    .padding(.top, 8)
 
-                // Comment input bar
-                commentInputBar
-                    .sheet(isPresented: $showingGuidelines) {
-                        CommunityGuidelinesSheet { postComment() }
-                    }
-            }
-            .background(AdaptiveBackground().ignoresSafeArea())
-            .navigationTitle("Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") { dismiss() }
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                    postSection
+                    commentsSection
                 }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.bottom, DesignSystem.Spacing.lg)
             }
-            .onAppear { loadComments() }
-            .sheet(isPresented: $showingProfile) {
-                if let uid = profileUserID {
-                    PublicProfileView(userID: uid)
+
+            commentInputBar
+                .sheet(isPresented: $showingGuidelines) {
+                    CommunityGuidelinesSheet { postComment() }
                 }
+        }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .onAppear { loadComments() }
+        .sheet(isPresented: $showingProfile) {
+            if let uid = profileUserID {
+                PublicProfileView(userID: uid)
             }
-            .alert("Comment not posted", isPresented: Binding(
-                get: { commentError != nil },
-                set: { if !$0 { commentError = nil } }
-            )) {
-                Button("OK", role: .cancel) { commentError = nil }
-            } message: {
-                Text(commentError ?? "")
-            }
+        }
+        .alert("Comment not posted", isPresented: Binding(
+            get: { commentError != nil },
+            set: { if !$0 { commentError = nil } }
+        )) {
+            Button("OK", role: .cancel) { commentError = nil }
+        } message: {
+            Text(commentError ?? "")
         }
     }
 
     // MARK: - Post Section
 
-    // Public identity only — first name + last initial.
-    private var authorDisplayName: String {
-        CommunityService.displayName(for: post.authorName)
-    }
-
     private var postSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            // Author
-            HStack(spacing: DesignSystem.Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(DesignSystem.Colors.secondaryBlue.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Text(String(authorDisplayName.prefix(1)).uppercased())
-                        .font(DesignSystem.Typography.titleMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                }
-                .onTapGesture {
-                    profileUserID = post.authorID
-                    showingProfile = true
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            CommunityAuthorLine(post: post) { showProfile(post.authorID) }
+            CommunityPostBody(post: post, textSize: 16)
+            TQMeta("\(post.likesCount) like\(post.likesCount == 1 ? "" : "s") · \(post.commentsCount) comment\(post.commentsCount == 1 ? "" : "s")",
+                   tone: .muted, size: 13)
+        }
+    }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(authorDisplayName)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Text("Lv.\(post.authorLevel)")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        Text("·")
-                            .foregroundColor(DesignSystem.Colors.textTertiary)
-                        Text(post.timestamp.timeAgoDisplay())
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textTertiary)
-                    }
-                }
-                Spacer()
-            }
+    // MARK: - Comments
 
-            // Content
-            if post.isHidden {
-                Text("This post was hidden after multiple reports.")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .italic()
-                    .foregroundColor(DesignSystem.Colors.textTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private var commentsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader(isLoadingComments ? "Comments" : "Comments · \(comments.count)")
+            TQRule()
+            if isLoadingComments {
+                TQSpinner(size: 18)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.lg)
+            } else if comments.isEmpty {
+                TQBody("No comments yet. Be the first.", tone: .muted)
+                    .padding(.vertical, DesignSystem.Spacing.md)
             } else {
-                Text(post.content)
-                    .font(DesignSystem.Typography.bodyLarge)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // Rich content for new post types
-                richPostContent
-            }
-
-            // Stats
-            HStack(spacing: DesignSystem.Spacing.lg) {
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: post.isLikedByCurrentUser ? "heart.fill" : "heart")
-                        .foregroundColor(post.isLikedByCurrentUser ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
-                    Text("\(post.likesCount) likes")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: "bubble.left")
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                    Text("\(post.commentsCount) comments")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                Spacer()
-            }
-            .font(.system(size: 16))
-        }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.card)
-        .customShadow(DesignSystem.Shadow.medium)
-    }
-
-    // MARK: - Rich Post Content
-
-    @ViewBuilder
-    private var richPostContent: some View {
-        switch post.postType {
-        case .sharedDrill:
-            if let title = post.drillTitle {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text(title)
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            if let cat = post.drillCategory {
-                                GlowBadge(cat.capitalized, color: DesignSystem.Colors.primaryGreen)
-                            }
-                            if let diff = post.drillDifficulty {
-                                HStack(spacing: 3) {
-                                    ForEach(1...5, id: \.self) { i in
-                                        Circle()
-                                            .fill(i <= diff ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.textTertiary.opacity(0.3))
-                                            .frame(width: 6, height: 6)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
-            }
-
-        case .sharedAchievement:
-            if let name = post.achievementName, let icon = post.achievementIcon {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Image(systemName: icon)
-                        .font(.system(size: 28))
-                        .foregroundColor(DesignSystem.Colors.accentGold)
-                        .frame(width: 48, height: 48)
-                        .background(DesignSystem.Colors.accentGold.opacity(0.12))
-                        .clipShape(Circle())
-                    GlowBadge(name, color: DesignSystem.Colors.accentGold)
-                    Spacer()
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.accentGold.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
-            }
-
-        case .sharedSession:
-            HStack(spacing: DesignSystem.Spacing.lg) {
-                if let dur = post.sessionDuration {
-                    postStatItem(icon: "clock", value: "\(dur)m", label: "Duration")
-                }
-                if let count = post.sessionExerciseCount {
-                    postStatItem(icon: "figure.run", value: "\(count)", label: "Exercises")
-                }
-                if let xp = post.sessionXP {
-                    postStatItem(icon: "star.fill", value: "+\(xp)", label: "XP")
+                ForEach(comments) { comment in
+                    CommentRow(
+                        comment: comment,
+                        isOwnComment: comment.authorID == currentPlayer.firebaseUID,
+                        onReport: { reportComment(comment) },
+                        onBlock: { blockCommentAuthor(comment) },
+                        onAuthorTap: { showProfile(comment.authorID) }
+                    )
                 }
             }
-            .padding(DesignSystem.Spacing.md)
-            .background(DesignSystem.Colors.primaryGreen.opacity(0.06))
-            .cornerRadius(DesignSystem.CornerRadius.md)
-
-        case .sharedLevelUp:
-            if let level = post.newLevel {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Text("\(level)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(DesignSystem.Colors.accentGold)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Level Up!")
-                            .font(DesignSystem.Typography.titleSmall)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        if let rank = post.rankName {
-                            GlowBadge(rank, color: DesignSystem.Colors.accentGold)
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.accentGold.opacity(0.06))
-                .cornerRadius(DesignSystem.CornerRadius.md)
-            }
-
-        default:
-            EmptyView()
         }
     }
 
-    private func postStatItem(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-            Text(value)
-                .font(DesignSystem.Typography.labelLarge)
-                .fontWeight(.bold)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            Text(label)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
+    private func showProfile(_ userID: String) {
+        profileUserID = userID
+        showingProfile = true
     }
 
     // MARK: - Comment Input Bar
 
     private var commentInputBar: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            TextField("Add a comment...", text: $newCommentText, axis: .vertical)
-                .font(DesignSystem.Typography.bodyMedium)
+        HStack(alignment: .bottom, spacing: DesignSystem.Spacing.sm) {
+            TextField("Add a comment…", text: $newCommentText, axis: .vertical)
+                .font(Font.system(size: 16, weight: .regular))
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .tint(DesignSystem.Colors.grass)
                 .lineLimit(1...4)
-                .padding(DesignSystem.Spacing.sm)
-                .padding(.horizontal, DesignSystem.Spacing.xs)
-                .background(DesignSystem.Colors.backgroundSecondary)
-                .cornerRadius(DesignSystem.CornerRadius.pill)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(DesignSystem.Colors.surfaceRaised)
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
 
-            Button {
+            TQIconButton("arrow.up", style: .primary, shape: .square, size: 44, accessibilityLabel: "Send comment") {
                 postComment()
-            } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(
-                        newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? DesignSystem.Colors.neutral400
-                            : DesignSystem.Colors.primaryGreen
-                    )
             }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isPostingComment)
+            .disabled(trimmedComment.isEmpty || isPostingComment)
+            .opacity(trimmedComment.isEmpty || isPostingComment ? 0.4 : 1)
         }
-        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
         .padding(.vertical, DesignSystem.Spacing.sm)
-        .background(DesignSystem.Colors.cardBackground)
+        .background(DesignSystem.Colors.surfaceBase)
+        .overlay(alignment: .top) { TQRule() }
     }
 
     // MARK: - Actions
@@ -348,7 +148,7 @@ struct PostDetailView: View {
     }
 
     private func postComment() {
-        let trimmed = newCommentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = trimmedComment
         guard !trimmed.isEmpty else { return }
 
         guard CommunityGuidelines.hasAccepted else {
@@ -403,70 +203,52 @@ struct CommentRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
-            // Mini avatar
-            ZStack {
-                Circle()
-                    .fill(DesignSystem.Colors.neutral300)
-                    .frame(width: 32, height: 32)
-                Text(String(authorDisplayName.prefix(1)).uppercased())
-                    .font(DesignSystem.Typography.labelSmall)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
+        HStack(alignment: .top, spacing: 12) {
+            Button(action: onAuthorTap) {
+                CommunityInitial(name: authorDisplayName, size: 32)
             }
-            .onTapGesture(perform: onAuthorTap)
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(authorDisplayName)'s profile")
 
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                HStack(spacing: DesignSystem.Spacing.xs) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(authorDisplayName)
-                        .font(DesignSystem.Typography.labelMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                        .onTapGesture(perform: onAuthorTap)
-
-                    Text("Lv.\(comment.authorLevel)")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                    Spacer()
-
-                    Text(comment.timestamp.timeAgoDisplay())
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-
-                    if !isOwnComment {
-                        Menu {
-                            Button(role: .destructive, action: onReport) {
-                                Label("Report", systemImage: "exclamationmark.triangle")
-                            }
-                            Button(role: .destructive, action: onBlock) {
-                                Label("Block User", systemImage: "hand.raised.fill")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.caption)
-                                .foregroundColor(DesignSystem.Colors.textSecondary)
-                                .frame(width: 28, height: 28)
-                                .contentShape(Rectangle())
-                        }
-                        .accessibilityLabel("Comment actions")
-                    }
+                        .font(DesignSystem.Typography.bodySmallStrong)
+                        .foregroundColor(DesignSystem.Colors.chalkWhite)
+                        .lineLimit(1)
+                    TQMeta("Lvl \(comment.authorLevel) · \(comment.timestamp.timeAgoDisplay())", tone: .muted, size: 13, weight: .regular)
+                    Spacer(minLength: 0)
                 }
-
                 if comment.isHidden {
-                    Text("This comment was hidden after multiple reports.")
-                        .font(DesignSystem.Typography.bodySmall)
-                        .italic()
-                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    TQBody("This comment was hidden after multiple reports.", tone: .italicMuted, size: 13)
                 } else {
                     Text(comment.content)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.mutedIvory)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !isOwnComment {
+                Menu {
+                    Button(role: .destructive, action: onReport) {
+                        Label("Report", systemImage: "exclamationmark.triangle")
+                    }
+                    Button(role: .destructive, action: onBlock) {
+                        Label("Block User", systemImage: "hand.raised.fill")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.dimIvory)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Comment actions")
+            }
         }
-        .padding(.vertical, DesignSystem.Spacing.sm)
+        .padding(.vertical, DesignSystem.Spacing.rowVertical)
+        .overlay(alignment: .bottom) { TQRule() }
     }
 }
