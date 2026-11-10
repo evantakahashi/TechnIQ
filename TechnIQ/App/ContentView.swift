@@ -34,16 +34,7 @@ struct AuthenticatedContentView: View {
             if authManager.hasValidUser {
                 PlayerContentView(isOnboardingComplete: $isOnboardingComplete)
             } else {
-                VStack(spacing: 16) {
-                    ProgressView("Loading your profile...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
-                        .scaleEffect(1.5)
-
-                    Text("Setting up your account")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-                .padding()
+                TQLaunchState(title: "Getting your\nkit ready", message: "Loading your profile.")
             }
         }
     }
@@ -189,46 +180,11 @@ struct CloudRestoreProgressView: View {
     let progress: Double
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            Image(systemName: "icloud.and.arrow.down")
-                .font(.system(size: 60))
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                .symbolEffect(.pulse, options: .repeating)
-
-            VStack(spacing: 12) {
-                Text(isRestoring ? "Restoring Your Data" : "Checking for Existing Data")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text(isRestoring ? "Syncing your training history, progress, and settings..." : "Looking for your profile in the cloud...")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-
-            if isRestoring {
-                VStack(spacing: 8) {
-                    ProgressView(value: progress)
-                        .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
-                        .frame(width: 200)
-
-                    Text("\(Int(progress * 100))%")
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-            } else {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primaryGreen))
-                    .scaleEffect(1.2)
-            }
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.Colors.background)
+        TQLaunchState(
+            title: isRestoring ? "Restoring\nyour training" : "Looking for\nyour profile",
+            message: isRestoring ? "Bringing back your history, plan and drills." : "Checking the cloud for a saved profile.",
+            progress: isRestoring ? progress : nil
+        )
     }
 }
 
@@ -239,42 +195,43 @@ struct CloudRestoreErrorView: View {
     let onRetry: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
+        TQLaunchState(title: "Couldn't restore\nyour data", message: error, retry: onRetry)
+    }
+}
+
+/// The one full-screen waiting state (profile load, cloud check, restore, restore failed):
+/// app mark, condensed title, one line, then a progress bar, a spinner or Try again.
+struct TQLaunchState: View {
+    let title: String
+    let message: String
+    var progress: Double? = nil
+    var retry: (() -> Void)? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Spacer()
-
-            Image(systemName: "exclamationmark.icloud")
-                .font(.system(size: 60))
-                .foregroundColor(DesignSystem.Colors.accentOrange)
-
-            VStack(spacing: 12) {
-                Text("Couldn't Restore Data")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                Text(error)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-
-            Button(action: onRetry) {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Try Again")
+            TQAppMark(size: 44)
+            TQDisplayTitle(title, size: .medium)
+            TQBody(message)
+            if let retry {
+                TQButton("Try again", action: retry)
+                    .padding(.top, 8)
+            } else if let progress {
+                VStack(alignment: .leading, spacing: 8) {
+                    TQProgressBar(progress: progress, height: 4, track: DesignSystem.Colors.surfaceRaised)
+                    TQMeta("\(Int(progress * 100))%", tone: .muted, size: 13)
                 }
-                .font(DesignSystem.Typography.bodyMedium.weight(.semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 14)
-                .background(DesignSystem.Colors.primaryGreen)
-                .cornerRadius(12)
+                .padding(.top, 8)
+            } else {
+                TQSpinner(size: 18)
+                    .padding(.top, 8)
             }
-
+            Spacer()
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.Colors.background)
+        .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
     }
 }
 

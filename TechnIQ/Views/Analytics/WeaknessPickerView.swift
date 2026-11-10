@@ -1,96 +1,76 @@
 import SwiftUI
 
-// MARK: - Two-Tier Weakness Picker
+// MARK: - Weak-spot picker (AI drill generator)
+//
+// Two tiers of chips: tap an area to open it, then pick the specific weak spots inside. Picks from
+// closed areas stay visible in the "Picked" row, where a tap removes them.
 
 struct WeaknessPickerView: View {
     @Binding var selectedWeaknesses: [SelectedWeakness]
     @State private var expandedCategory: WeaknessCategory?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("What do you want to improve?")
-                .font(DesignSystem.Typography.headlineSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            // Tier 1: Category grid
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignSystem.Spacing.sm) {
-                ForEach(WeaknessCategory.allCases) { category in
-                    WeaknessCategoryChip(
-                        category: category,
-                        isExpanded: expandedCategory == category,
-                        selectionCount: selectedWeaknesses.filter { $0.category == category.displayName }.count
-                    )
-                    .onTapGesture {
-                        withAnimation(DesignSystem.Animation.smooth) {
-                            if expandedCategory == category {
-                                expandedCategory = nil
-                            } else {
-                                expandedCategory = category
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.rowGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                TQGroupHeader("Weak spot")
+                FlowLayout(spacing: 6) {
+                    ForEach(WeaknessCategory.allCases) { category in
+                        TQChip(title(for: category), isSelected: expandedCategory == category) {
+                            withAnimation(DesignSystem.Animation.quick) {
+                                expandedCategory = expandedCategory == category ? nil : category
                             }
                         }
                     }
                 }
             }
 
-            // Tier 2: Sub-weaknesses for expanded category
             if let expanded = expandedCategory {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    Text(expanded.displayName)
-                        .font(DesignSystem.Typography.labelLarge)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                    FlowLayout(spacing: DesignSystem.Spacing.sm) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TQEyebrow(expanded.displayName, size: 11)
+                    FlowLayout(spacing: 6) {
                         ForEach(expanded.subWeaknesses) { sub in
-                            let isSelected = selectedWeaknesses.contains {
-                                $0.category == expanded.displayName && $0.specific == sub.displayName
-                            }
-                            SubWeaknessChip(
-                                subWeakness: sub,
-                                isSelected: isSelected
-                            )
-                            .onTapGesture {
+                            TQChip(sub.displayName, isSelected: isSelected(sub, in: expanded)) {
                                 toggleSubWeakness(category: expanded, sub: sub)
                             }
                         }
                     }
                 }
-                .padding(DesignSystem.Spacing.md)
-                .background(DesignSystem.Colors.surfaceOverlay)
-                .cornerRadius(DesignSystem.CornerRadius.md)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.leading, 12)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(DesignSystem.Colors.grass)
+                        .frame(width: 2)
+                }
+                .transition(.opacity)
             }
 
-            // Selected summary
             if !selectedWeaknesses.isEmpty {
                 selectedSummary
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func title(for category: WeaknessCategory) -> String {
+        let count = selectedWeaknesses.filter { $0.category == category.displayName }.count
+        return count > 0 ? "\(category.displayName) · \(count)" : category.displayName
+    }
+
+    private func isSelected(_ sub: SubWeakness, in category: WeaknessCategory) -> Bool {
+        selectedWeaknesses.contains { $0.category == category.displayName && $0.specific == sub.displayName }
     }
 
     private var selectedSummary: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-            Text("Selected (\(selectedWeaknesses.count))")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textSecondary)
-
-            FlowLayout(spacing: DesignSystem.Spacing.xs) {
+        VStack(alignment: .leading, spacing: 4) {
+            TQGroupHeader("Picked · \(selectedWeaknesses.count)")
+            FlowLayout(spacing: 6) {
                 ForEach(selectedWeaknesses, id: \.specific) { weakness in
-                    HStack(spacing: 4) {
-                        Text(weakness.specific)
-                            .font(DesignSystem.Typography.labelSmall)
-                        Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.sm)
-                    .padding(.vertical, DesignSystem.Spacing.xs)
-                    .background(DesignSystem.Colors.primaryGreen.opacity(0.15))
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .cornerRadius(DesignSystem.CornerRadius.pill)
-                    .onTapGesture {
+                    TQChip(weakness.specific, isSelected: true, icon: "xmark") {
                         selectedWeaknesses.removeAll {
                             $0.category == weakness.category && $0.specific == weakness.specific
                         }
                     }
+                    .accessibilityLabel("Remove \(weakness.specific)")
                 }
             }
         }
@@ -107,72 +87,3 @@ struct WeaknessPickerView: View {
         }
     }
 }
-
-// MARK: - Category Chip
-
-private struct WeaknessCategoryChip: View {
-    let category: WeaknessCategory
-    let isExpanded: Bool
-    let selectionCount: Int
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            Image(systemName: category.icon)
-                .font(.system(size: 14))
-                .foregroundColor(isExpanded ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.primaryGreen)
-
-            Text(category.displayName)
-                .font(DesignSystem.Typography.labelMedium)
-                .foregroundColor(isExpanded ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
-                .lineLimit(1)
-
-            Spacer()
-
-            if selectionCount > 0 {
-                Text("\(selectionCount)")
-                    .font(DesignSystem.Typography.labelSmall)
-                    .foregroundColor(.white)
-                    .frame(width: 20, height: 20)
-                    .background(DesignSystem.Colors.primaryGreen)
-                    .clipShape(Circle())
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.md)
-        .padding(.vertical, DesignSystem.Spacing.sm + 2)
-        .background(isExpanded ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceRaised)
-        .cornerRadius(DesignSystem.CornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                .stroke(
-                    isExpanded ? Color.clear : (selectionCount > 0 ? DesignSystem.Colors.primaryGreen.opacity(0.3) : DesignSystem.Colors.textTertiary.opacity(0.3)),
-                    lineWidth: 1
-                )
-        )
-    }
-}
-
-// MARK: - Sub-Weakness Chip
-
-private struct SubWeaknessChip: View {
-    let subWeakness: SubWeakness
-    let isSelected: Bool
-
-    var body: some View {
-        Text(subWeakness.displayName)
-            .font(DesignSystem.Typography.labelMedium)
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            .padding(.vertical, DesignSystem.Spacing.sm)
-            .background(isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.surfaceRaised)
-            .foregroundColor(isSelected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textPrimary)
-            .cornerRadius(DesignSystem.CornerRadius.pill)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.pill)
-                    .stroke(
-                        isSelected ? Color.clear : DesignSystem.Colors.textTertiary.opacity(0.3),
-                        lineWidth: 1
-                    )
-            )
-    }
-}
-
-// FlowLayout is defined in AITrainingPlanGeneratorView.swift

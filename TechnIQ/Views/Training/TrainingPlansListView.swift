@@ -68,7 +68,6 @@ struct TrainingPlansListView: View {
         }
         .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .coachMark(.plans)
         .navigationDestination(item: $route) { plan in
             if let player = players.first {
                 TrainingPlanDetailView(initialPlan: plan, player: player)
@@ -224,25 +223,6 @@ struct NewPlanSheet: View {
 }
 
 // MARK: - Difficulty badge (legacy call sites)
-
-/// Deprecated: use TQBadge(.level(_:)). Kept for out-of-scope screens.
-struct DifficultyBadge: View {
-    let difficulty: PlanDifficulty
-
-    var body: some View {
-        switch difficulty {
-        case .beginner: TQBadge(.level(.beginner))
-        case .intermediate: TQBadge(.level(.intermediate))
-        case .advanced: TQBadge(.level(.advanced))
-        case .elite: TQBadge(.level(.elite))
-        }
-    }
-}
-
-enum PlanTab: String, CaseIterable {
-    case prebuilt = "Pre-built"
-    case myPlans = "My Plans"
-}
 
 #Preview {
     NavigationStack {

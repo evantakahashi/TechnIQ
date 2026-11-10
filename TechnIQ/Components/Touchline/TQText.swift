@@ -200,7 +200,7 @@ struct TQFigureRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: spacing) {
-            ForEach(figures) { figure in
+            ForEach(Array(figures.enumerated()), id: \.offset) { _, figure in
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     if figure.unitFirst {
                         unitText(figure.unit)

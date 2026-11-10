@@ -1,6 +1,11 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Log a match (sheet)
+//
+// One flat form: result first, then the match, your numbers, and what went well / needs work
+// (up to three each, feeding weakness analysis). Save writes the match and closes.
+
 struct MatchLogView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
@@ -27,9 +32,9 @@ struct MatchLogView: View {
     @State private var result = "W"
 
     // Stats
-    @State private var minutesPlayed: Double = 90
-    @State private var goals: Int = 0
-    @State private var assists: Int = 0
+    @State private var minutesPlayed = 90
+    @State private var goals = 0
+    @State private var assists = 0
 
     // Rating and notes
     @State private var matchRating = 3
@@ -38,564 +43,255 @@ struct MatchLogView: View {
     // UI State
     @State private var availableSeasons: [Season] = []
     @State private var showingCreateSeason = false
-    @State private var showMatchComplete = false
 
-    let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST", "CF"]
-    let results = ["W", "D", "L"]
-
-    // Performance categories for strengths/weaknesses
-    let performanceCategories: [String: [String]] = [
-        "Technical": ["Passing", "Shooting", "Dribbling", "First Touch", "Ball Control", "Crossing"],
-        "Physical": ["Speed", "Stamina", "Strength", "Agility"],
-        "Mental": ["Positioning", "Vision", "Decision Making", "Composure", "Communication"]
-    ]
-
-    // Strengths/Weaknesses state
+    // Strengths / weaknesses
     @State private var selectedStrengths: Set<String> = []
     @State private var selectedWeaknesses: Set<String> = []
-    @State private var customStrength: String = ""
-    @State private var customWeakness: String = ""
+    @State private var customStrength = ""
+    @State private var customWeakness = ""
+
+    private let positions = ["GK", "CB", "LB", "RB", "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST", "CF"]
+    private let results = ["W", "D", "L"]
+    private let skills = [
+        "Passing", "Shooting", "Dribbling", "First Touch", "Ball Control", "Crossing",
+        "Speed", "Stamina", "Strength", "Agility",
+        "Positioning", "Vision", "Decision Making", "Composure", "Communication"
+    ]
+    private let maxPicks = 3
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AdaptiveBackground()
-                    .ignoresSafeArea()
+        VStack(spacing: 0) {
+            TQNavBar("Log Match") {
+                TQNavAction("Cancel") { dismiss() }
+            } trailing: {
+                TQNavAction("Save") { saveMatch() }
+                    .accessibilityIdentifier("matchLog.save")
+            }
+            .padding(.top, 8)
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
 
-                ScrollView {
-                    LazyVStack(spacing: DesignSystem.Spacing.lg) {
-                        dateAndSeasonCard
-                        opponentCard
-                        positionCard
-                        matchStatsCard
-                        resultCard
-                        ratingCard
-                        strengthsCard
-                        weaknessesCard
-                        notesCard
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.screenPadding)
-                    .padding(.top, DesignSystem.Spacing.md)
-                    .padding(.bottom, DesignSystem.Spacing.xl)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    resultSection
+                    matchSection
+                    numbersSection
+                    positionSection
+                    picksSection(title: "What went well", selected: $selectedStrengths, excluded: selectedWeaknesses, custom: $customStrength)
+                    picksSection(title: "What needs work", selected: $selectedWeaknesses, excluded: selectedStrengths, custom: $customWeakness)
+                    notesSection
+                    TQButton("Save match") { saveMatch() }
                 }
+                .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+                .padding(.top, DesignSystem.Spacing.md)
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
-            .navigationTitle("Log Match")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveMatch()
-                    }
-                    .font(DesignSystem.Typography.labelLarge)
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                }
-            }
-            .sheet(isPresented: $showingCreateSeason) {
-                CreateSeasonView(player: player) { newSeason in
-                    selectedSeason = newSeason
-                    loadSeasons()
-                }
-            }
-            .sheet(isPresented: $showMatchComplete) {
-                MatchCompleteView(goals: goals, assists: assists) {
-                    showMatchComplete = false
-                    onComplete?()
-                    dismiss()
-                }
-            }
-            .onAppear {
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .sheet(isPresented: $showingCreateSeason) {
+            CreateSeasonView(player: player) { newSeason in
+                selectedSeason = newSeason
                 loadSeasons()
-                // Logging the match just played: open on the next match's day (today or ≤ 2 days back).
-                if !didDefaultDate {
-                    didDefaultDate = true
-                    matchDate = MatchScheduleLink.defaultLogDate(nextMatchDate: player.playerProfile?.nextMatchDate, now: Date(), calendar: .current)
-                }
+            }
+        }
+        .onAppear {
+            loadSeasons()
+            // Logging the match just played: open on the next match's day (today or ≤ 2 days back).
+            if !didDefaultDate {
+                didDefaultDate = true
+                matchDate = MatchScheduleLink.defaultLogDate(nextMatchDate: player.playerProfile?.nextMatchDate, now: Date(), calendar: .current)
             }
         }
     }
 
-    // MARK: - Card Components
+    // MARK: - Sections
 
-    private var dateAndSeasonCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Match Details")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                // Date picker
-                DatePicker("Date", selection: $matchDate, displayedComponents: .date)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .tint(DesignSystem.Colors.primaryGreen)
-
-                Divider()
-
-                // Season selector
-                HStack {
-                    Text("Season")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Spacer()
-
-                    Menu {
-                        Button("No Season") {
-                            selectedSeason = nil
-                        }
-
-                        ForEach(availableSeasons, id: \.id) { season in
-                            Button(season.name ?? "Unnamed") {
-                                selectedSeason = season
-                            }
-                        }
-
-                        Divider()
-
-                        Button {
-                            showingCreateSeason = true
-                        } label: {
-                            Label("Create Season", systemImage: "plus.circle")
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(selectedSeason?.name ?? "None")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 12))
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        }
-                    }
-                }
-            }
+    private var resultSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TQDisplayTitle("How did\nit go?", size: .medium)
+            TQSegment(options: ["Win", "Draw", "Loss"], selectedIndex: resultIndex, style: .detached)
         }
     }
 
-    private var opponentCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Opponent & Competition")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                TextField("Opponent (optional)", text: $opponent)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .padding(DesignSystem.Spacing.sm)
-                    .background(DesignSystem.Colors.cellBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.sm)
-
-                TextField("Competition (optional)", text: $competition)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .padding(DesignSystem.Spacing.sm)
-                    .background(DesignSystem.Colors.cellBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.sm)
-
-                // Home/Away toggle
-                HStack {
-                    Text("Location")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                    Spacer()
-
-                    Picker("", selection: $isHomeGame) {
-                        Text("Home").tag(true)
-                        Text("Away").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 140)
-                }
+    private var matchSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Match")
+            TQRule()
+            controlRow("Date") {
+                DatePicker("", selection: $matchDate, displayedComponents: .date)
+                    .labelsHidden()
+                    .tint(DesignSystem.Colors.grass)
+                    .accessibilityLabel("Date")
             }
+            controlRow("Season") { seasonMenu }
+            controlRow("Venue") {
+                TQSegment(options: ["Home", "Away"], selectedIndex: venueIndex)
+                    .frame(width: 168)
+            }
+            VStack(spacing: 14) {
+                TQFormField("Opponent", text: $opponent, placeholder: "Optional")
+                TQFormField("Competition", text: $competition, placeholder: "Optional")
+            }
+            .padding(.top, 16)
         }
     }
 
-    private var positionCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Position Played")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+    private var seasonMenu: some View {
+        Menu {
+            Button("No season") { selectedSeason = nil }
+            ForEach(availableSeasons, id: \.objectID) { season in
+                Button(season.name ?? "Unnamed") { selectedSeason = season }
+            }
+            Divider()
+            Button {
+                showingCreateSeason = true
+            } label: {
+                Label("New season", systemImage: "plus")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(selectedSeason?.name ?? "None")
+                    .font(Font.system(size: 15, weight: .semibold).width(.condensed))
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(DesignSystem.Colors.textTertiary)
+            }
+            .frame(minHeight: DesignSystem.Spacing.hitTarget)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Season")
+    }
 
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: DesignSystem.Spacing.sm) {
-                    ForEach(positions, id: \.self) { position in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                positionPlayed = position
-                            }
-                        } label: {
-                            Text(position)
-                                .font(DesignSystem.Typography.labelMedium)
-                                .fontWeight(.medium)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, DesignSystem.Spacing.sm)
-                                .background(
-                                    positionPlayed == position
-                                        ? DesignSystem.Colors.primaryGreen
-                                        : DesignSystem.Colors.cellBackground
-                                )
-                                .foregroundColor(
-                                    positionPlayed == position
-                                        ? DesignSystem.Colors.textOnAccent
-                                        : DesignSystem.Colors.textPrimary
-                                )
-                                .cornerRadius(DesignSystem.CornerRadius.sm)
-                        }
+    private var numbersSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TQGroupHeader("Your game")
+            TQRule()
+            TQValueStepper(label: "Minutes", value: $minutesPlayed, range: 0...120, step: 5) { "\($0)′" }
+                .overlay(alignment: .bottom) { TQRule() }
+            TQValueStepper(label: "Goals", value: $goals, range: 0...20)
+                .overlay(alignment: .bottom) { TQRule() }
+            TQValueStepper(label: "Assists", value: $assists, range: 0...20)
+                .overlay(alignment: .bottom) { TQRule() }
+            TQValueStepper(label: "Your rating", value: $matchRating, range: 1...5) { "\($0) / 5" }
+                .overlay(alignment: .bottom) { TQRule() }
+        }
+    }
+
+    private var positionSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TQGroupHeader("Position played")
+            FlowLayout(spacing: 6) {
+                ForEach(positions, id: \.self) { position in
+                    TQChip(position, isSelected: positionPlayed == position) {
+                        positionPlayed = positionPlayed == position ? "" : position
                     }
                 }
             }
         }
     }
 
-    private var matchStatsCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                Text("Match Stats")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                // Minutes played
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    HStack {
-                        Image(systemName: "clock.fill")
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                        Text("Minutes Played")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        Spacer()
-                        Text("\(Int(minutesPlayed))")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
+    private func picksSection(title: String, selected: Binding<Set<String>>, excluded: Set<String>, custom: Binding<String>) -> some View {
+        let picks = selected.wrappedValue
+        let customPicks = picks.filter { !skills.contains($0) }.sorted()
+        let isFull = picks.count >= maxPicks
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                TQGroupHeader(title)
+                Spacer()
+                TQMeta("\(picks.count) / \(maxPicks)", tone: picks.isEmpty ? .muted : .chalk, size: 13)
+            }
+            FlowLayout(spacing: 6) {
+                ForEach(skills + customPicks, id: \.self) { skill in
+                    let isSelected = picks.contains(skill)
+                    let isDisabled = !isSelected && (isFull || excluded.contains(skill))
+                    TQChip(skill, isSelected: isSelected, icon: skills.contains(skill) ? nil : "xmark") {
+                        if isSelected {
+                            selected.wrappedValue.remove(skill)
+                        } else {
+                            selected.wrappedValue.insert(skill)
+                        }
                     }
-                    Slider(value: $minutesPlayed, in: 0...120, step: 1)
-                        .tint(DesignSystem.Colors.accentOrange)
-                }
-
-                Divider()
-
-                // Goals
-                HStack {
-                    Image(systemName: "soccerball")
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    Text("Goals")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Spacer()
-                    Stepper(value: $goals, in: 0...20) {
-                        Text("\(goals)")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                            .frame(width: 40, alignment: .trailing)
-                    }
-                }
-
-                // Assists
-                HStack {
-                    Image(systemName: "hand.point.up.fill")
-                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                    Text("Assists")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Spacer()
-                    Stepper(value: $assists, in: 0...20) {
-                        Text("\(assists)")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                            .frame(width: 40, alignment: .trailing)
-                    }
+                    .disabled(isDisabled)
+                    .opacity(isDisabled ? 0.4 : 1)
                 }
             }
-        }
-    }
-
-    private var resultCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Match Result")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    ForEach(results, id: \.self) { resultOption in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                result = resultOption
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: iconForResult(resultOption))
-                                    .font(.system(size: 24))
-                                Text(labelForResult(resultOption))
-                                    .font(DesignSystem.Typography.labelMedium)
-                                    .fontWeight(.medium)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(
-                                result == resultOption
-                                    ? colorForResult(resultOption)
-                                    : DesignSystem.Colors.cellBackground
-                            )
-                            .foregroundColor(
-                                result == resultOption
-                                    ? DesignSystem.Colors.textOnAccent
-                                    : DesignSystem.Colors.textPrimary
-                            )
-                            .cornerRadius(DesignSystem.CornerRadius.md)
+            if !isFull {
+                HStack(spacing: 10) {
+                    customField(custom)
+                    if !custom.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                        TQButton("Add", style: .raised, size: .compact, fullWidth: false) {
+                            addCustom(custom, to: selected)
                         }
                     }
                 }
+                .padding(.top, 8)
             }
         }
     }
 
-    private var ratingCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Your Performance")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+    private func customField(_ text: Binding<String>) -> some View {
+        TextField("Something else", text: text)
+            .font(Font.system(size: 15, weight: .regular))
+            .foregroundColor(DesignSystem.Colors.chalkWhite)
+            .tint(DesignSystem.Colors.grass)
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(DesignSystem.Colors.surfaceRaised)
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
+    }
 
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    ForEach(1...5, id: \.self) { rating in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                matchRating = rating
-                            }
-                        } label: {
-                            Image(systemName: rating <= matchRating ? "star.fill" : "star")
-                                .font(.system(size: 32))
-                                .foregroundColor(rating <= matchRating ? DesignSystem.Colors.xpGold : DesignSystem.Colors.textTertiary)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TQGroupHeader("Notes")
+            TextEditor(text: $matchNotes)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .tint(DesignSystem.Colors.grass)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 96)
+                .padding(10)
+                .background(DesignSystem.Colors.surfaceRaised)
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
+                .accessibilityLabel("Notes")
         }
     }
 
-    private var strengthsCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                HStack {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    Text("What went well?")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Spacer()
-                    if !selectedStrengths.isEmpty {
-                        Text("\(selectedStrengths.count)/3")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-
-                performanceSelectionGrid(
-                    selectedItems: $selectedStrengths,
-                    excludedItems: selectedWeaknesses,
-                    accentColor: DesignSystem.Colors.primaryGreen
-                )
-
-                // Custom strength input
-                HStack {
-                    TextField("Add custom...", text: $customStrength)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .padding(DesignSystem.Spacing.sm)
-                        .background(DesignSystem.Colors.cellBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.sm)
-
-                    if !customStrength.isEmpty && selectedStrengths.count < 3 {
-                        Button {
-                            let trimmed = customStrength.trimmingCharacters(in: .whitespaces)
-                            if !trimmed.isEmpty && !selectedStrengths.contains(trimmed) {
-                                selectedStrengths.insert(trimmed)
-                                customStrength = ""
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(DesignSystem.Colors.primaryGreen)
-                                .font(.system(size: 24))
-                        }
-                    }
-                }
-            }
+    private func controlRow<Control: View>(_ title: String, @ViewBuilder control: () -> Control) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(DesignSystem.Typography.titleMedium)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+            Spacer(minLength: 8)
+            control()
         }
+        .padding(.vertical, 8)
+        .frame(minHeight: 52)
+        .overlay(alignment: .bottom) { TQRule() }
     }
 
-    private var weaknessesCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                HStack {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundColor(DesignSystem.Colors.accentOrange)
-                    Text("What needs work?")
-                        .font(DesignSystem.Typography.titleMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(DesignSystem.Colors.textPrimary)
-                    Spacer()
-                    if !selectedWeaknesses.isEmpty {
-                        Text("\(selectedWeaknesses.count)/3")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
+    // MARK: - Bindings
 
-                performanceSelectionGrid(
-                    selectedItems: $selectedWeaknesses,
-                    excludedItems: selectedStrengths,
-                    accentColor: DesignSystem.Colors.accentOrange
-                )
-
-                // Custom weakness input
-                HStack {
-                    TextField("Add custom...", text: $customWeakness)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .padding(DesignSystem.Spacing.sm)
-                        .background(DesignSystem.Colors.cellBackground)
-                        .cornerRadius(DesignSystem.CornerRadius.sm)
-
-                    if !customWeakness.isEmpty && selectedWeaknesses.count < 3 {
-                        Button {
-                            let trimmed = customWeakness.trimmingCharacters(in: .whitespaces)
-                            if !trimmed.isEmpty && !selectedWeaknesses.contains(trimmed) {
-                                selectedWeaknesses.insert(trimmed)
-                                customWeakness = ""
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(DesignSystem.Colors.accentOrange)
-                                .font(.system(size: 24))
-                        }
-                    }
-                }
-            }
-        }
+    private var resultIndex: Binding<Int> {
+        Binding(get: { results.firstIndex(of: result) ?? 0 },
+                set: { result = results[min(max($0, 0), results.count - 1)] })
     }
 
-    private func performanceSelectionGrid(
-        selectedItems: Binding<Set<String>>,
-        excludedItems: Set<String>,
-        accentColor: Color
-    ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            ForEach(["Technical", "Physical", "Mental"], id: \.self) { category in
-                if let skills = performanceCategories[category] {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text(category)
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        FlowLayout(spacing: DesignSystem.Spacing.xs) {
-                            ForEach(skills, id: \.self) { skill in
-                                let isSelected = selectedItems.wrappedValue.contains(skill)
-                                let isExcluded = excludedItems.contains(skill)
-                                let isDisabled = isExcluded || (!isSelected && selectedItems.wrappedValue.count >= 3)
-
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        if isSelected {
-                                            selectedItems.wrappedValue.remove(skill)
-                                        } else if !isDisabled {
-                                            selectedItems.wrappedValue.insert(skill)
-                                        }
-                                    }
-                                } label: {
-                                    Text(skill)
-                                        .font(DesignSystem.Typography.labelSmall)
-                                        .fontWeight(.medium)
-                                        .padding(.horizontal, DesignSystem.Spacing.sm)
-                                        .padding(.vertical, DesignSystem.Spacing.xs)
-                                        .background(
-                                            isSelected ? accentColor : DesignSystem.Colors.cellBackground
-                                        )
-                                        .foregroundColor(
-                                            isSelected ? DesignSystem.Colors.textOnAccent :
-                                            isDisabled ? DesignSystem.Colors.textTertiary :
-                                            DesignSystem.Colors.textPrimary
-                                        )
-                                        .cornerRadius(DesignSystem.CornerRadius.pill)
-                                        .opacity(isDisabled && !isSelected ? 0.5 : 1.0)
-                                }
-                                .disabled(isDisabled && !isSelected)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Show selected custom items as removable pills
-            let customItems = selectedItems.wrappedValue.filter { item in
-                !performanceCategories.values.flatMap { $0 }.contains(item)
-            }
-            if !customItems.isEmpty {
-                FlowLayout(spacing: DesignSystem.Spacing.xs) {
-                    ForEach(Array(customItems), id: \.self) { item in
-                        Button {
-                            selectedItems.wrappedValue.remove(item)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(item)
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 12))
-                            }
-                            .font(DesignSystem.Typography.labelSmall)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, DesignSystem.Spacing.sm)
-                            .padding(.vertical, DesignSystem.Spacing.xs)
-                            .background(accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(DesignSystem.CornerRadius.pill)
-                        }
-                    }
-                }
-            }
-        }
+    private var venueIndex: Binding<Int> {
+        Binding(get: { isHomeGame ? 0 : 1 }, set: { isHomeGame = $0 == 0 })
     }
 
-    private var notesCard: some View {
-        ModernCard(padding: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Notes")
-                    .font(DesignSystem.Typography.titleMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(DesignSystem.Colors.textPrimary)
+    // MARK: - Actions
 
-                TextEditor(text: $matchNotes)
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .frame(minHeight: 100)
-                    .padding(DesignSystem.Spacing.sm)
-                    .background(DesignSystem.Colors.cellBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.sm)
-                    .scrollContentBackground(.hidden)
-            }
-        }
+    private func addCustom(_ text: Binding<String>, to selected: Binding<Set<String>>) {
+        let trimmed = text.wrappedValue.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, selected.wrappedValue.count < maxPicks else { return }
+        selected.wrappedValue.insert(trimmed)
+        text.wrappedValue = ""
     }
-
-    // MARK: - Helper Functions
 
     private func loadSeasons() {
         availableSeasons = MatchService.shared.fetchSeasons(for: player)
@@ -606,7 +302,6 @@ struct MatchLogView: View {
     }
 
     private func saveMatch() {
-        // Convert selected strengths/weaknesses to comma-separated strings
         let strengthsString = selectedStrengths.isEmpty ? nil : selectedStrengths.sorted().joined(separator: ",")
         let weaknessesString = selectedWeaknesses.isEmpty ? nil : selectedWeaknesses.sorted().joined(separator: ",")
 
@@ -631,114 +326,15 @@ struct MatchLogView: View {
         TrainingPlanService.shared.matchLogged(on: matchDate, for: player)
 
         HapticManager.shared.success()
-        showMatchComplete = true
-    }
-
-    private func iconForResult(_ result: String) -> String {
-        switch result {
-        case "W": return "trophy.fill"
-        case "D": return "equal.circle.fill"
-        case "L": return "xmark.circle.fill"
-        default: return "questionmark.circle"
-        }
-    }
-
-    private func labelForResult(_ result: String) -> String {
-        switch result {
-        case "W": return "Win"
-        case "D": return "Draw"
-        case "L": return "Loss"
-        default: return result
-        }
-    }
-
-    private func colorForResult(_ result: String) -> Color {
-        switch result {
-        case "W": return DesignSystem.Colors.primaryGreen
-        case "D": return DesignSystem.Colors.accentOrange
-        case "L": return .red.opacity(0.8)
-        default: return .gray
-        }
+        onComplete?()
+        dismiss()
     }
 }
 
-// MARK: - Match Complete View
-
-struct MatchCompleteView: View {
-    let goals: Int
-    let assists: Int
-    let onDismiss: () -> Void
-
-    var body: some View {
-        ZStack {
-            DesignSystem.Colors.darkModeBackground
-                .ignoresSafeArea()
-
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                Spacer()
-
-                // Celebration icon
-                Image(systemName: "soccerball")
-                    .font(.system(size: 80))
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    .padding()
-                    .background(
-                        Circle()
-                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.2))
-                    )
-
-                Text("Match Logged!")
-                    .font(DesignSystem.Typography.titleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-
-                // Stats summary
-                HStack(spacing: DesignSystem.Spacing.xl) {
-                    VStack {
-                        Text("\(goals)")
-                            .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                        Text("Goals")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-
-                    VStack {
-                        Text("\(assists)")
-                            .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(DesignSystem.Colors.secondaryBlue)
-                        Text("Assists")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                }
-
-                Spacer()
-
-                Button {
-                    onDismiss()
-                } label: {
-                    Text("Continue")
-                        .font(DesignSystem.Typography.labelLarge)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(DesignSystem.Colors.primaryGreen)
-                        .cornerRadius(DesignSystem.CornerRadius.md)
-                }
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.bottom, DesignSystem.Spacing.xl)
-            }
-        }
-        .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Preview
-
+#if DEBUG
 #Preview {
     MatchLogView(player: Player())
         .environment(\.managedObjectContext, CoreDataManager.shared.context)
         .environmentObject(AuthenticationManager.shared)
 }
+#endif

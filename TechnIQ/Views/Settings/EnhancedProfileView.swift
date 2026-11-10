@@ -21,7 +21,6 @@ struct EnhancedProfileView: View {
     @State private var showingAvatarCustomization = false
     @State private var showingReminders = false
     @State private var showingCoachName = false
-    @State private var showingJuggleSpike = false
     @State private var showingLicences = false
     @State private var showingTrainingProfile = false
     @State private var showingPaywall = false
@@ -34,7 +33,7 @@ struct EnhancedProfileView: View {
     @State private var deleteError: String?
 
     private enum ProfileRoute: Hashable {
-        case progress, achievements, sessionHistory, matches, records
+        case progress, achievements, sessionHistory, matches
     }
 
     init() {
@@ -83,7 +82,7 @@ struct EnhancedProfileView: View {
     /// "3 sessions · 1 more than last week" from the same model the Records screen uses.
     private var weekLine: String {
         guard let player = currentPlayer else { return "" }
-        return PlayerRecords.build(sessions: RecordsView.facts(for: player), now: Date(), calendar: .current).comparison.line
+        return PlayerRecords.build(sessions: PlayerRecords.facts(for: player), now: Date(), calendar: .current).comparison.line
     }
 
     private var achievementSummary: String {
@@ -102,7 +101,6 @@ struct EnhancedProfileView: View {
 
                 if let player = currentPlayer {
                     identityCard(player)
-                        .coachMark(.progress)
 
                     statRail(player)
 
@@ -154,9 +152,6 @@ struct EnhancedProfileView: View {
                 .presentationDetents([.height(300)])
         }
         .sheet(isPresented: $showingLicences) { LicencesView() }
-        #if DEBUG
-        .fullScreenCover(isPresented: $showingJuggleSpike) { JuggleSpikeView() }
-        #endif
         .sheet(isPresented: $showingReminders) {
             if let player = currentPlayer {
                 NotificationSettingsView(player: player)
@@ -221,6 +216,23 @@ struct EnhancedProfileView: View {
         .onAppear {
             updateFilters()
             avatarService.loadCurrentAvatar()
+            #if DEBUG
+            // `-TQRoute progress|history|matches|achievements|avatar|editProfile` opens a You destination for screenshots.
+            let args = ProcessInfo.processInfo.arguments
+            if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    switch args[index + 1] {
+                    case "progress": route = .progress
+                    case "history": route = .sessionHistory
+                    case "matches": route = .matches
+                    case "achievements": route = .achievements
+                    case "avatar": showingAvatarCustomization = true
+                    case "editProfile": showingEditProfile = true
+                    default: break
+                    }
+                }
+            }
+            #endif
         }
     }
 
@@ -230,12 +242,11 @@ struct EnhancedProfileView: View {
         let kit = player.kitNumberValue
         return TQPitchCard(.hero, markings: .profile) {
             HStack(alignment: .top, spacing: 16) {
-                ProgrammaticAvatarView(avatarState: avatarService.currentAvatarState, size: .medium, kitNumber: kit)
-                    .scaleEffect(0.65)
+                AvatarFigureView(avatarState: avatarService.currentAvatarState, kitNumber: kit, showsBall: false)
+                    .padding(.top, 6)
                     .frame(width: 78, height: 117)
-                    .background(DesignSystem.Colors.surfaceBase)
+                    .background(DesignSystem.Colors.surfaceBase.opacity(0.45))
                     .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md, style: .continuous))
-                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 6) {
                     TQEyebrow([tierTitle(for: player), player.position].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "), size: 12)
@@ -282,8 +293,7 @@ struct EnhancedProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             TQGroupHeader("Training")
             TQRowList {
-                TQRow("This week", meta: .init(weekLine, size: 14, face: .text)) { route = .records }
-                TQRow("Progress & analytics") { route = .progress }
+                TQRow("Progress", subtitle: weekLine) { route = .progress }
                 TQRow("Achievements", meta: .init(achievementSummary)) { route = .achievements }
                 TQRow("Session history") { route = .sessionHistory }
                 TQRow("Matches & seasons") { route = .matches }
@@ -327,9 +337,6 @@ struct EnhancedProfileView: View {
                 TQRow("Terms of service") { open("https://techniq-b9a27.web.app/terms-of-service.html") }
                 TQRow("Licences") { showingLicences = true }
                 TQRow("Version", meta: .init(versionLine), accessory: .none)
-                #if DEBUG
-                TQRow("Juggle spike", subtitle: "Camera Drills phase 1 (debug)") { showingJuggleSpike = true }
-                #endif
             }
         }
     }
@@ -369,7 +376,6 @@ struct EnhancedProfileView: View {
             case .achievements: AchievementsBrowseView(player: player)
             case .sessionHistory: SessionHistoryView()
             case .matches: MatchHistoryView(player: player)
-            case .records: RecordsView(player: player)
             }
         }
     }

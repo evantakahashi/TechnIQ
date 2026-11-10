@@ -174,7 +174,7 @@ struct TQScheduleGrid: View {
             }
             .accessibilityHidden(true)
 
-            ForEach(Array(rows.enumerated()), id: \.element.id) { rowIndex, row in
+            ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
                 HStack(spacing: 6) {
                     Text(row.label)
                         .font(Font.system(size: 13, weight: row.isCurrent ? .bold : .regular).width(.condensed))

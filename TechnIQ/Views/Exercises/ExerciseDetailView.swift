@@ -395,93 +395,32 @@ struct ExerciseDetailView: View {
     // MARK: - Personal Notes Section
 
     private var personalNotesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("My Notes")
-                    .font(.headline)
-                    .foregroundColor(DesignSystem.Colors.primaryDark)
-
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                TQGroupHeader("My notes")
                 Spacer()
-
-                if !isEditingNotes && !personalNotes.isEmpty {
-                    Button {
-                        isEditingNotes = true
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.subheadline)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
+                if isEditingNotes {
+                    TQTextLink("Save", arrow: false) { savePersonalNotes() }
+                } else {
+                    TQTextLink(personalNotes.isEmpty ? "Add" : "Edit", arrow: false) { isEditingNotes = true }
                 }
             }
-
             if isEditingNotes {
-                // Editable text area
-                VStack(spacing: 8) {
-                    TextEditor(text: $personalNotes)
-                        .frame(minHeight: 80)
-                        .padding(8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(DesignSystem.Colors.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(DesignSystem.Colors.primaryGreen.opacity(0.5), lineWidth: 1)
-                        )
-
-                    HStack {
-                        Button("Cancel") {
-                            personalNotes = exercise.personalNotes ?? ""
-                            isEditingNotes = false
-                        }
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                        Spacer()
-
-                        Button("Save") {
-                            savePersonalNotes()
-                        }
-                        .fontWeight(.semibold)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    }
-                }
+                TextEditor(text: $personalNotes)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.chalkWhite)
+                    .tint(DesignSystem.Colors.grass)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 88)
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.textField, style: .continuous).fill(DesignSystem.Colors.surfaceRaised))
             } else if personalNotes.isEmpty {
-                // Empty state - tap to add
-                Button {
-                    isEditingNotes = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                        Text("Add personal notes...")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen.opacity(0.7))
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(DesignSystem.Colors.primaryGreen.opacity(0.05))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(DesignSystem.Colors.primaryGreen.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5]))
-                            )
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+                TQBody("What worked, what to fix next time.", tone: .muted, size: 13)
             } else {
-                // Display notes
-                Text(personalNotes)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .padding()
+                TQBody(personalNotes)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(DesignSystem.Colors.cardBackground)
-                    )
-                    .onTapGesture {
-                        isEditingNotes = true
-                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { isEditingNotes = true }
             }
         }
     }
@@ -494,90 +433,43 @@ struct ExerciseDetailView: View {
     }
 
     // MARK: - Drill Feedback Section
+    //
+    // Stars + one difficulty call, saved as soon as either changes (the same row is updated).
 
-    @ViewBuilder
+    private static let difficultyCalls = [("easy", "Too easy"), ("right", "Just right"), ("hard", "Too hard")]
+
     private var drillFeedbackSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "hand.thumbsup")
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-                Text("Was this drill helpful?")
-                    .font(.headline)
-                    .foregroundColor(DesignSystem.Colors.primaryDark)
-            }
-
-            if hasFeedback {
-                // Show existing feedback
-                HStack(spacing: 4) {
-                    ForEach(1...5, id: \.self) { star in
+        VStack(alignment: .leading, spacing: 10) {
+            TQGroupHeader("Rate this drill")
+            HStack(spacing: 4) {
+                ForEach(1...5, id: \.self) { star in
+                    Button {
+                        feedbackRating = star
+                        HapticManager.shared.selectionChanged()
+                        saveDrillFeedback()
+                    } label: {
                         Image(systemName: star <= feedbackRating ? "star.fill" : "star")
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                            .font(.title3)
-                    }
-                    Text("- Thanks for your feedback!")
-                        .font(.subheadline)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
-            } else {
-                // Star rating
-                HStack(spacing: 8) {
-                    ForEach(1...5, id: \.self) { star in
-                        Image(systemName: star <= feedbackRating ? "star.fill" : "star")
-                            .foregroundColor(DesignSystem.Colors.accentOrange)
-                            .font(.title2)
-                            .frame(minWidth: 44, minHeight: 44)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(star <= feedbackRating ? DesignSystem.Colors.grass : DesignSystem.Colors.textTertiary)
+                            .frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget, alignment: .leading)
                             .contentShape(Rectangle())
-                            .onTapGesture {
-                                feedbackRating = star
-                            }
-                            .accessibilityLabel("Rate \(star) star\(star == 1 ? "" : "s")")
-                            .accessibilityAddTraits(star <= feedbackRating ? [.isButton, .isSelected] : .isButton)
                     }
-                }
-
-                // Difficulty feedback chips
-                HStack(spacing: 8) {
-                    FeedbackChip(label: "Too Easy", selected: difficultyFeedback == "easy") {
-                        difficultyFeedback = difficultyFeedback == "easy" ? "" : "easy"
-                    }
-                    FeedbackChip(label: "Just Right", selected: difficultyFeedback == "right") {
-                        difficultyFeedback = difficultyFeedback == "right" ? "" : "right"
-                    }
-                    FeedbackChip(label: "Too Hard", selected: difficultyFeedback == "hard") {
-                        difficultyFeedback = difficultyFeedback == "hard" ? "" : "hard"
-                    }
-                }
-
-                // Optional notes
-                TextField("Any comments? (optional)", text: $feedbackNotes)
-                    .textFieldStyle(.plain)
-                        .modernTextFieldStyle()
-                    .font(.subheadline)
-
-                // Submit button
-                if feedbackRating > 0 {
-                    Button(action: saveDrillFeedback) {
-                        Text("Submit Feedback")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(DesignSystem.Colors.primaryGreen)
-                            .cornerRadius(8)
-                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Rate \(star) star\(star == 1 ? "" : "s")")
+                    .accessibilityAddTraits(star <= feedbackRating ? [.isSelected] : [])
                 }
             }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.1))
-        )
-        .alert("Feedback Saved", isPresented: $showingFeedbackSuccess) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Thank you! Your feedback helps improve future drill recommendations.")
+            TQSegment(
+                options: Self.difficultyCalls.map(\.1),
+                selection: Binding(
+                    get: { Self.difficultyCalls.firstIndex { $0.0 == difficultyFeedback } },
+                    set: { index in
+                        difficultyFeedback = index.map { Self.difficultyCalls[$0].0 } ?? ""
+                        if feedbackRating > 0 { saveDrillFeedback() }
+                    }
+                ),
+                style: .detached
+            )
         }
     }
 
@@ -602,7 +494,6 @@ struct ExerciseDetailView: View {
         )
 
         hasFeedback = true
-        showingFeedbackSuccess = true
     }
 
     // MARK: - Progression Section
@@ -613,19 +504,9 @@ struct ExerciseDetailView: View {
         let avgRating = CoreDataManager.shared.getAveragePerformanceRating(for: exercise)
 
         if completionCount >= 3 && avgRating >= 4.0 {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-                    Text("Ready for a Challenge?")
-                        .font(.headline)
-                        .foregroundColor(DesignSystem.Colors.primaryDark)
-                }
-
-                Text("You've mastered this drill! Completed \(completionCount) times with \(String(format: "%.1f", avgRating))/5 avg rating.")
-                    .font(.subheadline)
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-
+            VStack(alignment: .leading, spacing: 10) {
+                TQGroupHeader("Ready for more")
+                TQBody("Done \(completionCount) times and it feels comfortable. Time to raise it.")
                 TQButton("Make it harder", style: .raised, size: .compact) {
                     if SubscriptionManager.shared.canGenerateDrill() {
                         showingHarderDrill = true
@@ -635,11 +516,6 @@ struct ExerciseDetailView: View {
                 }
                 .accessibilityIdentifier("drill.makeHarder")
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(DesignSystem.Colors.secondaryBlue.opacity(0.1))
-            )
         }
     }
 }
@@ -659,30 +535,6 @@ private extension ExerciseDetailView {
         case ..<2: return .intermediate
         default: return .advanced
         }
-    }
-}
-
-// MARK: - Feedback Chip
-
-struct FeedbackChip: View {
-    let label: String
-    let selected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.caption)
-                .fontWeight(selected ? .semibold : .regular)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(selected ? DesignSystem.Colors.primaryGreen : Color.gray.opacity(0.2))
-                )
-                .foregroundColor(selected ? DesignSystem.Colors.textOnAccent : DesignSystem.Colors.textSecondary)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -730,37 +582,6 @@ struct YouTubeWebView: UIViewRepresentable {
             #if DEBUG
             print("WebView failed provisional navigation: \(error.localizedDescription)")
             #endif
-        }
-    }
-}
-
-struct CategoryBadge: View {
-    let category: String
-    
-    var body: some View {
-        Text(category)
-            .font(.caption)
-            .fontWeight(.medium)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(DesignSystem.Colors.primaryGreen.opacity(0.2))
-            )
-            .foregroundColor(DesignSystem.Colors.primaryGreen)
-    }
-}
-
-struct DifficultyStars: View {
-    let difficulty: Int
-    
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(1...5, id: \.self) { star in
-                Image(systemName: star <= difficulty ? "star.fill" : "star")
-                    .foregroundColor(star <= difficulty ? .orange : .gray)
-                    .font(.caption)
-            }
         }
     }
 }

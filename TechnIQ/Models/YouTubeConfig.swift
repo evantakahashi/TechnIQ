@@ -30,12 +30,6 @@ struct YouTubeConfig {
         case viewCount = "viewCount"
     }
     
-    enum VideoDuration: String {
-        case any = "any"
-        case short = "short"      // < 4 minutes
-        case medium = "medium"    // 4-20 minutes
-        case long = "long"        // > 20 minutes
-    }
     
     static let soccerKeywords = [
         "soccer drill", "football training", "soccer skills",

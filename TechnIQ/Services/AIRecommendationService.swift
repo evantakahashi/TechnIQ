@@ -569,145 +569,18 @@ class AIRecommendationService: ObservableObject, AIRecommendationServiceProtocol
         return videoIds
     }
     
-    private func calculateEnhancedConfidence(for rec: YouTubeService.DrillRecommendation, player: Player) -> Double {
-        // Enhanced confidence calculation that mimics ML scoring
-        var confidence = rec.confidenceScore
-        
-        // Boost confidence based on player's experience level
-        let playerDifficulty = mapExperienceLevelToNumber(player.experienceLevel ?? "Beginner")
-        if Int(rec.exercise.difficulty) == playerDifficulty {
-            confidence += 0.1
-        }
-        
-        // Boost for recent category focus
-        if isRecentFocusArea(category: categoryToString(rec.category), for: player) {
-            confidence += 0.15
-        }
-        
-        return min(confidence, 1.0)
-    }
     
-    private func enhanceReasoning(_ originalReasoning: String, with mlInsight: String) -> String {
-        return "\(mlInsight): \(originalReasoning)"
-    }
     
-    private func extractTargetSkills(from rec: YouTubeService.DrillRecommendation) -> [String] {
-        // Extract skills from the recommendation category and description
-        var skills: [String] = []
-        
-        let categoryStr = categoryToString(rec.category)
-        switch categoryStr.lowercased() {
-        case "technical":
-            skills = ["Ball Control", "First Touch", "Passing"]
-        case "physical":
-            skills = ["Speed", "Agility", "Endurance"]
-        case "tactical":
-            skills = ["Decision Making", "Positioning", "Game Awareness"]
-        case "mental":
-            skills = ["Focus", "Confidence", "Pressure Handling"]
-        default:
-            skills = ["General Soccer Skills"]
-        }
-        
-        return skills
-    }
     
-    private func generatePersonalizedInstructions(for rec: YouTubeService.DrillRecommendation, player: Player) -> String {
-        let baseInstructions = "Complete this exercise focusing on proper technique."
-        let playerLevel = player.experienceLevel ?? "Beginner"
-        
-        switch playerLevel.lowercased() {
-        case "beginner":
-            return "\(baseInstructions) Take your time and focus on getting the movements right before increasing speed."
-        case "intermediate":
-            return "\(baseInstructions) Challenge yourself to maintain quality while increasing intensity."
-        case "advanced", "expert":
-            return "\(baseInstructions) Focus on game-like intensity and decision-making under pressure."
-        default:
-            return baseInstructions
-        }
-    }
     
-    private func estimateImprovement(for rec: YouTubeService.DrillRecommendation, player: Player) -> Double {
-        // Estimate expected skill improvement (0.0 - 1.0)
-        let baseImprovement = 0.1
-        let playerDifficulty = mapExperienceLevelToNumber(player.experienceLevel ?? "Beginner")
-        let difficultyMultiplier = Int(rec.exercise.difficulty) == playerDifficulty ? 1.2 : 0.8
-        return min(baseImprovement * difficultyMultiplier, 1.0)
-    }
     
-    private func isRecentFocusArea(category: String, for player: Player) -> Bool {
-        // Check if this category was trained in the last 3 training sessions
-        let request: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        request.predicate = NSPredicate(format: "player == %@", player)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)]
-        request.fetchLimit = 3
-
-        do {
-            let recentSessions = try CoreDataManager.shared.context.fetch(request)
-
-            // Check exercises in recent sessions for matching category
-            for session in recentSessions {
-                if let exercises = session.exercises?.allObjects as? [SessionExercise] {
-                    for sessionExercise in exercises {
-                        if let exercise = sessionExercise.exercise,
-                           let exerciseCategory = exercise.category,
-                           exerciseCategory.lowercased().contains(category.lowercased()) {
-                            return true
-                        }
-                    }
-                }
-            }
-
-            return false
-        } catch {
-            return false
-        }
-    }
     
     // MARK: - Data Fetching
     
-    private func fetchRecentTrainingSessions(for player: Player, limit: Int) async throws -> [TrainingSession] {
-        // Fetch from Core Data for now
-        let request: NSFetchRequest<TrainingSession> = TrainingSession.fetchRequest()
-        request.predicate = NSPredicate(format: "player == %@", player)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)]
-        request.fetchLimit = limit
-        
-        return try CoreDataManager.shared.context.fetch(request)
-    }
     
     // MARK: - Helper Functions for Type Conversion
     
-    private func categoryToString(_ category: YouTubeService.RecommendationCategory) -> String {
-        switch category {
-        case .skillGap:
-            return "Technical"
-        case .difficultyProgression:
-            return "Physical"
-        case .varietyBalance:
-            return "Tactical"
-        case .repeatSuccess:
-            return "Mental"
-        case .complementarySkill:
-            return "Technical"
-        }
-    }
     
-    private func mapExperienceLevelToNumber(_ level: String) -> Int {
-        switch level.lowercased() {
-        case "beginner":
-            return 1
-        case "intermediate":
-            return 3
-        case "advanced":
-            return 4
-        case "expert":
-            return 5
-        default:
-            return 2
-        }
-    }
 }
 
 // MARK: - Data Models

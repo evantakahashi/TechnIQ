@@ -8,8 +8,6 @@ struct TrainingInsight: Identifiable {
     let type: InsightType
     let title: String
     let description: String
-    let icon: String
-    let color: String // Color name as string for DesignSystem lookup
     let priority: Int // Higher = more important
     let actionable: String? // Optional action suggestion
 }
@@ -67,8 +65,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .pattern,
                     title: "Consistent Training Day",
                     description: "You train most often on \(dayName)s (\(Int(percentage))% of sessions). Keep this consistency!",
-                    icon: "calendar.badge.checkmark",
-                    color: "primaryGreen",
                     priority: 6,
                     actionable: nil
                 ))
@@ -86,8 +82,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .pattern,
                     title: "Quality Over Quantity",
                     description: "Your sessions average \(Int(avgDuration)) minutes - great commitment to quality training!",
-                    icon: "clock.badge.checkmark",
-                    color: "secondaryBlue",
                     priority: 5,
                     actionable: nil
                 ))
@@ -96,8 +90,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .recommendation,
                     title: "Extend Your Sessions",
                     description: "Your sessions average only \(Int(avgDuration)) minutes. Consider 45-60 minute sessions for better skill development.",
-                    icon: "clock.arrow.2.circlepath",
-                    color: "accentOrange",
                     priority: 7,
                     actionable: "Try longer sessions this week"
                 ))
@@ -131,8 +123,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .celebration,
                 title: "Impressive Improvement!",
                 description: "Your performance has improved by \(Int(improvement))% over this period. You're leveling up!",
-                icon: "chart.line.uptrend.xyaxis",
-                color: "primaryGreen",
                 priority: 9,
                 actionable: nil
             ))
@@ -141,8 +131,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .warning,
                 title: "Performance Dip Detected",
                 description: "Your ratings have dropped by \(abs(Int(improvement)))%. Consider reviewing your training approach or taking a rest day.",
-                icon: "exclamationmark.triangle",
-                color: "error",
                 priority: 8,
                 actionable: "Review recent sessions for patterns"
             ))
@@ -186,8 +174,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .celebration,
                 title: "Amazing Streak!",
                 description: "You've trained for \(currentStreak) days in a row. Your dedication is paying off!",
-                icon: "flame.fill",
-                color: "accentOrange",
                 priority: 8,
                 actionable: nil
             ))
@@ -199,8 +185,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .recommendation,
                     title: "Time to Train Again",
                     description: "It's been \(daysSinceLastSession) days since your last session. Get back on track today!",
-                    icon: "figure.run",
-                    color: "secondaryBlue",
                     priority: 9,
                     actionable: "Start a quick session now"
                 ))
@@ -235,8 +219,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .pattern,
                     title: "High Training Frequency",
                     description: String(format: "You're averaging %.1f sessions per week. At this pace, you'll hit 50 sessions in %.0f weeks!", sessionsPerWeek, weeksNeeded),
-                    icon: "speedometer",
-                    color: "primaryGreen",
                     priority: 6,
                     actionable: nil
                 ))
@@ -245,8 +227,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .recommendation,
                     title: "Increase Training Frequency",
                     description: String(format: "You're averaging %.1f sessions per week. Try for 3+ sessions to see faster improvement.", sessionsPerWeek),
-                    icon: "calendar.badge.plus",
-                    color: "accentOrange",
                     priority: 7,
                     actionable: "Schedule 3 sessions this week"
                 ))
@@ -295,8 +275,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .recommendation,
                 title: "Balance Your Training",
                 description: "You're focusing heavily on technical skills (\(Int(technicalPct))%). Add more physical and tactical work for well-rounded development.",
-                icon: "scale.3d",
-                color: "accentOrange",
                 priority: 7,
                 actionable: "Add physical/tactical exercises"
             ))
@@ -305,8 +283,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .recommendation,
                 title: "Balance Your Training",
                 description: "Physical training dominates (\(Int(physicalPct))%). Mix in technical and tactical skills for complete player development.",
-                icon: "scale.3d",
-                color: "accentOrange",
                 priority: 7,
                 actionable: "Add technical/tactical exercises"
             ))
@@ -315,8 +291,6 @@ class InsightsEngine: InsightsEngineProtocol {
                 type: .pattern,
                 title: "Well-Balanced Training",
                 description: "Great job maintaining balance across technical, physical, and tactical training!",
-                icon: "checkmark.seal.fill",
-                color: "primaryGreen",
                 priority: 5,
                 actionable: nil
             ))
@@ -356,8 +330,6 @@ class InsightsEngine: InsightsEngineProtocol {
                     type: .pattern,
                     title: "Next Milestone: \(nextMilestone) Sessions",
                     description: "Just \(remaining) sessions to go! At your current pace, you'll reach it around \(dateFormatter.string(from: estimatedDate)).",
-                    icon: "flag.checkered",
-                    color: "secondaryBlue",
                     priority: 6,
                     actionable: nil
                 ))

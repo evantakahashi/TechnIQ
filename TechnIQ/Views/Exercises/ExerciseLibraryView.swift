@@ -86,7 +86,6 @@ struct ExerciseLibraryView: View {
         }
         .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .coachMark(.train)
         .navigationDestination(item: $route) { route in
             switch route {
             case .drill(let objectID):
@@ -131,6 +130,14 @@ struct ExerciseLibraryView: View {
             if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "drill",
                let target = allExercises.first(where: { $0.diagramJSON != nil }) ?? allExercises.first {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { route = .drill(target.objectID) }
+            }
+            // `-TQRoute manualDrill` opens the manual drill form for screenshots.
+            if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "manualDrill" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { showingManualDrillCreator = true }
+            }
+            // `-TQRoute generator` opens the AI drill generator for screenshots.
+            if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "generator" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { showingCustomDrillGenerator = true }
             }
             // `-TQRoute camera` pushes Camera drills for screenshots.
             if let index = args.firstIndex(of: "-TQRoute"), index + 1 < args.count, args[index + 1] == "camera" {

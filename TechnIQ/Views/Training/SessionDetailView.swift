@@ -1,220 +1,121 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Session detail (sheet from Session history)
+//
+// What was done: the session's name and date, its figures, the drills in order, any notes, and
+// the one destructive action (delete, confirmed).
+
 struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    let session: TrainingSession
-    
+    @Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject var session: TrainingSession
+
+    @State private var confirmingDelete = false
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    sessionHeaderCard
-                    
-                    if let exercises = session.exercises?.allObjects as? [SessionExercise], !exercises.isEmpty {
-                        exercisesCard(exercises: exercises.sorted { 
-                            ($0.exercise?.name ?? "") < ($1.exercise?.name ?? "") 
-                        })
-                    }
-                    
-                    if let notes = session.notes, !notes.isEmpty {
-                        notesCard(notes: notes)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.section) {
+                TQNavBar("Session") {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+                } trailing: {
+                    TQNavAction("Done") { dismiss() }
                 }
-                .padding()
-            }
-            .navigationTitle("Session Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                .padding(.top, 8)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    TQEyebrow(dateLine, size: 11)
+                    TQDisplayTitle(session.sessionType ?? "Training", size: .medium)
+                    if let location = session.location, !location.isEmpty {
+                        TQMeta(location, tone: .muted, size: 13, weight: .regular, uppercase: false)
                     }
                 }
-            }
-        }
-    }
-    
-    private var sessionHeaderCard: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            HStack {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(session.sessionType ?? "Training")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text(formatDate(session.date ?? Date()))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 5) {
-                    Text("\(Int(session.duration)) min")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                    
-                    if let feel = SessionFeel(raw: session.feel) {
-                        Text(feel.label)
-                            .font(.subheadline)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .accessibilityLabel("Felt \(feel.label.lowercased())")
-                    } else {
-                        HStack(spacing: 2) {
-                            ForEach(0..<5, id: \.self) { index in
-                                Image(systemName: index < session.overallRating ? "star.fill" : "star")
-                                    .font(.subheadline)
-                                    .foregroundColor(.yellow)
+
+                TQStatRail(items: figures)
+
+                if !drills.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        TQGroupHeader("Drills")
+                        TQRowList {
+                            ForEach(Array(drills.enumerated()), id: \.element.objectID) { index, drill in
+                                TQRow(drill.exercise?.name ?? "Drill",
+                                      subtitle: Self.subtitle(for: drill),
+                                      leading: .index(String(format: "%02d", index + 1)),
+                                      meta: drill.duration > 0 ? TQRow.Meta("\(Int(drill.duration)) min") : nil,
+                                      accessory: .none)
                             }
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Rating: \(session.overallRating) out of 5")
                     }
                 }
-            }
-            
-            HStack(spacing: 20) {
-                if let location = session.location {
-                    Label(location, systemImage: "location")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+
+                if let notes = session.notes, !notes.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        TQGroupHeader("Notes")
+                        TQBody(notes)
+                    }
                 }
-                
-                Label("Intensity \(session.intensity)/5", systemImage: "flame")
-                    .font(.subheadline)
-                    .foregroundColor(intensityColor(Int(session.intensity)))
+
+                TQButton("Delete session", style: .destructive) { confirmingDelete = true }
+                    .padding(.top, DesignSystem.Spacing.sm)
             }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-    }
-    
-    private func exercisesCard(exercises: [SessionExercise]) -> some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Exercises (\(exercises.count))")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            VStack(spacing: 12) {
-                ForEach(exercises, id: \.objectID) { sessionExercise in
-                    ExerciseDetailRow(sessionExercise: sessionExercise)
-                }
-            }
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .confirmationDialog("Delete this session?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+            Button("Delete session", role: .destructive) { deleteSession() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("It comes off your history and totals. This can't be undone.")
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
-    
-    private func notesCard(notes: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Session Notes")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            Text(notes)
-                .font(.body)
-                .foregroundColor(.secondary)
+
+    // MARK: Derived
+
+    private var drills: [SessionExercise] {
+        let all = (session.exercises?.allObjects as? [SessionExercise]) ?? []
+        return all.sorted { ($0.exercise?.name ?? "") < ($1.exercise?.name ?? "") }
+    }
+
+    private var figures: [TQStatRail.Item] {
+        var items: [TQStatRail.Item] = [.init("\(Int(session.duration))", unit: "min", label: "trained")]
+        if !drills.isEmpty {
+            items.append(.init("\(drills.count)", label: drills.count == 1 ? "drill" : "drills"))
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+        if let feel = SessionFeel(raw: session.feel) {
+            items.append(.init(feel.label, label: "felt", accent: feel == .right))
+        } else if session.intensity > 0 {
+            items.append(.init("\(session.intensity)", unit: "/5", label: "intensity"))
+        }
+        return items
     }
-    
-    private func formatDate(_ date: Date) -> String {
+
+    private var dateLine: String {
+        guard let date = session.date else { return "Session" }
         let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        formatter.timeStyle = .short
+        formatter.dateFormat = "EEEE d MMMM · HH:mm"
         return formatter.string(from: date)
     }
-    
-    private func intensityColor(_ level: Int) -> Color {
-        switch level {
-        case 1...2: return .green
-        case 3: return .yellow
-        case 4: return .orange
-        default: return .red
+
+    private static func subtitle(for drill: SessionExercise) -> String? {
+        var parts: [String] = []
+        if drill.sets > 0 { parts.append("\(drill.sets) set\(drill.sets == 1 ? "" : "s")") }
+        if drill.reps > 0 { parts.append("\(drill.reps) rep\(drill.reps == 1 ? "" : "s")") }
+        if let notes = drill.notes, !notes.isEmpty { parts.append(notes) }
+        if parts.isEmpty, let category = drill.exercise?.category, !category.isEmpty { parts.append(category) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func deleteSession() {
+        dismiss()
+        viewContext.delete(session)
+        do {
+            try viewContext.save()
+            HapticManager.shared.success()
+        } catch {
+            viewContext.rollback()
+            AppLogger.shared.error("Failed to delete session: \(error.localizedDescription)")
         }
     }
-}
-
-struct ExerciseDetailRow: View {
-    let sessionExercise: SessionExercise
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(sessionExercise.exercise?.name ?? "Exercise")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    Text(sessionExercise.exercise?.category ?? "General")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(Int(sessionExercise.duration)) min")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    
-                    HStack(spacing: 1) {
-                        ForEach(0..<5, id: \.self) { index in
-                            Image(systemName: index < sessionExercise.performanceRating ? "star.fill" : "star")
-                                .font(.caption2)
-                                .foregroundColor(.yellow)
-                        }
-                    }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Rating: \(sessionExercise.performanceRating) out of 5")
-                }
-            }
-            
-            HStack(spacing: 15) {
-                if sessionExercise.sets > 0 {
-                    Label("\(sessionExercise.sets) sets", systemImage: "repeat")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                
-                if sessionExercise.reps > 0 {
-                    Label("\(sessionExercise.reps) reps", systemImage: "number")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            if let notes = sessionExercise.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .italic()
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
-    }
-}
-
-#Preview {
-    let context = CoreDataManager.shared.context
-    let sampleSession = TrainingSession(context: context)
-    sampleSession.sessionType = "Technical Training"
-    sampleSession.date = Date()
-    sampleSession.duration = 45
-    sampleSession.intensity = 3
-    sampleSession.overallRating = 4
-    sampleSession.location = "Local Park"
-    sampleSession.notes = "Great session today, worked on ball control and passing accuracy."
-    
-    return SessionDetailView(session: sampleSession)
 }

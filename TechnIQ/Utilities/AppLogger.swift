@@ -112,22 +112,3 @@ class AppLogger {
 
 // MARK: - Convenience Global Functions
 
-/// Log debug message (only in DEBUG builds)
-func logDebug(_ message: String, category: AppLogger.Category = .general, file: String = #file, function: String = #function, line: Int = #line) {
-    AppLogger.shared.debug(message, category: category, file: file, function: function, line: line)
-}
-
-/// Log info message
-func logInfo(_ message: String, category: AppLogger.Category = .general, file: String = #file, function: String = #function, line: Int = #line) {
-    AppLogger.shared.info(message, category: category, file: file, function: function, line: line)
-}
-
-/// Log warning message
-func logWarning(_ message: String, category: AppLogger.Category = .general, file: String = #file, function: String = #function, line: Int = #line) {
-    AppLogger.shared.warning(message, category: category, file: file, function: function, line: line)
-}
-
-/// Log error message (always logged, even in production)
-func logError(_ message: String, category: AppLogger.Category = .general, file: String = #file, function: String = #function, line: Int = #line) {
-    AppLogger.shared.error(message, category: category, file: file, function: function, line: line)
-}

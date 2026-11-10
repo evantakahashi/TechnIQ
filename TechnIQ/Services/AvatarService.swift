@@ -105,55 +105,6 @@ final class AvatarService: ObservableObject, AvatarServiceProtocol {
         }
     }
 
-    /// Update a single avatar slot
-    /// - Parameters:
-    ///   - slot: The slot to update
-    ///   - value: The new value for the slot (raw string value)
-    @discardableResult
-    func updateSlot(_ slot: AvatarSlot, value: String) -> Bool {
-        var newState = currentAvatarState
-
-        switch slot {
-        case .skinTone:
-            if let skinTone = SkinTone(rawValue: value) {
-                newState.skinTone = skinTone
-            }
-        case .hairStyle:
-            if let hairStyle = HairStyle(rawValue: value) {
-                newState.hairStyle = hairStyle
-            }
-        case .hairColor:
-            if let hairColor = HairColor(rawValue: value) {
-                newState.hairColor = hairColor
-            }
-        case .faceStyle:
-            if let faceStyle = FaceStyle(rawValue: value) {
-                newState.faceStyle = faceStyle
-            }
-        case .jersey:
-            if let jerseyStyle = JerseyStyle(rawValue: value) {
-                newState.jerseyStyle = jerseyStyle
-            }
-        case .shorts:
-            if let shortsStyle = ShortsStyle(rawValue: value) {
-                newState.shortsStyle = shortsStyle
-            }
-        case .socks:
-            if let socksStyle = SocksStyle(rawValue: value) {
-                newState.socksStyle = socksStyle
-            }
-        case .cleats:
-            if let cleatsStyle = CleatsStyle(rawValue: value) {
-                newState.cleatsStyle = cleatsStyle
-            }
-        case .accessory:
-            // Accessories not yet implemented with new system
-            break
-        }
-
-        return saveAvatarState(newState)
-    }
-
     // MARK: - Private Helpers
 
     /// Convert AvatarConfiguration to AvatarState

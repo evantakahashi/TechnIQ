@@ -10,5 +10,4 @@ protocol AvatarServiceProtocol: AnyObject {
     func loadCurrentAvatar()
     func getAvatarState(context: NSManagedObjectContext?) -> AvatarState
     @discardableResult func saveAvatarState(_ avatarState: AvatarState, context: NSManagedObjectContext?) -> Bool
-    func updateSlot(_ slot: AvatarSlot, value: String) -> Bool
 }

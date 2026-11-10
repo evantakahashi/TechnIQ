@@ -408,53 +408,43 @@ struct CustomDrillGeneratorView: View {
     }
 
     // MARK: - Skill Description Section
-    
+
     private var skillDescriptionSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Anything else? (optional)")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    TextField("e.g., improve first touch under pressure, better crossing accuracy...", text: $request.skillDescription, axis: .vertical)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .lineLimit(3...6)
-                        .textFieldStyle(.plain)
-                    
-                    HStack {
-                        Spacer()
-                        Text("\(request.skillDescription.count)/500")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(request.skillDescription.isEmpty || request.skillDescription.isValidSkillDescription ?
-                                           DesignSystem.Colors.textSecondary : DesignSystem.Colors.error)
-                    }
+        VStack(alignment: .leading, spacing: 6) {
+            TQGroupHeader("Anything else? (optional)")
+            TextField("e.g. first touch under pressure, crossing accuracy", text: $request.skillDescription, axis: .vertical)
+                .font(DesignSystem.Typography.bodyLarge)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .tint(DesignSystem.Colors.grass)
+                .lineLimit(3...6)
+                .textFieldStyle(.plain)
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.textField, style: .continuous).fill(DesignSystem.Colors.surfaceRaised))
+            HStack {
+                if !request.skillDescription.isEmpty && !request.skillDescription.isValidSkillDescription {
+                    TQMeta("At least 10 characters", tone: .muted, size: 13, weight: .regular, uppercase: false)
                 }
-                .padding(DesignSystem.Spacing.sm)
-            }
-            
-            if !request.skillDescription.isEmpty && !request.skillDescription.isValidSkillDescription {
-                Text("Please provide at least 10 characters describing what you want to work on")
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.error)
+                Spacer()
+                TQMeta("\(request.skillDescription.count)/500", tone: .muted, size: 13, weight: .regular)
             }
         }
     }
-    
-    // MARK: - Category Section
-    
+
+    // MARK: - Options (category, level, equipment, players, space)
+
+    private func optionGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TQGroupHeader(title)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var categorySection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Category")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: DesignSystem.Spacing.sm) {
+        optionGroup("Category") {
+            FlowLayout(spacing: 6) {
                 ForEach(DrillCategory.allCases, id: \.self) { category in
-                    CategorySelectionCard(
-                        category: category,
-                        isSelected: request.category == category
-                    ) {
+                    TQChip(category.displayName, isSelected: request.category == category) {
                         request.category = category
                         touchedCategory = true
                     }
@@ -462,42 +452,24 @@ struct CustomDrillGeneratorView: View {
             }
         }
     }
-    
-    // MARK: - Difficulty Section
-    
+
     private var difficultySection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Difficulty Level")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(DifficultyLevel.allCases, id: \.self) { difficulty in
-                    DifficultySelectionCard(
-                        difficulty: difficulty,
-                        isSelected: request.difficulty == difficulty
-                    ) {
-                        request.difficulty = difficulty
-                    }
-                }
-            }
+        optionGroup("Level") {
+            TQSegment(
+                options: DifficultyLevel.allCases.map(\.displayName),
+                selectedIndex: Binding(
+                    get: { DifficultyLevel.allCases.firstIndex(of: request.difficulty) ?? 0 },
+                    set: { request.difficulty = DifficultyLevel.allCases[$0] }
+                )
+            )
         }
     }
-    
-    // MARK: - Equipment Section
-    
+
     private var equipmentSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Available Equipment")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: DesignSystem.Spacing.sm) {
+        optionGroup("Equipment you have") {
+            FlowLayout(spacing: 6) {
                 ForEach(Equipment.allCases, id: \.self) { equipment in
-                    EquipmentSelectionCard(
-                        equipment: equipment,
-                        isSelected: request.equipment.contains(equipment)
-                    ) {
+                    TQChip(equipment.displayName, isSelected: request.equipment.contains(equipment)) {
                         if request.equipment.contains(equipment) {
                             request.equipment.remove(equipment)
                         } else {
@@ -508,80 +480,22 @@ struct CustomDrillGeneratorView: View {
             }
         }
     }
-    
-    // MARK: - Number of Players Section
 
     private var numberOfPlayersSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Number of Players: \(request.numberOfPlayers)")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Slider(value: Binding(
-                        get: { Double(request.numberOfPlayers) },
-                        set: { request.numberOfPlayers = Int($0) }
-                    ), in: 1...6, step: 1)
-                    .tint(DesignSystem.Colors.primaryGreen)
-
-                    HStack {
-                        Text("1")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        Spacer()
-                        Text("6")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .padding(DesignSystem.Spacing.sm)
-            }
-        }
+        TQValueStepper(label: "Players", value: $request.numberOfPlayers, range: 1...6)
+            .overlay(alignment: .top) { TQRule() }
+            .overlay(alignment: .bottom) { TQRule() }
     }
 
-    // MARK: - Field Size Section
-
     private var fieldSizeSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Field Size")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(FieldSize.allCases, id: \.self) { size in
-                    Button {
-                        request.fieldSize = size
-                    } label: {
-                        ModernCard(padding: DesignSystem.Spacing.sm) {
-                            VStack(spacing: DesignSystem.Spacing.xs) {
-                                Image(systemName: size.icon)
-                                    .font(.title3)
-                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
-
-                                Text(size.displayName)
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(request.fieldSize == size ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 60)
-                        }
-                        .background(
-                            request.fieldSize == size ? DesignSystem.Colors.primaryGreen : Color.clear
-                        )
-                        .cornerRadius(DesignSystem.CornerRadius.card)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                                .stroke(
-                                    request.fieldSize == size ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                                    lineWidth: request.fieldSize == size ? 2 : 1
-                                )
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
+        optionGroup("Space") {
+            TQSegment(
+                options: FieldSize.allCases.map(\.shortName),
+                selectedIndex: Binding(
+                    get: { FieldSize.allCases.firstIndex(of: request.fieldSize) ?? 0 },
+                    set: { request.fieldSize = FieldSize.allCases[$0] }
+                )
+            )
         }
     }
 
@@ -628,141 +542,17 @@ struct CustomDrillGeneratorView: View {
     }
 }
 
-// MARK: - Selection Cards
-
-struct CategorySelectionCard: View {
-    let category: DrillCategory
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ModernCard(padding: DesignSystem.Spacing.sm) {
-                VStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: category.iconSystemName)
-                        .font(.title3)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
-                    Text(category.displayName)
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .background(
-                isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
-            )
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(
-                        isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct DifficultySelectionCard: View {
-    let difficulty: DifficultyLevel
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ModernCard(padding: DesignSystem.Spacing.sm) {
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: difficulty.iconSystemName)
-                        .font(.caption)
-                        .foregroundColor(difficultyColor)
-                    Text(difficulty.displayName)
-                        .font(DesignSystem.Typography.labelMedium)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .background(
-                isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
-            )
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(
-                        isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    private var difficultyColor: Color {
-        switch difficulty {
-        case .beginner: return .green
-        case .intermediate: return .yellow
-        case .advanced: return .red
-        }
-    }
-}
-
-struct EquipmentSelectionCard: View {
-    let equipment: Equipment
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ModernCard(padding: DesignSystem.Spacing.xs) {
-                VStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: equipment.icon)
-                        .font(.title3)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.primaryGreen)
-                    
-                    Text(equipment.displayName)
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(isSelected ? DesignSystem.Colors.grass : DesignSystem.Colors.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, minHeight: 60)
-            }
-            .background(
-                isSelected ? DesignSystem.Colors.primaryGreen : Color.clear
-            )
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(
-                        isSelected ? DesignSystem.Colors.primaryGreen : DesignSystem.Colors.neutral300,
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
 // MARK: - Safety Disclaimer
 
 /// Footer shown on drill surfaces. Not medical advice; encourages warm-up.
 struct DrillSafetyDisclaimer: View {
     var body: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.xs) {
-            Image(systemName: "info.circle")
-                .font(.caption2)
-                .foregroundColor(DesignSystem.Colors.textTertiary)
-                .accessibilityHidden(true)
-            Text("Warm up first. Stop if anything hurts. Not medical advice.")
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.top, DesignSystem.Spacing.sm)
-        .accessibilityElement(children: .combine)
+        Text("Warm up first. Stop if anything hurts. Not medical advice.")
+            .font(DesignSystem.Typography.bodySmall)
+            .foregroundColor(DesignSystem.Colors.textTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, DesignSystem.Spacing.sm)
     }
 }
 

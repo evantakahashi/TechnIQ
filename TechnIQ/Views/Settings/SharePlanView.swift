@@ -1,5 +1,9 @@
 import SwiftUI
 
+// MARK: - Share a plan with the community (plan Edit menu, behind FeatureFlags.community)
+//
+// The plan as others will see it, an optional message, one action.
+
 struct SharePlanView: View {
     let plan: TrainingPlanModel
     @Environment(\.dismiss) private var dismiss
@@ -8,198 +12,75 @@ struct SharePlanView: View {
     @State private var showSuccessMessage = false
     @State private var errorMessage: String?
 
+    private let messageLimit = 200
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AdaptiveBackground()
-                    .ignoresSafeArea()
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                TQNavBar("Share plan") {
+                    TQNavAction("Cancel") { dismiss() }
+                } trailing: {
+                    Color.clear.frame(width: DesignSystem.Spacing.hitTarget, height: DesignSystem.Spacing.hitTarget)
+                }
+                .padding(.top, 8)
 
-                ScrollView {
-                    VStack(spacing: DesignSystem.Spacing.lg) {
-                        headerSection
-                        planPreview
-                        shareOptions
-                        submitButton
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-                    .padding(.vertical, DesignSystem.Spacing.lg)
-                }
+                planSummary
+
+                TQStatRail(items: [
+                    .init("\(plan.durationWeeks)", unit: "wk", label: "length"),
+                    .init(String(format: "%.0f", plan.estimatedTotalHours), unit: "h", label: "total")
+                ])
+
+                DrillFormTextArea(label: "Message (optional)", text: $shareMessage,
+                                  placeholder: "This plan helped me improve my finishing…", lines: 3...6, limit: messageLimit)
+
+                TQBody("Other players see the plan's structure, drills, length and level, plus your message. Your own progress and personal data stay private.", tone: .muted, size: 13)
+
+                TQButton("Share with community", isLoading: isSharing) { sharePlan() }
+                    .disabled(isSharing)
             }
-            .navigationTitle("Share Plan")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                }
+            .padding(.horizontal, DesignSystem.Spacing.screenPadding)
+            .padding(.bottom, DesignSystem.Spacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(DesignSystem.Colors.surfaceBase.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .alert("Plan shared", isPresented: $showSuccessMessage) {
+            Button("Done") {
+                dismiss()
             }
-            .alert("Plan Shared!", isPresented: $showSuccessMessage) {
-                Button("Done") {
-                    dismiss()
-                }
-            } message: {
-                Text("Thank you for contributing! Your plan will help other players improve their training.")
+        } message: {
+            Text("Thanks for contributing. Your plan will help other players train.")
+        }
+        .alert("Couldn't share", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            Button("OK") {
+                errorMessage = nil
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") {
-                    errorMessage = nil
-                }
-            } message: {
-                if let error = errorMessage {
-                    Text(error)
-                }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
             }
         }
     }
 
-    // MARK: - Header Section
+    // MARK: - Plan summary
 
-    private var headerSection: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                HStack {
-                    Image(systemName: "person.3.fill")
-                        .font(.title2)
-                        .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text("Contribute to Community")
-                            .font(DesignSystem.Typography.titleMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("Share your custom training plan with other players worldwide")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-
-                    Spacer()
-                }
+    private var planSummary: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TQEyebrow([plan.targetRole, plan.difficulty.displayName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+            TQDisplayTitle(plan.name, size: .medium)
+            if !plan.description.isEmpty {
+                TQBody(plan.description)
             }
         }
-    }
-
-    // MARK: - Plan Preview
-
-    private var planPreview: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Plan Details")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                    HStack {
-                        Image(systemName: plan.category.icon)
-                            .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(plan.name)
-                                .font(DesignSystem.Typography.titleMedium)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                            if let targetRole = plan.targetRole {
-                                Text(targetRole)
-                                    .font(DesignSystem.Typography.labelSmall)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        DifficultyBadge(difficulty: plan.difficulty)
-                    }
-
-                    Divider()
-
-                    Text(plan.description)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-
-                    HStack(spacing: DesignSystem.Spacing.md) {
-                        InfoChip(icon: "calendar", text: "\(plan.durationWeeks) weeks")
-                        InfoChip(icon: "clock", text: String(format: "%.0f hrs", plan.estimatedTotalHours))
-                        InfoChip(icon: "flame.fill", text: plan.difficulty.displayName)
-                    }
-                }
-                .padding(DesignSystem.Spacing.md)
-            }
-        }
-    }
-
-    // MARK: - Share Options
-
-    private var shareOptions: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Add a Message (Optional)")
-                .font(DesignSystem.Typography.titleSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    TextField("e.g., This plan helped me improve my finishing...", text: $shareMessage, axis: .vertical)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .lineLimit(3...6)
-                        .textFieldStyle(.plain)
-
-                    HStack {
-                        Spacer()
-                        Text("\(shareMessage.count)/200")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                    }
-                }
-                .padding(DesignSystem.Spacing.md)
-            }
-
-            // Sharing info
-            ModernCard(padding: DesignSystem.Spacing.md) {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundColor(DesignSystem.Colors.secondaryBlue)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("What gets shared:")
-                            .font(DesignSystem.Typography.labelMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-
-                        Text("• Plan structure and exercises\n• Duration and difficulty\n• Your optional message")
-                            .font(DesignSystem.Typography.bodySmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("Your personal data and progress are not shared.")
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                            .italic()
-                    }
-
-                    Spacer()
-                }
-            }
-            .background(DesignSystem.Colors.secondaryBlue.opacity(0.1))
-        }
-    }
-
-    // MARK: - Submit Button
-
-    private var submitButton: some View {
-        ModernButton(
-            isSharing ? "Sharing..." : "Share with Community",
-            icon: "paperplane.fill",
-            style: .primary
-        ) {
-            sharePlan()
-        }
-        .disabled(isSharing)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Actions
 
     private func sharePlan() {
-        guard shareMessage.count <= 200 else {
-            errorMessage = "Message must be 200 characters or less"
+        guard shareMessage.count <= messageLimit else {
+            errorMessage = "Message must be \(messageLimit) characters or less"
             return
         }
 
@@ -233,31 +114,9 @@ struct SharePlanView: View {
     }
 }
 
-// MARK: - Info Chip Component
-
-struct InfoChip: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption2)
-                .foregroundColor(DesignSystem.Colors.primaryGreen)
-
-            Text(text)
-                .font(DesignSystem.Typography.labelSmall)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(DesignSystem.Colors.primaryGreen.opacity(0.1))
-        .cornerRadius(DesignSystem.CornerRadius.xs)
-    }
-}
-
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     let mockPlan = TrainingPlanModel(
         id: UUID(),
@@ -280,3 +139,4 @@ struct InfoChip: View {
 
     return SharePlanView(plan: mockPlan)
 }
+#endif

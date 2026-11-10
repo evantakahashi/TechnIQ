@@ -1,51 +1,6 @@
 import SwiftUI
 import CoreData
 
-// MARK: - Avatar Slot
-
-/// Represents the different customizable slots on an avatar
-enum AvatarSlot: String, CaseIterable, Identifiable {
-    case skinTone = "skin_tone"
-    case hairStyle = "hair_style"
-    case hairColor = "hair_color"
-    case faceStyle = "face_style"
-    case jersey = "jersey"
-    case shorts = "shorts"
-    case socks = "socks"
-    case cleats = "cleats"
-    case accessory = "accessory"
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .skinTone: return "Skin Tone"
-        case .hairStyle: return "Hair Style"
-        case .hairColor: return "Hair Color"
-        case .faceStyle: return "Face"
-        case .jersey: return "Jersey"
-        case .shorts: return "Shorts"
-        case .socks: return "Socks"
-        case .cleats: return "Cleats"
-        case .accessory: return "Accessories"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .skinTone: return "hand.raised.fill"
-        case .hairStyle: return "comb.fill"
-        case .hairColor: return "paintpalette.fill"
-        case .faceStyle: return "face.smiling.fill"
-        case .jersey: return "tshirt.fill"
-        case .shorts: return "rectangle.fill"
-        case .socks: return "figure.walk"
-        case .cleats: return "shoe.fill"
-        case .accessory: return "sparkles"
-        }
-    }
-}
-
 // MARK: - Avatar State
 
 /// Represents the current state of a player's avatar configuration
@@ -158,15 +113,6 @@ enum SkinTone: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Asset name for body image
-    var bodyAssetName: String {
-        "body_\(rawValue)"
-    }
-
-    /// Tint color for face to match skin tone
-    var faceTintColor: Color {
-        color
-    }
 }
 
 // MARK: - Hair Color Options
@@ -231,21 +177,6 @@ enum FaceStyle: String, CaseIterable, Identifiable {
         rawValue.capitalized
     }
 
-    var icon: String {
-        switch self {
-        case .happy: return "face.smiling"
-        case .determined: return "face.dashed"
-        case .cool: return "eyeglasses"
-        case .excited: return "face.smiling.inverse"
-        case .focused: return "eye"
-        case .celebrating: return "star.fill"
-        }
-    }
-
-    /// Asset name for face image
-    var assetName: String {
-        "face_\(rawValue)"
-    }
 }
 
 // MARK: - Hair Style Options
@@ -276,10 +207,6 @@ enum HairStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Get asset name for this hair style with a given color
-    func assetName(color: HairColor) -> String {
-        "hair_\(rawValue)_\(color.rawValue)"
-    }
 }
 
 // MARK: - Jersey Style Options
@@ -310,9 +237,6 @@ enum JerseyStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    var assetName: String {
-        "jersey_\(rawValue)"
-    }
 }
 
 // MARK: - Shorts Style Options
@@ -337,9 +261,6 @@ enum ShortsStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    var assetName: String {
-        "shorts_\(rawValue)"
-    }
 }
 
 // MARK: - Socks Style Options
@@ -362,9 +283,6 @@ enum SocksStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    var assetName: String {
-        "socks_\(rawValue)"
-    }
 }
 
 // MARK: - Cleats Style Options
@@ -389,7 +307,4 @@ enum CleatsStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    var assetName: String {
-        "cleats_\(rawValue)"
-    }
 }

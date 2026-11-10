@@ -614,40 +614,6 @@ class TrainingPlanService: ObservableObject, TrainingPlanServiceProtocol {
         }
     }
 
-    /// Updates a day's rest status and notes
-    /// - Returns: true if update succeeded, false otherwise
-    @discardableResult
-    func updateDay(dayId: UUID, isRestDay: Bool, notes: String?) -> Bool {
-        let request: NSFetchRequest<PlanDay> = PlanDay.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", dayId as CVarArg)
-        request.fetchLimit = 1
-
-        do {
-            guard let day = try context.fetch(request).first else {
-                #if DEBUG
-                print("Failed to find day with ID: \(dayId)")
-                #endif
-                return false
-            }
-            day.isRestDay = isRestDay
-            day.notes = notes
-
-            // Update parent plan's timestamp
-            day.week?.plan?.updatedAt = Date()
-
-            try context.save()
-            #if DEBUG
-            print("Updated day \(day.dayNumber): isRestDay=\(isRestDay)")
-            #endif
-            return true
-        } catch {
-            #if DEBUG
-            print("Failed to update day: \(error)")
-            #endif
-            return false
-        }
-    }
-
     /// Updates a session's type, duration, intensity, and notes
     /// - Returns: true if update succeeded, false otherwise
     @discardableResult

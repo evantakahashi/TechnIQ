@@ -1,491 +1,173 @@
 import SwiftUI
-import CoreData
-import Foundation
 
-enum CalendarViewMode: String, CaseIterable {
-    case monthly = "Monthly"
-    case weekly = "Weekly"
-}
+// MARK: - SessionMonthCalendar
+//
+// Compact month grid for Session history: trained days are grass, today is outlined, the selected
+// day is chalk. Tapping a day selects it (again to clear); the chevrons page by month. Purely
+// presentational: the caller supplies the set of trained days (start-of-day dates).
 
-struct SessionCalendarView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
-    @FetchRequest var sessions: FetchedResults<TrainingSession>
-    
-    @State private var selectedDate = Date()
-    @State private var currentMonth = Date()
-    @State private var currentWeek = Date()
-    @State private var viewMode: CalendarViewMode = .monthly
-    @State private var sessionsForSelectedDate: [TrainingSession] = []
-    @State private var showingDayDetail = false
-    @State private var selectedSession: TrainingSession?
-    @State private var showingSessionDetail = false
-    
-    // Callback for session selection - will be used by parent view
-    var onSessionSelected: ((TrainingSession) -> Void)?
-    
+struct SessionMonthCalendar: View {
+    @Binding var month: Date
+    @Binding var selectedDay: Date?
+    let trainedDays: Set<Date>
+
     private let calendar = Calendar.current
-    
-    init(onSessionSelected: ((TrainingSession) -> Void)? = nil) {
-        self.onSessionSelected = onSessionSelected
-        
-        // Derived from the signed-in user at init (re-init on parent re-render must not reset it).
-        self._sessions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \TrainingSession.date, ascending: false)],
-            predicate: AuthenticationManager.shared.ownedByPlayerPredicate,
-            animation: .default
-        )
-    }
-    
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+
     var body: some View {
-        VStack(spacing: 0) {
-            // View Mode Toggle
-            viewModeToggle
-            
-            // Calendar Header
-            calendarHeader
-            
-            // Calendar Content
-            if viewMode == .monthly {
-                calendarGrid
-            } else {
-                weeklyCalendarView
-            }
-            
-            // Selected Date Sessions (if any)
-            if !sessionsForSelectedDate.isEmpty {
-                selectedDateSessionsView
-            }
-        }
-        .onAppear {
-            updateSessionsFilter()
-            updateSessionsForSelectedDate()
-            currentWeek = selectedDate
-        }
-        .onChange(of: authManager.userUID) {
-            updateSessionsFilter()
-        }
-        .onChange(of: selectedDate) {
-            updateSessionsForSelectedDate()
-        }
-        .onChange(of: viewMode) {
-            // Update current week when switching to weekly view
-            if viewMode == .weekly {
-                currentWeek = selectedDate
-            }
-        }
-        .sheet(isPresented: $showingSessionDetail) {
-            if let session = selectedSession {
-                SessionDetailView(session: session)
-            }
-        }
-    }
-    
-    // MARK: - Premium View Mode Toggle
-    
-    private var viewModeToggle: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            // Premium segmented control with sliding animation
-            HStack {
-                Spacer()
-                
-                ZStack {
-                    // Background with glassmorphism
-                    Capsule()
-                        .fill(DesignSystem.Colors.backgroundSecondary)
-                        .frame(width: 188, height: 44) // 2 * 90 + 2 * 4 padding
-                        .overlay(
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.1), Color.clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        )
-                        .customShadow(DesignSystem.Shadow.small)
-                    
-                    // Sliding background indicator
-                    HStack(spacing: 0) {
-                        if viewMode == .weekly { 
-                            Color.clear.frame(width: 90, height: 36)
-                        }
-                        
-                        Capsule()
-                            .fill(DesignSystem.Colors.accentLime)
-                            .frame(width: 90, height: 36)
-                            .customShadow((DesignSystem.Colors.primaryGreen.opacity(0.3), 4, 0, 2))
-                            .animation(DesignSystem.Animation.spring, value: viewMode)
-                        
-                        if viewMode == .monthly { 
-                            Color.clear.frame(width: 90, height: 36)
-                        }
+        VStack(alignment: .leading, spacing: 10) {
+            header
+            weekdayRow
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
+                    if let day {
+                        dayCell(day)
+                    } else {
+                        Color.clear.frame(height: 36)
                     }
-                    .padding(4)
-                    
-                    // Toggle buttons
-                    HStack(spacing: 0) {
-                        ForEach(CalendarViewMode.allCases, id: \.self) { mode in
-                            Button(action: {
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                impactFeedback.impactOccurred()
-                                
-                                withAnimation(DesignSystem.Animation.spring) {
-                                    viewMode = mode
-                                }
-                            }) {
-                                HStack(spacing: DesignSystem.Spacing.xs) {
-                                    // Add icons to make it more intuitive
-                                    Image(systemName: mode == .monthly ? "calendar" : "calendar.day.timeline.leading")
-                                        .font(.system(size: 14, weight: .semibold))
-                                    
-                                    Text(mode.rawValue)
-                                        .font(DesignSystem.Typography.labelMedium)
-                                        .fontWeight(.semibold)
-                                }
-                                .foregroundColor(
-                                    viewMode == mode 
-                                        ? .white 
-                                        : DesignSystem.Colors.textSecondary
-                                )
-                                .frame(width: 90, height: 36)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(4)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            .padding(.top, DesignSystem.Spacing.sm)
         }
+        .padding(.vertical, DesignSystem.Spacing.rowVertical)
+        .overlay(alignment: .top) { TQRule() }
+        .overlay(alignment: .bottom) { TQRule() }
     }
-    
-    // MARK: - Calendar Header
-    
-    private var calendarHeader: some View {
-        HStack {
-            Button(action: viewMode == .monthly ? previousMonth : previousWeek) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            }
-            
+
+    // MARK: Header
+
+    private var header: some View {
+        HStack(spacing: 4) {
+            Text(monthTitle)
+                .font(Font.system(size: 19, weight: .semibold).width(.condensed))
+                .textCase(.uppercase)
+                .tracking(DesignSystem.Typography.Tracking.label)
+                .foregroundColor(DesignSystem.Colors.chalkWhite)
+                .accessibilityAddTraits(.isHeader)
             Spacer()
-            
-            Text(headerTitle)
-                .font(DesignSystem.Typography.titleLarge)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .animation(DesignSystem.Animation.quick, value: viewMode)
-            
-            Spacer()
-            
-            Button(action: viewMode == .monthly ? nextMonth : nextWeek) {
-                Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .foregroundColor(DesignSystem.Colors.primaryGreen)
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.md)
-        .padding(.vertical, DesignSystem.Spacing.sm)
-    }
-    
-    // MARK: - Calendar Grid
-    
-    private var calendarGrid: some View {
-        VStack(spacing: DesignSystem.Spacing.xs) {
-            // Days of week header
-            HStack {
-                ForEach(calendar.shortWeekdaySymbols, id: \.self) { day in
-                    Text(day.uppercased())
-                        .font(DesignSystem.Typography.labelSmall)
-                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            // Calendar days
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: DesignSystem.Spacing.xs) {
-                ForEach(calendarDates, id: \.self) { date in
-                    CalendarDayView(
-                        date: date,
-                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                        isToday: calendar.isDate(date, inSameDayAs: Date()),
-                        isCurrentMonth: calendar.isDate(date, equalTo: currentMonth, toGranularity: .month),
-                        sessions: sessionsForDate(date)
-                    ) {
-                        selectedDate = date
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
+            pageButton("chevron.left", label: "Previous month") { shiftMonth(-1) }
+            pageButton("chevron.right", label: "Next month") { shiftMonth(1) }
+                .disabled(isCurrentMonth)
+                .opacity(isCurrentMonth ? 0.35 : 1)
         }
     }
-    
-    // MARK: - Weekly Calendar View
-    
-    private var weeklyCalendarView: some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            // Week days header
-            HStack {
-                ForEach(weekDates, id: \.self) { date in
-                    VStack(spacing: DesignSystem.Spacing.xs) {
-                        Text(dayOfWeekString(for: date))
-                            .font(DesignSystem.Typography.labelSmall)
-                            .foregroundColor(DesignSystem.Colors.textSecondary)
-                        
-                        Button(action: {
-                            selectedDate = date
-                        }) {
-                            WeeklyDayView(
-                                date: date,
-                                isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                                isToday: calendar.isDate(date, inSameDayAs: Date()),
-                                sessions: sessionsForDate(date)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+
+    private func pageButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            HapticManager.shared.selectionChanged()
+            action()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(DesignSystem.Colors.dimIvory)
+                .frame(width: DesignSystem.Spacing.hitTarget, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private var weekdayRow: some View {
+        HStack(spacing: 4) {
+            ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
+                Text(symbol)
+                    .font(Font.system(size: 12, weight: .semibold).width(.condensed))
+                    .foregroundColor(DesignSystem.Colors.textTertiary)
                     .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            // Sessions for the week (condensed view)
-            if !weekSessions.isEmpty {
-                weekSessionsOverview
             }
         }
+        .accessibilityHidden(true)
     }
-    
-    // MARK: - Week Sessions Overview
-    
-    private var weekSessionsOverview: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Divider()
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            Text("This Week's Sessions")
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(weekSessions, id: \.objectID) { session in
-                        SessionCalendarCard(session: session) {
-                            selectedSession = session
-                            if let callback = onSessionSelected {
-                                callback(session)
-                            } else {
-                                showingSessionDetail = true
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            }
+
+    // MARK: Day cell
+
+    private func dayCell(_ day: Date) -> some View {
+        let trained = trainedDays.contains(day)
+        let isSelected = selectedDay.map { calendar.isDate($0, inSameDayAs: day) } ?? false
+        let isToday = calendar.isDateInToday(day)
+        let isFuture = day > Date()
+
+        let fill: Color = isSelected ? DesignSystem.Colors.chalkWhite
+            : trained ? DesignSystem.Colors.grass
+            : DesignSystem.Colors.surfaceRaised
+        let foreground: Color = isSelected || trained ? DesignSystem.Colors.textOnAccent
+            : isFuture ? DesignSystem.Colors.textTertiary
+            : DesignSystem.Colors.mutedIvory
+
+        return Button {
+            HapticManager.shared.selectionChanged()
+            selectedDay = isSelected ? nil : day
+        } label: {
+            Text("\(calendar.component(.day, from: day))")
+                .font(Font.system(size: 15, weight: trained || isSelected ? .bold : .semibold).width(.condensed).monospacedDigit())
+                .foregroundColor(foreground)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.tile, style: .continuous).fill(fill))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.tile, style: .continuous)
+                        .strokeBorder(isToday && !isSelected ? DesignSystem.Colors.grass : Color.clear, lineWidth: 1.5)
+                )
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .disabled(isFuture)
+        .accessibilityLabel(accessibilityLabel(for: day, trained: trained))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
-    
-    // MARK: - Selected Date Sessions View
-    
-    private var selectedDateSessionsView: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Divider()
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            Text(selectedDateString)
-                .font(DesignSystem.Typography.titleMedium)
-                .foregroundColor(DesignSystem.Colors.textPrimary)
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(sessionsForSelectedDate, id: \.objectID) { session in
-                        SessionCalendarCard(session: session) {
-                            selectedSession = session
-                            if let callback = onSessionSelected {
-                                callback(session)
-                            } else {
-                                showingSessionDetail = true
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
-            }
-        }
-        .padding(.bottom, DesignSystem.Spacing.md)
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func updateSessionsFilter() {
-        guard !authManager.userUID.isEmpty else { return }
-        sessions.nsPredicate = NSPredicate(format: "player.firebaseUID == %@", authManager.userUID)
-    }
-    
-    private func updateSessionsForSelectedDate() {
-        let startOfDay = calendar.startOfDay(for: selectedDate)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-        
-        sessionsForSelectedDate = sessions.filter { session in
-            guard let sessionDate = session.date else { return false }
-            return sessionDate >= startOfDay && sessionDate < endOfDay
-        }
-    }
-    
-    private func sessionsForDate(_ date: Date) -> [TrainingSession] {
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-        
-        return sessions.filter { session in
-            guard let sessionDate = session.date else { return false }
-            return sessionDate >= startOfDay && sessionDate < endOfDay
-        }
-    }
-    
-    private func previousMonth() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            currentMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
-        }
-    }
-    
-    private func nextMonth() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
-        }
-    }
-    
-    private func previousWeek() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            currentWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: currentWeek) ?? currentWeek
-        }
-    }
-    
-    private func nextWeek() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            currentWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: currentWeek) ?? currentWeek
-        }
-    }
-    
-    // MARK: - Computed Properties
-    
-    private var monthYearString: String {
+
+    // MARK: Derived
+
+    private var monthTitle: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: currentMonth)
+        return formatter.string(from: month)
     }
-    
-    private var headerTitle: String {
-        if viewMode == .monthly {
-            return monthYearString
-        } else {
-            return weekRangeString
+
+    private var isCurrentMonth: Bool {
+        calendar.isDate(month, equalTo: Date(), toGranularity: .month)
+    }
+
+    /// Weekday initials starting on the calendar's first weekday.
+    private var weekdaySymbols: [String] {
+        let symbols = calendar.veryShortStandaloneWeekdaySymbols
+        let first = calendar.firstWeekday - 1
+        return Array(symbols[first...] + symbols[..<first])
+    }
+
+    /// Leading blanks, then every day of the month.
+    private var cells: [Date?] {
+        guard let interval = calendar.dateInterval(of: .month, for: month),
+              let dayCount = calendar.range(of: .day, in: .month, for: month)?.count else { return [] }
+        let firstWeekday = calendar.component(.weekday, from: interval.start)
+        let blanks = (firstWeekday - calendar.firstWeekday + 7) % 7
+        var result: [Date?] = Array(repeating: nil, count: blanks)
+        for offset in 0..<dayCount {
+            result.append(calendar.date(byAdding: .day, value: offset, to: interval.start))
+        }
+        return result
+    }
+
+    private func shiftMonth(_ value: Int) {
+        guard let shifted = calendar.date(byAdding: .month, value: value, to: month) else { return }
+        withAnimation(DesignSystem.Animation.quick) {
+            month = shifted
+            selectedDay = nil
         }
     }
-    
-    private var weekRangeString: String {
-        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: currentWeek) else {
-            return ""
-        }
-        
+
+    private func accessibilityLabel(for day: Date, trained: Bool) -> String {
         let formatter = DateFormatter()
-        let startDate = weekInterval.start
-        let endDate = calendar.date(byAdding: .day, value: -1, to: weekInterval.end) ?? weekInterval.end
-        
-        // Check if week spans multiple months
-        if calendar.component(.month, from: startDate) == calendar.component(.month, from: endDate) {
-            formatter.dateFormat = "MMM d"
-            let startString = formatter.string(from: startDate)
-            formatter.dateFormat = "d, yyyy"
-            let endString = formatter.string(from: endDate)
-            return "\(startString) - \(endString)"
-        } else {
-            formatter.dateFormat = "MMM d"
-            let startString = formatter.string(from: startDate)
-            let endString = formatter.string(from: endDate)
-            return "\(startString) - \(endString)"
-        }
-    }
-    
-    private var selectedDateString: String {
-        let formatter = DateFormatter()
-        
-        if calendar.isDate(selectedDate, inSameDayAs: Date()) {
-            return "Today's Sessions"
-        } else if calendar.isDate(selectedDate, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()) {
-            return "Yesterday's Sessions"
-        } else {
-            formatter.dateStyle = .full
-            return formatter.string(from: selectedDate)
-        }
-    }
-    
-    private var calendarDates: [Date] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else {
-            return []
-        }
-
-        let startOfMonth = monthInterval.start
-
-        // Find the first day to show (might be from previous month)
-        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: startOfMonth)?.start ?? startOfMonth
-
-        // Always generate exactly 42 days (6 weeks) to prevent height shifts
-        var dates: [Date] = []
-        var currentDate = startOfWeek
-
-        for _ in 0..<42 {
-            dates.append(currentDate)
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-
-        return dates
-    }
-    
-    private var weekDates: [Date] {
-        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: currentWeek) else {
-            return []
-        }
-        
-        var dates: [Date] = []
-        var currentDate = weekInterval.start
-        let endDate = weekInterval.end
-        
-        while currentDate < endDate {
-            dates.append(currentDate)
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return dates
-    }
-    
-    private var weekSessions: [TrainingSession] {
-        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: currentWeek) else {
-            return []
-        }
-        
-        return sessions.filter { session in
-            guard let sessionDate = session.date else { return false }
-            return weekInterval.contains(sessionDate)
-        }
-    }
-    
-    private func dayOfWeekString(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "E"
-        return formatter.string(from: date).uppercased()
+        formatter.dateFormat = "EEEE d MMMM"
+        return formatter.string(from: day) + (trained ? ", trained" : "")
     }
 }
 
+#if DEBUG
 #Preview {
-    SessionCalendarView()
-        .environment(\.managedObjectContext, CoreDataManager.shared.context)
-        .environmentObject(AuthenticationManager.shared)
+    SessionMonthCalendar(month: .constant(Date()),
+                         selectedDay: .constant(nil),
+                         trainedDays: [Calendar.current.startOfDay(for: Date())])
+        .padding(20)
+        .background(DesignSystem.Colors.surfaceBase)
 }
+#endif

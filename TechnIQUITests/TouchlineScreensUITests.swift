@@ -121,7 +121,7 @@ final class TouchlineScreensUITests: XCTestCase {
 
     func test_youTab_identityCardRowsAndSignOut() throws {
         launch(["-TQSeedDemo", "-TQLocalUser", "-TQTab", "4"])
-        XCTAssertTrue(row("Progress & analytics").waitForExistence(timeout: 40), "You tab rows should appear")
+        XCTAssertTrue(row("Progress").waitForExistence(timeout: 40), "You tab rows should appear")
         dismissCoachMarkIfPresent()
         shot("you")
 

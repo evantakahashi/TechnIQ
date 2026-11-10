@@ -27,23 +27,7 @@ enum DrillCategory: String, CaseIterable {
         }
     }
 
-    var iconSystemName: String {
-        switch self {
-        case .technical: return "soccerball"
-        case .physical: return "figure.strengthtraining.traditional"
-        case .tactical: return "brain"
-        case .mental: return "target"
-        }
-    }
 
-    var color: String {
-        switch self {
-        case .technical: return "primaryGreen"
-        case .physical: return "accentOrange"
-        case .tactical: return "secondaryBlue"
-        case .mental: return "accentYellow"
-        }
-    }
 }
 
 enum DifficultyLevel: String, CaseIterable {
@@ -59,7 +43,6 @@ enum DifficultyLevel: String, CaseIterable {
         }
     }
 
-    var iconSystemName: String { "circle.fill" }
     
     var numericValue: Int {
         switch self {
@@ -95,19 +78,6 @@ enum Equipment: String, CaseIterable {
         }
     }
 
-    var icon: String {
-        switch self {
-        case .ball: return "soccerball"
-        case .cones: return "triangle"
-        case .goals: return "rectangle.portrait"
-        case .partner: return "person.2"
-        case .hurdles: return "square.stack"
-        case .ladder: return "chart.bar.fill"
-        case .poles: return "location"
-        case .wall: return "rectangle.portrait.fill"
-        case .none: return "xmark.circle"
-        }
-    }
 }
 
 enum FieldSize: String, CaseIterable {
@@ -123,19 +93,12 @@ enum FieldSize: String, CaseIterable {
         }
     }
 
-    var subtitle: String {
+    /// Segment label: "20×15 m".
+    var shortName: String {
         switch self {
-        case .small: return "Individual drills"
-        case .medium: return "Small group work"
-        case .large: return "Full team exercises"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .small: return "square"
-        case .medium: return "rectangle"
-        case .large: return "rectangle.landscape"
+        case .small: return "20×15 m"
+        case .medium: return "30×20 m"
+        case .large: return "50×30 m"
         }
     }
 }
